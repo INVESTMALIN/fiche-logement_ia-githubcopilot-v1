@@ -1,27 +1,62 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const fiches = [
+  const allFiches = [
     { id: 1, nom: 'Apt. République', statut: 'Brouillon' },
     { id: 2, nom: 'Villa Sud', statut: 'Complété' },
+    { id: 3, nom: 'Studio Montmartre', statut: 'En cours' },
   ]
+
+  const [search, setSearch] = useState('')
+
+  const filteredFiches = allFiches.filter(fiche =>
+    fiche.nom.toLowerCase().includes(search.toLowerCase())
+  )
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Mes fiches logement</h1>
-      <button className="mb-4 bg-blue-600 text-white px-4 py-2 rounded" onClick={() => navigate('/fiche/nouvelle')}>
-        Nouvelle fiche logement
-      </button>
-      <ul>
-        {fiches.map((fiche) => (
-          <li key={fiche.id} className="mb-2 flex justify-between items-center bg-white p-4 rounded shadow">
-            <span>{fiche.nom}</span>
-            <button className="text-blue-600" onClick={() => navigate(`/fiche/${fiche.id}`)}>
+    <div className="p-4 max-w-screen-md mx-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold">Mes fiches logement</h1>
+        <button
+          className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded-md"
+          onClick={() => navigate('/fiche/nouvelle')}
+        >
+          + Nouvelle fiche
+        </button>
+      </div>
+
+      <input
+        type="text"
+        placeholder="Rechercher un logement..."
+        className="w-full mb-4 px-3 py-2 border rounded text-sm"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {filteredFiches.map((fiche) => (
+          <div
+            key={fiche.id}
+            className="bg-white p-4 rounded-lg shadow-sm flex flex-col justify-between"
+          >
+            <div className="mb-2">
+              <h2 className="text-base font-semibold">{fiche.nom}</h2>
+              <p className="text-xs text-gray-500">{fiche.statut}</p>
+            </div>
+            <button
+              className="text-blue-600 text-sm mt-auto self-start"
+              onClick={() => navigate(`/fiche/${fiche.id}`)}
+            >
               Modifier
             </button>
-          </li>
+          </div>
         ))}
-      </ul>
+        {filteredFiches.length === 0 && (
+          <p className="text-sm text-gray-500 col-span-full">Aucune fiche trouvée.</p>
+        )}
+      </div>
     </div>
   )
 }
