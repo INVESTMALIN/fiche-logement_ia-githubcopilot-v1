@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SidebarMenu from '../components/SidebarMenu'
@@ -18,7 +19,6 @@ export default function FicheClefs() {
       <div className="flex-1 p-6 bg-gray-100 space-y-6">
         <h2 className="text-xl font-bold">Boîte à clés et gestion des clés</h2>
 
-        {/* Type de boîte */}
         <div>
           <label className="block font-semibold mb-1">Type de boîte à clés *</label>
           <div className="flex gap-6 mt-2">
@@ -37,72 +37,61 @@ export default function FicheClefs() {
           </div>
         </div>
 
-        {/* Emplacement */}
         <div>
           <label className="block font-semibold mb-1">Emplacement de la boîte à clés *</label>
           <textarea placeholder="ex. : à côté de la porte sur votre droite." />
         </div>
 
-        {/* Upload photo emplacement */}
         <div>
-          <label className="block font-semibold mb-1">Emplacement de la boîte à clés</label>
-          <div className="border border-dashed p-6 text-center text-sm text-gray-500">
-            📎 Parcourir les fichiers<br />
-            <span className="text-xs">Drag and drop files here</span>
-          </div>
+          <label className="block font-semibold mb-1">📸 Photo de l'emplacement</label>
+          <input type="file" accept="image/*" capture="environment" className="block w-full text-sm" />
         </div>
 
-        {/* Champs conditionnels */}
-        {/* TTlock */}
         {typeBoite === 'TTlock' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-            <label className="block font-semibold mb-1">TTlock - Code Masterpin conciergerie *</label>
-            <input type="text" placeholder="Entrez le code (ex. : 2863)." />
+              <label className="block font-semibold mb-1">TTlock - Code Masterpin conciergerie *</label>
+              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
             </div>
             <div>
-            <label className="block font-semibold mb-1">TTlock - Code Propriétaire *</label>
-            <input type="text" placeholder="Entrez le code (ex. : 2863)." />
+              <label className="block font-semibold mb-1">TTlock - Code Propriétaire *</label>
+              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
             </div>
             <div>
-            <label className="block font-semibold mb-1">TTlock - Code Ménage *</label>
-            <input type="text" placeholder="Entrez le code (ex. : 2863)." />
+              <label className="block font-semibold mb-1">TTlock - Code Ménage *</label>
+              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
             </div>
-        </div>
+          </div>
         )}
 
-        {/* Igloohome */}
         {typeBoite === 'Igloohome' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-            <label className="block font-semibold mb-1">Igloohome - Masterpin conciergerie *</label>
-            <input type="text" placeholder="Entrez le code (ex. : 2863)." />
+              <label className="block font-semibold mb-1">Igloohome - Masterpin conciergerie *</label>
+              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
             </div>
             <div>
-            <label className="block font-semibold mb-1">Igloohome - Code Voyageur *</label>
-            <input type="text" placeholder="Entrez le code (ex. : 2863)." />
+              <label className="block font-semibold mb-1">Igloohome - Code Voyageur *</label>
+              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
             </div>
             <div>
-            <label className="block font-semibold mb-1">Igloohome - Code Propriétaire *</label>
-            <input type="text" placeholder="Entrez le code (ex. : 2863)." />
+              <label className="block font-semibold mb-1">Igloohome - Code Propriétaire *</label>
+              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
             </div>
             <div>
-            <label className="block font-semibold mb-1">Igloohome - Code Ménage *</label>
-            <input type="text" placeholder="Entrez le code (ex. : 2863)." />
+              <label className="block font-semibold mb-1">Igloohome - Code Ménage *</label>
+              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
             </div>
-        </div>
+          </div>
         )}
 
-        {/* Masterlock */}
         {typeBoite === 'Masterlock' && (
-        <div>
+          <div>
             <label className="block font-semibold mb-1">MasterLock - Codes de la boîte à clés *</label>
             <input type="text" placeholder="Entrez le code (ex. : 2863)." />
-        </div>
+          </div>
         )}
 
-
-        {/* Interphone */}
         <div>
           <label className="block font-semibold mb-1">Interphone - Logement équipé d’un interphone?*</label>
           <div className="flex gap-6 mt-2">
@@ -119,14 +108,14 @@ export default function FicheClefs() {
 
         {hasInterphone && (
           <>
-            <textarea className="h-32"  placeholder="Instructions pour l’interphone. S'il existe un code d'accès, notez-le ici et expliquez comment l'utiliser. S'il n'y a pas de code, précisez à quel nom il faut sonner. Ajoutez toute instruction spéciale pour l'utilisation de l'interphone." />
-            <div className="border border-dashed p-6 text-center text-sm text-gray-500">
-              📎 Photo de l’interphone
+            <textarea className="h-32" placeholder="Instructions pour l’interphone..." />
+            <div className="mt-2">
+              <label className="block font-semibold mb-1">📸 Photo de l’interphone</label>
+              <input type="file" accept="image/*" capture="environment" className="block w-full text-sm" />
             </div>
           </>
         )}
 
-        {/* Tempo-gâche */}
         <div>
           <label className="block font-semibold mb-1">Tempo-gâche - Logement équipé d’un tempo-gâche?*</label>
           <div className="flex gap-6 mt-2">
@@ -144,15 +133,15 @@ export default function FicheClefs() {
         {hasInterphone && hasTempoGache && (
           <>
             <textarea placeholder="Description du tempo-gâche *" />
-            <div className="border border-dashed p-6 text-center text-sm text-gray-500">
-              📎 Photo du tempo-gâche
+            <div className="mt-2">
+              <label className="block font-semibold mb-1">📸 Photo du tempo-gâche</label>
+              <input type="file" accept="image/*" capture="environment" className="block w-full text-sm" />
             </div>
           </>
         )}
 
-        {/* Digicode */}
         <div>
-          <label className="block font-semibold mb-1">Digicode - Logement éqyuipé d'un digicode?*</label>
+          <label className="block font-semibold mb-1">Digicode - Logement équipé d'un digicode?*</label>
           <div className="flex gap-6 mt-2">
             <label className="inline-flex items-center gap-2">
               <input type="radio" name="digicode" onChange={() => setHasDigicode(true)} />
@@ -168,19 +157,17 @@ export default function FicheClefs() {
         {hasDigicode && (
           <>
             <textarea placeholder="Instructions pour le digicode *" />
-            <div className="border border-dashed p-6 text-center text-sm text-gray-500">
-              📎 Photo du digicode
+            <div className="mt-2">
+              <label className="block font-semibold mb-1">📸 Photo du digicode</label>
+              <input type="file" accept="image/*" capture="environment" className="block w-full text-sm" />
             </div>
           </>
         )}
 
-        {/* Clefs */}
         <div className="space-y-4">
           <div>
-            <label className="block font-semibold mb-1">Clefs – 3 JEUX DE CLEFS OBLIGATOIRE - Photos :</label>
-            <div className="border border-dashed p-6 text-center text-sm text-gray-500">
-              📎 Parcourir les fichiers
-            </div>
+            <label className="block font-semibold mb-1">📸 Clefs – 3 JEUX DE CLEFS OBLIGATOIRE</label>
+            <input type="file" accept="image/*" capture="environment" className="block w-full text-sm" multiple />
           </div>
 
           <textarea placeholder="Précision sur chaque clef, son utilisation et s’il en manque *" />
@@ -202,12 +189,8 @@ export default function FicheClefs() {
           <textarea placeholder="Le prestataire a t-il reçu les clés en mains propres ? Où sont stockées les clés ? Quel type de clef ?" />
         </div>
 
-        {/* Navigation */}
         <div className="flex justify-between mt-6">
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-            onClick={() => navigate('/fiche/logement')}
-          >
+          <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={() => navigate('/fiche/logement')}>
             Retour
           </button>
           <div className="space-x-2">
