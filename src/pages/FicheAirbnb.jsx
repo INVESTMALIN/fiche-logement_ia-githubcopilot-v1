@@ -1,406 +1,241 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react'
-import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
+import SidebarMenu from '../components/SidebarMenu'
+import ProgressBar from '../components/ProgressBar'
+import { useForm } from '../components/FormContext'
+import Button from '../components/Button'
 
-const FormContext = createContext()
+export default function FicheAirbnb() {
+  const { 
+    next, 
+    back, 
+    currentStep, 
+    totalSteps, 
+    getField,
+    updateField,
+    handleSave,
+    saveStatus
+  } = useForm()
 
-// Structure initiale des données (compatible Supabase)
-const initialFormData = {
-  // Métadonnées
-  id: null,
-  user_id: null,
-  created_at: null,
-  updated_at: null,
-  
-  // Sections (mappées aux colonnes JSONB Supabase)
-  section_proprietaire: {
-    prenom: "",
-    nom: "",
-    email: "",
-    adresse: {
-      rue: "",
-      complement: "",
-      ville: "",
-      codePostal: ""
-    }
-  },
-  section_logement: {
-    type: "",
-    adresse: {
-      rue: "",
-      complement: "",
-      ville: "",
-      codePostal: "",
-      batiment: "",
-      etage: "",
-      numeroPorte: ""
-    },
-    caracteristiques: {
-      nombrePieces: "",
-      nombreChambres: "",
-      surface: ""
-    },
-    acces: ""
-  },
-  section_clefs: {
-    interphone: null,
-    interphoneDetails: "",
-    interphonePhoto: null,
-    tempoGache: null,
-    tempoGacheDetails: "",
-    tempoGachePhoto: null,
-    digicode: null,
-    digicodeDetails: "",
-    digicodePhoto: null,
-    clefs: {
-      photos: [],
-      precision: "",
-      prestataire: null,
-      details: ""
-    }
-  },
-  section_airbnb: {
-    preparation_guide: {
-      video_complete: false,
-      photos_etapes: false
-    },
-    annonce_active: null,           // true/false/null
-    url_annonce: "",
-    identifiants_obtenus: null,     // true/false/null  
-    email_compte: "",
-    mot_passe: "",
-    explication_refus: ""
-  },
-  // Placeholder pour les autres sections
-  section_booking: {
-    annonce_active: null,           // true/false/null
-    url_annonce: "",
-    identifiants_obtenus: null,     // true/false/null  
-    email_compte: "",
-    mot_passe: "",
-    explication_refus: ""
-  },
-  section_reglementation: {},
-  section_exigences: {},
-  section_avis: {},
-  section_gestion_linge: {},
-  section_equipements: {},
-  section_consommables: {},
-  section_visite: {},
-  section_chambres: {},
-  section_salle_de_bains: {},
-  section_cuisine_1: {},
-  section_cuisine_2: {},
-  section_salon_sam: {},
-  section_equip_spe_exterieur: {},
-  section_communs: {},
-  section_teletravail: {},
-  section_bebe: {},
-  section_securite: {}
-}
-
-export function FormProvider({ children }) {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [formData, setFormData] = useState(initialFormData)
-  const [saveStatus, setSaveStatus] = useState({ 
-    saving: false, 
-    saved: false, 
-    error: null,
-    lastAutoSave: null
-  })
-  
-  // Refs pour l'auto-save
-  const autoSaveTimer = useRef(null)
-  const lastFormData = useRef(initialFormData)
-  const hasUnsavedChanges = useRef(false)
-
-  // Liste des sections pour mapper avec la sidebar
-  const sections = [
-    "Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", "Réglementation",
-    "Exigences", "Avis", "Gestion Linge", "Équipements", "Consommables", "Visite",
-    "Chambres", "Salle De Bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. Spé. / Extérie",
-    "Communs", "Télétravail", "Bébé", "Sécurité"
-  ]
-
-  // 🤖 Auto-save intelligent
-  useEffect(() => {
-    // Vérifier s'il y a eu des changements
-    const hasChanges = JSON.stringify(formData) !== JSON.stringify(lastFormData.current)
-    const hasContent = Object.keys(formData).some(key => {
-      if (key.startsWith('section_')) {
-        const section = formData[key]
-        return Object.values(section).some(value => 
-          value !== "" && value !== null && value !== false && 
-          !(typeof value === 'object' && Object.keys(value).length === 0)
-        )
-      }
-      return false
-    })
-    
-    if (hasChanges && hasContent) {
-      hasUnsavedChanges.current = true
-      lastFormData.current = { ...formData }
-      
-      // Démarrer le timer d'auto-save (30 secondes)
-      if (autoSaveTimer.current) {
-        clearTimeout(autoSaveTimer.current)
-      }
-      
-      autoSaveTimer.current = setTimeout(() => {
-        handleAutoSave()
-      }, 30000) // 30 secondes
-    }
-    
-    return () => {
-      if (autoSaveTimer.current) {
-        clearTimeout(autoSaveTimer.current)
-      }
-    }
-  }, [formData])
-  
-  // 🛡️ Protection contre la fermeture accidentelle
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedChanges.current) {
-        e.preventDefault()
-        e.returnValue = 'Vous avez des modifications non sauvegardées. Êtes-vous sûr de vouloir quitter ?'
-        return e.returnValue
-      }
-    }
-    
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [])
-
-  const totalSteps = sections.length
-
-  // Navigation
-  const next = () => {
-    if (currentStep < totalSteps - 1) {
-      setCurrentStep(currentStep + 1)
-    }
-  }
-
-  const back = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
-    }
-  }
-
-  const goTo = (step) => {
-    if (step >= 0 && step < totalSteps) {
-      setCurrentStep(step)
-    }
-  }
-
-  const getCurrentSection = () => sections[currentStep]
-
-  // Gestion des données avec protection contre les undefined
-  const updateSection = (sectionName, newData) => {
-    setFormData(prev => {
-      // S'assurer que la section existe
-      const currentSection = prev[sectionName] || {}
-      
-      return {
-        ...prev,
-        [sectionName]: {
-          ...currentSection,
-          ...newData
-        },
-        updated_at: new Date().toISOString()
-      }
-    })
-  }
-
-  const updateField = (fieldPath, value) => {
-    setFormData(prev => {
-      const newData = { ...prev }
-      const keys = fieldPath.split('.')
-      let current = newData
-      
-      // Navigate to the parent of the target field, creating objects if needed
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (current[keys[i]] === undefined || current[keys[i]] === null) {
-          current[keys[i]] = {}
-        } else if (typeof current[keys[i]] !== 'object') {
-          // If it's a primitive value, convert to object
-          current[keys[i]] = {}
-        } else {
-          // Clone the object to avoid mutations
-          current[keys[i]] = { ...current[keys[i]] }
-        }
-        current = current[keys[i]]
-      }
-      
-      // Set the value
-      current[keys[keys.length - 1]] = value
-      
-      // Update timestamp
-      newData.updated_at = new Date().toISOString()
-      
-      return newData
-    })
-  }
-
-  const getSection = (sectionName) => {
-    return formData[sectionName] || {}
-  }
-
-  const getField = (fieldPath) => {
-    const keys = fieldPath.split('.')
-    let current = formData
-    
-    for (const key of keys) {
-      if (current === null || current === undefined || typeof current !== 'object') {
-        return ""
-      }
-      current = current[key]
-    }
-    
-    return current || ""
-  }
-
-  const resetForm = () => {
-    setFormData(initialFormData)
-    setCurrentStep(0)
-  }
-
-  // 💾 Auto-save en arrière-plan
-  const handleAutoSave = async () => {
-    if (saveStatus.saving) return // Éviter les conflits
-    
-    try {
-      const userId = null // Temporaire
-      const result = await saveFiche(formData, userId)
-      
-      if (result.success) {
-        setFormData(result.data)
-        hasUnsavedChanges.current = false
-        setSaveStatus(prev => ({ 
-          ...prev, 
-          lastAutoSave: new Date() 
-        }))
-      }
-    } catch (error) {
-      console.error('Erreur auto-save:', error)
-    }
-  }
-
-  // 💾 Fonctions de sauvegarde Supabase
-  const handleSave = async () => {
-    setSaveStatus({ saving: true, saved: false, error: null, lastAutoSave: saveStatus.lastAutoSave })
-    
-    try {
-      // Annuler l'auto-save en cours
-      if (autoSaveTimer.current) {
-        clearTimeout(autoSaveTimer.current)
-      }
-      
-      // TEST: Log pour debug
-      console.log('Données à sauvegarder:', formData)
-      
-      // Pour les tests en local : utiliser NULL au lieu d'un faux UUID
-      const userId = null // Pas d'auth pour l'instant
-      
-      const result = await saveFiche(formData, userId)
-      
-      console.log('Résultat sauvegarde:', result)
-      
-      if (result.success) {
-        // Mettre à jour le formData avec les données retournées (notamment l'ID)
-        setFormData(result.data)
-        hasUnsavedChanges.current = false
-        setSaveStatus({ saving: false, saved: true, error: null, lastAutoSave: new Date() })
-        
-        // Masquer l'indicateur "sauvegardé" après 3 secondes
-        setTimeout(() => {
-          setSaveStatus(prev => ({ ...prev, saved: false }))
-        }, 3000)
-      } else {
-        setSaveStatus({ saving: false, saved: false, error: result.message, lastAutoSave: saveStatus.lastAutoSave })
-      }
-    } catch (error) {
-      console.error('Erreur complète:', error)
-      setSaveStatus({ saving: false, saved: false, error: error.message || 'Erreur de connexion', lastAutoSave: saveStatus.lastAutoSave })
-    }
-  }
-
-  // Helper pour formater le temps écoulé
-  const getAutoSaveText = () => {
-    if (!saveStatus.lastAutoSave) return null
-    
-    const now = new Date()
-    const diff = Math.floor((now - saveStatus.lastAutoSave) / 1000) // en secondes
-    
-    if (diff < 60) return `💾 Sauvegardé automatiquement il y a ${diff}s`
-    if (diff < 3600) return `💾 Sauvegardé automatiquement il y a ${Math.floor(diff/60)}m`
-    return `💾 Sauvegardé automatiquement il y a ${Math.floor(diff/3600)}h`
-  }
-
-  const handleLoad = async (ficheId) => {
-    try {
-      const result = await loadFiche(ficheId)
-      
-      if (result.success) {
-        setFormData(result.data)
-        setCurrentStep(0) // Revenir au début
-        return { success: true }
-      } else {
-        return { success: false, error: result.message }
-      }
-    } catch (error) {
-      return { success: false, error: 'Erreur de connexion' }
-    }
-  }
-
-  // Debug helper
-  const getFormDataPreview = () => {
-    return {
-      currentSection: getCurrentSection(),
-      completedSections: Object.keys(formData).filter(key => 
-        key.startsWith('section_') && 
-        Object.values(formData[key]).some(val => val !== "" && val !== null)
-      ),
-      formData
-    }
-  }
+  // Récupération des valeurs depuis FormContext
+  const preparationGuide = getField('section_airbnb.preparation_guide') || {}
+  const annonceActive = getField('section_airbnb.annonce_active')
+  const urlAnnonce = getField('section_airbnb.url_annonce')
+  // Fix pour les booléens : ne pas utiliser getField() qui retourne "" par défaut
+  const formData = getField('section_airbnb')
+  const identifiantsObtenus = formData.identifiants_obtenus
+  const emailCompte = getField('section_airbnb.email_compte')
+  const motPasse = getField('section_airbnb.mot_passe')
+  const explicationRefus = getField('section_airbnb.explication_refus')
 
   return (
-    <FormContext.Provider value={{ 
-      // Navigation
-      currentStep, 
-      totalSteps, 
-      sections,
-      next, 
-      back, 
-      goTo, 
-      getCurrentSection,
-      
-      // Data management
-      formData,
-      updateSection,
-      updateField,
-      getSection,
-      getField,
-      resetForm,
-      
-      // Supabase operations
-      handleSave,
-      handleLoad,
-      saveStatus,
-      getAutoSaveText,
-      
-      // Debug helper
-      getFormDataPreview
-    }}>
-      {children}
-    </FormContext.Provider>
-  )
-}
+    <div className="flex min-h-screen">
+      <SidebarMenu />
+      <div className="flex-1 flex flex-col">
+        <ProgressBar />
+        <div className="flex-1 p-6 bg-gray-100">
+          <h1 className="text-2xl font-bold mb-6">4- Airbnb</h1>
 
-export function useForm() {
-  const context = useContext(FormContext)
-  if (!context) {
-    throw new Error('useForm must be used within a FormProvider')
-  }
-  return context
+          {/* Préparation Guide d'accès Airbnb */}
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg mb-4">Préparation Guide d'accès Airbnb - De la rue jusqu'à l'intérieur de l'appartement</h3>
+            
+            <div className="space-y-3">
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={preparationGuide.video_complete || false}
+                  onChange={(e) => updateField('section_airbnb.preparation_guide.video_complete', e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span>Faire une vidéo complète</span>
+              </label>
+
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={preparationGuide.photos_etapes || false}
+                  onChange={(e) => updateField('section_airbnb.preparation_guide.photos_etapes', e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span>Faire des photos propres de chaque étape</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Annonce active sur Airbnb */}
+          <div className="mb-6">
+            <label className="block font-semibold mb-3">
+              Le propriétaire a-t-il déjà une annonce active sur Airbnb ? <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="annonce_active"
+                  checked={annonceActive === true}
+                  onChange={() => updateField('section_airbnb.annonce_active', true)}
+                  className="w-4 h-4"
+                />
+                <span>Oui</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="annonce_active"
+                  checked={annonceActive === false}
+                  onChange={() => updateField('section_airbnb.annonce_active', false)}
+                  className="w-4 h-4"
+                />
+                <span>Non</span>
+              </label>
+            </div>
+          </div>
+
+          {/* URL de l'annonce Airbnb */}
+          <div className="mb-6">
+            <label className="block font-semibold mb-1">Url de l'annonce Airbnb</label>
+            <input
+              type="url"
+              placeholder="https://www.airbnb.fr/rooms/11263237"
+              value={urlAnnonce}
+              onChange={(e) => updateField('section_airbnb.url_annonce', e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+
+          {/* Section Codes de connexion */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h3 className="font-semibold text-lg mb-4">Codes de connexion au compte Airbnb du propriétaire</h3>
+            
+            <div className="mb-4">
+              <label className="block font-semibold mb-3">
+                Code Airbnb - Avez-vous obtenu les identifiants de connexion du propriétaire ?
+              </label>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="identifiants_obtenus"
+                    checked={identifiantsObtenus === true}
+                    onChange={() => updateField('section_airbnb.identifiants_obtenus', true)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span>Oui</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="identifiants_obtenus"
+                    checked={identifiantsObtenus === false}
+                    onChange={() => updateField('section_airbnb.identifiants_obtenus', false)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span>Non</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Affichage conditionnel selon la réponse */}
+            {identifiantsObtenus === true && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold mb-1">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="email@exemple.com"
+                    value={emailCompte}
+                    onChange={(e) => updateField('section_airbnb.email_compte', e.target.value)}
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1">
+                    Mot de passe <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={motPasse}
+                    onChange={(e) => updateField('section_airbnb.mot_passe', e.target.value)}
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+              </div>
+            )}
+
+            {identifiantsObtenus === false && (
+              <div>
+                <label className="block font-semibold mb-1">
+                  Code Airbnb - Veuillez expliquez pourquoi vous n'avez pas obtenu les identifiants <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  placeholder="Expliquez les raisons..."
+                  value={explicationRefus}
+                  onChange={(e) => updateField('section_airbnb.explication_refus', e.target.value)}
+                  rows={4}
+                  className="w-full p-3 border rounded"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Debug panel (masqué) */}
+          {false && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+              <strong>Debug:</strong> 
+              <div>Section complète: {JSON.stringify(getField('section_airbnb'), null, 2)}</div>
+              <div>identifiantsObtenus variable: {JSON.stringify(identifiantsObtenus)} (type: {typeof identifiantsObtenus})</div>
+              <div>Test === true: {identifiantsObtenus === true ? 'OUI' : 'NON'}</div>
+              <div>Test === false: {identifiantsObtenus === false ? 'OUI' : 'NON'}</div>
+            </div>
+          )}
+
+          {/* Indicateur de sauvegarde */}
+          {saveStatus.saving && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              ⏳ Sauvegarde en cours...
+            </div>
+          )}
+          {saveStatus.saved && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+              ✅ Sauvegardé avec succès !
+            </div>
+          )}
+          {saveStatus.error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              ❌ {saveStatus.error}
+            </div>
+          )}
+
+          {/* Boutons de navigation */}
+          <div className="mt-6 flex justify-between">
+            <Button 
+              variant="ghost" 
+              onClick={back} 
+              disabled={currentStep === 0}
+            >
+              Retour
+            </Button>
+            <div className="flex gap-3">
+              <Button 
+                variant="secondary"
+                onClick={handleSave}
+                disabled={saveStatus.saving}
+              >
+                {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={next}
+                disabled={currentStep === totalSteps - 1}
+              >
+                Suivant
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
