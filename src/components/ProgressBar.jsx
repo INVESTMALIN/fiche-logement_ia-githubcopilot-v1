@@ -7,7 +7,7 @@ export default function ProgressBar() {
   
   return (
     <div className="bg-gray-100 border-b border-gray-200 px-2 py-3 lg:px-4 lg:py-4">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto ml-12 lg:ml-auto"> {/* ml-12 pour laisser l'espace au hamburger sur mobile */}
         {/* Header avec pourcentage */}
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs lg:text-sm text-gray-600">
