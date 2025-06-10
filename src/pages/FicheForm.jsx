@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import SidebarMenu from '../components/SidebarMenu'
+import Button from '../components/Button'
 
 export default function FicheForm() {
   const navigate = useNavigate()
@@ -43,13 +44,12 @@ export default function FicheForm() {
 
         {/* Boutons */}
         <div className="mt-6 flex justify-end space-x-3">
-          <button className="bg-gray-200 px-4 py-2 rounded">Enregistrer</button>
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-            onClick={() => navigate('/fiche/logement')}
-          >
+          <Button variant="ghost" onClick={() => console.log('Enregistrement local')}>
+            Enregistrer
+          </Button>
+          <Button variant="primary" onClick={() => navigate('/fiche/logement')}>
             Suivant
-          </button>
+          </Button>
         </div>
       </div>
     </div>

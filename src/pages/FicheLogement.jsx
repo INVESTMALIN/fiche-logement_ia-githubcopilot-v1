@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SidebarMenu from '../components/SidebarMenu'
+import Button from '../components/Button'
 
 export default function FicheLogement() {
   const navigate = useNavigate()
@@ -24,30 +25,29 @@ export default function FicheLogement() {
           <div>
             <label className="block mb-1 font-semibold">Type de propriété *</label>
             <select
-                value={typePropriete}
-                onChange={(e) => setTypePropriete(e.target.value)}
+              value={typePropriete}
+              onChange={(e) => setTypePropriete(e.target.value)}
             >
-                <option value="">Veuillez sélectionner</option>
-                <option value="Appartement">Appartement</option>
-                <option value="Maison">Maison</option>
-                <option value="Villa">Villa</option>
-                <option value="Autre">Autre</option>
+              <option value="">Veuillez sélectionner</option>
+              <option value="Appartement">Appartement</option>
+              <option value="Maison">Maison</option>
+              <option value="Villa">Villa</option>
+              <option value="Autre">Autre</option>
             </select>
 
-            {/* Champ "Autre" collé juste en dessous */}
+            {/* Champ "Autre" */}
             {typePropriete === 'Autre' && (
-                <div className="mt-3">
+              <div className="mt-3">
                 <label className="block mb-1 font-semibold">Type - Autres (Veuillez préciser) *</label>
                 <select>
-                    <option value="">Veuillez sélectionner</option>
-                    {autresOptions.map((opt) => (
+                  <option value="">Veuillez sélectionner</option>
+                  {autresOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
-                    ))}
+                  ))}
                 </select>
-                </div>
+              </div>
             )}
-            </div>
-
+          </div>
 
           <div>
             <label className="block mb-1 font-semibold">Surface en m² *</label>
@@ -85,7 +85,6 @@ export default function FicheLogement() {
           </div>
         </div>
 
-
         {/* Si Appartement */}
         {typePropriete === 'Appartement' && (
           <div className="mb-6">
@@ -106,21 +105,16 @@ export default function FicheLogement() {
 
         {/* Boutons */}
         <div className="flex justify-between mt-6">
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-            onClick={() => navigate('/fiche/nouvelle')}
-          >
+          <Button variant="ghost" onClick={() => navigate('/fiche/nouvelle')}>
             Retour
-          </button>
+          </Button>
           <div className="space-x-2">
-            <button className="bg-gray-200 px-4 py-2 rounded">Enregistrer</button>
-            <button
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-            onClick={() => navigate('/fiche/clefs')}
-            >
-            Suivant
-            </button>
-
+            <Button variant="ghost" onClick={() => console.log('Enregistrement local')}>
+              Enregistrer
+            </Button>
+            <Button variant="primary" onClick={() => navigate('/fiche/clefs')}>
+              Suivant
+            </Button>
           </div>
         </div>
       </div>

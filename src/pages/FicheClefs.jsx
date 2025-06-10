@@ -1,7 +1,7 @@
-
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SidebarMenu from '../components/SidebarMenu'
+import Button from '../components/Button'
 
 export default function FicheClefs() {
   const navigate = useNavigate()
@@ -189,13 +189,18 @@ export default function FicheClefs() {
           <textarea placeholder="Le prestataire a t-il reçu les clés en mains propres ? Où sont stockées les clés ? Quel type de clef ?" />
         </div>
 
+        {/* Boutons */}
         <div className="flex justify-between mt-6">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={() => navigate('/fiche/logement')}>
+          <Button variant="ghost" onClick={() => navigate('/fiche/logement')}>
             Retour
-          </button>
+          </Button>
           <div className="space-x-2">
-            <button className="bg-gray-200 px-4 py-2 rounded">Enregistrer</button>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded">Suivant</button>
+            <Button variant="ghost" onClick={() => console.log('Enregistrer fiche clefs')}>
+              Enregistrer
+            </Button>
+            <Button variant="primary" onClick={() => console.log('Aller à la section suivante')}>
+              Suivant
+            </Button>
           </div>
         </div>
       </div>
