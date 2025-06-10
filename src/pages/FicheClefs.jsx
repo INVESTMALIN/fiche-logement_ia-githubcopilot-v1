@@ -10,7 +10,9 @@ export default function FicheClefs() {
     currentStep, 
     totalSteps, 
     getField,
-    updateField 
+    updateField,
+    handleSave,
+    saveStatus
   } = useForm()
 
   // Handlers pour les champs
@@ -38,6 +40,23 @@ export default function FicheClefs() {
         {/* Contenu principal */}
         <div className="flex-1 p-6 bg-gray-100 space-y-6">
           <h1 className="text-2xl font-bold">Gestion des clés et accès</h1>
+
+          {/* Indicateur de sauvegarde */}
+          {saveStatus.saving && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              ⏳ Sauvegarde en cours...
+            </div>
+          )}
+          {saveStatus.saved && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+              ✅ Sauvegardé avec succès !
+            </div>
+          )}
+          {saveStatus.error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              ❌ {saveStatus.error}
+            </div>
+          )}
 
           {/* Photo de l'emplacement */}
           <div>
@@ -202,13 +221,22 @@ export default function FicheClefs() {
             >
               Retour
             </Button>
-            <Button 
-              variant="primary" 
-              onClick={next}
-              disabled={currentStep === totalSteps - 1}
-            >
-              Suivant
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                variant="secondary"
+                onClick={handleSave}
+                disabled={saveStatus.saving}
+              >
+                {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={next} 
+                disabled={currentStep === totalSteps - 1}
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
         </div>
       </div>

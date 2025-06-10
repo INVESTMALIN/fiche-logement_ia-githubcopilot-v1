@@ -10,7 +10,9 @@ export default function FicheLogement() {
     currentStep, 
     totalSteps, 
     getField,
-    updateField 
+    updateField,
+    handleSave,
+    saveStatus
   } = useForm()
 
   // Handlers pour les champs
@@ -155,6 +157,23 @@ export default function FicheLogement() {
             </div>
           </div>
 
+          {/* Indicateur de sauvegarde */}
+          {saveStatus.saving && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              ⏳ Sauvegarde en cours...
+            </div>
+          )}
+          {saveStatus.saved && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+              ✅ Sauvegardé avec succès !
+            </div>
+          )}
+          {saveStatus.error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              ❌ {saveStatus.error}
+            </div>
+          )}
+
           {/* Boutons navigation */}
           <div className="mt-6 flex justify-between">
             <Button 
@@ -164,13 +183,22 @@ export default function FicheLogement() {
             >
               Retour
             </Button>
-            <Button 
-              variant="primary" 
-              onClick={next}
-              disabled={currentStep === totalSteps - 1}
-            >
-              Suivant
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                variant="secondary"
+                onClick={handleSave}
+                disabled={saveStatus.saving}
+              >
+                {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={next}
+                disabled={currentStep === totalSteps - 1}
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
         </div>
       </div>

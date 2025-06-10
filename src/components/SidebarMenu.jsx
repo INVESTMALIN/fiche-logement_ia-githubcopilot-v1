@@ -48,7 +48,6 @@ export default function SidebarMenu() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-4">
-                <h2 className="font-semibold text-white">Menu</h2>
                 <button onClick={() => setOpen(false)}>
                   <X className="w-5 h-5 text-white" />
                 </button>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
 
 const FormContext = createContext()
@@ -104,8 +104,14 @@ export function FormProvider({ children }) {
   const [saveStatus, setSaveStatus] = useState({ 
     saving: false, 
     saved: false, 
-    error: null 
+    error: null,
+    lastAutoSave: null
   })
+  
+  // Refs pour l'auto-save
+  const autoSaveTimer = useRef(null)
+  const lastFormData = useRef(initialFormData)
+  const hasUnsavedChanges = useRef(false)
 
   // Liste des sections pour mapper avec la sidebar
   const sections = [
@@ -114,6 +120,56 @@ export function FormProvider({ children }) {
     "Chambres", "Salle De Bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. Spé. / Extérie",
     "Communs", "Télétravail", "Bébé", "Sécurité"
   ]
+
+  // 🤖 Auto-save intelligent
+  useEffect(() => {
+    // Vérifier s'il y a eu des changements
+    const hasChanges = JSON.stringify(formData) !== JSON.stringify(lastFormData.current)
+    const hasContent = Object.keys(formData).some(key => {
+      if (key.startsWith('section_')) {
+        const section = formData[key]
+        return Object.values(section).some(value => 
+          value !== "" && value !== null && value !== false && 
+          !(typeof value === 'object' && Object.keys(value).length === 0)
+        )
+      }
+      return false
+    })
+    
+    if (hasChanges && hasContent) {
+      hasUnsavedChanges.current = true
+      lastFormData.current = { ...formData }
+      
+      // Démarrer le timer d'auto-save (30 secondes)
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current)
+      }
+      
+      autoSaveTimer.current = setTimeout(() => {
+        handleAutoSave()
+      }, 30000) // 30 secondes
+    }
+    
+    return () => {
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current)
+      }
+    }
+  }, [formData])
+  
+  // 🛡️ Protection contre la fermeture accidentelle
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges.current) {
+        e.preventDefault()
+        e.returnValue = 'Vous avez des modifications non sauvegardées. Êtes-vous sûr de vouloir quitter ?'
+        return e.returnValue
+      }
+    }
+    
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [])
 
   const totalSteps = sections.length
 
@@ -208,11 +264,37 @@ export function FormProvider({ children }) {
     setCurrentStep(0)
   }
 
-  // 💾 Fonctions de sauvegarde Supabase
-  const handleSave = async () => {
-    setSaveStatus({ saving: true, saved: false, error: null })
+  // 💾 Auto-save en arrière-plan
+  const handleAutoSave = async () => {
+    if (saveStatus.saving) return // Éviter les conflits
     
     try {
+      const userId = null // Temporaire
+      const result = await saveFiche(formData, userId)
+      
+      if (result.success) {
+        setFormData(result.data)
+        hasUnsavedChanges.current = false
+        setSaveStatus(prev => ({ 
+          ...prev, 
+          lastAutoSave: new Date() 
+        }))
+      }
+    } catch (error) {
+      console.error('Erreur auto-save:', error)
+    }
+  }
+
+  // 💾 Fonctions de sauvegarde Supabase
+  const handleSave = async () => {
+    setSaveStatus({ saving: true, saved: false, error: null, lastAutoSave: saveStatus.lastAutoSave })
+    
+    try {
+      // Annuler l'auto-save en cours
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current)
+      }
+      
       // TEST: Log pour debug
       console.log('Données à sauvegarder:', formData)
       
@@ -226,19 +308,32 @@ export function FormProvider({ children }) {
       if (result.success) {
         // Mettre à jour le formData avec les données retournées (notamment l'ID)
         setFormData(result.data)
-        setSaveStatus({ saving: false, saved: true, error: null })
+        hasUnsavedChanges.current = false
+        setSaveStatus({ saving: false, saved: true, error: null, lastAutoSave: new Date() })
         
         // Masquer l'indicateur "sauvegardé" après 3 secondes
         setTimeout(() => {
           setSaveStatus(prev => ({ ...prev, saved: false }))
         }, 3000)
       } else {
-        setSaveStatus({ saving: false, saved: false, error: result.message })
+        setSaveStatus({ saving: false, saved: false, error: result.message, lastAutoSave: saveStatus.lastAutoSave })
       }
     } catch (error) {
       console.error('Erreur complète:', error)
-      setSaveStatus({ saving: false, saved: false, error: error.message || 'Erreur de connexion' })
+      setSaveStatus({ saving: false, saved: false, error: error.message || 'Erreur de connexion', lastAutoSave: saveStatus.lastAutoSave })
     }
+  }
+
+  // Helper pour formater le temps écoulé
+  const getAutoSaveText = () => {
+    if (!saveStatus.lastAutoSave) return null
+    
+    const now = new Date()
+    const diff = Math.floor((now - saveStatus.lastAutoSave) / 1000) // en secondes
+    
+    if (diff < 60) return `💾 Sauvegardé automatiquement il y a ${diff}s`
+    if (diff < 3600) return `💾 Sauvegardé automatiquement il y a ${Math.floor(diff/60)}m`
+    return `💾 Sauvegardé automatiquement il y a ${Math.floor(diff/3600)}h`
   }
 
   const handleLoad = async (ficheId) => {
@@ -292,6 +387,7 @@ export function FormProvider({ children }) {
       handleSave,
       handleLoad,
       saveStatus,
+      getAutoSaveText,
       
       // Debug helper
       getFormDataPreview

@@ -2,6 +2,8 @@ import { useForm } from '../components/FormContext'
 import FicheForm from './FicheForm'
 import FicheLogement from './FicheLogement'
 import FicheClefs from './FicheClefs'
+import FicheAirbnb from './FicheAirbnb'
+import FicheBooking from './FicheBooking'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
@@ -60,8 +62,8 @@ export default function FicheWizard() {
     <FicheForm key="proprietaire" />,
     <FicheLogement key="logement" />,
     <FicheClefs key="clefs" />,
-    <PlaceholderSection key="airbnb" title="Configuration Airbnb" />,
-    <PlaceholderSection key="booking" title="Configuration Booking" />,
+    <FicheAirbnb key="airbnb" />,
+    <FicheBooking key="booking" />,
     <PlaceholderSection key="reglementation" title="Réglementation" />,
     <PlaceholderSection key="exigences" title="Exigences" />,
     <PlaceholderSection key="avis" title="Gestion des Avis" />,
