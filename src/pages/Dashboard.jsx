@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Button from '../components/Button'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -19,12 +20,13 @@ export default function Dashboard() {
     <div className="p-4 max-w-screen-md mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold">Mes fiches logement</h1>
-        <button
-          className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded-md"
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => navigate('/fiche/nouvelle')}
         >
           + Nouvelle fiche
-        </button>
+        </Button>
       </div>
 
       <input
@@ -36,23 +38,25 @@ export default function Dashboard() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {filteredFiches.map((fiche) => (
-          <div
-            key={fiche.id}
-            className="bg-white p-4 rounded-lg shadow-sm flex flex-col justify-between"
-          >
-            <div className="mb-2">
-              <h2 className="text-base font-semibold">{fiche.nom}</h2>
-              <p className="text-xs text-gray-500">{fiche.statut}</p>
-            </div>
-            <button
-              className="text-blue-600 text-sm mt-auto self-start"
-              onClick={() => navigate(`/fiche/${fiche.id}`)}
-            >
-              Modifier
-            </button>
+      {filteredFiches.map((fiche) => (
+        <div
+          key={fiche.id}
+          className="bg-white p-4 rounded-lg shadow-sm flex flex-col justify-between"
+        >
+          <div className="mb-2">
+            <h2 className="text-base font-semibold">{fiche.nom}</h2>
+            <p className="text-xs text-gray-500">{fiche.statut}</p>
           </div>
-        ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/fiche/${fiche.id}`)}
+          >
+            Modifier
+          </Button>
+        </div>
+      ))}
+
         {filteredFiches.length === 0 && (
           <p className="text-sm text-gray-500 col-span-full">Aucune fiche trouvée.</p>
         )}
