@@ -1,204 +1,174 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import SidebarMenu from '../components/SidebarMenu'
+import ProgressBar from '../components/ProgressBar'
+import { useForm } from '../components/FormContext'
 import Button from '../components/Button'
 
 export default function FicheClefs() {
-  const navigate = useNavigate()
-
-  const [typeBoite, setTypeBoite] = useState('')
+  const { next, back, currentStep, totalSteps } = useForm()
   const [hasInterphone, setHasInterphone] = useState(null)
-  const [hasDigicode, setHasDigicode] = useState(null)
   const [hasTempoGache, setHasTempoGache] = useState(null)
+  const [hasDigicode, setHasDigicode] = useState(null)
   const [clefRemise, setClefRemise] = useState(null)
 
   return (
     <div className="flex min-h-screen">
-      <SidebarMenu currentSection="Clefs" />
+      <SidebarMenu />
 
-      <div className="flex-1 p-6 bg-gray-100 space-y-6">
-        <h2 className="text-xl font-bold">Boîte à clés et gestion des clés</h2>
+      <div className="flex-1 flex flex-col">
+        {/* Barre de progression en haut */}
+        <ProgressBar />
+        
+        {/* Contenu principal */}
+        <div className="flex-1 p-6 bg-gray-100 space-y-6">
+          <h1 className="text-2xl font-bold">Gestion des clés et accès</h1>
 
-        <div>
-          <label className="block font-semibold mb-1">Type de boîte à clés *</label>
-          <div className="flex gap-6 mt-2">
-            {['TTlock', 'Igloohome', 'Masterlock'].map(opt => (
-              <label key={opt} className="inline-flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="boite"
-                  value={opt}
-                  checked={typeBoite === opt}
-                  onChange={(e) => setTypeBoite(e.target.value)}
-                />
-                {opt}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="block font-semibold mb-1">Emplacement de la boîte à clés *</label>
-          <textarea placeholder="ex. : à côté de la porte sur votre droite." />
-        </div>
-
-        <div>
-          <label className="block font-semibold mb-1">📸 Photo de l'emplacement</label>
-          <input type="file" accept="image/*" capture="environment" className="block w-full text-sm" />
-        </div>
-
-        {typeBoite === 'TTlock' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block font-semibold mb-1">TTlock - Code Masterpin conciergerie *</label>
-              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">TTlock - Code Propriétaire *</label>
-              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">TTlock - Code Ménage *</label>
-              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
-            </div>
-          </div>
-        )}
-
-        {typeBoite === 'Igloohome' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold mb-1">Igloohome - Masterpin conciergerie *</label>
-              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Igloohome - Code Voyageur *</label>
-              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Igloohome - Code Propriétaire *</label>
-              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Igloohome - Code Ménage *</label>
-              <input type="text" placeholder="Entrez le code (ex. : 2863)." />
-            </div>
-          </div>
-        )}
-
-        {typeBoite === 'Masterlock' && (
+          {/* Photo de l'emplacement */}
           <div>
-            <label className="block font-semibold mb-1">MasterLock - Codes de la boîte à clés *</label>
-            <input type="text" placeholder="Entrez le code (ex. : 2863)." />
-          </div>
-        )}
-
-        <div>
-          <label className="block font-semibold mb-1">Interphone - Logement équipé d’un interphone?*</label>
-          <div className="flex gap-6 mt-2">
-            <label className="inline-flex items-center gap-2">
-              <input type="radio" name="interphone" onChange={() => setHasInterphone(true)} />
-              Oui
-            </label>
-            <label className="inline-flex items-center gap-2">
-              <input type="radio" name="interphone" onChange={() => setHasInterphone(false)} />
-              Non
-            </label>
-          </div>
-        </div>
-
-        {hasInterphone && (
-          <>
-            <textarea className="h-32" placeholder="Instructions pour l’interphone..." />
-            <div className="mt-2">
-              <label className="block font-semibold mb-1">📸 Photo de l’interphone</label>
-              <input type="file" accept="image/*" capture="environment" className="block w-full text-sm" />
+            <label className="block font-semibold mb-1">📱 Photo de l'emplacement</label>
+            <div className="border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 bg-white rounded">
+              <button className="bg-gray-200 px-4 py-2 rounded mr-2">Choisir un fichier</button>
+              <span>Aucun fichier choisi</span>
             </div>
-          </>
-        )}
-
-        <div>
-          <label className="block font-semibold mb-1">Tempo-gâche - Logement équipé d’un tempo-gâche?*</label>
-          <div className="flex gap-6 mt-2">
-            <label className="inline-flex items-center gap-2">
-              <input type="radio" name="tempo" onChange={() => setHasTempoGache(true)} />
-              Oui
-            </label>
-            <label className="inline-flex items-center gap-2">
-              <input type="radio" name="tempo" onChange={() => setHasTempoGache(false)} />
-              Non
-            </label>
           </div>
-        </div>
 
-        {hasInterphone && hasTempoGache && (
-          <>
-            <textarea placeholder="Description du tempo-gâche *" />
-            <div className="mt-2">
-              <label className="block font-semibold mb-1">📸 Photo du tempo-gâche</label>
-              <input type="file" accept="image/*" capture="environment" className="block w-full text-sm" />
-            </div>
-          </>
-        )}
-
-        <div>
-          <label className="block font-semibold mb-1">Digicode - Logement équipé d'un digicode?*</label>
-          <div className="flex gap-6 mt-2">
-            <label className="inline-flex items-center gap-2">
-              <input type="radio" name="digicode" onChange={() => setHasDigicode(true)} />
-              Oui
-            </label>
-            <label className="inline-flex items-center gap-2">
-              <input type="radio" name="digicode" onChange={() => setHasDigicode(false)} />
-              Non
-            </label>
-          </div>
-        </div>
-
-        {hasDigicode && (
-          <>
-            <textarea placeholder="Instructions pour le digicode *" />
-            <div className="mt-2">
-              <label className="block font-semibold mb-1">📸 Photo du digicode</label>
-              <input type="file" accept="image/*" capture="environment" className="block w-full text-sm" />
-            </div>
-          </>
-        )}
-
-        <div className="space-y-4">
+          {/* Interphone */}
           <div>
-            <label className="block font-semibold mb-1">📸 Clefs – 3 JEUX DE CLEFS OBLIGATOIRE</label>
-            <input type="file" accept="image/*" capture="environment" className="block w-full text-sm" multiple />
-          </div>
-
-          <textarea placeholder="Précision sur chaque clef, son utilisation et s’il en manque *" />
-
-          <div>
-            <label className="block font-semibold mb-1">Le prestataire a-t-il reçu des clefs ?</label>
+            <label className="block font-semibold mb-1">Interphone - Logement équipé d'un interphone?*</label>
             <div className="flex gap-6 mt-2">
               <label className="inline-flex items-center gap-2">
-                <input type="radio" name="clefRemise" onChange={() => setClefRemise(true)} />
+                <input 
+                  type="radio" 
+                  name="interphone" 
+                  onChange={() => setHasInterphone(true)} 
+                />
                 Oui
               </label>
               <label className="inline-flex items-center gap-2">
-                <input type="radio" name="clefRemise" onChange={() => setClefRemise(false)} />
+                <input 
+                  type="radio" 
+                  name="interphone" 
+                  onChange={() => setHasInterphone(false)} 
+                />
                 Non
               </label>
             </div>
           </div>
 
-          <textarea placeholder="Le prestataire a t-il reçu les clés en mains propres ? Où sont stockées les clés ? Quel type de clef ?" />
-        </div>
+          {hasInterphone && (
+            <>
+              <textarea 
+                className="w-full p-3 border rounded"
+                placeholder="S'il existe un code d'accès, notez-le ici et expliquez comment l'utiliser. S'il n'y a pas de code, précisez à quel nom il faut sonner."
+              />
+              <div className="border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 bg-white rounded">
+                📎 Photo de l'interphone
+              </div>
+            </>
+          )}
 
-        {/* Boutons */}
-        <div className="flex justify-between mt-6">
-          <Button variant="ghost" onClick={() => navigate('/fiche/logement')}>
-            Retour
-          </Button>
-          <div className="space-x-2">
-            <Button variant="ghost" onClick={() => console.log('Enregistrer fiche clefs')}>
-              Enregistrer
+          {/* Tempo-gâche */}
+          <div>
+            <label className="block font-semibold mb-1">Tempo-gâche - Logement équipé d'un tempo-gâche?*</label>
+            <div className="flex gap-6 mt-2">
+              <label className="inline-flex items-center gap-2">
+                <input 
+                  type="radio" 
+                  name="tempo" 
+                  onChange={() => setHasTempoGache(true)} 
+                />
+                Oui
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input 
+                  type="radio" 
+                  name="tempo" 
+                  onChange={() => setHasTempoGache(false)} 
+                />
+                Non
+              </label>
+            </div>
+          </div>
+
+          {/* Digicode */}
+          <div>
+            <label className="block font-semibold mb-1">Digicode - Logement équipé d'un digicode?*</label>
+            <div className="flex gap-6 mt-2">
+              <label className="inline-flex items-center gap-2">
+                <input 
+                  type="radio" 
+                  name="digicode" 
+                  onChange={() => setHasDigicode(true)} 
+                />
+                Oui
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input 
+                  type="radio" 
+                  name="digicode" 
+                  onChange={() => setHasDigicode(false)} 
+                />
+                Non
+              </label>
+            </div>
+          </div>
+
+          {/* Section Clefs */}
+          <div className="bg-white p-4 rounded border">
+            <h3 className="font-semibold mb-3">📱 Clefs – 3 JEUX DE CLEFS OBLIGATOIRE</h3>
+            
+            <div className="mb-4">
+              <button className="bg-gray-200 px-4 py-2 rounded mr-2">Sélect. fichiers</button>
+              <span className="text-sm text-gray-500">Aucun fichier choisi</span>
+            </div>
+
+            <textarea 
+              className="w-full p-3 border rounded mb-4"
+              placeholder="Précision sur chaque clef, son utilisation et s'il en manque *"
+            />
+
+            <div className="mb-4">
+              <label className="block font-semibold mb-1">Le prestataire a-t-il reçu des clefs ?</label>
+              <div className="flex gap-6 mt-2">
+                <label className="inline-flex items-center gap-2">
+                  <input 
+                    type="radio" 
+                    name="clefRemise" 
+                    onChange={() => setClefRemise(true)} 
+                  />
+                  Oui
+                </label>
+                <label className="inline-flex items-center gap-2">
+                  <input 
+                    type="radio" 
+                    name="clefRemise" 
+                    onChange={() => setClefRemise(false)} 
+                  />
+                  Non
+                </label>
+              </div>
+            </div>
+
+            <textarea 
+              className="w-full p-3 border rounded"
+              placeholder="Le prestataire a t-il reçu les clés en mains propres ? Où sont stockées les clés ? Quel type de clef ?"
+            />
+          </div>
+
+          {/* Boutons navigation */}
+          <div className="flex justify-between">
+            <Button 
+              variant="ghost" 
+              onClick={back} 
+              disabled={currentStep === 0}
+            >
+              Retour
             </Button>
-            <Button variant="primary" onClick={() => console.log('Aller à la section suivante')}>
+            <Button 
+              variant="primary" 
+              onClick={next}
+              disabled={currentStep === totalSteps - 1}
+            >
               Suivant
             </Button>
           </div>
