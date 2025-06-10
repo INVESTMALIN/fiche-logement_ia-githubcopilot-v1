@@ -4,7 +4,19 @@ import { useForm } from '../components/FormContext'
 import Button from '../components/Button'
 
 export default function FicheLogement() {
-  const { next, back, currentStep, totalSteps } = useForm()
+  const { 
+    next, 
+    back, 
+    currentStep, 
+    totalSteps, 
+    getField,
+    updateField 
+  } = useForm()
+
+  // Handlers pour les champs
+  const handleInputChange = (fieldPath, value) => {
+    updateField(fieldPath, value)
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -21,7 +33,11 @@ export default function FicheLogement() {
           {/* Type de logement */}
           <div className="mb-4">
             <label className="block font-semibold mb-1">Type de logement *</label>
-            <select className="w-full p-2 border rounded">
+            <select 
+              className="w-full p-2 border rounded"
+              value={getField('section_logement.type')}
+              onChange={(e) => handleInputChange('section_logement.type', e.target.value)}
+            >
               <option value="">Sélectionnez le type</option>
               <option value="appartement">Appartement</option>
               <option value="maison">Maison</option>
@@ -37,22 +53,30 @@ export default function FicheLogement() {
               type="text" 
               placeholder="Numéro et rue" 
               className="w-full p-2 border rounded mb-2"
+              value={getField('section_logement.adresse.rue')}
+              onChange={(e) => handleInputChange('section_logement.adresse.rue', e.target.value)}
             />
             <input 
               type="text" 
               placeholder="Complément d'adresse" 
               className="w-full p-2 border rounded mb-2"
+              value={getField('section_logement.adresse.complement')}
+              onChange={(e) => handleInputChange('section_logement.adresse.complement', e.target.value)}
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input 
                 type="text" 
                 placeholder="Code postal" 
                 className="w-full p-2 border rounded"
+                value={getField('section_logement.adresse.codePostal')}
+                onChange={(e) => handleInputChange('section_logement.adresse.codePostal', e.target.value)}
               />
               <input 
                 type="text" 
                 placeholder="Ville" 
                 className="w-full p-2 border rounded"
+                value={getField('section_logement.adresse.ville')}
+                onChange={(e) => handleInputChange('section_logement.adresse.ville', e.target.value)}
               />
             </div>
           </div>
@@ -67,6 +91,8 @@ export default function FicheLogement() {
                   type="number" 
                   placeholder="ex: 3" 
                   className="w-full p-2 border rounded"
+                  value={getField('section_logement.caracteristiques.nombrePieces')}
+                  onChange={(e) => handleInputChange('section_logement.caracteristiques.nombrePieces', e.target.value)}
                 />
               </div>
               <div>
@@ -75,6 +101,8 @@ export default function FicheLogement() {
                   type="number" 
                   placeholder="ex: 2" 
                   className="w-full p-2 border rounded"
+                  value={getField('section_logement.caracteristiques.nombreChambres')}
+                  onChange={(e) => handleInputChange('section_logement.caracteristiques.nombreChambres', e.target.value)}
                 />
               </div>
               <div>
@@ -83,6 +111,8 @@ export default function FicheLogement() {
                   type="number" 
                   placeholder="ex: 65" 
                   className="w-full p-2 border rounded"
+                  value={getField('section_logement.caracteristiques.surface')}
+                  onChange={(e) => handleInputChange('section_logement.caracteristiques.surface', e.target.value)}
                 />
               </div>
             </div>
@@ -96,8 +126,14 @@ export default function FicheLogement() {
                 type="text" 
                 placeholder="Bâtiment (ex. : A)" 
                 className="w-full p-2 border rounded"
+                value={getField('section_logement.adresse.batiment')}
+                onChange={(e) => handleInputChange('section_logement.adresse.batiment', e.target.value)}
               />
-              <select className="w-full p-2 border rounded">
+              <select 
+                className="w-full p-2 border rounded"
+                value={getField('section_logement.acces')}
+                onChange={(e) => handleInputChange('section_logement.acces', e.target.value)}
+              >
                 <option value="">Accès à l'appartement</option>
                 <option value="ascenseur">Ascenseur</option>
                 <option value="escalier">Escalier</option>
@@ -106,11 +142,15 @@ export default function FicheLogement() {
                 type="text" 
                 placeholder="Étage (ex. : 3)" 
                 className="w-full p-2 border rounded"
+                value={getField('section_logement.adresse.etage')}
+                onChange={(e) => handleInputChange('section_logement.adresse.etage', e.target.value)}
               />
               <input 
                 type="text" 
                 placeholder="Numéro de porte" 
                 className="w-full p-2 border rounded"
+                value={getField('section_logement.adresse.numeroPorte')}
+                onChange={(e) => handleInputChange('section_logement.adresse.numeroPorte', e.target.value)}
               />
             </div>
           </div>

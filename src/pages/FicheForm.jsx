@@ -4,7 +4,18 @@ import { useForm } from '../components/FormContext'
 import Button from '../components/Button'
 
 export default function FicheForm() {
-  const { next, back, currentStep } = useForm()
+  const { 
+    next, 
+    back, 
+    currentStep, 
+    getField,
+    updateField 
+  } = useForm()
+
+  // Handlers pour les champs
+  const handleInputChange = (fieldPath, value) => {
+    updateField(fieldPath, value)
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -27,6 +38,8 @@ export default function FicheForm() {
                   type="text" 
                   placeholder="Prénom" 
                   className="w-full p-2 border rounded"
+                  value={getField('section_proprietaire.prenom')}
+                  onChange={(e) => handleInputChange('section_proprietaire.prenom', e.target.value)}
                 />
               </div>
               <div>
@@ -34,6 +47,8 @@ export default function FicheForm() {
                   type="text" 
                   placeholder="Nom de famille" 
                   className="w-full p-2 border rounded"
+                  value={getField('section_proprietaire.nom')}
+                  onChange={(e) => handleInputChange('section_proprietaire.nom', e.target.value)}
                 />
               </div>
             </div>
@@ -46,6 +61,8 @@ export default function FicheForm() {
               type="email" 
               placeholder="exemple@exemple.com" 
               className="w-full p-2 border rounded"
+              value={getField('section_proprietaire.email')}
+              onChange={(e) => handleInputChange('section_proprietaire.email', e.target.value)}
             />
           </div>
 
@@ -55,24 +72,39 @@ export default function FicheForm() {
             <input 
               type="text" 
               placeholder="Numéro et rue" 
-              className="w-full p-2 border rounded mb-2" 
+              className="w-full p-2 border rounded mb-2"
+              value={getField('section_proprietaire.adresse.rue')}
+              onChange={(e) => handleInputChange('section_proprietaire.adresse.rue', e.target.value)}
             />
             <input 
               type="text" 
               placeholder="Complément d'adresse" 
-              className="w-full p-2 border rounded mb-2" 
+              className="w-full p-2 border rounded mb-2"
+              value={getField('section_proprietaire.adresse.complement')}
+              onChange={(e) => handleInputChange('section_proprietaire.adresse.complement', e.target.value)}
             />
             <input 
               type="text" 
               placeholder="Ville" 
-              className="w-full p-2 border rounded mb-2" 
+              className="w-full p-2 border rounded mb-2"
+              value={getField('section_proprietaire.adresse.ville')}
+              onChange={(e) => handleInputChange('section_proprietaire.adresse.ville', e.target.value)}
             />
             <input 
               type="text" 
               placeholder="Code Postal" 
               className="w-full p-2 border rounded"
+              value={getField('section_proprietaire.adresse.codePostal')}
+              onChange={(e) => handleInputChange('section_proprietaire.adresse.codePostal', e.target.value)}
             />
           </div>
+
+          {/* Debug info - masqué pour l'instant */}
+          {false && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+              <strong>Debug:</strong> {JSON.stringify(getField('section_proprietaire'), null, 2)}
+            </div>
+          )}
 
           {/* Boutons navigation */}
           <div className="mt-6 flex justify-between">

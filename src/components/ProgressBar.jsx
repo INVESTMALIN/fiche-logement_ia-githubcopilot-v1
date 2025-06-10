@@ -6,14 +6,14 @@ export default function ProgressBar() {
   const progressPercentage = Math.round(((currentStep + 1) / totalSteps) * 100)
   
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-4">
+    <div className="bg-gray-100 border-b border-gray-200 px-2 py-3 lg:px-4 lg:py-4">
       <div className="max-w-6xl mx-auto">
         {/* Header avec pourcentage */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-gray-600">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs lg:text-sm text-gray-600">
             Étape {currentStep + 1} sur {totalSteps}
           </div>
-          <div className="text-sm font-medium text-gray-900">
+          <div className="text-xs lg:text-sm font-medium text-gray-900">
             {progressPercentage}% complété
           </div>
         </div>
@@ -36,7 +36,7 @@ export default function ProgressBar() {
               const isCurrent = index === currentStep
               const isUpcoming = index > currentStep
               
-              let dotClasses = "w-3 h-3 rounded-full border-2 transition-all duration-200 "
+              let dotClasses = "w-2.5 h-2.5 lg:w-3 lg:h-3 rounded-full border-2 transition-all duration-200 "
               
               if (isCompleted) {
                 dotClasses += "bg-primary border-primary"
@@ -65,8 +65,8 @@ export default function ProgressBar() {
         </div>
         
         {/* Section actuelle */}
-        <div className="mt-3 text-center">
-          <span className="text-sm font-medium text-gray-900">
+        <div className="mt-2 text-center">
+          <span className="text-xs lg:text-sm font-medium text-gray-900">
             {sections[currentStep]}
           </span>
         </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, LayoutDashboard } from 'lucide-react'
 import { useForm } from '../components/FormContext'
 
 export default function SidebarMenu() {
@@ -53,9 +53,10 @@ export default function SidebarMenu() {
 
             <div className="mb-4">
               <div
-                className="px-3 py-2 bg-gray-100 rounded cursor-pointer font-medium hover:bg-gray-200"
+                className="px-3 py-2 bg-gray-100 rounded cursor-pointer font-medium hover:bg-gray-200 flex items-center gap-2"
                 onClick={() => handleClick("Mes fiches", -1)}
               >
+                <LayoutDashboard className="w-4 h-4" />
                 Mes fiches
               </div>
             </div>
@@ -78,9 +79,10 @@ export default function SidebarMenu() {
       {/* Desktop sidebar */}
       <div className="hidden lg:block w-64 bg-white shadow-md min-h-screen p-4 overflow-y-auto">
         <div
-          className="px-3 py-2 bg-gray-100 rounded cursor-pointer font-medium mb-4 hover:bg-gray-200"
+          className="px-3 py-2 bg-gray-100 rounded cursor-pointer font-medium mb-4 hover:bg-gray-200 flex items-center gap-2"
           onClick={() => handleClick("Mes fiches", -1)}
         >
+          <LayoutDashboard className="w-4 h-4" />
           Mes fiches
         </div>
 

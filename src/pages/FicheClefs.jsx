@@ -1,15 +1,31 @@
-import { useState } from 'react'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import { useForm } from '../components/FormContext'
 import Button from '../components/Button'
 
 export default function FicheClefs() {
-  const { next, back, currentStep, totalSteps } = useForm()
-  const [hasInterphone, setHasInterphone] = useState(null)
-  const [hasTempoGache, setHasTempoGache] = useState(null)
-  const [hasDigicode, setHasDigicode] = useState(null)
-  const [clefRemise, setClefRemise] = useState(null)
+  const { 
+    next, 
+    back, 
+    currentStep, 
+    totalSteps, 
+    getField,
+    updateField 
+  } = useForm()
+
+  // Handlers pour les champs
+  const handleInputChange = (fieldPath, value) => {
+    updateField(fieldPath, value)
+  }
+
+  const handleRadioChange = (fieldPath, value) => {
+    updateField(fieldPath, value === 'true')
+  }
+
+  // Récupération des valeurs pour l'affichage conditionnel
+  const hasInterphone = getField('section_clefs.interphone')
+  const hasTempoGache = getField('section_clefs.tempoGache')
+  const hasDigicode = getField('section_clefs.digicode')
 
   return (
     <div className="flex min-h-screen">
@@ -40,7 +56,9 @@ export default function FicheClefs() {
                 <input 
                   type="radio" 
                   name="interphone" 
-                  onChange={() => setHasInterphone(true)} 
+                  value="true"
+                  checked={hasInterphone === true}
+                  onChange={(e) => handleRadioChange('section_clefs.interphone', e.target.value)}
                 />
                 Oui
               </label>
@@ -48,7 +66,9 @@ export default function FicheClefs() {
                 <input 
                   type="radio" 
                   name="interphone" 
-                  onChange={() => setHasInterphone(false)} 
+                  value="false"
+                  checked={hasInterphone === false}
+                  onChange={(e) => handleRadioChange('section_clefs.interphone', e.target.value)}
                 />
                 Non
               </label>
@@ -60,6 +80,8 @@ export default function FicheClefs() {
               <textarea 
                 className="w-full p-3 border rounded"
                 placeholder="S'il existe un code d'accès, notez-le ici et expliquez comment l'utiliser. S'il n'y a pas de code, précisez à quel nom il faut sonner."
+                value={getField('section_clefs.interphoneDetails')}
+                onChange={(e) => handleInputChange('section_clefs.interphoneDetails', e.target.value)}
               />
               <div className="border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 bg-white rounded">
                 📎 Photo de l'interphone
@@ -75,7 +97,9 @@ export default function FicheClefs() {
                 <input 
                   type="radio" 
                   name="tempo" 
-                  onChange={() => setHasTempoGache(true)} 
+                  value="true"
+                  checked={hasTempoGache === true}
+                  onChange={(e) => handleRadioChange('section_clefs.tempoGache', e.target.value)}
                 />
                 Oui
               </label>
@@ -83,7 +107,9 @@ export default function FicheClefs() {
                 <input 
                   type="radio" 
                   name="tempo" 
-                  onChange={() => setHasTempoGache(false)} 
+                  value="false"
+                  checked={hasTempoGache === false}
+                  onChange={(e) => handleRadioChange('section_clefs.tempoGache', e.target.value)}
                 />
                 Non
               </label>
@@ -98,7 +124,9 @@ export default function FicheClefs() {
                 <input 
                   type="radio" 
                   name="digicode" 
-                  onChange={() => setHasDigicode(true)} 
+                  value="true"
+                  checked={hasDigicode === true}
+                  onChange={(e) => handleRadioChange('section_clefs.digicode', e.target.value)}
                 />
                 Oui
               </label>
@@ -106,7 +134,9 @@ export default function FicheClefs() {
                 <input 
                   type="radio" 
                   name="digicode" 
-                  onChange={() => setHasDigicode(false)} 
+                  value="false"
+                  checked={hasDigicode === false}
+                  onChange={(e) => handleRadioChange('section_clefs.digicode', e.target.value)}
                 />
                 Non
               </label>
@@ -125,6 +155,8 @@ export default function FicheClefs() {
             <textarea 
               className="w-full p-3 border rounded mb-4"
               placeholder="Précision sur chaque clef, son utilisation et s'il en manque *"
+              value={getField('section_clefs.clefs.precision')}
+              onChange={(e) => handleInputChange('section_clefs.clefs.precision', e.target.value)}
             />
 
             <div className="mb-4">
@@ -134,7 +166,9 @@ export default function FicheClefs() {
                   <input 
                     type="radio" 
                     name="clefRemise" 
-                    onChange={() => setClefRemise(true)} 
+                    value="true"
+                    checked={getField('section_clefs.clefs.prestataire') === true}
+                    onChange={(e) => handleRadioChange('section_clefs.clefs.prestataire', e.target.value)}
                   />
                   Oui
                 </label>
@@ -142,7 +176,9 @@ export default function FicheClefs() {
                   <input 
                     type="radio" 
                     name="clefRemise" 
-                    onChange={() => setClefRemise(false)} 
+                    value="false"
+                    checked={getField('section_clefs.clefs.prestataire') === false}
+                    onChange={(e) => handleRadioChange('section_clefs.clefs.prestataire', e.target.value)}
                   />
                   Non
                 </label>
@@ -152,6 +188,8 @@ export default function FicheClefs() {
             <textarea 
               className="w-full p-3 border rounded"
               placeholder="Le prestataire a t-il reçu les clés en mains propres ? Où sont stockées les clés ? Quel type de clef ?"
+              value={getField('section_clefs.clefs.details')}
+              onChange={(e) => handleInputChange('section_clefs.clefs.details', e.target.value)}
             />
           </div>
 
