@@ -25,28 +25,32 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 max-w-screen-md mx-auto">
-      {/* Header avec déconnexion */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
+    <div className="p-4 max-w-screen-md mx-auto relative">
+      {/* Header avec déconnexion responsive */}
+      <div className="mb-6">
+        {/* Titre et email */}
+        <div className="mb-4 lg:mb-0">
           <h1 className="text-xl font-semibold">Mes fiches logement</h1>
           {userEmail && (
             <p className="text-sm text-gray-600 mt-1">Connecté en tant que {userEmail}</p>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        
+        {/* Boutons - Stack sur mobile, inline sur desktop */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:justify-end lg:absolute lg:top-4 lg:right-4">
           <Button
             variant="primary"
-            size="sm"
+            size="md"
             onClick={() => navigate("/fiche")}
+            className="w-full sm:w-auto"
           >
             + Nouvelle fiche
           </Button>
           <Button
             variant="ghost"
-            size="sm"
+            size="md"
             onClick={handleLogout}
-            className="border border-gray-300"
+            className="border border-gray-300 w-full sm:w-auto"
           >
             Déconnexion
           </Button>
