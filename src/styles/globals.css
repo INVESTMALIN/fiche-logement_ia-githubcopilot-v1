@@ -4,7 +4,7 @@
 
 body {
   @apply bg-gray-100 text-gray-900 text-sm;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Montserrat', sans-serif;
 }
 
 input,
@@ -17,7 +17,23 @@ button {
   @apply transition-colors duration-150 ease-in-out;
 }
 
+/* Nouvelles classes pour les boutons */
+.btn-secondary {
+  border: 2px solid #dbae61 !important;
+  color: #dbae61 !important;
+  background: transparent !important;
+}
+
+.btn-secondary:hover {
+  background: #dbae61 !important;
+  color: white !important;
+}
+
+.btn-primary {
+  background: linear-gradient(to right, #dbae61, #c19b4f) !important;
+  @apply text-white;
+}
+
 h1, h2, h3, h4, h5 {
   @apply font-semibold;
 }
-
