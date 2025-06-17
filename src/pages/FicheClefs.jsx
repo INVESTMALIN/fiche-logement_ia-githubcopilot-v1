@@ -20,14 +20,36 @@ export default function FicheClefs() {
     updateField(fieldPath, value)
   }
 
-  const handleRadioChange = (fieldPath, value) => {
+  const handleBooleanChange = (fieldPath, value) => {
     updateField(fieldPath, value === 'true')
   }
 
-  // Récupération des valeurs pour l'affichage conditionnel
-  const hasInterphone = getField('section_clefs.interphone')
-  const hasTempoGache = getField('section_clefs.tempoGache')
-  const hasDigicode = getField('section_clefs.digicode')
+  // Récupération des valeurs
+  const boiteType = getField('section_clefs.boiteType')
+  const emplacementBoite = getField('section_clefs.emplacementBoite')
+  const interphone = getField('section_clefs.interphone')
+  const interphoneDetails = getField('section_clefs.interphoneDetails')
+  const tempoGache = getField('section_clefs.tempoGache')
+  const tempoGacheDetails = getField('section_clefs.tempoGacheDetails')
+  const digicode = getField('section_clefs.digicode')
+  const digicodeDetails = getField('section_clefs.digicodeDetails')
+  const clefsPrecision = getField('section_clefs.clefs.precision')
+  const clefsPrestataire = getField('section_clefs.clefs.prestataire')
+  const clefsDetails = getField('section_clefs.clefs.details')
+
+  // Champs TTlock
+  const ttlockMasterpin = getField('section_clefs.ttlock.masterpinConciergerie')
+  const ttlockCodeProprio = getField('section_clefs.ttlock.codeProprietaire')
+  const ttlockCodeMenage = getField('section_clefs.ttlock.codeMenage')
+
+  // Champs Igloohome
+  const igloohomeMasterpin = getField('section_clefs.igloohome.masterpinConciergerie')
+  const igloohomeCodeVoyageur = getField('section_clefs.igloohome.codeVoyageur')
+  const igloohomeCodeProprio = getField('section_clefs.igloohome.codeProprietaire')
+  const igloohomeCodeMenage = getField('section_clefs.igloohome.codeMenage')
+
+  // Champs Masterlock
+  const masterlockCode = getField('section_clefs.masterlock.code')
 
   return (
     <div className="flex min-h-screen">
@@ -58,6 +80,36 @@ export default function FicheClefs() {
             </div>
           )}
 
+          {/* Type de boîte à clés */}
+          <div className="mb-4">
+            <label className="block font-semibold mb-1">Type de boîte à clés *</label>
+            <div className="flex gap-6 mt-2">
+              {["TTlock", "Igloohome", "Masterlock"].map(type => (
+                <label key={type} className="inline-flex items-center gap-2">
+                  <input 
+                    type="radio" 
+                    name="boiteType" 
+                    value={type}
+                    checked={boiteType === type}
+                    onChange={(e) => handleInputChange('section_clefs.boiteType', e.target.value)}
+                  />
+                  {type}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Emplacement de la boîte à clés */}
+          <div className="mb-4">
+            <label className="block font-semibold mb-1">Emplacement de la boîte à clés *</label>
+            <textarea 
+              placeholder="ex. : à côté de la porte sur votre droite."
+              className="w-full p-3 border rounded"
+              value={emplacementBoite}
+              onChange={(e) => handleInputChange('section_clefs.emplacementBoite', e.target.value)}
+            />
+          </div>
+
           {/* Photo de l'emplacement */}
           <div>
             <label className="block font-semibold mb-1">📱 Photo de l'emplacement</label>
@@ -66,6 +118,100 @@ export default function FicheClefs() {
               <span>Aucun fichier choisi</span>
             </div>
           </div>
+
+          {/* Champs conditionnels selon le type de boîte à clés */}
+          {boiteType === "TTlock" && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block font-semibold mb-1">TTlock - Code Masterpin conciergerie *</label>
+                <input 
+                  type="text" 
+                  placeholder="Entrez le code (ex. : 2863)." 
+                  className="w-full p-2 border rounded"
+                  value={ttlockMasterpin}
+                  onChange={(e) => handleInputChange('section_clefs.ttlock.masterpinConciergerie', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1">TTlock - Code Propriétaire *</label>
+                <input 
+                  type="text" 
+                  placeholder="Entrez le code (ex. : 2863)." 
+                  className="w-full p-2 border rounded"
+                  value={ttlockCodeProprio}
+                  onChange={(e) => handleInputChange('section_clefs.ttlock.codeProprietaire', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1">TTlock - Code Ménage *</label>
+                <input 
+                  type="text" 
+                  placeholder="Entrez le code (ex. : 2863)." 
+                  className="w-full p-2 border rounded"
+                  value={ttlockCodeMenage}
+                  onChange={(e) => handleInputChange('section_clefs.ttlock.codeMenage', e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {boiteType === "Igloohome" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block font-semibold mb-1">Igloohome - Masterpin conciergerie *</label>
+                <input 
+                  type="text" 
+                  placeholder="Entrez le code (ex. : 2863)." 
+                  className="w-full p-2 border rounded"
+                  value={igloohomeMasterpin}
+                  onChange={(e) => handleInputChange('section_clefs.igloohome.masterpinConciergerie', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1">Igloohome - Code Voyageur *</label>
+                <input 
+                  type="text" 
+                  placeholder="Entrez le code (ex. : 2863)." 
+                  className="w-full p-2 border rounded"
+                  value={igloohomeCodeVoyageur}
+                  onChange={(e) => handleInputChange('section_clefs.igloohome.codeVoyageur', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1">Igloohome - Code Propriétaire *</label>
+                <input 
+                  type="text" 
+                  placeholder="Entrez le code (ex. : 2863)." 
+                  className="w-full p-2 border rounded"
+                  value={igloohomeCodeProprio}
+                  onChange={(e) => handleInputChange('section_clefs.igloohome.codeProprietaire', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1">Igloohome - Code Ménage *</label>
+                <input 
+                  type="text" 
+                  placeholder="Entrez le code (ex. : 2863)." 
+                  className="w-full p-2 border rounded"
+                  value={igloohomeCodeMenage}
+                  onChange={(e) => handleInputChange('section_clefs.igloohome.codeMenage', e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {boiteType === "Masterlock" && (
+            <div>
+              <label className="block font-semibold mb-1">MasterLock - Codes de la boîte à clés *</label>
+              <input 
+                type="text" 
+                placeholder="Entrez le code (ex. : 2863)." 
+                className="w-full p-2 border rounded"
+                value={masterlockCode}
+                onChange={(e) => handleInputChange('section_clefs.masterlock.code', e.target.value)}
+              />
+            </div>
+          )}
 
           {/* Interphone */}
           <div>
@@ -76,8 +222,8 @@ export default function FicheClefs() {
                   type="radio" 
                   name="interphone" 
                   value="true"
-                  checked={hasInterphone === true}
-                  onChange={(e) => handleRadioChange('section_clefs.interphone', e.target.value)}
+                  checked={interphone === true}
+                  onChange={(e) => handleBooleanChange('section_clefs.interphone', e.target.value)}
                 />
                 Oui
               </label>
@@ -86,20 +232,20 @@ export default function FicheClefs() {
                   type="radio" 
                   name="interphone" 
                   value="false"
-                  checked={hasInterphone === false}
-                  onChange={(e) => handleRadioChange('section_clefs.interphone', e.target.value)}
+                  checked={interphone === false}
+                  onChange={(e) => handleBooleanChange('section_clefs.interphone', e.target.value)}
                 />
                 Non
               </label>
             </div>
           </div>
 
-          {hasInterphone && (
+          {interphone === true && (
             <>
               <textarea 
                 className="w-full p-3 border rounded"
                 placeholder="S'il existe un code d'accès, notez-le ici et expliquez comment l'utiliser. S'il n'y a pas de code, précisez à quel nom il faut sonner."
-                value={getField('section_clefs.interphoneDetails')}
+                value={interphoneDetails}
                 onChange={(e) => handleInputChange('section_clefs.interphoneDetails', e.target.value)}
               />
               <div className="border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 bg-white rounded">
@@ -115,25 +261,39 @@ export default function FicheClefs() {
               <label className="inline-flex items-center gap-2">
                 <input 
                   type="radio" 
-                  name="tempo" 
+                  name="tempoGache" 
                   value="true"
-                  checked={hasTempoGache === true}
-                  onChange={(e) => handleRadioChange('section_clefs.tempoGache', e.target.value)}
+                  checked={tempoGache === true}
+                  onChange={(e) => handleBooleanChange('section_clefs.tempoGache', e.target.value)}
                 />
                 Oui
               </label>
               <label className="inline-flex items-center gap-2">
                 <input 
                   type="radio" 
-                  name="tempo" 
+                  name="tempoGache" 
                   value="false"
-                  checked={hasTempoGache === false}
-                  onChange={(e) => handleRadioChange('section_clefs.tempoGache', e.target.value)}
+                  checked={tempoGache === false}
+                  onChange={(e) => handleBooleanChange('section_clefs.tempoGache', e.target.value)}
                 />
                 Non
               </label>
             </div>
           </div>
+          
+          {tempoGache === true && (
+            <>
+              <textarea 
+                className="w-full p-3 border rounded"
+                placeholder="Description du tempo-gâche *"
+                value={tempoGacheDetails}
+                onChange={(e) => handleInputChange('section_clefs.tempoGacheDetails', e.target.value)}
+              />
+              <div className="border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 bg-white rounded">
+                📎 Photo du tempo-gâche
+              </div>
+            </>
+          )}
 
           {/* Digicode */}
           <div>
@@ -144,8 +304,8 @@ export default function FicheClefs() {
                   type="radio" 
                   name="digicode" 
                   value="true"
-                  checked={hasDigicode === true}
-                  onChange={(e) => handleRadioChange('section_clefs.digicode', e.target.value)}
+                  checked={digicode === true}
+                  onChange={(e) => handleBooleanChange('section_clefs.digicode', e.target.value)}
                 />
                 Oui
               </label>
@@ -154,13 +314,27 @@ export default function FicheClefs() {
                   type="radio" 
                   name="digicode" 
                   value="false"
-                  checked={hasDigicode === false}
-                  onChange={(e) => handleRadioChange('section_clefs.digicode', e.target.value)}
+                  checked={digicode === false}
+                  onChange={(e) => handleBooleanChange('section_clefs.digicode', e.target.value)}
                 />
                 Non
               </label>
             </div>
           </div>
+
+          {digicode === true && (
+            <>
+              <textarea 
+                className="w-full p-3 border rounded"
+                placeholder="Instructions pour le digicode *"
+                value={digicodeDetails}
+                onChange={(e) => handleInputChange('section_clefs.digicodeDetails', e.target.value)}
+              />
+              <div className="border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 bg-white rounded">
+                📎 Photo du digicode
+              </div>
+            </>
+          )}
 
           {/* Section Clefs */}
           <div className="bg-white p-4 rounded border">
@@ -174,7 +348,7 @@ export default function FicheClefs() {
             <textarea 
               className="w-full p-3 border rounded mb-4"
               placeholder="Précision sur chaque clef, son utilisation et s'il en manque *"
-              value={getField('section_clefs.clefs.precision')}
+              value={clefsPrecision}
               onChange={(e) => handleInputChange('section_clefs.clefs.precision', e.target.value)}
             />
 
@@ -186,8 +360,8 @@ export default function FicheClefs() {
                     type="radio" 
                     name="clefRemise" 
                     value="true"
-                    checked={getField('section_clefs.clefs.prestataire') === true}
-                    onChange={(e) => handleRadioChange('section_clefs.clefs.prestataire', e.target.value)}
+                    checked={clefsPrestataire === true}
+                    onChange={(e) => handleBooleanChange('section_clefs.clefs.prestataire', e.target.value)}
                   />
                   Oui
                 </label>
@@ -196,8 +370,8 @@ export default function FicheClefs() {
                     type="radio" 
                     name="clefRemise" 
                     value="false"
-                    checked={getField('section_clefs.clefs.prestataire') === false}
-                    onChange={(e) => handleRadioChange('section_clefs.clefs.prestataire', e.target.value)}
+                    checked={clefsPrestataire === false}
+                    onChange={(e) => handleBooleanChange('section_clefs.clefs.prestataire', e.target.value)}
                   />
                   Non
                 </label>
@@ -207,7 +381,7 @@ export default function FicheClefs() {
             <textarea 
               className="w-full p-3 border rounded"
               placeholder="Le prestataire a t-il reçu les clés en mains propres ? Où sont stockées les clés ? Quel type de clef ?"
-              value={getField('section_clefs.clefs.details')}
+              value={clefsDetails}
               onChange={(e) => handleInputChange('section_clefs.clefs.details', e.target.value)}
             />
           </div>

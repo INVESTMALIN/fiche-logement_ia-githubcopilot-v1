@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from 'react'
 import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
+import { useAuth } from './AuthContext'
 
 const FormContext = createContext()
 
@@ -7,7 +8,7 @@ const FormContext = createContext()
 const initialFormData = {
   // Métadonnées
   id: null,
-  user_id: null,
+  user_id: null, 
   created_at: null,
   updated_at: null,
   
@@ -42,20 +43,41 @@ const initialFormData = {
     acces: ""
   },
   section_clefs: {
+    // Nouveaux champs manquants
+    boiteType: null, // "TTlock", "Igloohome", "Masterlock"
+    emplacementBoite: "",
+    
+    // Champs existants
     interphone: null,
     interphoneDetails: "",
     interphonePhoto: null,
     tempoGache: null,
-    tempoGacheDetails: "",
+    tempoGacheDetails: "", // Ajouté
     tempoGachePhoto: null,
     digicode: null,
-    digicodeDetails: "",
+    digicodeDetails: "", // Ajouté
     digicodePhoto: null,
     clefs: {
       photos: [],
       precision: "",
       prestataire: null,
       details: ""
+    },
+    
+    // Nouveaux champs pour les boîtes
+    ttlock: {
+      masterpinConciergerie: "",
+      codeProprietaire: "",
+      codeMenage: ""
+    },
+    igloohome: {
+      masterpinConciergerie: "",
+      codeVoyageur: "",
+      codeProprietaire: "",
+      codeMenage: ""
+    },
+    masterlock: {
+      code: ""
     }
   },
   section_airbnb: {
@@ -63,18 +85,18 @@ const initialFormData = {
       video_complete: false,
       photos_etapes: false
     },
-    annonce_active: null,           // true/false/null
+    annonce_active: null,          
     url_annonce: "",
-    identifiants_obtenus: null,     // true/false/null  
+    identifiants_obtenus: null,    
     email_compte: "",
     mot_passe: "",
     explication_refus: ""
   },
-  // Placeholder pour les autres sections
+  
   section_booking: {
-    annonce_active: null,           // true/false/null
+    annonce_active: null,         
     url_annonce: "",
-    identifiants_obtenus: null,     // true/false/null  
+    identifiants_obtenus: null,  
     email_compte: "",
     mot_passe: "",
     explication_refus: ""
@@ -106,8 +128,9 @@ export function FormProvider({ children }) {
     saved: false, 
     error: null 
   })
+  // Destructuring pour récupérer 'loading' en plus de 'user'
+  const { user, loading } = useAuth()
 
-  // Liste des sections pour mapper avec la sidebar
   const sections = [
     "Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", "Réglementation",
     "Exigences", "Avis", "Gestion Linge", "Équipements", "Consommables", "Visite",
@@ -117,7 +140,6 @@ export function FormProvider({ children }) {
 
   const totalSteps = sections.length
 
-  // Navigation
   const next = () => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1)
@@ -138,10 +160,8 @@ export function FormProvider({ children }) {
 
   const getCurrentSection = () => sections[currentStep]
 
-  // Gestion des données avec protection contre les undefined
   const updateSection = (sectionName, newData) => {
     setFormData(prev => {
-      // S'assurer que la section existe
       const currentSection = prev[sectionName] || {}
       
       return {
@@ -161,24 +181,19 @@ export function FormProvider({ children }) {
       const keys = fieldPath.split('.')
       let current = newData
       
-      // Navigate to the parent of the target field, creating objects if needed
       for (let i = 0; i < keys.length - 1; i++) {
         if (current[keys[i]] === undefined || current[keys[i]] === null) {
           current[keys[i]] = {}
         } else if (typeof current[keys[i]] !== 'object') {
-          // If it's a primitive value, convert to object
           current[keys[i]] = {}
         } else {
-          // Clone the object to avoid mutations
           current[keys[i]] = { ...current[keys[i]] }
         }
         current = current[keys[i]]
       }
       
-      // Set the value
       current[keys[keys.length - 1]] = value
       
-      // Update timestamp
       newData.updated_at = new Date().toISOString()
       
       return newData
@@ -208,36 +223,43 @@ export function FormProvider({ children }) {
     setCurrentStep(0)
   }
 
-  // 💾 Fonctions de sauvegarde Supabase
   const handleSave = async () => {
-    setSaveStatus({ saving: true, saved: false, error: null })
+    // ⚠️ Nouveau point d'attention: Vérifier le statut de chargement de l'authentification
+    if (loading) { //
+      setSaveStatus({ saving: false, saved: false, error: "Chargement de l'utilisateur en cours. Veuillez patienter." });
+      return;
+    }
+    
+    // Vérifier si l'utilisateur est connecté AVANT de tenter de sauvegarder
+    if (!user) { //
+        setSaveStatus({ saving: false, saved: false, error: "Vous devez être connecté pour sauvegarder votre fiche." });
+        return;
+    }
+
+    setSaveStatus({ saving: true, saved: false, error: null });
     
     try {
-      // TEST: Log pour debug
-      console.log('Données à sauvegarder:', formData)
+      console.log('Données à sauvegarder:', formData);
       
-      // Pour les tests en local : utiliser NULL au lieu d'un faux UUID
-      const userId = null // Pas d'auth pour l'instant
+      const userId = user.id; // Utilise l'ID de l'utilisateur connecté
+
+      const result = await saveFiche(formData, userId); 
       
-      const result = await saveFiche(formData, userId)
-      
-      console.log('Résultat sauvegarde:', result)
+      console.log('Résultat sauvegarde:', result);
       
       if (result.success) {
-        // Mettre à jour le formData avec les données retournées (notamment l'ID)
-        setFormData(result.data)
-        setSaveStatus({ saving: false, saved: true, error: null })
+        setFormData(result.data);
+        setSaveStatus({ saving: false, saved: true, error: null });
         
-        // Masquer l'indicateur "sauvegardé" après 3 secondes
         setTimeout(() => {
-          setSaveStatus(prev => ({ ...prev, saved: false }))
-        }, 3000)
+          setSaveStatus(prev => ({ ...prev, saved: false }));
+        }, 3000);
       } else {
-        setSaveStatus({ saving: false, saved: false, error: result.message })
+        setSaveStatus({ saving: false, saved: false, error: result.message });
       }
     } catch (error) {
-      console.error('Erreur complète:', error)
-      setSaveStatus({ saving: false, saved: false, error: error.message || 'Erreur de connexion' })
+      console.error('Erreur complète:', error);
+      setSaveStatus({ saving: false, saved: false, error: error.message || 'Erreur de connexion' });
     }
   }
 
@@ -247,7 +269,7 @@ export function FormProvider({ children }) {
       
       if (result.success) {
         setFormData(result.data)
-        setCurrentStep(0) // Revenir au début
+        setCurrentStep(0)
         return { success: true }
       } else {
         return { success: false, error: result.message }
@@ -257,7 +279,6 @@ export function FormProvider({ children }) {
     }
   }
 
-  // Debug helper
   const getFormDataPreview = () => {
     return {
       currentSection: getCurrentSection(),
@@ -271,7 +292,6 @@ export function FormProvider({ children }) {
 
   return (
     <FormContext.Provider value={{ 
-      // Navigation
       currentStep, 
       totalSteps, 
       sections,
@@ -280,7 +300,6 @@ export function FormProvider({ children }) {
       goTo, 
       getCurrentSection,
       
-      // Data management
       formData,
       updateSection,
       updateField,
@@ -288,12 +307,10 @@ export function FormProvider({ children }) {
       getField,
       resetForm,
       
-      // Supabase operations
       handleSave,
       handleLoad,
       saveStatus,
       
-      // Debug helper
       getFormDataPreview
     }}>
       {children}

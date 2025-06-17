@@ -3,23 +3,26 @@ import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import FicheWizard from './pages/FicheWizard'
-import { FormProvider } from './components/FormContext'
+import { FormProvider } from './components/FormContext' // <-- Assure-toi que cet import est là
 import { AuthProvider } from './components/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 
 export default function App() {
   return (
-    <AuthProvider>
+    <AuthProvider> {/* AuthProvider englobe TOUTE l'application maintenant */}
       <Routes>
         {/* Route publique */}
         <Route path="/login" element={<Login />} />
         
         {/* Routes protégées */}
+        {/* On va envelopper le Dashboard aussi avec FormProvider, au cas où on voudrait accéder au contexte de formulaire depuis le Dashboard plus tard, par exemple pour créer une nouvelle fiche. */}
         <Route 
           path="/" 
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <FormProvider> {/* On englobe ici aussi */}
+                <Dashboard />
+              </FormProvider>
             </ProtectedRoute>
           } 
         />
