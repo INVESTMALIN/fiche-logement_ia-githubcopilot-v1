@@ -1,26 +1,51 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
+import { useFiches } from '../hooks/useFiches'
 import Button from '../components/Button'
+import { Trash2 } from 'lucide-react'; // <-- NOUVEL IMPORT pour l'icône poubelle
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { signOut, userEmail } = useAuth()
+  const { fiches, loading, error, refetch, deleteFiche } = useFiches() // Assure-toi que deleteFiche est bien destructuré
   const [searchTerm, setSearchTerm] = useState("")
   const [activeFilter, setActiveFilter] = useState("Tous")
+  const [deleteConfirm, setDeleteConfirm] = useState(null) // Pour la confirmation de suppression
 
-  // Données mock des fiches avec plus de variété
-  const fiches = [
-    { id: 1, nom: "Appartement République", statut: "Brouillon" },
-    { id: 2, nom: "Villa Sud", statut: "Complété" },
-    { id: 3, nom: "Studio Montmartre", statut: "En cours" },
-    { id: 4, nom: "Loft Marais", statut: "Complété" },
-    { id: 5, nom: "Maison Vincennes", statut: "En cours" },
-    { id: 6, nom: "Duplex Bastille", statut: "Brouillon" }
-  ]
+  // Déconnexion
+  const handleLogout = async () => {
+    await signOut()
+    navigate('/login')
+  }
 
-  // Filtres de statut
-  const statusFilters = ["Tous", "Complété", "En cours", "Brouillon"]
+  // Gestion de la suppression avec confirmation
+  const handleDeleteClick = (fiche) => {
+    setDeleteConfirm(fiche)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return
+
+    const result = await deleteFiche(deleteConfirm.id)
+    
+    if (result.success) {
+      console.log('Fiche supprimée avec succès')
+      // refetch() // Pas besoin de refetch car useFiches fait déjà un optimistic update
+    } else {
+      console.error('Erreur suppression:', result.error)
+      // TODO: Afficher une notification d'erreur plus visible
+    }
+    
+    setDeleteConfirm(null)
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm(null)
+  }
+
+  // Filtres de statut - on garde "Tous" mais on adapte les statuts à notre spec
+  const statusFilters = ["Tous", "Complété", "Brouillon", "Archivé"]
   
   // Filtrage par statut et recherche
   const filteredFiches = fiches.filter(fiche => {
@@ -29,93 +54,87 @@ export default function Dashboard() {
     return matchesSearch && matchesStatus
   })
 
-  // Couleurs pour les statuts
+  // Couleurs pour les statuts - on adapte à notre spec
   const getStatusColor = (statut) => {
     switch (statut) {
       case "Complété": return "bg-green-100 text-green-800"
-      case "En cours": return "bg-blue-100 text-blue-800"
       case "Brouillon": return "bg-gray-100 text-gray-800"
+      case "Archivé": return "bg-blue-100 text-blue-800"
       default: return "bg-gray-100 text-gray-800"
     }
   }
 
-  const handleLogout = async () => {
-    await signOut()
+  // Affichage pendant le chargement
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des fiches...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Affichage en cas d'erreur
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center max-w-md p-6">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <p className="text-red-600 font-medium mb-2">Erreur de chargement</p>
+          <p className="text-gray-600 text-sm mb-4">{error}</p>
+          <button 
+            onClick={refetch}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Réessayer
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header avec pattern hexagonal tech */}
-      <div className="bg-black text-white relative overflow-hidden">
-        {/* Pattern hexagonal tech moderne */}
-        <div className="absolute inset-0">
-          {/* Grille d'hexagones dorés ultra fins */}
-          <div className="absolute inset-0 opacity-15"
-               style={{
-                 backgroundImage: `
-                   radial-gradient(circle at 50% 50%, transparent 60%, rgba(219, 174, 97, 0.3) 60%, rgba(219, 174, 97, 0.3) 65%, transparent 65%),
-                   radial-gradient(circle at 25% 25%, transparent 30%, rgba(219, 174, 97, 0.2) 30%, rgba(219, 174, 97, 0.2) 35%, transparent 35%),
-                   radial-gradient(circle at 75% 75%, transparent 40%, rgba(219, 174, 97, 0.2) 40%, rgba(219, 174, 97, 0.2) 45%, transparent 45%)
-                 `,
-                 backgroundSize: '120px 120px, 80px 80px, 100px 100px',
-                 backgroundPosition: '0 0, 40px 40px, 60px 20px'
-               }}>
-          </div>
-          
-          {/* Lignes de connexion hexagonales */}
-          <div className="absolute inset-0 opacity-10"
-               style={{
-                 backgroundImage: `
-                   linear-gradient(60deg, transparent 45%, rgba(219, 174, 97, 0.4) 45%, rgba(219, 174, 97, 0.4) 55%, transparent 55%),
-                   linear-gradient(-60deg, transparent 45%, rgba(219, 174, 97, 0.4) 45%, rgba(219, 174, 97, 0.4) 55%, transparent 55%),
-                   linear-gradient(0deg, transparent 48%, rgba(219, 174, 97, 0.3) 48%, rgba(219, 174, 97, 0.3) 52%, transparent 52%)
-                 `,
-                 backgroundSize: '60px 104px, 60px 104px, 120px 60px'
-               }}>
-          </div>
-          
-          {/* Effet de circuit doré subtil */}
-          <div className="absolute inset-0 opacity-8"
-               style={{
-                 backgroundImage: `
-                   repeating-linear-gradient(90deg, transparent, transparent 180px, rgba(219, 174, 97, 0.1) 180px, rgba(219, 174, 97, 0.1) 182px),
-                   repeating-linear-gradient(0deg, transparent, transparent 180px, rgba(219, 174, 97, 0.1) 180px, rgba(219, 174, 97, 0.1) 182px)
-                 `
-               }}>
-          </div>
-        </div>
-        
-        <div className="max-w-screen-lg mx-auto p-6 relative z-10">
-          <div className="mb-4 lg:mb-0">
-            <h1 className="text-3xl font-bold mb-2">Mes fiches logement</h1>
-            {userEmail && (
-              <p className="text-white text-opacity-90">Connecté en tant que {userEmail}</p>
-            )}
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3 sm:justify-end lg:absolute lg:top-6 lg:right-6">
-            <button
-              onClick={() => navigate("/fiche")}
-              className="px-6 py-2.5 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 w-full sm:w-auto"
-              style={{
-                background: `linear-gradient(to right, #dbae61, #c19b4f)`,
-              }}
-              onMouseEnter={(e) => e.target.style.background = `linear-gradient(to right, #c19b4f, #aa8943)`}
-              onMouseLeave={(e) => e.target.style.background = `linear-gradient(to right, #dbae61, #c19b4f)`}
-            >
-              + Nouvelle fiche
-            </button>
-            <button
-              onClick={handleLogout}
-              className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-6 py-2.5 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto"
-            >
-              Déconnexion
-            </button>
+    <div className="min-h-screen bg-gray-100">
+      {/* Header avec le même style qu'avant */}
+      <div className="bg-gray-900 text-white py-8 px-6">
+        <div className="max-w-screen-lg mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">Mes fiches logement</h1>
+              <p className="text-lg opacity-90">
+                Connecté en tant que <span className="font-medium">{userEmail}</span>
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => navigate('/fiche')}
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg transition-all duration-200 w-full sm:w-auto"
+                style={{
+                  background: `linear-gradient(to right, #dbae61, #c19b4f)`,
+                }}
+                onMouseEnter={(e) => e.target.style.background = `linear-gradient(to right, #c19b4f, #aa8943)`}
+                onMouseLeave={(e) => e.target.style.background = `linear-gradient(to right, #dbae61, #c19b4f)`}
+              >
+                + Nouvelle fiche
+              </button>
+              <button
+                onClick={handleLogout}
+                className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-6 py-2.5 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto"
+              >
+                Déconnexion
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Contenu principal */}
+      {/* Contenu principal - même style qu'avant */}
       <div className="max-w-screen-lg mx-auto p-6">
         {/* Onglets de filtrage ET recherche sur la même ligne */}
         <div className="mb-6">
@@ -170,7 +189,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Liste des fiches */}
+        {/* Liste des fiches - même style qu'avant */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredFiches.map((fiche) => (
             <div
@@ -187,21 +206,31 @@ export default function Dashboard() {
                   </span>
                 </div>
                 
-                <button
-                  className="w-full mt-4 font-medium transition-all duration-200 text-left px-4 py-2 rounded-lg border border-transparent hover:border-gray-200"
-                  style={{color: '#dbae61'}}
-                  onClick={() => navigate(`/fiche/${fiche.id}`)}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#dbae61'
-                    e.target.style.color = 'white'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'transparent'
-                    e.target.style.color = '#dbae61'
-                  }}
-                >
-                  Modifier la fiche →
-                </button>
+                {/* Nouveau: Boutons Modifier et Supprimer */}
+                <div className="flex justify-between items-center mt-4">
+                    <button
+                        className="font-medium transition-all duration-200 text-left px-4 py-2 rounded-lg border border-transparent hover:border-gray-200"
+                        style={{color: '#dbae61'}}
+                        onClick={() => navigate(`/fiche?id=${fiche.id}`)}
+                        onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#dbae61';
+                            e.target.style.color = 'white';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = 'transparent';
+                            e.target.style.color = '#dbae61';
+                        }}
+                    >
+                        Modifier la fiche →
+                    </button>
+                    <button
+                        onClick={() => handleDeleteClick(fiche)} // <-- Appel du handler de suppression
+                        className="text-red-500 hover:text-red-700 p-2 rounded-full transition-colors"
+                        title="Supprimer la fiche"
+                    >
+                        <Trash2 size={20} /> {/* <-- Icône poubelle */}
+                    </button>
+                </div>
               </div>
             </div>
           ))}
@@ -219,6 +248,35 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Supprimer la fiche ?
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Êtes-vous sûr de vouloir supprimer la fiche "<strong>{deleteConfirm.nom}</strong>" ? 
+              Cette action est irréversible.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleDeleteCancel}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

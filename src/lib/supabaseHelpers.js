@@ -1,3 +1,4 @@
+// src/lib/supabaseHelpers.js
 import { supabase } from '../lib/supabaseClient'
 
 // 🔄 Mapping FormContext → Colonnes Supabase
@@ -72,12 +73,12 @@ export const mapSupabaseToFormData = (supabaseData) => {
       type: supabaseData.logement_type || "",
       adresse: {
         rue: supabaseData.logement_adresse_rue || "",
-        complement: "",
+        complement: "", // Non mappé dans supabaseData
         ville: supabaseData.logement_adresse_ville || "",
         codePostal: supabaseData.logement_adresse_code_postal || "",
-        batiment: "",
+        batiment: "", // Non mappé dans supabaseData
         etage: supabaseData.logement_etage || "",
-        numeroPorte: ""
+        numeroPorte: "" // Non mappé dans supabaseData
       },
       caracteristiques: {
         nombrePieces: supabaseData.logement_nombre_pieces?.toString() || "",
@@ -88,40 +89,56 @@ export const mapSupabaseToFormData = (supabaseData) => {
     },
     
     section_clefs: {
-      interphone: null,
-      interphoneDetails: "",
-      interphonePhoto: null,
-      tempoGache: null,
-      tempoGacheDetails: "",
-      tempoGachePhoto: null,
-      digicode: null,
-      digicodeDetails: "",
-      digicodePhoto: null,
+      interphone: supabaseData.interphone ?? null, // Utilise ?? pour les booléens
+      interphoneDetails: supabaseData.interphoneDetails || "",
+      interphonePhoto: supabaseData.interphonePhoto || null,
+      tempoGache: supabaseData.tempoGache ?? null,
+      tempoGacheDetails: supabaseData.tempoGacheDetails || "",
+      tempoGachePhoto: supabaseData.tempoGachePhoto || null,
+      digicode: supabaseData.digicode ?? null,
+      digicodeDetails: supabaseData.digicodeDetails || "",
+      digicodePhoto: supabaseData.digicodePhoto || null,
       clefs: {
-        photos: [],
-        precision: "",
-        prestataire: null,
-        details: ""
+        photos: supabaseData.clefs_photos || [],
+        precision: supabaseData.clefs_precision || "",
+        prestataire: supabaseData.clefs_prestataire ?? null,
+        details: supabaseData.clefs_details || ""
+      },
+      boiteType: supabaseData.boiteType || null,
+      emplacementBoite: supabaseData.emplacementBoite || "",
+      ttlock: {
+        masterpinConciergerie: supabaseData.ttlock_masterpinConciergerie || "",
+        codeProprietaire: supabaseData.ttlock_codeProprietaire || "",
+        codeMenage: supabaseData.ttlock_codeMenage || ""
+      },
+      igloohome: {
+        masterpinConciergerie: supabaseData.igloohome_masterpinConciergerie || "",
+        codeVoyageur: supabaseData.igloohome_codeVoyageur || "",
+        codeProprietaire: supabaseData.igloohome_codeProprietaire || "",
+        codeMenage: supabaseData.igloohome_codeMenage || ""
+      },
+      masterlock: {
+        code: supabaseData.masterlock_code || ""
       }
     },
     
     section_airbnb: {
       preparation_guide: {
-        video_complete: false,
-        photos_etapes: false
+        video_complete: supabaseData.airbnb_preparation_guide?.video_complete || false,
+        photos_etapes: supabaseData.airbnb_preparation_guide?.photos_etapes || false
       },
-      annonce_active: supabaseData.airbnb_annonce_active,
+      annonce_active: supabaseData.airbnb_annonce_active ?? null,
       url_annonce: supabaseData.airbnb_url || "",
-      identifiants_obtenus: supabaseData.airbnb_identifiants_obtenus,
+      identifiants_obtenus: supabaseData.airbnb_identifiants_obtenus ?? null,
       email_compte: supabaseData.airbnb_email || "",
       mot_passe: supabaseData.airbnb_mot_passe || "",
       explication_refus: supabaseData.airbnb_explication_refus || ""
     },
     
     section_booking: {
-      annonce_active: supabaseData.booking_annonce_active,
+      annonce_active: supabaseData.booking_annonce_active ?? null,
       url_annonce: supabaseData.booking_url || "",
-      identifiants_obtenus: supabaseData.booking_identifiants_obtenus,
+      identifiants_obtenus: supabaseData.booking_identifiants_obtenus ?? null,
       email_compte: supabaseData.booking_email || "",
       mot_passe: supabaseData.booking_mot_passe || "",
       explication_refus: supabaseData.booking_explication_refus || ""
@@ -244,6 +261,33 @@ export const getUserFiches = async (userId) => {
       success: false,
       error: error.message,
       message: 'Erreur lors de la récupération'
+    }
+  }
+}
+
+// ❌ Nouvelle fonction: Supprimer une fiche
+// 🗑️ Supprimer une fiche
+export const deleteFiche = async (ficheId) => {
+  try {
+    const { error } = await supabase
+      .from('fiches')
+      .delete()
+      .eq('id', ficheId)
+    
+    if (error) {
+      throw error
+    }
+    
+    return {
+      success: true,
+      message: 'Fiche supprimée avec succès'
+    }
+  } catch (error) {
+    console.error('Erreur lors de la suppression:', error)
+    return {
+      success: false,
+      error: error.message,
+      message: 'Erreur lors de la suppression'
     }
   }
 }

@@ -2,8 +2,10 @@ import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import { useForm } from '../components/FormContext'
 import Button from '../components/Button'
+import { useNavigate } from 'react-router-dom';
 
 export default function FicheForm() {
+  const navigate = useNavigate();
   const { 
     next, 
     back, 
@@ -12,13 +14,18 @@ export default function FicheForm() {
     getField,
     updateField,
     handleSave,
-    saveStatus
+    saveStatus,
+    resetForm
   } = useForm()
 
-  // Handlers pour les champs
   const handleInputChange = (fieldPath, value) => {
     updateField(fieldPath, value)
   }
+
+  const handleCancel = () => {
+    resetForm();
+    navigate('/');
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -32,9 +39,22 @@ export default function FicheForm() {
         <div className="flex-1 p-6 bg-gray-100">
           <h1 className="text-2xl font-bold mb-6">Fiche propriétaire</h1>
 
-          {/* Nom */}
+          {/* Champ: Nom de la Fiche (VISIBLE et MODIFIABLE) */}
           <div className="mb-4">
-            <label className="block font-semibold mb-1">Nom *</label>
+            <label className="block font-semibold mb-1">Nom de la Fiche *</label>
+            <input 
+              type="text" 
+              placeholder="Le nom se génère automatiquement..." 
+              className="w-full p-2 border rounded"
+              value={getField('nom')}
+              onChange={(e) => handleInputChange('nom', e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Nom du propriétaire */}
+          <div className="mb-4">
+            <label className="block font-semibold mb-1">Nom du propriétaire *</label> 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <input 
@@ -128,14 +148,31 @@ export default function FicheForm() {
 
           {/* Boutons navigation */}
           <div className="mt-6 flex justify-between">
-            <Button 
-              variant="ghost" 
-              onClick={back} 
-              disabled={currentStep === 0}
-            >
-              Retour
-            </Button>
+            {currentStep === 0 ? ( // Si c'est la première page (étape 0)
+              <Button 
+                variant="ghost" 
+                onClick={handleCancel} // Bouton Annuler à gauche
+              >
+                Annuler
+              </Button>
+            ) : ( // Sinon, le bouton Retour habituel
+              <Button 
+                variant="ghost" 
+                onClick={back} 
+                disabled={currentStep === 0}
+              >
+                Retour
+              </Button>
+            )}
             <div className="flex gap-3">
+              {currentStep !== 0 && ( // Le bouton Annuler apparaît sur les pages > 0, à côté des autres boutons
+                <Button 
+                  variant="ghost" 
+                  onClick={handleCancel}
+                >
+                  Annuler
+                </Button>
+              )}
               <Button 
                 variant="secondary"
                 onClick={handleSave}
