@@ -3,11 +3,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#D4AF37",         // Or Letahost
-        accent: "#265a64",          // Couleur exacte Letahost ✨
-        background: "#F9F9F9",      // Fond clair
+        primary: "#dbae61",         // Or (mis à jour)
+        accent: "#000000",          // Noir avec textures/patterns
+        background: "#f8f8f8",      // Gris très clair
         text: "#222222",            // Texte principal
         "text-muted": "#6B7280",    // Texte secondaire
+      },
+      fontFamily: {
+        sans: ['Montserrat', 'sans-serif'], // Police Montserrat par défaut
       },
     },
   },
