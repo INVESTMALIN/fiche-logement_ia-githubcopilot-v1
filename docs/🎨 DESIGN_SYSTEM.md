@@ -67,16 +67,25 @@
 </div>
 ```
 
-### Inputs Standard
-- **Background**: `bg-white`
-- **Border**: `border-gray-300`
-- **Focus**: `focus:ring-2 focus:ring-primary`
-- **Radius**: `rounded-lg`
+### Inputs Standard (globals.css)
+- **Classes appliquées automatiquement**: `border rounded px-3 py-2 w-full text-sm`
+- **Focus**: `focus:outline-none focus:ring-2 focus:ring-blue-500`
+- **Style**: Bordure simple, padding cohérent, focus ring bleu
 
-### Boutons
-- **Primary**: `bg-primary text-white hover:bg-primary/90`
-- **Secondary**: `bg-gray-200 text-gray-900 hover:bg-gray-300`
-- **Ghost**: `bg-transparent border border-gray-300 hover:bg-gray-50`
+### Boutons (Classes CSS personnalisées)
+- **Primary**: `.btn-primary` - Gradient doré avec texte blanc
+  ```css
+  background: linear-gradient(to right, #dbae61, #c19b4f);
+  color: white;
+  ```
+- **Secondary**: `.btn-secondary` - Bordure dorée transparente avec hover rempli
+  ```css
+  border: 2px solid #dbae61;
+  color: #dbae61;
+  background: transparent;
+  /* Hover: background #dbae61, color white */
+  ```
+- **Ghost**: `bg-transparent border border-gray-300 hover:bg-gray-50` (Tailwind)
 
 ## 💡 UX Principles
 
@@ -113,6 +122,28 @@
 - **Boutons actifs**: `shadow-sm`
 
 ## 🎯 Implementation Checklist
+```css
+/* Corps de page */
+body {
+  @apply bg-gray-100 text-gray-900 text-sm;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Inputs automatiques */
+input, textarea, select {
+  @apply border rounded px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+/* Boutons avec transitions */
+button {
+  @apply transition-colors duration-150 ease-in-out;
+}
+
+/* Titres */
+h1, h2, h3, h4, h5 {
+  @apply font-semibold;
+}
+```
 
 ### Couleurs à Mettre à Jour
 - [ ] `tailwind.config.js` - Primary vers `#dbae61`
