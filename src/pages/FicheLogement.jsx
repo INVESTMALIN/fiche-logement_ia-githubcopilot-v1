@@ -15,10 +15,59 @@ export default function FicheLogement() {
     saveStatus
   } = useForm()
 
+  // Options pour le dropdown "Autre"
+  const autresTypes = [
+    "Chambres d'hôtes",
+    "Auberges de jeunesse", 
+    "Lofts",
+    "Studios",
+    "Bungalows",
+    "Chalets",
+    "Cabanes",
+    "Cabanes perchées",
+    "Tiny houses",
+    "Yourtes",
+    "Dômes",
+    "Tipis",
+    "Tentes",
+    "Camping-cars",
+    "Bateaux",
+    "Péniches",
+    "Îles privées",
+    "Châteaux",
+    "Moulins",
+    "Phares",
+    "Granges rénovées",
+    "Conteneurs aménagés",
+    "Grottes",
+    "Igloos",
+    "Roulottes",
+    "Treehouses (cabanes dans les arbres)",
+    "Fermes",
+    "Ranchs",
+    "Cottages",
+    "Maisons troglodytes",
+    "Huttes",
+    "Caravanes",
+    "Bulles transparentes",
+    "Maisons flottantes",
+    "Wagons de train aménagés",
+    "Avions reconvertis",
+    "Capsules",
+    "Maisons souterraines",
+    "Maisons sur pilotis"
+  ]
+
   // Handlers pour les champs
   const handleInputChange = (fieldPath, value) => {
     updateField(fieldPath, value)
   }
+
+  // Récupération des valeurs pour affichage conditionnel
+  const formData = getField('section_logement')
+  const typePropriete = formData.type_propriete
+  const isAutre = typePropriete === 'Autre'
+  const isAppartement = typePropriete === 'Appartement'
 
   return (
     <div className="flex min-h-screen">
@@ -30,132 +79,199 @@ export default function FicheLogement() {
         
         {/* Contenu principal */}
         <div className="flex-1 p-6 bg-gray-100">
-          <h1 className="text-2xl font-bold mb-6">Informations du logement</h1>
+          <h2 className="text-xl font-bold mb-6">2- Informations sur le logement</h2>
 
-          {/* Type de logement */}
-          <div className="mb-4">
-            <label className="block font-semibold mb-1">Type de logement *</label>
-            <select 
-              className="w-full p-2 border rounded"
-              value={getField('section_logement.type')}
-              onChange={(e) => handleInputChange('section_logement.type', e.target.value)}
-            >
-              <option value="">Sélectionnez le type</option>
-              <option value="appartement">Appartement</option>
-              <option value="maison">Maison</option>
-              <option value="studio">Studio</option>
-              <option value="loft">Loft</option>
-            </select>
-          </div>
-
-          {/* Adresse */}
-          <div className="mb-4">
-            <label className="block font-semibold mb-1">Adresse du logement *</label>
-            <input 
-              type="text" 
-              placeholder="Numéro et rue" 
-              className="w-full p-2 border rounded mb-2"
-              value={getField('section_logement.adresse.rue')}
-              onChange={(e) => handleInputChange('section_logement.adresse.rue', e.target.value)}
-            />
-            <input 
-              type="text" 
-              placeholder="Complément d'adresse" 
-              className="w-full p-2 border rounded mb-2"
-              value={getField('section_logement.adresse.complement')}
-              onChange={(e) => handleInputChange('section_logement.adresse.complement', e.target.value)}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input 
-                type="text" 
-                placeholder="Code postal" 
-                className="w-full p-2 border rounded"
-                value={getField('section_logement.adresse.codePostal')}
-                onChange={(e) => handleInputChange('section_logement.adresse.codePostal', e.target.value)}
-              />
-              <input 
-                type="text" 
-                placeholder="Ville" 
-                className="w-full p-2 border rounded"
-                value={getField('section_logement.adresse.ville')}
-                onChange={(e) => handleInputChange('section_logement.adresse.ville', e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Caractéristiques */}
-          <div className="mb-4">
-            <label className="block font-semibold mb-1">Caractéristiques</label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Nombre de pièces</label>
-                <input 
-                  type="number" 
-                  placeholder="ex: 3" 
-                  className="w-full p-2 border rounded"
-                  value={getField('section_logement.caracteristiques.nombrePieces')}
-                  onChange={(e) => handleInputChange('section_logement.caracteristiques.nombrePieces', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Nombre de chambres</label>
-                <input 
-                  type="number" 
-                  placeholder="ex: 2" 
-                  className="w-full p-2 border rounded"
-                  value={getField('section_logement.caracteristiques.nombreChambres')}
-                  onChange={(e) => handleInputChange('section_logement.caracteristiques.nombreChambres', e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Surface (m²)</label>
-                <input 
-                  type="number" 
-                  placeholder="ex: 65" 
-                  className="w-full p-2 border rounded"
-                  value={getField('section_logement.caracteristiques.surface')}
-                  onChange={(e) => handleInputChange('section_logement.caracteristiques.surface', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Étage et accès */}
-          <div className="mb-4">
-            <label className="block font-semibold mb-1">Localisation dans l'immeuble</label>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <input 
-                type="text" 
-                placeholder="Bâtiment (ex. : A)" 
-                className="w-full p-2 border rounded"
-                value={getField('section_logement.adresse.batiment')}
-                onChange={(e) => handleInputChange('section_logement.adresse.batiment', e.target.value)}
-              />
+          {/* Section principale en grille 2x3 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            
+            {/* Type de propriété */}
+            <div>
+              <label className="block mb-1 font-semibold">Type de propriété *</label>
               <select 
                 className="w-full p-2 border rounded"
-                value={getField('section_logement.acces')}
-                onChange={(e) => handleInputChange('section_logement.acces', e.target.value)}
+                value={getField('section_logement.type_propriete')}
+                onChange={(e) => handleInputChange('section_logement.type_propriete', e.target.value)}
               >
-                <option value="">Accès à l'appartement</option>
-                <option value="ascenseur">Ascenseur</option>
-                <option value="escalier">Escalier</option>
+                <option value="">Veuillez sélectionner</option>
+                <option value="Appartement">Appartement</option>
+                <option value="Maison">Maison</option>
+                <option value="Villa">Villa</option>
+                <option value="Studio">Studio</option>
+                <option value="Loft">Loft</option>
+                <option value="Autre">Autre</option>
               </select>
+              
+              {/* Affichage conditionnel si "Autre" */}
+              {isAutre && (
+                <div className="mt-3">
+                  <label className="block mb-1 font-semibold">Type - Autres (Veuillez préciser) *</label>
+                  <select 
+                    className="w-full p-2 border rounded"
+                    value={getField('section_logement.type_autre_precision')}
+                    onChange={(e) => handleInputChange('section_logement.type_autre_precision', e.target.value)}
+                  >
+                    <option value="">Veuillez sélectionner</option>
+                    {autresTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Surface en m² */}
+            <div>
+              <label className="block mb-1 font-semibold">Surface en m² *</label>
               <input 
-                type="text" 
-                placeholder="Étage (ex. : 3)" 
+                type="number" 
+                placeholder="par ex. 23"
                 className="w-full p-2 border rounded"
-                value={getField('section_logement.adresse.etage')}
-                onChange={(e) => handleInputChange('section_logement.adresse.etage', e.target.value)}
-              />
-              <input 
-                type="text" 
-                placeholder="Numéro de porte" 
-                className="w-full p-2 border rounded"
-                value={getField('section_logement.adresse.numeroPorte')}
-                onChange={(e) => handleInputChange('section_logement.adresse.numeroPorte', e.target.value)}
+                value={getField('section_logement.surface')}
+                onChange={(e) => handleInputChange('section_logement.surface', e.target.value)}
               />
             </div>
+
+            {/* Numéro du bien */}
+            <div>
+              <label className="block mb-1 font-semibold">Numéro du bien *</label>
+              <input 
+                type="text" 
+                placeholder="par ex. 23"
+                className="w-full p-2 border rounded"
+                value={getField('section_logement.numero_bien')}
+                onChange={(e) => handleInputChange('section_logement.numero_bien', e.target.value)}
+              />
+            </div>
+
+            {/* Typologie */}
+            <div>
+              <label className="block mb-1 font-semibold">Typologie *</label>
+              <select 
+                className="w-full p-2 border rounded"
+                value={getField('section_logement.typologie')}
+                onChange={(e) => handleInputChange('section_logement.typologie', e.target.value)}
+              >
+                <option value="">Veuillez sélectionner</option>
+                <option value="Studio">Studio</option>
+                <option value="T2">T2</option>
+                <option value="T3">T3</option>
+                <option value="T4">T4</option>
+                <option value="T5">T5</option>
+                <option value="T6+">T6+</option>
+              </select>
+            </div>
+
+            {/* Nombre de personnes max */}
+            <div>
+              <label className="block mb-1 font-semibold">Nombre de personnes max *</label>
+              <input 
+                type="number" 
+                placeholder="par ex. 4"
+                className="w-full p-2 border rounded"
+                value={getField('section_logement.nombre_personnes_max')}
+                onChange={(e) => handleInputChange('section_logement.nombre_personnes_max', e.target.value)}
+              />
+            </div>
+
+            {/* Nombre de lits */}
+            <div>
+              <label className="block mb-1 font-semibold">Nombre de lits *</label>
+              <input 
+                type="number" 
+                placeholder="par ex. 3"
+                className="w-full p-2 border rounded"
+                value={getField('section_logement.nombre_lits')}
+                onChange={(e) => handleInputChange('section_logement.nombre_lits', e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Indiquez également les canapés lits / Comptabilisez 2 lits pour lits superposés ou lits gigognes
+              </p>
+            </div>
+
           </div>
+
+          {/* Section conditionnelle Appartement */}
+          {isAppartement && (
+            <div className="mb-6">
+              <h3 className="font-semibold text-lg mb-4">Appartement - Accès au logement</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* Nom de la résidence */}
+                <div>
+                  <label className="block font-semibold mb-1">Appartement - Nom de la résidence</label>
+                  <input 
+                    type="text" 
+                    placeholder="Indiquez le nom de la résidence (ex. : Les Jardins)"
+                    className="w-full p-2 border rounded"
+                    value={getField('section_logement.appartement.nom_residence')}
+                    onChange={(e) => handleInputChange('section_logement.appartement.nom_residence', e.target.value)}
+                  />
+                </div>
+                
+                {/* Bâtiment */}
+                <div>
+                  <label className="block font-semibold mb-1">Appartement - Bâtiment</label>
+                  <input 
+                    type="text" 
+                    placeholder="Indiquez le bâtiment (ex. : E1)"
+                    className="w-full p-2 border rounded"
+                    value={getField('section_logement.appartement.batiment')}
+                    onChange={(e) => handleInputChange('section_logement.appartement.batiment', e.target.value)}
+                  />
+                </div>
+                
+                {/* Accès à l'appartement */}
+                <div>
+                  <label className="block font-semibold mb-1">Appartement - Accès à l'appartement</label>
+                  <select 
+                    className="w-full p-2 border rounded"
+                    value={getField('section_logement.appartement.acces')}
+                    onChange={(e) => handleInputChange('section_logement.appartement.acces', e.target.value)}
+                  >
+                    <option value="">Veuillez sélectionner</option>
+                    <option value="RDC">RDC</option>
+                    <option value="Escalier">Escalier</option>
+                    <option value="Ascenseur">Ascenseur</option>
+                  </select>
+                </div>
+                
+                {/* Étage */}
+                <div>
+                  <label className="block font-semibold mb-1">Appartement - Étage</label>
+                  <input 
+                    type="text" 
+                    placeholder="Indiquez l'étage (ex. : 1)"
+                    className="w-full p-2 border rounded"
+                    value={getField('section_logement.appartement.etage')}
+                    onChange={(e) => handleInputChange('section_logement.appartement.etage', e.target.value)}
+                  />
+                </div>
+                
+                {/* Numéro de porte */}
+                <div className="md:col-span-2">
+                  <label className="block font-semibold mb-1">Appartement - Numéro de porte</label>
+                  <input 
+                    type="text" 
+                    placeholder="Indiquez le numéro de porte (ex. : 12A)"
+                    className="w-full p-2 border rounded"
+                    value={getField('section_logement.appartement.numero_porte')}
+                    onChange={(e) => handleInputChange('section_logement.appartement.numero_porte', e.target.value)}
+                  />
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* Debug panel (optionnel) */}
+          {false && (
+            <div className="mt-8 p-4 bg-gray-200 rounded">
+              <h4 className="font-bold mb-2">DEBUG - Section Logement</h4>
+              <pre className="text-xs overflow-auto">
+                {JSON.stringify(getField('section_logement'), null, 2)}
+              </pre>
+            </div>
+          )}
 
           {/* Indicateur de sauvegarde */}
           {saveStatus.saving && (
@@ -178,11 +294,12 @@ export default function FicheLogement() {
           <div className="mt-6 flex justify-between">
             <Button 
               variant="ghost" 
-              onClick={back} 
+              onClick={back}
               disabled={currentStep === 0}
             >
               Retour
             </Button>
+
             <div className="flex gap-3">
               <Button 
                 variant="secondary"
@@ -191,10 +308,11 @@ export default function FicheLogement() {
               >
                 {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
+
               <Button 
-                variant="primary" 
+                variant="primary"
                 onClick={next}
-                disabled={currentStep === totalSteps - 1}
+                disabled={currentStep >= totalSteps - 1}
               >
                 Suivant
               </Button>

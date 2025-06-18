@@ -92,7 +92,7 @@ export default function FicheAirbnb() {
 
           {/* URL de l'annonce Airbnb */}
           <div className="mb-6">
-            <label className="block font-semibold mb-1">Url de l'annonce Airbnb</label>
+            <label className="block font-semibold mb-1">URL de l'annonce Airbnb</label>
             <input
               type="url"
               placeholder="https://www.airbnb.fr/rooms/11263237"

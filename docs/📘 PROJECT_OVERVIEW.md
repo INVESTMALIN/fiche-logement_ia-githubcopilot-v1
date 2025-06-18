@@ -1,26 +1,26 @@
-🎯 Project Pitch & Value Proposition
+# 🎯 Présentation du Projet & Proposition de Valeur
 
-Fiche Logement App is a mobile-first internal tool built for Letahost, a short-term rental concierge service. It replaces legacy Jotform-based workflows with a modular, structured, and scalable web application that enables field coordinators to collect, save, and edit property data in real-time.
+L'application Fiche Logement est un outil interne "mobile-first" développé pour Letahost, un service de conciergerie spécialisé dans la location courte durée. Elle remplace les processus existants basés sur Jotform par une application web modulaire, structurée et évolutive, permettant aux coordinateurs terrain de collecter, sauvegarder et modifier les données des propriétés en temps réel.
 
-👤 Target Users & Use Cases
+## 👤 Utilisateurs Cibles & Cas d'Usage
 
-Primary Users: Letahost field coordinators (onboarding new properties)
+**Utilisateurs Principaux :** Coordinateurs terrain de Letahost (intégration de nouvelles propriétés)
 
-Use Case: Fill out and update structured "property sheets" on mobile or desktop
+**Cas d'Usage :** Remplir et mettre à jour les "fiches logement" structurées sur mobile ou ordinateur
 
-Other Stakeholders: Admin and support teams who need to view or export data
+**Autres Parties Prenantes :** Équipes administratives et support nécessitant la consultation ou l'export des données
 
-🥅 Core Goals & Success Metrics
+## 🥅 Objectifs Principaux & Indicateurs de Succès
 
-Replace Jotform with a custom, fast, and responsive UI
+- Remplacer Jotform par une interface utilisateur personnalisée, rapide et responsive
 
-Enable conditional logic and dynamic sections for data entry
+- Permettre une logique conditionnelle et des sections dynamiques pour la saisie des données
 
-Ensure data is stored securely and structured in Supabase
+- Assurer un stockage sécurisé et structuré des données dans Supabase
 
-Track completion progress across 22+ form sections
+- Suivre la progression de remplissage à travers plus de 22 sections de formulaire
 
-Improve user experience for mobile field agents
+- Améliorer l'expérience utilisateur pour les agents terrain sur mobile
 
-Success = Coordinators completing property forms faster, with fewer errors, and data being accessible for internal processing without conversion or manual input.
+**Succès = Les coordinateurs complètent les fiches logement plus rapidement, avec moins d'erreurs, et les données sont accessibles pour le traitement interne sans conversion ni saisie manuelle.**
 

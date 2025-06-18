@@ -64,7 +64,7 @@ export default function FicheBooking() {
 
           {/* URL de l'annonce Booking */}
           <div className="mb-6">
-            <label className="block font-semibold mb-1">Url de l'annonce Booking</label>
+            <label className="block font-semibold mb-1">URL de l'annonce Booking</label>
             <input
               type="url"
               placeholder="https://www.booking.com/hotel/fr/example.html"
