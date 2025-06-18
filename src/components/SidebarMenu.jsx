@@ -49,30 +49,12 @@ export default function SidebarMenu() {
               className="absolute left-0 top-0 h-full w-64 bg-black shadow-lg p-4 overflow-y-auto relative"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Pattern hexagonal pour mobile */}
+              {/* Style unifié mobile = desktop */}
               <div className="absolute inset-0">
-                {/* Grille d'hexagones dorés ultra fins */}
-                <div className="absolute inset-0 opacity-10"
-                     style={{
-                       backgroundImage: `
-                         radial-gradient(circle at 50% 50%, transparent 60%, rgba(219, 174, 97, 0.3) 60%, rgba(219, 174, 97, 0.3) 65%, transparent 65%),
-                         radial-gradient(circle at 25% 25%, transparent 30%, rgba(219, 174, 97, 0.2) 30%, rgba(219, 174, 97, 0.2) 35%, transparent 35%)
-                       `,
-                       backgroundSize: '80px 80px, 60px 60px',
-                       backgroundPosition: '0 0, 30px 30px'
-                     }}>
-                </div>
-                
-                {/* Lignes de connexion hexagonales */}
-                <div className="absolute inset-0 opacity-8"
-                     style={{
-                       backgroundImage: `
-                         linear-gradient(60deg, transparent 45%, rgba(219, 174, 97, 0.4) 45%, rgba(219, 174, 97, 0.4) 55%, transparent 55%),
-                         linear-gradient(-60deg, transparent 45%, rgba(219, 174, 97, 0.4) 45%, rgba(219, 174, 97, 0.4) 55%, transparent 55%)
-                       `,
-                       backgroundSize: '40px 70px, 40px 70px'
-                     }}>
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-black"></div>
+                <div className="absolute top-1/6 left-1/4 w-1 h-1 rounded-full opacity-60 animate-pulse" style={{backgroundColor: '#dbae61'}}></div>
+                <div className="absolute top-1/3 right-1/4 w-0.5 h-0.5 rounded-full opacity-40 animate-pulse delay-500" style={{backgroundColor: '#dbae61'}}></div>
+                <div className="absolute top-1/2 left-1/6 w-1 h-1 rounded-full opacity-50 animate-pulse delay-1000" style={{backgroundColor: '#dbae61'}}></div>
               </div>
 
               <div className="relative z-10">

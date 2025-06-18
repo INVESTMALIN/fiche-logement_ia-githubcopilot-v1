@@ -16,25 +16,25 @@
 - ✅ Dashboard + CRUD complet
 - ✅ Smart naming system
 - ✅ Navigation fluide + persistance
-- **Date :** Juin 2025
+
 
 ### **🎯 Milestone 2 : Remplacement Jotform** 🔥 EN COURS
 - 🔥 **Pré-population Monday** (BLOQUANT)
 - ⚙️ Workflow statuts complet
 - 📋 10+ sections additionnelles
-- **Target :** Juillet 2025
+
 
 ### **🎯 Milestone 3 : Features Avancées**
 - 🖼️ Upload photos/vidéos Google Drive
 - 📄 Génération PDF automatique
-- 🔄 Sync Monday.com bidirectionnelle
-- **Target :** Septembre 2025
+- 🔄 Sync Monday.com bidirectionnelle (à voir?)
+
 
 ### **🎯 Milestone 4 : Scale & Polish**
 - 👥 Système rôles (Admin, Super Admin)
-- 📊 Analytics & reporting
+- 📊 Analytics & reporting (nice-to-have)
 - 🎨 UI/UX refinements
-- **Target :** Novembre 2025
+
 
 ---
 

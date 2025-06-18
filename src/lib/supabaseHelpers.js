@@ -291,3 +291,46 @@ export const deleteFiche = async (ficheId) => {
     }
   }
 }
+
+// Fonction pour mettre à jour le statut d'une fiche
+export const updateFicheStatut = async (ficheId, newStatut) => {
+  try {
+    console.log(`Mise à jour statut fiche ${ficheId} vers "${newStatut}"`)
+    
+    const { data, error } = await supabase
+      .from('fiches')
+      .update({ 
+        statut: newStatut,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', ficheId)
+      .select('id, nom, statut, updated_at')
+      .single()
+
+    if (error) {
+      console.error('Erreur Supabase updateFicheStatut:', error)
+      return { 
+        success: false, 
+        error: error.message,
+        message: `Impossible de ${newStatut === 'Archivé' ? 'archiver' : 'modifier'} la fiche`
+      }
+    }
+
+    const action = newStatut === 'Archivé' ? 'archivée' : 
+                   newStatut === 'Complété' ? 'finalisée' : 
+                   newStatut === 'Brouillon' ? 'restaurée' : 'mise à jour'
+
+    return { 
+      success: true, 
+      data,
+      message: `Fiche ${action} avec succès`
+    }
+  } catch (e) {
+    console.error('Erreur updateFicheStatut:', e.message)
+    return { 
+      success: false, 
+      error: e.message,
+      message: 'Erreur de connexion'
+    }
+  }
+}

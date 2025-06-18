@@ -1,7 +1,7 @@
 // src/hooks/useFiches.js
 import { useState, useEffect } from 'react'
 import { useAuth } from '../components/AuthContext'
-import { getUserFiches, deleteFiche } from '../lib/supabaseHelpers'
+import { getUserFiches, deleteFiche, updateFicheStatut } from '../lib/supabaseHelpers'
 
 export const useFiches = () => {
   const { user, loading: authLoading } = useAuth()
@@ -60,6 +60,50 @@ export const useFiches = () => {
     }
   }
 
+  // Fonction pour archiver une fiche
+  const handleArchiveFiche = async (ficheId) => {
+    try {
+      const result = await updateFicheStatut(ficheId, 'Archivé')
+      
+      if (result.success) {
+        // Met à jour la fiche dans la liste locale (optimistic update)
+        setFiches(prev => prev.map(fiche => 
+          fiche.id === ficheId 
+            ? { ...fiche, statut: 'Archivé', updated_at: result.data.updated_at }
+            : fiche
+        ))
+        return { success: true, message: result.message }
+      } else {
+        return { success: false, error: result.error || result.message }
+      }
+    } catch (e) {
+      console.error("Erreur lors de l'archivage :", e.message)
+      return { success: false, error: "Erreur de connexion" }
+    }
+  }
+
+  // Fonction pour désarchiver une fiche (restaurer vers Brouillon)
+  const handleUnarchiveFiche = async (ficheId) => {
+    try {
+      const result = await updateFicheStatut(ficheId, 'Brouillon')
+      
+      if (result.success) {
+        // Met à jour la fiche dans la liste locale (optimistic update)
+        setFiches(prev => prev.map(fiche => 
+          fiche.id === ficheId 
+            ? { ...fiche, statut: 'Brouillon', updated_at: result.data.updated_at }
+            : fiche
+        ))
+        return { success: true, message: result.message }
+      } else {
+        return { success: false, error: result.error || result.message }
+      }
+    } catch (e) {
+      console.error("Erreur lors de la restauration :", e.message)
+      return { success: false, error: "Erreur de connexion" }
+    }
+  }
+
   useEffect(() => {
     fetchFiches()
   }, [user, authLoading])
@@ -74,6 +118,8 @@ export const useFiches = () => {
     loading, 
     error,
     refetch,
-    deleteFiche: handleDeleteFiche // Export de la fonction delete
+    deleteFiche: handleDeleteFiche,
+    archiveFiche: handleArchiveFiche,
+    unarchiveFiche: handleUnarchiveFiche
   }
 }
