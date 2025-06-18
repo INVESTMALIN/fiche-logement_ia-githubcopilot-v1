@@ -1,17 +1,18 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+// src/components/FormContext.jsx
+import { createContext, useContext, useState, useEffect, useCallback } from 'react' // Ajout de useCallback
+import { useLocation } from 'react-router-dom'
 import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
 import { useAuth } from './AuthContext'
-import { useLocation } from 'react-router-dom';
 
 const FormContext = createContext()
 
 const initialFormData = {
   id: null,
-  user_id: null, 
+  user_id: null,
   created_at: null,
   updated_at: null,
-  nom: "Nouvelle fiche", 
-  statut: "Brouillon", 
+  nom: "Nouvelle fiche",
+  statut: "Brouillon",
   
   section_proprietaire: {
     prenom: "",
@@ -43,36 +44,20 @@ const initialFormData = {
     acces: ""
   },
   section_clefs: {
-    boiteType: null,
-    emplacementBoite: "",
     interphone: null,
     interphoneDetails: "",
     interphonePhoto: null,
     tempoGache: null,
-    tempoGacheDetails: "", 
+    tempoGacheDetails: "",
     tempoGachePhoto: null,
     digicode: null,
-    digicodeDetails: "", 
+    digicodeDetails: "",
     digicodePhoto: null,
     clefs: {
       photos: [],
       precision: "",
       prestataire: null,
       details: ""
-    },
-    ttlock: {
-      masterpinConciergerie: "",
-      codeProprietaire: "",
-      codeMenage: ""
-    },
-    igloohome: {
-      masterpinConciergerie: "",
-      codeVoyageur: "",
-      codeProprietaire: "",
-      codeMenage: ""
-    },
-    masterlock: {
-      code: ""
     }
   },
   section_airbnb: {
@@ -80,18 +65,17 @@ const initialFormData = {
       video_complete: false,
       photos_etapes: false
     },
-    annonce_active: null,          
+    annonce_active: null,
     url_annonce: "",
-    identifiants_obtenus: null,    
+    identifiants_obtenus: null,
     email_compte: "",
     mot_passe: "",
     explication_refus: ""
   },
-  
   section_booking: {
-    annonce_active: null,         
+    annonce_active: null,
     url_annonce: "",
-    identifiants_obtenus: null,  
+    identifiants_obtenus: null,
     email_compte: "",
     mot_passe: "",
     explication_refus: ""
@@ -116,6 +100,8 @@ const initialFormData = {
 }
 
 export function FormProvider({ children }) {
+  const location = useLocation()
+  const { user, loading: authLoading } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState(initialFormData)
   const [saveStatus, setSaveStatus] = useState({ 
@@ -123,13 +109,7 @@ export function FormProvider({ children }) {
     saved: false, 
     error: null 
   })
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [hasManuallyNamedFiche, setHasManuallyNamedFiche] = useState(false); 
-
-  const { user, loading: authLoading } = useAuth()
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const ficheId = queryParams.get('id');
+  const [hasManuallyNamedFiche, setHasManuallyNamedFiche] = useState(false)
 
   const sections = [
     "Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", "Réglementation",
@@ -140,122 +120,65 @@ export function FormProvider({ children }) {
 
   const totalSteps = sections.length
 
-  // Effet pour charger la fiche quand l'ID est détecté dans l'URL
+  const capitalize = (str) => {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  const generateFicheName = (data) => {
+    const type = data.section_logement?.type;
+    const ville = data.section_logement?.adresse?.ville;
+
+    if (type && ville) return `${capitalize(type)} ${capitalize(ville)}`;
+    if (ville) return `Logement ${capitalize(ville)}`;
+    return "Nouvelle fiche";
+  };
+
+  // DÉPLACER ICI : handleLoad AVANT useEffect
+  const handleLoad = useCallback(async (ficheId) => {
+    setSaveStatus({ saving: true, saved: false, error: null });
+    try {
+      const result = await loadFiche(ficheId)
+      
+      if (result.success) {
+        setFormData(result.data)
+        setCurrentStep(0)
+        setSaveStatus({ saving: false, saved: true, error: null });
+        setTimeout(() => {
+          setSaveStatus(prev => ({ ...prev, saved: false }))
+        }, 3000)
+        return { success: true, data: result.data }
+      } else {
+        setSaveStatus({ saving: false, saved: false, error: result.message });
+        return { success: false, error: result.message }
+      }
+    } catch (error) {
+      setSaveStatus({ saving: false, saved: false, error: error.message || 'Erreur de connexion' });
+      return { success: false, error: 'Erreur de connexion' }
+    }
+  }, []); // handleLoad ne dépend de rien qui change à chaque rendu
+
+
+  // NOUVEAU: Chargement automatique si ID dans URL
   useEffect(() => {
-    if (authLoading) {
-      return;
+    const params = new URLSearchParams(location.search)
+    const ficheId = params.get('id')
+        
+    if (ficheId && formData.id !== ficheId && !saveStatus.saving) {
+      handleLoad(ficheId).then(result => {
+        if(result.success) {
+          if (result.data.nom === "Nouvelle fiche" || generateFicheName(result.data) === result.data.nom) {
+              setHasManuallyNamedFiche(false);
+          } else {
+              setHasManuallyNamedFiche(true);
+          }
+        }
+      });
+    } else if (!ficheId && formData.id !== null) {
+      // Si on passe d'une fiche avec ID à une URL sans ID (ex: nouvelle fiche), on réinitialise.
+      resetForm();
     }
-
-    if (ficheId && !initialLoadComplete) {
-      const loadExistingFiche = async () => {
-        console.log(`Tentative de chargement de la fiche ID: ${ficheId}`);
-        const result = await handleLoad(ficheId);
-        if (result.success) {
-          console.log('Fiche chargée avec succès !');
-          // Lors du chargement, on vérifie si le nom était le nom par défaut.
-          // Si oui, on autorise l'auto-génération. Sinon, non.
-          setHasManuallyNamedFiche(result.data.nom !== initialFormData.nom);
-          setInitialLoadComplete(true);
-        } else {
-          console.error('Erreur lors du chargement de la fiche :', result.error);
-          setSaveStatus({ saving: false, saved: false, error: `Impossible de charger la fiche: ${result.error}` });
-          setFormData(initialFormData); 
-          setHasManuallyNamedFiche(false); // Nouvelle fiche, donc pas de nom manuel
-          setInitialLoadComplete(true);
-        }
-      };
-      loadExistingFiche();
-    } else if (!ficheId && !initialLoadComplete) { 
-      resetForm(); 
-      setHasManuallyNamedFiche(false); // Nouvelle fiche, donc pas de nom manuel
-      setInitialLoadComplete(true);
-    }
-  }, [ficheId, authLoading, initialLoadComplete]);
-
-  
-
-  // Fonction pour générer le nom de la fiche
-  const generateFicheName = (currentData) => {
-    const type = currentData.section_logement?.type;
-    const ville = currentData.section_logement?.adresse?.ville;
-    const adresseRue = currentData.section_logement?.adresse?.rue;
-
-    let newName = initialFormData.nom; 
-
-    // Fonction utilitaire pour mettre la première lettre en majuscule
-    const capitalizeFirstLetter = (string) => {
-      if (!string) return '';
-      return string.charAt(0).toUpperCase() + string.slice(1);
-    };
-
-    if (type && ville) {
-        newName = `${capitalizeFirstLetter(type)} ${ville}`; // <-- Application de la majuscule ici
-    } else if (type && adresseRue) {
-        const rueShort = adresseRue.split(' ')[0];
-        newName = `${capitalizeFirstLetter(type)} ${rueShort.length > 0 ? rueShort + '...' : ''}`; // <-- Application de la majuscule ici
-    } else if (ville) {
-        newName = `Logement ${ville}`;
-    } else if (adresseRue) {
-        const rueShort = adresseRue.split(' ')[0];
-        newName = `Logement ${rueShort.length > 0 ? rueShort + '...' : ''}`;
-    }
-    
-    return newName.trim();
-  };
-
-  // Override de updateField pour gérer le nom auto-généré
-  const updateField = (fieldPath, value) => {
-    setFormData(prev => {
-      const newData = { ...prev };
-      const keys = fieldPath.split('.');
-      let current = newData;
-      
-      // Navigue vers le parent du champ cible, crée des objets si nécessaire
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (current[keys[i]] === undefined || current[keys[i]] === null) {
-          current[keys[i]] = {};
-        } else if (typeof current[keys[i]] !== 'object') {
-          current[keys[i]] = {};
-        } else {
-          current[keys[i]] = { ...current[keys[i]] };
-        }
-        current = current[keys[i]];
-      }
-      
-      // Set the value
-      current[keys[keys.length - 1]] = value;
-      
-      // Logique de renommage intelligent
-      if (fieldPath === 'nom') { // Si l'utilisateur modifie directement le champ 'nom'
-        // On marque que le nom a été modifié manuellement, sauf si la valeur redevient le nom par défaut
-        setHasManuallyNamedFiche(value !== initialFormData.nom);
-      } else if (!hasManuallyNamedFiche) { // Si l'utilisateur n'a PAS pris la main
-        // Crée une copie temporaire des données avec le changement appliqué pour générer le nom
-        const tempFormData = JSON.parse(JSON.stringify(newData)); // Clone profond pour la sûreté
-        let tempCurrent = tempFormData;
-        for (let i = 0; i < keys.length - 1; i++) {
-          tempCurrent = tempCurrent[keys[i]];
-        }
-        tempCurrent[keys[keys.length - 1]] = value; // Applique la nouvelle valeur au clone
-
-        const generatedName = generateFicheName(tempFormData);
-
-        // Si le nom actuel est le nom par défaut OU l'ancien nom auto-généré, on met à jour
-        // On évite d'écraser un nom personnalisé par l'utilisateur s'il n'a pas été marqué comme "manuel"
-        if (
-            newData.nom === initialFormData.nom || // Si c'est toujours le nom par défaut
-            (prev.nom === generateFicheName(prev) && prev.nom !== initialFormData.nom) // Ou si c'était un ancien nom auto-généré (mais pas le défaut)
-        ) {
-            newData.nom = generatedName;
-        }
-      }
-      
-      // Update timestamp
-      newData.updated_at = new Date().toISOString();
-      
-      return newData;
-    });
-  };
+  }, [location.search, formData.id, saveStatus.saving, handleLoad]); // Dépendances: location.search pour l'URL, formData.id pour l'état actuel, saveStatus.saving pour éviter conflits, handleLoad pour éviter warning
 
 
   const next = () => {
@@ -278,29 +201,61 @@ export function FormProvider({ children }) {
 
   const getCurrentSection = () => sections[currentStep]
 
-  // updateSection n'a plus besoin de générer le nom ici, car updateField le gère déjà au niveau du champ
   const updateSection = (sectionName, newData) => {
     setFormData(prev => {
-      const currentSection = prev[sectionName] || {}
-      
       const updatedData = {
         ...prev,
         [sectionName]: {
-          ...currentSection,
+          ...(prev[sectionName] || {}),
           ...newData
         },
         updated_at: new Date().toISOString()
       };
 
-      // Le nom auto-généré est géré par updateField quand un champ spécifique change
-      // Si une section entière est mise à jour, et que le nom n'est pas manuel et est encore par défaut,
-      // on peut forcer une génération ici, mais l'approche par champ est plus précise.
-      // Pour l'instant, on se base sur la mise à jour par champ.
-      
+      if (!hasManuallyNamedFiche && sectionName === 'section_logement') {
+        const generatedName = generateFicheName(updatedData);
+        if (generatedName !== "Nouvelle fiche") {
+          updatedData.nom = generatedName;
+        }
+      }
       return updatedData;
+    });
+  }
+
+  const updateField = (fieldPath, value) => {
+    setFormData(prev => {
+      const newData = { ...prev }
+      const keys = fieldPath.split('.')
+      let current = newData
+      
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (current[keys[i]] === undefined || current[keys[i]] === null) {
+          current[keys[i]] = {}
+        } else if (typeof current[keys[i]] !== 'object') {
+          current[keys[i]] = {}
+        } else {
+          current[keys[i]] = { ...current[keys[i]] }
+        }
+        current = current[keys[i]]
+      }
+      
+      current[keys[keys.length - 1]] = value
+      
+      if (fieldPath === 'nom') {
+        setHasManuallyNamedFiche(value !== "Nouvelle fiche");
+      } else if (!hasManuallyNamedFiche) {
+        const generatedName = generateFicheName(newData);
+        if (generatedName !== "Nouvelle fiche") {
+          newData.nom = generatedName;
+        }
+      }
+
+      newData.updated_at = new Date().toISOString()
+      
+      return newData
     })
   }
-  
+
   const getSection = (sectionName) => {
     return formData[sectionName] || {}
   }
@@ -322,71 +277,65 @@ export function FormProvider({ children }) {
   const resetForm = () => {
     setFormData(initialFormData)
     setCurrentStep(0)
-    setHasManuallyNamedFiche(false); 
+    setHasManuallyNamedFiche(false);
   }
 
   const handleSave = async () => {
-    if (authLoading) {
-      setSaveStatus({ saving: false, saved: false, error: "Chargement de l'utilisateur en cours. Veuillez patienter." });
-      return;
-    }
-    
-    if (!user) {
-        setSaveStatus({ saving: false, saved: false, error: "Vous devez être connecté pour sauvegarder votre fiche." });
-        return;
-    }
-
-    setSaveStatus({ saving: true, saved: false, error: null });
+    setSaveStatus({ saving: true, saved: false, error: null })
     
     try {
-      console.log('Données à sauvegarder:', formData);
+      console.log('Données à sauvegarder:', formData)
       
-      const userId = user.id;
-
-      const result = await saveFiche(formData, userId); 
+      const userId = user?.id || null
       
-      console.log('Résultat sauvegarde:', result);
+      const result = await saveFiche(formData, userId)
       
-      if (result.success) {
-        setFormData(result.data);
-        setSaveStatus({ saving: false, saved: true, error: null });
-        
-        // Après la sauvegarde, si le nom dans la BDD correspond au nom par défaut,
-        // on s'assure que hasManuallyNamedFiche est bien false pour permettre la génération future.
-        // Sinon, on le marque comme manuel.
-        if (result.data.nom === initialFormData.nom) {
-            setHasManuallyNamedFiche(false);
-        } else {
-            setHasManuallyNamedFiche(true);
-        }
-
-        setTimeout(() => {
-          setSaveStatus(prev => ({ ...prev, saved: false }));
-        }, 3000);
-      } else {
-        setSaveStatus({ saving: false, saved: false, error: result.message });
-      }
-    } catch (error) {
-      console.error('Erreur complète:', error);
-      setSaveStatus({ saving: false, saved: false, error: error.message || 'Erreur de connexion' });
-    }
-  }
-
-  const handleLoad = async (ficheId) => {
-    try {
-      const result = await loadFiche(ficheId)
+      console.log('Résultat sauvegarde:', result)
       
       if (result.success) {
         setFormData(result.data)
-        setCurrentStep(0)
-        return { success: true, data: result.data }
+        setSaveStatus({ saving: false, saved: true, error: null })
+        
+        setTimeout(() => {
+          setSaveStatus(prev => ({ ...prev, saved: false }))
+        }, 3000)
       } else {
-        return { success: false, error: result.message }
+        setSaveStatus({ saving: false, saved: false, error: result.message })
       }
     } catch (error) {
-      return { success: false, error: 'Erreur de connexion' }
+      console.error('Erreur complète:', error)
+      setSaveStatus({ saving: false, saved: false, error: error.message || 'Erreur de connexion' })
     }
   }
+
+  const updateStatut = async (newStatut) => {
+    setSaveStatus({ saving: true, saved: false, error: null });
+    try {
+      const updatedFormData = { ...formData, statut: newStatut };
+      const userId = user?.id || null;
+      const result = await saveFiche(updatedFormData, userId);
+
+      if (result.success) {
+        setFormData(result.data);
+        setSaveStatus({ saving: false, saved: true, error: null });
+        setTimeout(() => {
+          setSaveStatus(prev => ({ ...prev, saved: false }));
+        }, 3000);
+        return { success: true, message: `Statut mis à jour vers "${newStatut}"` };
+      } else {
+        setSaveStatus({ saving: false, saved: false, error: result.message });
+        return { success: false, error: result.message };
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du statut:', error);
+      setSaveStatus({ saving: false, saved: false, error: error.message || 'Erreur de connexion' });
+      return { success: false, error: error.message || 'Erreur de connexion' };
+    }
+  };
+  
+  const finaliserFiche = () => updateStatut('Complété');
+  const archiverFiche = () => updateStatut('Archivé');
+
 
   const getFormDataPreview = () => {
     return {
@@ -419,6 +368,9 @@ export function FormProvider({ children }) {
       handleSave,
       handleLoad,
       saveStatus,
+      updateStatut,
+      finaliserFiche,
+      archiverFiche,
       
       getFormDataPreview
     }}>

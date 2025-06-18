@@ -98,7 +98,6 @@ export default function Dashboard() {
 
     if (fiche.statut === 'Archivé') {
       return [
-        ...baseItems,
         {
           id: 'unarchive',
           label: 'Désarchiver',
