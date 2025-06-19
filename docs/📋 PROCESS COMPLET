@@ -1,0 +1,341 @@
+# 📋 PROCESS COMPLET - Ajouter une nouvelle section au formulaire
+
+> **CONTEXTE** : Application React "Fiche logement" avec FormContext centralisé, sauvegarde Supabase, 22 sections de formulaire. Architecture complète fonctionnelle avec mapping FormContext ↔ Supabase.
+
+---
+
+## 🎯 **ÉTAPE 1 : PLANIFICATION DE LA NOUVELLE SECTION**
+
+### ✅ **1.1 - Définir la structure des données**
+```javascript
+// Exemple pour "section_securite"
+section_securite: {
+  detecteur_fumee: null,           // Radio: true/false/null
+  detecteur_fumee_details: "",     // Input text conditionnel
+  detecteur_co: null,              // Radio: true/false/null
+  detecteur_co_details: "",        // Input text conditionnel
+  alarme_incendie: null,           // Radio: true/false/null
+  extincteur: null,                // Radio: true/false/null
+  trousse_secours: null,           // Radio: true/false/null
+  consignes_securite: "",          // Textarea
+  photos_securite: []              // Array de photos
+}
+```
+
+### ✅ **1.2 - Lister les colonnes Supabase nécessaires**
+```sql
+-- Colonnes à créer pour section_securite
+securite_detecteur_fumee BOOLEAN
+securite_detecteur_fumee_details TEXT
+securite_detecteur_co BOOLEAN  
+securite_detecteur_co_details TEXT
+securite_alarme_incendie BOOLEAN
+securite_extincteur BOOLEAN
+securite_trousse_secours BOOLEAN
+securite_consignes_securite TEXT
+securite_photos_securite TEXT[]
+```
+
+---
+
+## 🗄️ **ÉTAPE 2 : MISE À JOUR SUPABASE**
+
+### ✅ **2.1 - Exécuter le SQL d'ajout de colonnes**
+```sql
+-- Dans Supabase SQL Editor
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_detecteur_fumee BOOLEAN;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_detecteur_fumee_details TEXT;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_detecteur_co BOOLEAN;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_detecteur_co_details TEXT;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_alarme_incendie BOOLEAN;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_extincteur BOOLEAN;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_trousse_secours BOOLEAN;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_consignes_securite TEXT;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_photos_securite TEXT[];
+```
+
+### ✅ **2.2 - Vérification**
+```sql
+-- Vérifier que les colonnes sont créées
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'fiches' AND column_name LIKE 'securite_%';
+```
+
+---
+
+## 🏗️ **ÉTAPE 3 : MISE À JOUR FormContext.jsx**
+
+### ✅ **3.1 - Ajouter dans initialFormData**
+```javascript
+// Dans src/components/FormContext.jsx, ligne ~100
+section_securite: {
+  detecteur_fumee: null,
+  detecteur_fumee_details: "",
+  detecteur_co: null,
+  detecteur_co_details: "",
+  alarme_incendie: null,
+  extincteur: null,
+  trousse_secours: null,
+  consignes_securite: "",
+  photos_securite: []
+},
+```
+
+### ✅ **3.2 - Section déjà vide donc RAS**
+```javascript
+// Ligne ~280 - Déjà présent et vide
+section_securite: {}
+```
+
+---
+
+## 🔄 **ÉTAPE 4 : MISE À JOUR supabaseHelpers.js**
+
+### ✅ **4.1 - Ajouter dans mapFormDataToSupabase()**
+```javascript
+// Dans src/lib/supabaseHelpers.js, ligne ~50
+// Section Sécurité
+securite_detecteur_fumee: formData.section_securite?.detecteur_fumee ?? null,
+securite_detecteur_fumee_details: formData.section_securite?.detecteur_fumee_details || null,
+securite_detecteur_co: formData.section_securite?.detecteur_co ?? null,
+securite_detecteur_co_details: formData.section_securite?.detecteur_co_details || null,
+securite_alarme_incendie: formData.section_securite?.alarme_incendie ?? null,
+securite_extincteur: formData.section_securite?.extincteur ?? null,
+securite_trousse_secours: formData.section_securite?.trousse_secours ?? null,
+securite_consignes_securite: formData.section_securite?.consignes_securite || null,
+securite_photos_securite: formData.section_securite?.photos_securite || [],
+```
+
+### ✅ **4.2 - Ajouter dans mapSupabaseToFormData()**
+```javascript
+// Dans src/lib/supabaseHelpers.js, ligne ~150
+section_securite: {
+  detecteur_fumee: supabaseData.securite_detecteur_fumee ?? null,
+  detecteur_fumee_details: supabaseData.securite_detecteur_fumee_details || "",
+  detecteur_co: supabaseData.securite_detecteur_co ?? null,
+  detecteur_co_details: supabaseData.securite_detecteur_co_details || "",
+  alarme_incendie: supabaseData.securite_alarme_incendie ?? null,
+  extincteur: supabaseData.securite_extincteur ?? null,
+  trousse_secours: supabaseData.securite_trousse_secours ?? null,
+  consignes_securite: supabaseData.securite_consignes_securite || "",
+  photos_securite: supabaseData.securite_photos_securite || []
+},
+```
+
+---
+
+## 📄 **ÉTAPE 5 : CRÉER LE COMPOSANT PAGE**
+
+### ✅ **5.1 - Créer src/pages/FicheSécurité.jsx**
+```javascript
+// Copier src/pages/FicheForm.jsx comme template
+// Remplacer le contenu par la nouvelle section
+
+import React from 'react'
+import { useForm } from '../components/FormContext'
+import SidebarMenu from '../components/SidebarMenu'
+import ProgressBar from '../components/ProgressBar'
+import { Button } from '../components/ui/button'
+
+export default function FicheSécurité() {
+  const { next, back, currentStep, totalSteps, getField, updateField, handleSave, saveStatus } = useForm()
+
+  // PATTERN IMPORTANT : Récupérer formData pour les booléens
+  const formData = getField('section_securite')
+  const detecteurFumee = formData.detecteur_fumee
+
+  const handleInputChange = (field, value) => {
+    updateField(field, value)
+  }
+
+  return (
+    <div className="flex min-h-screen">
+      <SidebarMenu />
+      <div className="flex-1 flex flex-col">
+        <ProgressBar />
+        <div className="flex-1 p-6 bg-gray-100">
+          <h1 className="text-2xl font-bold mb-6">Sécurité</h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Détecteur de fumée */}
+            <div>
+              <label className="block font-semibold mb-2">Détecteur de fumée présent ?</label>
+              <div className="flex gap-4 mb-3">
+                <label className="flex items-center">
+                  <input 
+                    type="radio" 
+                    checked={detecteurFumee === true}
+                    onChange={() => handleInputChange('section_securite.detecteur_fumee', true)}
+                    className="mr-2"
+                  />
+                  Oui
+                </label>
+                <label className="flex items-center">
+                  <input 
+                    type="radio" 
+                    checked={detecteurFumee === false}
+                    onChange={() => handleInputChange('section_securite.detecteur_fumee', false)}
+                    className="mr-2"
+                  />
+                  Non
+                </label>
+              </div>
+              
+              {/* Affichage conditionnel */}
+              {detecteurFumee === true && (
+                <div>
+                  <input 
+                    type="text"
+                    placeholder="Précisions sur le détecteur de fumée"
+                    className="w-full p-2 border rounded"
+                    value={getField('section_securite.detecteur_fumee_details')}
+                    onChange={(e) => handleInputChange('section_securite.detecteur_fumee_details', e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Répéter le pattern pour les autres champs... */}
+            
+          </div>
+
+          {/* Boutons navigation */}
+          <div className="mt-6 flex justify-between">
+            <Button variant="ghost" onClick={back} disabled={currentStep === 0}>
+              Retour
+            </Button>
+            <div className="flex gap-3">
+              <Button 
+                variant="secondary" 
+                onClick={handleSave}
+                disabled={saveStatus.saving}
+              >
+                {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
+              </Button>
+              <Button variant="primary" onClick={next}>Suivant</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## 🎯 **ÉTAPE 6 : INTÉGRATION DANS LE WIZARD**
+
+### ✅ **6.1 - Ajouter dans FicheWizard.jsx**
+```javascript
+// Dans src/pages/FicheWizard.jsx
+import FicheSécurité from './FicheSécurité'
+
+// Dans le tableau steps (ligne ~15)
+const steps = [
+  <FicheForm />,           // 0 - Propriétaire
+  <FicheLogement />,       // 1 - Logement  
+  <FicheClefs />,          // 2 - Clefs
+  <FicheAirbnb />,         // 3 - Airbnb
+  <FicheBooking />,        // 4 - Booking
+  <FicheReglementation />, // 5 - Réglementation
+  // ... autres sections existantes
+  <FicheSécurité />,       // 21 - Sécurité (dernière position)
+]
+```
+
+### ✅ **6.2 - Vérifier l'ordre des sections**
+```javascript
+// Dans src/components/FormContext.jsx, ligne ~140
+const sections = [
+  "Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", "Réglementation",
+  "Exigences", "Avis", "Gestion Linge", "Équipements", "Consommables", "Visite",
+  "Chambres", "Salle De Bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. Spé. / Extérieur",
+  "Communs", "Télétravail", "Bébé", "Sécurité"  // ← Vérifier position
+]
+```
+
+---
+
+## 🧪 **ÉTAPE 7 : TESTS ET VALIDATION**
+
+### ✅ **7.1 - Test de sauvegarde**
+1. Naviguer vers la nouvelle section
+2. Remplir quelques champs (radio + texte conditionnel)
+3. Cliquer "Enregistrer"
+4. Vérifier message "Sauvegardé avec succès"
+
+### ✅ **7.2 - Test de chargement**
+1. Aller au Dashboard
+2. Ouvrir la fiche modifiée
+3. Naviguer vers la nouvelle section
+4. Vérifier que les champs sont bien remplis
+
+### ✅ **7.3 - Vérification BDD**
+```sql
+-- Dans Supabase, vérifier les données
+SELECT securite_* FROM fiches WHERE id = 'ton_id_fiche';
+```
+
+---
+
+## 🚨 **PATTERNS CRITIQUES À RESPECTER**
+
+### ✅ **Radio Buttons avec Booléens**
+```javascript
+// ❌ MAUVAIS - getField direct sur booléen
+const radioValue = getField('section_securite.detecteur_fumee')
+
+// ✅ CORRECT - Récupérer formData puis propriété
+const formData = getField('section_securite')
+const radioValue = formData.detecteur_fumee  // true/false/null
+```
+
+### ✅ **Affichage Conditionnel**
+```javascript
+// Pattern obligatoire pour conditions
+{radioValue === true && (
+  <div>Champs conditionnels</div>
+)}
+```
+
+### ✅ **Classes CSS Standard**
+```javascript
+// Labels
+className="block font-semibold mb-1"
+
+// Inputs
+className="w-full p-2 border rounded"
+
+// Grilles
+className="grid grid-cols-1 md:grid-cols-2 gap-4"
+```
+
+---
+
+## 📋 **CHECKLIST FINALE**
+
+- [ ] Colonnes Supabase ajoutées et vérifiées
+- [ ] `initialFormData` mis à jour dans FormContext
+- [ ] `mapFormDataToSupabase()` étendu
+- [ ] `mapSupabaseToFormData()` étendu  
+- [ ] Composant page créé avec patterns corrects
+- [ ] Import ajouté dans FicheWizard
+- [ ] Ordre sections vérifié
+- [ ] Test sauvegarde ✅
+- [ ] Test chargement ✅
+- [ ] Test navigation ✅
+
+---
+
+## 🎯 **NOTES IMPORTANTES**
+
+1. **Toujours utiliser `??` pour les booléens** dans le mapping Supabase
+2. **Pattern `getField('section_name')` puis propriété** pour les radio buttons
+3. **Affichage conditionnel avec `=== true`** strict
+4. **Classes Tailwind standards** pour cohérence UI
+5. **Tester IMMÉDIATEMENT** après chaque ajout
+6. **Commit Git** après validation complète
+
+**Ce process garantit une intégration parfaite sans casser l'existant !**

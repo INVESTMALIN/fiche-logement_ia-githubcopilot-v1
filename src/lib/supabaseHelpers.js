@@ -16,9 +16,25 @@ export const mapFormDataToSupabase = (formData) => {
     proprietaire_adresse_ville: formData.section_proprietaire?.adresse?.ville || null,
     proprietaire_adresse_code_postal: formData.section_proprietaire?.adresse?.codePostal || null,
     
-    // Section Logement
+    // Section Logement - CORRIGÉ POUR LES NOUVEAUX CHAMPS
+    // ✅ NOUVEAUX champs Monday (priorité)
+    logement_type_propriete: formData.section_logement?.type_propriete || null,
+    logement_surface: formData.section_logement?.surface ? parseInt(formData.section_logement.surface) : null,
+    logement_numero_bien: formData.section_logement?.numero_bien || null,
+    logement_typologie: formData.section_logement?.typologie || null,
+    logement_nombre_personnes_max: formData.section_logement?.nombre_personnes_max || null,
+    logement_nombre_lits: formData.section_logement?.nombre_lits || null,
+    logement_type_autre_precision: formData.section_logement?.type_autre_precision || null,
+
+    // Section appartement
+    logement_appartement_nom_residence: formData.section_logement?.appartement?.nom_residence || null,
+    logement_appartement_batiment: formData.section_logement?.appartement?.batiment || null,
+    logement_appartement_acces: formData.section_logement?.appartement?.acces || null,
+    logement_appartement_etage: formData.section_logement?.appartement?.etage || null,
+    logement_appartement_numero_porte: formData.section_logement?.appartement?.numero_porte || null,
+
+    // ✅ LEGACY (garde compatibilité)
     logement_type: formData.section_logement?.type || null,
-    logement_surface: formData.section_logement?.caracteristiques?.surface ? parseInt(formData.section_logement.caracteristiques.surface) : null,
     logement_nombre_pieces: formData.section_logement?.caracteristiques?.nombrePieces ? parseInt(formData.section_logement.caracteristiques.nombrePieces) : null,
     logement_nombre_chambres: formData.section_logement?.caracteristiques?.nombreChambres ? parseInt(formData.section_logement.caracteristiques.nombreChambres) : null,
     logement_adresse_rue: formData.section_logement?.adresse?.rue || null,
@@ -43,7 +59,7 @@ export const mapFormDataToSupabase = (formData) => {
     booking_mot_passe: formData.section_booking?.mot_passe || null,
     booking_explication_refus: formData.section_booking?.explication_refus || null,
     
-    // 🎯 Section Réglementation - NOUVEAU
+    // 🎯 Section Réglementation
     reglementation_ville_changement_usage: formData.section_reglementation?.ville_changement_usage || null,
     reglementation_date_expiration_changement: formData.section_reglementation?.date_expiration_changement || null,
     reglementation_numero_declaration: formData.section_reglementation?.numero_declaration || null,
@@ -57,6 +73,12 @@ export const mapFormDataToSupabase = (formData) => {
     reglementation_documents_assurance_pno: formData.section_reglementation?.documents?.assurance_pno ?? null,
     reglementation_documents_rcp: formData.section_reglementation?.documents?.rcp ?? null,
     reglementation_documents_acte_propriete: formData.section_reglementation?.documents?.acte_propriete ?? null,
+
+    // Section Exigences
+    exigences_nombre_nuits_minimum: formData.section_exigences?.nombre_nuits_minimum ? parseInt(formData.section_exigences.nombre_nuits_minimum) : null,
+    exigences_tarif_minimum_nuit: formData.section_exigences?.tarif_minimum_nuit ? parseFloat(formData.section_exigences.tarif_minimum_nuit) : null,
+    exigences_dates_bloquees: formData.section_exigences?.dates_bloquees || [],
+    exigences_precisions_exigences: formData.section_exigences?.precisions_exigences || null,
     
     updated_at: new Date().toISOString()
   }
@@ -85,15 +107,34 @@ export const mapSupabaseToFormData = (supabaseData) => {
     },
     
     section_logement: {
+      // Nouveaux champs Monday (direct dans section_logement)
+      type_propriete: supabaseData.logement_type_propriete || "",
+      surface: supabaseData.logement_surface?.toString() || "",
+      numero_bien: supabaseData.logement_numero_bien || "",
+      typologie: supabaseData.logement_typologie || "",
+      nombre_personnes_max: supabaseData.logement_nombre_personnes_max || "",
+      nombre_lits: supabaseData.logement_nombre_lits || "",
+      type_autre_precision: supabaseData.logement_type_autre_precision || "",
+      
+      // Section appartement conditionnelle
+      appartement: {
+        nom_residence: supabaseData.logement_appartement_nom_residence || "",
+        batiment: supabaseData.logement_appartement_batiment || "",
+        acces: supabaseData.logement_appartement_acces || "",
+        etage: supabaseData.logement_appartement_etage || "",
+        numero_porte: supabaseData.logement_appartement_numero_porte || ""
+      },
+      
+      // Anciens champs (garde compatibilité)
       type: supabaseData.logement_type || "",
       adresse: {
         rue: supabaseData.logement_adresse_rue || "",
-        complement: "", // Non mappé dans supabaseData
+        complement: "",
         ville: supabaseData.logement_adresse_ville || "",
         codePostal: supabaseData.logement_adresse_code_postal || "",
-        batiment: "", // Non mappé dans supabaseData
+        batiment: "",
         etage: supabaseData.logement_etage || "",
-        numeroPorte: "" // Non mappé dans supabaseData
+        numeroPorte: ""
       },
       caracteristiques: {
         nombrePieces: supabaseData.logement_nombre_pieces?.toString() || "",
@@ -103,8 +144,8 @@ export const mapSupabaseToFormData = (supabaseData) => {
       acces: supabaseData.logement_acces || ""
     },
     
-    section_clefs: {
-      interphone: supabaseData.interphone ?? null, // Utilise ?? pour les booléens
+     section_clefs: {
+      interphone: supabaseData.interphone ?? null,
       interphoneDetails: supabaseData.interphoneDetails || "",
       interphonePhoto: supabaseData.interphonePhoto || null,
       tempoGache: supabaseData.tempoGache ?? null,
@@ -143,7 +184,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       explication_refus: supabaseData.booking_explication_refus || ""
     },
     
-    // 🎯 Section Réglementation - NOUVEAU
+    // 🎯 Section Réglementation
     section_reglementation: {
       ville_changement_usage: supabaseData.reglementation_ville_changement_usage || "",
       date_expiration_changement: supabaseData.reglementation_date_expiration_changement || "",
@@ -163,7 +204,12 @@ export const mapSupabaseToFormData = (supabaseData) => {
     },
     
     // Sections vides pour l'instant
-    section_exigences: {},
+    section_exigences: {
+      nombre_nuits_minimum: supabaseData.exigences_nombre_nuits_minimum?.toString() || "",
+      tarif_minimum_nuit: supabaseData.exigences_tarif_minimum_nuit?.toString() || "",
+      dates_bloquees: supabaseData.exigences_dates_bloquees || [],
+      precisions_exigences: supabaseData.exigences_precisions_exigences || ""
+    },
     section_avis: {},
     section_gestion_linge: {},
     section_equipements: {},

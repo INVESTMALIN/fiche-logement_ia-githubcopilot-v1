@@ -118,7 +118,12 @@ const initialFormData = {
     }
   },
 
-  section_exigences: {},
+  section_exigences: {
+    nombre_nuits_minimum: "",
+    tarif_minimum_nuit: "",
+    dates_bloquees: [],
+    precisions_exigences: ""
+  },
   section_avis: {},
   section_gestion_linge: {},
   section_equipements: {},
@@ -505,7 +510,7 @@ export function FormProvider({ children }) {
         user_id: user.id
       };
 
-      const result = await saveFiche(dataToSave);
+      const result = await saveFiche(dataToSave, user.id);
       
       if (result.success) {
         setFormData(result.data);

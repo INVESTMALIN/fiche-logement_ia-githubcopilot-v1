@@ -111,13 +111,21 @@ export default function FicheClefs() {
           </div>
 
           {/* Photo de l'emplacement */}
-          <div>
-            <label className="block font-semibold mb-1">📱 Photo de l'emplacement</label>
-            <div className="border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 bg-white rounded">
-              <button className="bg-gray-200 px-4 py-2 rounded mr-2">Choisir un fichier</button>
-              <span>Aucun fichier choisi</span>
+            <div>
+              <label className="block font-semibold mb-1">📱 Photo de l'emplacement</label>
+              <input 
+                type="file" 
+                accept="image/*" 
+                capture="environment"
+                className="w-full p-2 border rounded"
+                onChange={(e) => {
+                  if (e.target.files[0]) {
+                    console.log('Photo emplacement:', e.target.files[0].name)
+                    // Tu peux ajouter updateField ici plus tard pour sauvegarder
+                  }
+                }}
+              />
             </div>
-          </div>
 
           {/* Champs conditionnels selon le type de boîte à clés */}
           {boiteType === "TTlock" && (
@@ -248,8 +256,20 @@ export default function FicheClefs() {
                 value={interphoneDetails}
                 onChange={(e) => handleInputChange('section_clefs.interphoneDetails', e.target.value)}
               />
-              <div className="border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 bg-white rounded">
-                📎 Photo de l'interphone
+              <div className="mb-4">
+                <label className="block font-semibold mb-2">📎 Photo de l'interphone</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment"
+                  className="w-full p-2 border rounded"
+                  onChange={(e) => {
+                    if (e.target.files[0]) {
+                      console.log('Photo interphone:', e.target.files[0].name)
+                      updateField('section_clefs.interphonePhoto', e.target.files[0].name)
+                    }
+                  }}
+                />
               </div>
             </>
           )}
@@ -289,8 +309,20 @@ export default function FicheClefs() {
                 value={tempoGacheDetails}
                 onChange={(e) => handleInputChange('section_clefs.tempoGacheDetails', e.target.value)}
               />
-              <div className="border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 bg-white rounded">
-                📎 Photo du tempo-gâche
+              <div className="mb-4">
+                <label className="block font-semibold mb-2">📎 Photo du tempo-gâche</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment"
+                  className="w-full p-2 border rounded"
+                  onChange={(e) => {
+                    if (e.target.files[0]) {
+                      console.log('Photo tempo-gâche:', e.target.files[0].name)
+                      updateField('section_clefs.tempoGachePhoto', e.target.files[0].name)
+                    }
+                  }}
+                />
               </div>
             </>
           )}
@@ -330,8 +362,20 @@ export default function FicheClefs() {
                 value={digicodeDetails}
                 onChange={(e) => handleInputChange('section_clefs.digicodeDetails', e.target.value)}
               />
-              <div className="border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 bg-white rounded">
-                📎 Photo du digicode
+              <div className="mb-4">
+                <label className="block font-semibold mb-2">📎 Photo du digicode</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment"
+                  className="w-full p-2 border rounded"
+                  onChange={(e) => {
+                    if (e.target.files[0]) {
+                      console.log('Photo digicode:', e.target.files[0].name)
+                      updateField('section_clefs.digicodePhoto', e.target.files[0].name)
+                    }
+                  }}
+                />
               </div>
             </>
           )}
@@ -341,8 +385,22 @@ export default function FicheClefs() {
             <h3 className="font-semibold mb-3">📱 Clefs – 3 JEUX DE CLEFS OBLIGATOIRE</h3>
             
             <div className="mb-4">
-              <button className="bg-gray-200 px-4 py-2 rounded mr-2">Sélect. fichiers</button>
-              <span className="text-sm text-gray-500">Aucun fichier choisi</span>
+              <label className="block font-semibold mb-2">📎 Photos/Vidéos des clefs</label>
+              <input 
+                type="file" 
+                accept="image/*,video/*" 
+                multiple
+                capture="environment"
+                className="w-full p-2 border rounded"
+                onChange={(e) => {
+                  if (e.target.files.length > 0) {
+                    const files = Array.from(e.target.files)
+                    console.log('Photos/vidéos clefs:', files.map(f => f.name))
+                    updateField('section_clefs.clefs.photos', files.map(f => f.name))
+                  }
+                }}
+              />
+              <p className="text-xs text-gray-500 mt-1">Photos et vidéos acceptées - Plusieurs fichiers possibles</p>
             </div>
 
             <textarea 
