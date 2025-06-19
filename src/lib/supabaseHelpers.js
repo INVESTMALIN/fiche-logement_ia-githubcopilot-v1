@@ -43,6 +43,21 @@ export const mapFormDataToSupabase = (formData) => {
     booking_mot_passe: formData.section_booking?.mot_passe || null,
     booking_explication_refus: formData.section_booking?.explication_refus || null,
     
+    // 🎯 Section Réglementation - NOUVEAU
+    reglementation_ville_changement_usage: formData.section_reglementation?.ville_changement_usage || null,
+    reglementation_date_expiration_changement: formData.section_reglementation?.date_expiration_changement || null,
+    reglementation_numero_declaration: formData.section_reglementation?.numero_declaration || null,
+    reglementation_ville_declaration_simple: formData.section_reglementation?.ville_declaration_simple || null,
+    reglementation_details: formData.section_reglementation?.details_reglementation || null,
+    
+    // Documents checklist
+    reglementation_documents_carte_identite: formData.section_reglementation?.documents?.carte_identite ?? null,
+    reglementation_documents_rib: formData.section_reglementation?.documents?.rib ?? null,
+    reglementation_documents_cerfa: formData.section_reglementation?.documents?.cerfa ?? null,
+    reglementation_documents_assurance_pno: formData.section_reglementation?.documents?.assurance_pno ?? null,
+    reglementation_documents_rcp: formData.section_reglementation?.documents?.rcp ?? null,
+    reglementation_documents_acte_propriete: formData.section_reglementation?.documents?.acte_propriete ?? null,
+    
     updated_at: new Date().toISOString()
   }
 }
@@ -103,29 +118,13 @@ export const mapSupabaseToFormData = (supabaseData) => {
         precision: supabaseData.clefs_precision || "",
         prestataire: supabaseData.clefs_prestataire ?? null,
         details: supabaseData.clefs_details || ""
-      },
-      boiteType: supabaseData.boiteType || null,
-      emplacementBoite: supabaseData.emplacementBoite || "",
-      ttlock: {
-        masterpinConciergerie: supabaseData.ttlock_masterpinConciergerie || "",
-        codeProprietaire: supabaseData.ttlock_codeProprietaire || "",
-        codeMenage: supabaseData.ttlock_codeMenage || ""
-      },
-      igloohome: {
-        masterpinConciergerie: supabaseData.igloohome_masterpinConciergerie || "",
-        codeVoyageur: supabaseData.igloohome_codeVoyageur || "",
-        codeProprietaire: supabaseData.igloohome_codeProprietaire || "",
-        codeMenage: supabaseData.igloohome_codeMenage || ""
-      },
-      masterlock: {
-        code: supabaseData.masterlock_code || ""
       }
     },
     
     section_airbnb: {
       preparation_guide: {
-        video_complete: supabaseData.airbnb_preparation_guide?.video_complete || false,
-        photos_etapes: supabaseData.airbnb_preparation_guide?.photos_etapes || false
+        video_complete: supabaseData.airbnb_preparation_video_complete ?? false,
+        photos_etapes: supabaseData.airbnb_preparation_photos_etapes ?? false
       },
       annonce_active: supabaseData.airbnb_annonce_active ?? null,
       url_annonce: supabaseData.airbnb_url || "",
@@ -144,8 +143,26 @@ export const mapSupabaseToFormData = (supabaseData) => {
       explication_refus: supabaseData.booking_explication_refus || ""
     },
     
+    // 🎯 Section Réglementation - NOUVEAU
+    section_reglementation: {
+      ville_changement_usage: supabaseData.reglementation_ville_changement_usage || "",
+      date_expiration_changement: supabaseData.reglementation_date_expiration_changement || "",
+      numero_declaration: supabaseData.reglementation_numero_declaration || "",
+      ville_declaration_simple: supabaseData.reglementation_ville_declaration_simple || "",
+      details_reglementation: supabaseData.reglementation_details || "",
+      
+      // Documents checklist
+      documents: {
+        carte_identite: supabaseData.reglementation_documents_carte_identite ?? false,
+        rib: supabaseData.reglementation_documents_rib ?? false,
+        cerfa: supabaseData.reglementation_documents_cerfa ?? false,
+        assurance_pno: supabaseData.reglementation_documents_assurance_pno ?? false,
+        rcp: supabaseData.reglementation_documents_rcp ?? false,
+        acte_propriete: supabaseData.reglementation_documents_acte_propriete ?? false
+      }
+    },
+    
     // Sections vides pour l'instant
-    section_reglementation: {},
     section_exigences: {},
     section_avis: {},
     section_gestion_linge: {},
@@ -265,7 +282,6 @@ export const getUserFiches = async (userId) => {
   }
 }
 
-// ❌ Nouvelle fonction: Supprimer une fiche
 // 🗑️ Supprimer une fiche
 export const deleteFiche = async (ficheId) => {
   try {

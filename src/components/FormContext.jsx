@@ -99,7 +99,25 @@ const initialFormData = {
     mot_passe: "",
     explication_refus: ""
   },
-  section_reglementation: {},
+
+  section_reglementation: {
+    ville_changement_usage: "",        // "NON !" ou nom de ville spécifique
+    date_expiration_changement: "",    // Date d'expiration
+    numero_declaration: "",            // Numéro de déclaration (partagé)
+    ville_declaration_simple: "",      // "NON !" ou nom de ville spécifique
+    details_reglementation: "",        // Textarea pour détails (toujours visible)
+    
+    // Documents checklist (toujours visible)
+    documents: {
+      carte_identite: false,
+      rib: false,
+      cerfa: false,
+      assurance_pno: false,
+      rcp: false,
+      acte_propriete: false
+    }
+  },
+
   section_exigences: {},
   section_avis: {},
   section_gestion_linge: {},

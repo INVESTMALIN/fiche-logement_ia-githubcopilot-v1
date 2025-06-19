@@ -7,6 +7,7 @@ import FicheBooking from './FicheBooking'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import FicheReglementation from './FicheReglementation'
 
 // Composant placeholder pour les sections pas encore créées
 function PlaceholderSection({ title }) {
@@ -64,7 +65,7 @@ export default function FicheWizard() {
     <FicheClefs key="clefs" />,
     <FicheAirbnb key="airbnb" />,
     <FicheBooking key="booking" />,
-    <PlaceholderSection key="reglementation" title="Réglementation" />,
+    <FicheReglementation key="reglementation" />,
     <PlaceholderSection key="exigences" title="Exigences" />,
     <PlaceholderSection key="avis" title="Gestion des Avis" />,
     <PlaceholderSection key="linge" title="Gestion Linge" />,
