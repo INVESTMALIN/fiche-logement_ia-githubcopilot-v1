@@ -32,7 +32,7 @@ export default function FicheAirbnb() {
       <div className="flex-1 flex flex-col">
         <ProgressBar />
         <div className="flex-1 p-6 bg-gray-100">
-          <h1 className="text-2xl font-bold mb-6">4- Airbnb</h1>
+          <h1 className="text-2xl font-bold mb-6">Airbnb</h1>
 
           {/* Préparation Guide d'accès Airbnb */}
           <div className="mb-6">

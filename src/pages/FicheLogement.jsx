@@ -79,7 +79,7 @@ export default function FicheLogement() {
         
         {/* Contenu principal */}
         <div className="flex-1 p-6 bg-gray-100">
-          <h2 className="text-xl font-bold mb-6">2- Informations sur le logement</h2>
+          <h1 className="text-xl font-bold mb-6">Informations sur le logement</h1>
 
           {/* Section principale en grille 2x3 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

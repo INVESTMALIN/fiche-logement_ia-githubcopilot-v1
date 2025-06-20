@@ -31,7 +31,7 @@ export default function FicheBooking() {
       <div className="flex-1 flex flex-col">
         <ProgressBar />
         <div className="flex-1 p-6 bg-gray-100">
-          <h1 className="text-2xl font-bold mb-6">5- Booking</h1>
+          <h1 className="text-2xl font-bold mb-6">Booking</h1>
 
           {/* Annonce active sur Booking */}
           <div className="mb-6">

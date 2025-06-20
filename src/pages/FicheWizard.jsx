@@ -9,6 +9,7 @@ import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import FicheReglementation from './FicheReglementation'
 import FicheExigences from './FicheExigences'
+import FicheAvis from './FicheAvis'
 
 // Composant placeholder pour les sections pas encore créées
 function PlaceholderSection({ title }) {
@@ -68,7 +69,7 @@ export default function FicheWizard() {
     <FicheBooking key="booking" />,
     <FicheReglementation key="reglementation" />,
     <FicheExigences key="exigences" />,
-    <PlaceholderSection key="avis" title="Gestion des Avis" />,
+    <FicheAvis key="avis" />,
     <PlaceholderSection key="linge" title="Gestion Linge" />,
     <PlaceholderSection key="equipements" title="Équipements" />,
     <PlaceholderSection key="consommables" title="Consommables" />,

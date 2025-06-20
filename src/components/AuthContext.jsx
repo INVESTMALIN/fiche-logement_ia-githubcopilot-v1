@@ -6,6 +6,38 @@ const AuthContext = createContext()
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [userRole, setUserRole] = useState('coordinateur') // 🔥 NOUVEAU : juste le rôle
+
+  // 🔥 SIMPLE : récupérer le rôle quand l'utilisateur change
+  useEffect(() => {
+    if (user) {
+      // Récupérer le rôle depuis la table profiles
+      const fetchRole = async () => {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+          
+          if (data?.role) {
+            console.log("Rôle récupéré:", data.role)
+            setUserRole(data.role)
+          } else {
+            console.log("Pas de rôle trouvé, fallback coordinateur")
+            setUserRole('coordinateur')
+          }
+        } catch (e) {
+          console.log("Erreur rôle, fallback coordinateur:", e.message)
+          setUserRole('coordinateur')
+        }
+      }
+      
+      fetchRole()
+    } else {
+      setUserRole('coordinateur')
+    }
+  }, [user])
 
   useEffect(() => {
     // Récupérer la session actuelle
@@ -85,9 +117,16 @@ export function AuthProvider({ children }) {
     signIn,
     signOut,
     signUp,
-    // Helpers
+    // Helpers originaux
     isAuthenticated: !!user,
     userEmail: user?.email || null,
+    // 🔥 NOUVEAUX helpers rôles (simples)
+    userRole,
+    isCoordinateur: userRole === 'coordinateur',
+    isAdmin: userRole === 'admin',
+    isSuperAdmin: userRole === 'super_admin',
+    canEditAllFiches: userRole === 'super_admin',
+    canViewAllFiches: userRole === 'admin' || userRole === 'super_admin',
   }
 
   return (

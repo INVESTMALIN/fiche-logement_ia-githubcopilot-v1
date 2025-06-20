@@ -124,7 +124,59 @@ const initialFormData = {
     dates_bloquees: [],
     precisions_exigences: ""
   },
-  section_avis: {},
+  section_avis: {
+    // Description emplacement (checkboxes multiples)
+    description_emplacement: {
+      tres_bien_situe: false,
+      quartier_calme: false,
+      environnement_rural: false,
+      bord_mer: false,
+      montagne: false,
+      autres_emplacement: false
+    },
+    description_emplacement_autre: "",
+    
+    // Précisions emplacement
+    precisions_emplacement: "",
+    
+    // Atouts logement (on commence avec les principaux)
+    atouts_logement: {
+      luxueux: false,
+      lumineux: false,
+      central: false,
+      spacieux: false,
+      authentique: false,
+      design_moderne: false,
+      terrasse_balcon: false,
+      piscine: false,
+      autres_atouts: false
+    },
+    atouts_logement_autre: "",
+    autres_caracteristiques: "",
+    
+    // Types voyageurs
+    types_voyageurs: {
+      duo_amoureux: false,
+      nomades_numeriques: false,
+      aventuriers_independants: false,
+      tribus_familiales: false,
+      bandes_amis: false,
+      voyageurs_experience: false,
+      autres_voyageurs: false
+    },
+    types_voyageurs_autre: "",
+    
+    // Explication adaptation
+    explication_adaptation: "",
+    
+    // Grille notation (1-5)
+    notation: {
+      emplacement: null,
+      confort: null,
+      valeurs: null,
+      equipements: null
+    }
+  },
   section_gestion_linge: {},
   section_equipements: {},
   section_consommables: {},

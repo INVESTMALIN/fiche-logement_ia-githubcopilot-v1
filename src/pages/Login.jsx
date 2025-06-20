@@ -139,7 +139,7 @@ export default function Login() {
             {/* Accès de test */}
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs font-medium text-blue-800 mb-1">Accès de test :</p>
-              <p className="text-xs text-blue-700">Email: test6@exemple.com</p>
+              <p className="text-xs text-blue-700">Email: coordinateur@test.com</p>
               <p className="text-xs text-blue-700">Mot de passe: Test1234</p>
             </div>
           </div>

@@ -1,10 +1,10 @@
 // src/hooks/useFiches.js
 import { useState, useEffect } from 'react'
 import { useAuth } from '../components/AuthContext'
-import { getUserFiches, deleteFiche, updateFicheStatut } from '../lib/supabaseHelpers'
+import { getUserFiches, getAllFiches, deleteFiche, updateFicheStatut } from '../lib/supabaseHelpers'
 
 export const useFiches = () => {
-  const { user, loading: authLoading } = useAuth()
+  const { user, userRole, canViewAllFiches, loading: authLoading } = useAuth()
   const [fiches, setFiches] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -15,7 +15,6 @@ export const useFiches = () => {
       setLoading(false)
       setFiches([])
       if (!user && !authLoading) {
-        // Pas d'erreur si pas connecté, c'est normal
         setError(null)
       }
       return
@@ -25,8 +24,18 @@ export const useFiches = () => {
     setError(null)
 
     try {
-      // Utilise le helper existant qui retourne { success, data, error }
-      const result = await getUserFiches(user.id)
+      let result
+      
+      // 🔥 NOUVEAU : adapter la requête selon le rôle
+      if (canViewAllFiches) {
+        // Admin ou Super Admin : récupérer toutes les fiches
+        console.log(`Chargement de toutes les fiches (rôle: ${userRole})`)
+        result = await getAllFiches()
+      } else {
+        // Coordinateur : récupérer seulement ses fiches
+        console.log(`Chargement des fiches personnelles (rôle: ${userRole})`)
+        result = await getUserFiches(user.id)
+      }
       
       if (result.success) {
         setFiches(result.data)
@@ -36,7 +45,7 @@ export const useFiches = () => {
     } catch (e) {
       console.error("Erreur lors du chargement des fiches :", e.message)
       setError("Erreur lors du chargement des fiches : " + e.message)
-      setFiches([]) // Reset en cas d'erreur
+      setFiches([])
     } finally {
       setLoading(false)
     }
@@ -106,7 +115,7 @@ export const useFiches = () => {
 
   useEffect(() => {
     fetchFiches()
-  }, [user, authLoading])
+  }, [user, authLoading, userRole, canViewAllFiches]) // 🔥 NOUVEAU : dépendances mises à jour
 
   // Fonction pour rafraîchir les données (utile après création/modification)
   const refetch = () => {
@@ -120,6 +129,9 @@ export const useFiches = () => {
     refetch,
     deleteFiche: handleDeleteFiche,
     archiveFiche: handleArchiveFiche,
-    unarchiveFiche: handleUnarchiveFiche
+    unarchiveFiche: handleUnarchiveFiche,
+    // 🔥 NOUVEAU : informations sur le contexte utilisateur
+    userRole,
+    canViewAllFiches
   }
 }

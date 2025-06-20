@@ -80,6 +80,45 @@ export const mapFormDataToSupabase = (formData) => {
     exigences_dates_bloquees: formData.section_exigences?.dates_bloquees || [],
     exigences_precisions_exigences: formData.section_exigences?.precisions_exigences || null,
     
+    // Section Avis
+    avis_description_tres_bien_situe: formData.section_avis?.description_emplacement?.tres_bien_situe ?? null,
+    avis_description_quartier_calme: formData.section_avis?.description_emplacement?.quartier_calme ?? null,
+    avis_description_environnement_rural: formData.section_avis?.description_emplacement?.environnement_rural ?? null,
+    avis_description_bord_mer: formData.section_avis?.description_emplacement?.bord_mer ?? null,
+    avis_description_montagne: formData.section_avis?.description_emplacement?.montagne ?? null,
+    avis_description_autres_emplacement: formData.section_avis?.description_emplacement?.autres_emplacement ?? null,
+    avis_description_emplacement_autre: formData.section_avis?.description_emplacement_autre || null,
+
+    avis_precisions_emplacement: formData.section_avis?.precisions_emplacement || null,
+
+    avis_atouts_luxueux: formData.section_avis?.atouts_logement?.luxueux ?? null,
+    avis_atouts_lumineux: formData.section_avis?.atouts_logement?.lumineux ?? null,
+    avis_atouts_central: formData.section_avis?.atouts_logement?.central ?? null,
+    avis_atouts_spacieux: formData.section_avis?.atouts_logement?.spacieux ?? null,
+    avis_atouts_authentique: formData.section_avis?.atouts_logement?.authentique ?? null,
+    avis_atouts_design_moderne: formData.section_avis?.atouts_logement?.design_moderne ?? null,
+    avis_atouts_terrasse_balcon: formData.section_avis?.atouts_logement?.terrasse_balcon ?? null,
+    avis_atouts_piscine: formData.section_avis?.atouts_logement?.piscine ?? null,
+    avis_atouts_autres_atouts: formData.section_avis?.atouts_logement?.autres_atouts ?? null,
+    avis_atouts_logement_autre: formData.section_avis?.atouts_logement_autre || null,
+    avis_autres_caracteristiques: formData.section_avis?.autres_caracteristiques || null,
+
+    avis_voyageurs_duo_amoureux: formData.section_avis?.types_voyageurs?.duo_amoureux ?? null,
+    avis_voyageurs_nomades_numeriques: formData.section_avis?.types_voyageurs?.nomades_numeriques ?? null,
+    avis_voyageurs_aventuriers_independants: formData.section_avis?.types_voyageurs?.aventuriers_independants ?? null,
+    avis_voyageurs_tribus_familiales: formData.section_avis?.types_voyageurs?.tribus_familiales ?? null,
+    avis_voyageurs_bandes_amis: formData.section_avis?.types_voyageurs?.bandes_amis ?? null,
+    avis_voyageurs_voyageurs_experience: formData.section_avis?.types_voyageurs?.voyageurs_experience ?? null,
+    avis_voyageurs_autres_voyageurs: formData.section_avis?.types_voyageurs?.autres_voyageurs ?? null,
+    avis_voyageurs_autre: formData.section_avis?.types_voyageurs_autre || null,
+
+    avis_explication_adaptation: formData.section_avis?.explication_adaptation || null,
+
+    avis_notation_emplacement: formData.section_avis?.notation?.emplacement || null,
+    avis_notation_confort: formData.section_avis?.notation?.confort || null,
+    avis_notation_valeurs: formData.section_avis?.notation?.valeurs || null,
+    avis_notation_equipements: formData.section_avis?.notation?.equipements || null,
+    
     updated_at: new Date().toISOString()
   }
 }
@@ -210,7 +249,54 @@ export const mapSupabaseToFormData = (supabaseData) => {
       dates_bloquees: supabaseData.exigences_dates_bloquees || [],
       precisions_exigences: supabaseData.exigences_precisions_exigences || ""
     },
-    section_avis: {},
+
+    section_avis: {
+      description_emplacement: {
+        tres_bien_situe: supabaseData.avis_description_tres_bien_situe ?? false,
+        quartier_calme: supabaseData.avis_description_quartier_calme ?? false,
+        environnement_rural: supabaseData.avis_description_environnement_rural ?? false,
+        bord_mer: supabaseData.avis_description_bord_mer ?? false,
+        montagne: supabaseData.avis_description_montagne ?? false,
+        autres_emplacement: supabaseData.avis_description_autres_emplacement ?? false
+      },
+      description_emplacement_autre: supabaseData.avis_description_emplacement_autre || "",
+      
+      precisions_emplacement: supabaseData.avis_precisions_emplacement || "",
+      
+      atouts_logement: {
+        luxueux: supabaseData.avis_atouts_luxueux ?? false,
+        lumineux: supabaseData.avis_atouts_lumineux ?? false,
+        central: supabaseData.avis_atouts_central ?? false,
+        spacieux: supabaseData.avis_atouts_spacieux ?? false,
+        authentique: supabaseData.avis_atouts_authentique ?? false,
+        design_moderne: supabaseData.avis_atouts_design_moderne ?? false,
+        terrasse_balcon: supabaseData.avis_atouts_terrasse_balcon ?? false,
+        piscine: supabaseData.avis_atouts_piscine ?? false,
+        autres_atouts: supabaseData.avis_atouts_autres_atouts ?? false
+      },
+      atouts_logement_autre: supabaseData.avis_atouts_logement_autre || "",
+      autres_caracteristiques: supabaseData.avis_autres_caracteristiques || "",
+      types_voyageurs: {
+        duo_amoureux: supabaseData.avis_voyageurs_duo_amoureux ?? false,
+        nomades_numeriques: supabaseData.avis_voyageurs_nomades_numeriques ?? false,
+        aventuriers_independants: supabaseData.avis_voyageurs_aventuriers_independants ?? false,
+        tribus_familiales: supabaseData.avis_voyageurs_tribus_familiales ?? false,
+        bandes_amis: supabaseData.avis_voyageurs_bandes_amis ?? false,
+        voyageurs_experience: supabaseData.avis_voyageurs_voyageurs_experience ?? false,
+        autres_voyageurs: supabaseData.avis_voyageurs_autres_voyageurs ?? false
+      },
+      types_voyageurs_autre: supabaseData.avis_voyageurs_autre || "",
+      
+      explication_adaptation: supabaseData.avis_explication_adaptation || "",
+      
+      notation: {
+        emplacement: supabaseData.avis_notation_emplacement || null,
+        confort: supabaseData.avis_notation_confort || null,
+        valeurs: supabaseData.avis_notation_valeurs || null,
+        equipements: supabaseData.avis_notation_equipements || null
+      }
+    },
+
     section_gestion_linge: {},
     section_equipements: {},
     section_consommables: {},
@@ -327,6 +413,49 @@ export const getUserFiches = async (userId) => {
     }
   }
 }
+
+
+
+// 🔥 NOUVELLE FONCTION : Récupérer TOUTES les fiches (pour admin/super admin)
+// 🔥 VERSION CORRIGÉE : Récupérer TOUTES les fiches sans JOIN complexe
+export const getAllFiches = async (includeArchived = false) => {
+  try {
+    let query = supabase
+      .from('fiches')
+      .select('id, nom, statut, created_at, updated_at, user_id') // Sans le JOIN profiles
+    
+    // Filtrer les fiches archivées si demandé
+    if (!includeArchived) {
+      query = query.neq('statut', 'Archivé')
+    }
+    
+    // Ordonner par date de mise à jour décroissante
+    query = query.order('updated_at', { ascending: false })
+    
+    const { data, error } = await query
+    
+    if (error) {
+      throw error
+    }
+    
+    // Pour l'instant, on retourne les fiches sans info créateur
+    // On ajoutera ça plus tard quand on aura configuré les foreign keys
+    return {
+      success: true,
+      data: data || [],
+      message: 'Toutes les fiches récupérées avec succès'
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération de toutes les fiches:', error)
+    return {
+      success: false,
+      error: error.message,
+      message: 'Erreur lors de la récupération des fiches'
+    }
+  }
+}
+
+
 
 // 🗑️ Supprimer une fiche
 export const deleteFiche = async (ficheId) => {

@@ -4,6 +4,7 @@ import { useAuth } from '../components/AuthContext'
 import { useFiches } from '../hooks/useFiches'
 import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List } from 'lucide-react'
 import DropdownMenu from '../components/DropdownMenu'
+import UserRoleBadge from '../components/UserRoleBadge'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -203,7 +204,7 @@ export default function Dashboard() {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">Mes fiches logement</h1>
               <p className="text-lg opacity-90">
-                Connecté en tant que <span className="font-medium">{userEmail}</span>
+              Accès <UserRoleBadge /> : <span className="font-medium">{userEmail}</span>
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -223,7 +224,7 @@ export default function Dashboard() {
                 className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-6 py-2.5 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto"
               >
                 Déconnexion
-              </button>
+              </button>           
             </div>
           </div>
         </div>
