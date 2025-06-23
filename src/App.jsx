@@ -1,21 +1,23 @@
+// src/App.jsx
 import { Routes, Route } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import FicheWizard from './pages/FicheWizard'
-import { FormProvider } from './components/FormContext' // <-- Assure-toi que cet import est là
+import { FormProvider } from './components/FormContext'
 import { AuthProvider } from './components/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import DuplicateAlertModal from './components/DuplicateAlertModal'
 
 export default function App() {
   return (
     <AuthProvider>
-      <FormProvider> {/* 🎯 FormProvider englobe TOUTE l'app */}
+      <FormProvider>
         <Routes>
-          {/* Route publique - maintenant avec FormContext ! */}
+          {/* Route publique */}
           <Route path="/login" element={<Login />} />
           
-          {/* Routes protégées - plus besoin de FormProvider ici */}
+          {/* Routes protégées */}
           <Route 
             path="/" 
             element={
@@ -45,6 +47,9 @@ export default function App() {
           
           <Route path="*" element={<NotFound />} />
         </Routes>
+        
+        {/* Modal global pour détection doublons */}
+        <DuplicateAlertModal />
       </FormProvider>
     </AuthProvider>
   )

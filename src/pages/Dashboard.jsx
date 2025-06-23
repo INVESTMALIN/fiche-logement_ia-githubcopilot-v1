@@ -8,7 +8,7 @@ import UserRoleBadge from '../components/UserRoleBadge'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { signOut, userEmail } = useAuth()
+  const { signOut, userEmail, userRole } = useAuth()
   const { 
     fiches, 
     loading, 
@@ -96,38 +96,50 @@ export default function Dashboard() {
         className: 'text-blue-600 hover:bg-blue-50'
       }
     ]
-
+  
     if (fiche.statut === 'Archivé') {
-      return [
+      const archivedItems = [
         {
           id: 'unarchive',
           label: 'Désarchiver',
           icon: <RotateCcw size={16} />,
           className: 'text-green-600 hover:bg-green-50'
-        },
-        {
+        }
+      ]
+  
+      // 🔐 NOUVEAU : Ajouter "Supprimer" SEULEMENT pour super_admin
+      if (userRole === 'super_admin') {
+        archivedItems.push({
           id: 'delete',
           label: 'Supprimer',
           icon: <Trash2 size={16} />,
           danger: true
-        }
-      ]
+        })
+      }
+  
+      return archivedItems
     } else {
-      return [
+      const activeItems = [
         ...baseItems,
         {
           id: 'archive',
           label: 'Archiver',
           icon: <Archive size={16} />,
           className: 'text-orange-600 hover:bg-orange-50'
-        },
-        {
+        }
+      ]
+  
+      // 🔐 NOUVEAU : Ajouter "Supprimer" SEULEMENT pour super_admin
+      if (userRole === 'super_admin') {
+        activeItems.push({
           id: 'delete',
           label: 'Supprimer',
           icon: <Trash2 size={16} />,
           danger: true
-        }
-      ]
+        })
+      }
+  
+      return activeItems
     }
   }
 

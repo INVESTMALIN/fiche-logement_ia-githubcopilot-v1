@@ -525,3 +525,37 @@ export const updateFicheStatut = async (ficheId, newStatut) => {
     }
   }
 }
+
+// À AJOUTER à la fin du fichier src/lib/supabaseHelpers.js
+// APRÈS toutes les autres fonctions existantes (getAllFiches, updateFicheStatut, etc.)
+
+// 🔍 Vérifier si une fiche existe déjà pour ce numéro de bien
+export const checkExistingFiche = async (numeroBien, userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('fiches')
+      .select('id, nom, updated_at')
+      .eq('logement_numero_bien', numeroBien)
+      .eq('user_id', userId)
+      .neq('statut', 'Archivé')  // Ignorer les fiches archivées
+      .order('updated_at', { ascending: false })
+      .limit(1)
+    
+    if (error) {
+      console.error('Erreur check doublon:', error)
+      return { exists: false }
+    }
+    
+    if (data && data.length > 0) {
+      return { 
+        exists: true, 
+        fiche: data[0] 
+      }
+    }
+    
+    return { exists: false }
+  } catch (error) {
+    console.error('Erreur check doublon:', error)
+    return { exists: false }
+  }
+}

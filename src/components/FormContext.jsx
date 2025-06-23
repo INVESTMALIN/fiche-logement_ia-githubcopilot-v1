@@ -1,8 +1,9 @@
 // src/components/FormContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom' // Ajout useNavigate
-import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
 import { useAuth } from './AuthContext'
+import { saveFiche, loadFiche, checkExistingFiche } from '../lib/supabaseHelpers'
+
 
 const FormContext = createContext()
 
@@ -204,6 +205,7 @@ export function FormProvider({ children }) {
     saved: false, 
     error: null 
   })
+  const [duplicateAlert, setDuplicateAlert] = useState(null)
   const [hasManuallyNamedFiche, setHasManuallyNamedFiche] = useState(false)
 
   const sections = [
@@ -221,14 +223,13 @@ export function FormProvider({ children }) {
   };
 
   const generateFicheName = (data) => {
-    // Priorité aux nouveaux champs section_logement
-    const type = data.section_logement?.type_propriete || data.section_logement?.type;
-    const ville = data.section_proprietaire?.adresse?.ville || data.section_logement?.adresse?.ville;
+  // Simple : utiliser le numéro de bien qui vient de Monday
+  const numeroBien = data.section_logement?.numero_bien;
+  
+  if (numeroBien) return `Bien ${numeroBien}`;
+  return "Nouvelle fiche";
+};
 
-    if (type && ville) return `${capitalize(type)} ${capitalize(ville)}`;
-    if (ville) return `Logement ${capitalize(ville)}`;
-    return "Nouvelle fiche";
-  };
 
   // 🎯 FONCTION: Parser les paramètres Monday
   const parseMondayParams = useCallback((queryParams) => {
@@ -244,7 +245,22 @@ export function FormProvider({ children }) {
     if (fullName || email || adresseRue || adresseVille || adressePostal) {
       mondayData.section_proprietaire = {}
       
-      if (fullName) mondayData.section_proprietaire.nom = decodeURIComponent(fullName)
+      // 🔧 CORRECTION: Séparer fullName en prénom/nom
+      if (fullName) {
+        const decodedFullName = decodeURIComponent(fullName)
+        const nameParts = decodedFullName.trim().split(' ')
+        
+        if (nameParts.length >= 2) {
+          // Premier mot = prénom, le reste = nom
+          mondayData.section_proprietaire.prenom = nameParts[0]
+          mondayData.section_proprietaire.nom = nameParts.slice(1).join(' ')
+        } else {
+          // Si un seul mot, on le met dans prénom
+          mondayData.section_proprietaire.prenom = decodedFullName
+          mondayData.section_proprietaire.nom = ""
+        }
+      }
+      
       if (email) mondayData.section_proprietaire.email = decodeURIComponent(email)
       
       if (adresseRue || adresseVille || adressePostal) {
@@ -303,6 +319,44 @@ export function FormProvider({ children }) {
     
     return newFormData
   }, [])
+
+  // 👇 AJOUTER ICI LES 4 FONCTIONS HELPER 👇
+
+// Helper function pour appliquer données Monday
+
+const applyMondayDataAndGenerate = useCallback((mondayData) => {
+  const newFormDataAfterMonday = applyMondayData(formData, mondayData);
+  setFormData(newFormDataAfterMonday);
+
+  const generatedName = generateFicheName(newFormDataAfterMonday);
+  if (generatedName !== "Nouvelle fiche") {
+    setHasManuallyNamedFiche(false);
+    setFormData(prev => ({ ...prev, nom: generatedName }));
+  }
+}, [formData, applyMondayData, generateFicheName, setHasManuallyNamedFiche]);
+
+// Fonctions pour gérer les actions du modal
+const handleOpenExisting = useCallback(() => {
+  if (duplicateAlert?.existingFiche) {
+    navigate(`/fiche?id=${duplicateAlert.existingFiche.id}`);
+    setDuplicateAlert(null);
+  }
+}, [duplicateAlert, navigate]);
+
+const handleCreateNew = useCallback(() => {
+  if (duplicateAlert?.mondayData) {
+    applyMondayDataAndGenerate(duplicateAlert.mondayData);
+    setDuplicateAlert(null);
+  }
+}, [duplicateAlert, applyMondayDataAndGenerate]);
+
+const handleCancelDuplicate = useCallback(() => {
+  setDuplicateAlert(null);
+  navigate('/');
+}, [navigate]);
+
+// 👆 JUSQU'ICI 👆
+
 
   // 🎯 FONCTION: Appliquer données Monday depuis URL
   const applyMondayDataFromURL = useCallback((searchParams) => {
@@ -409,19 +463,34 @@ export function FormProvider({ children }) {
     }
 
     // 🎯 PRIORITÉ 3: Application directe si connecté + params Monday
-    if (user && mondayParamsPresentInURL && !ficheId && formData.id === null) {
-        console.log('✅ Utilisateur déjà connecté, application directe des données Monday.');
-        const mondayData = parseMondayParams(params);
-        const newFormDataAfterMonday = applyMondayData(formData, mondayData);
-        setFormData(newFormDataAfterMonday);
-
-        const generatedName = generateFicheName(newFormDataAfterMonday);
-        if (generatedName !== "Nouvelle fiche") {
-            setHasManuallyNamedFiche(false);
-            setFormData(prev => ({ ...prev, nom: generatedName }));
-        }
-        return; // STOP - Données appliquées
-    }
+    // 🎯 PRIORITÉ 3: Application directe si connecté + params Monday
+if (user && mondayParamsPresentInURL && !ficheId && formData.id === null) {
+  console.log('✅ Utilisateur déjà connecté, vérification doublons avant application...');
+  
+  const mondayData = parseMondayParams(params);
+  const numeroBien = mondayData.section_logement?.numero_bien;
+  
+  // 🔍 Check doublon si numéro de bien présent
+  if (numeroBien) {
+    checkExistingFiche(numeroBien, user.id).then(result => {
+      if (result.exists) {
+        // Afficher modal de confirmation
+        setDuplicateAlert({
+          existingFiche: result.fiche,
+          mondayData: mondayData
+        });
+        return; // STOP - Attendre choix utilisateur
+      } else {
+        // Pas de doublon, application normale
+        applyMondayDataAndGenerate(mondayData);
+      }
+    });
+  } else {
+    // Pas de numéro bien, application normale  
+    applyMondayDataAndGenerate(mondayData);
+  }
+  return;
+}
 
     // 🎯 PRIORITÉ 4: Chargement fiche existante par ID
     if (ficheId && formData.id !== ficheId && !saveStatus.saving) {
@@ -653,6 +722,10 @@ export function FormProvider({ children }) {
       archiverFiche,
       
       getFormDataPreview,
+      duplicateAlert,
+      handleOpenExisting,
+      handleCreateNew,
+      handleCancelDuplicate,
       getMondayDebugInfo  // Pour debugging
     }}>
       {children}
