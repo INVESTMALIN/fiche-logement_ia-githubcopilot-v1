@@ -1,12 +1,331 @@
-// src/pages/AdminConsole.jsx - Version complète avec menu contextuel
+// src/pages/AdminConsole.jsx - Version complète fonctionnelle
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { Edit, Archive, Trash2, RotateCcw } from 'lucide-react'
+import { Edit, Archive, Trash2, RotateCcw, Eye, MoreHorizontal } from 'lucide-react'
 import FichePreviewModal from '../components/FichePreviewModal'
 import ReassignModal from '../components/ReassignModal'
-import DropdownMenu from '../components/DropdownMenu'
 import { useAuth } from '../components/AuthContext'
+
+// ✅ Dropdown moderne avec portal
+function ModernDropdown({ items, onSelect, fiche, trigger }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [position, setPosition] = useState({ top: 0, left: 0 })
+
+  const toggleDropdown = (e) => {
+    e.stopPropagation()
+    
+    if (!isOpen) {
+      // Calculer la position du dropdown
+      const rect = e.currentTarget.getBoundingClientRect()
+      setPosition({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.right + window.scrollX - 200 // Aligné à droite
+      })
+    }
+    
+    setIsOpen(!isOpen)
+  }
+
+  const handleItemClick = (action, e) => {
+    e.stopPropagation()
+    setIsOpen(false)
+    onSelect(action, fiche)
+  }
+
+  // Fermeture au clic extérieur
+  useEffect(() => {
+    const handleClickOutside = () => setIsOpen(false)
+    if (isOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [isOpen])
+
+  return (
+    <>
+      {/* Trigger button */}
+      <button
+        onClick={toggleDropdown}
+        className="p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+      >
+        <MoreHorizontal size={18} className="text-gray-500" />
+      </button>
+
+      {/* Menu dropdown avec portal */}
+      {isOpen && (
+        <div 
+          className="fixed bg-white rounded-xl shadow-xl border border-gray-200 min-w-48 py-2 z-[9999]"
+          style={{ 
+            top: position.top, 
+            left: position.left,
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}
+        >
+          {items.map((item, index) => (
+            <button
+              key={item.id || index}
+              onClick={(e) => handleItemClick(item, e)}
+              className={`
+                w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors
+                flex items-center gap-3 first:rounded-t-lg last:rounded-b-lg
+                ${item.danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700'}
+              `}
+            >
+              {item.icon && <span className="flex-shrink-0">{item.icon}</span>}
+              <span className="flex-1 font-medium">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
+// ✅ Modal pour modifier un utilisateur
+function EditUserModal({ user, onClose, onSuccess }) {
+  const [formData, setFormData] = useState({
+    prenom: user.prenom || '',
+    nom: user.nom || '',
+    email: user.email || '',
+    role: user.role || 'coordinateur'
+  })
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          prenom: formData.prenom,
+          nom: formData.nom,
+          role: formData.role,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+
+      if (error) throw error
+      
+      console.log('Utilisateur modifié avec succès')
+      onSuccess()
+    } catch (error) {
+      console.error('Erreur lors de la modification:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl p-6 max-w-md w-full">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Modifier l'utilisateur
+        </h3>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+            <input
+              type="text"
+              value={formData.prenom}
+              onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+            <input
+              type="text"
+              value={formData.nom}
+              onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">L'email ne peut pas être modifié</p>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="coordinateur">Coordinateur</option>
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super Admin</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3 justify-end pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Modification...' : 'Modifier'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ✅ Modal pour créer un nouvel utilisateur
+function NewUserModal({ onClose, onSuccess }) {
+  const [formData, setFormData] = useState({
+    prenom: '',
+    nom: '',
+    email: '',
+    password: '',
+    role: 'coordinateur'
+  })
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      // 1. Créer l'utilisateur dans Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password
+      })
+
+      if (authError) throw authError
+
+      // 2. Créer le profil dans la table profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          email: formData.email,
+          prenom: formData.prenom,
+          nom: formData.nom,
+          role: formData.role,
+          active: true
+        })
+
+      if (profileError) throw profileError
+      
+      console.log('Nouvel utilisateur créé avec succès')
+      onSuccess()
+    } catch (error) {
+      console.error('Erreur lors de la création:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl p-6 max-w-md w-full">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Nouvel utilisateur
+        </h3>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+            <input
+              type="text"
+              value={formData.prenom}
+              onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+            <input
+              type="text"
+              value={formData.nom}
+              onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              minLength={6}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="coordinateur">Coordinateur</option>
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super Admin</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3 justify-end pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Création...' : 'Créer'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
 
 export default function AdminConsole() {
   const navigate = useNavigate()
@@ -66,6 +385,53 @@ export default function AdminConsole() {
       setLoading(false)
     }
   }
+
+  // Fonctions pour archiver/désarchiver une fiche
+  const archiveFiche = async (ficheId) => {
+    try {
+      const { error } = await supabase
+        .from('fiches')
+        .update({ statut: 'Archivé' })
+        .eq('id', ficheId)
+
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
+  const unarchiveFiche = async (ficheId) => {
+    try {
+      const { error } = await supabase
+        .from('fiches')
+        .update({ statut: 'Brouillon' })
+        .eq('id', ficheId)
+
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
+  const deleteFiche = async (ficheId) => {
+    try {
+      const { error } = await supabase
+        .from('fiches')
+        .delete()
+        .eq('id', ficheId)
+
+      if (error) throw error
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
 
   // Fonctions pour gérer le modal de prévisualisation
   const handlePreviewFiche = (fiche) => {
@@ -142,128 +508,6 @@ export default function AdminConsole() {
     }
   }
 
-  // Générer les items du menu selon le statut de la fiche
-  const getMenuItems = (fiche) => {
-    const baseItems = [
-      {
-        id: 'edit',
-        label: 'Modifier',
-        icon: <Edit size={16} />,
-        className: 'text-blue-600 hover:bg-blue-50'
-      }
-    ]
-  
-    if (fiche.statut === 'Archivé') {
-      const archivedItems = [
-        {
-          id: 'unarchive',
-          label: 'Désarchiver',
-          icon: <RotateCcw size={16} />,
-          className: 'text-green-600 hover:bg-green-50'
-        }
-      ]
-  
-      if (userRole === 'super_admin') {
-        archivedItems.push({
-          id: 'delete',
-          label: 'Supprimer',
-          icon: <Trash2 size={16} />,
-          danger: true
-        })
-      }
-  
-      return archivedItems
-    } else {
-      const activeItems = [
-        ...baseItems,
-        {
-          id: 'archive',
-          label: 'Archiver',
-          icon: <Archive size={16} />,
-          className: 'text-orange-600 hover:bg-orange-50'
-        }
-      ]
-  
-      if (userRole === 'super_admin') {
-        activeItems.push({
-          id: 'delete',
-          label: 'Supprimer',
-          icon: <Trash2 size={16} />,
-          danger: true
-        })
-      }
-  
-      return activeItems
-    }
-  }
-
-  // Fonctions de gestion de la suppression
-  const handleDeleteConfirm = async () => {
-    if (!deleteConfirm) return
-
-    const result = await deleteFiche(deleteConfirm.id)
-    
-    if (result.success) {
-      console.log('Fiche supprimée avec succès')
-      loadData()
-    } else {
-      console.error('Erreur suppression:', result.error)
-    }
-    
-    setDeleteConfirm(null)
-  }
-
-  const handleDeleteCancel = () => {
-    setDeleteConfirm(null)
-  }
-
-  // Fonctions d'archivage et suppression Supabase
-  const archiveFiche = async (ficheId) => {
-    try {
-      const { error } = await supabase
-        .from('fiches')
-        .update({ statut: 'Archivé', updated_at: new Date().toISOString() })
-        .eq('id', ficheId)
-
-      if (error) throw error
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
-
-  const unarchiveFiche = async (ficheId) => {
-    try {
-      const { error } = await supabase
-        .from('fiches')
-        .update({ statut: 'Brouillon', updated_at: new Date().toISOString() })
-        .eq('id', ficheId)
-
-      if (error) throw error
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
-
-  const deleteFiche = async (ficheId) => {
-    try {
-      const { error } = await supabase
-        .from('fiches')
-        .delete()
-        .eq('id', ficheId)
-
-      if (error) throw error
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
-
-  useEffect(() => {
-    loadData()
-  }, [])
-
   // Calculer les compteurs pour les onglets
   const tabs = [
     { 
@@ -304,12 +548,23 @@ export default function AdminConsole() {
               <h1 className="text-3xl font-bold mb-2">Console Administration</h1>
               <p className="text-lg opacity-90">Gestion globale - Accès Super Admin</p>
             </div>
-            <button
-              onClick={() => navigate('/')}
-              className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-2.5 rounded-xl font-medium transition-all duration-200"
-            >
-              Dashboard
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate('/')}
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-2.5 rounded-xl font-medium transition-all duration-200"
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut()
+                  navigate('/login')
+                }}
+                className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-6 py-2.5 rounded-xl font-medium transition-all duration-200"
+              >
+                Déconnexion
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -354,7 +609,6 @@ export default function AdminConsole() {
             onPreviewFiche={handlePreviewFiche}
             onReassignFiche={handleReassignFiche}
             onMenuAction={handleMenuAction}
-            getMenuItems={getMenuItems}
           />
         )}
         
@@ -393,13 +647,22 @@ export default function AdminConsole() {
             </p>
             <div className="flex gap-3 justify-end">
               <button
-                onClick={handleDeleteCancel}
+                onClick={() => setDeleteConfirm(null)}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
               >
                 Annuler
               </button>
               <button
-                onClick={handleDeleteConfirm}
+                onClick={async () => {
+                  const result = await deleteFiche(deleteConfirm.id)
+                  if (result.success) {
+                    console.log('Fiche supprimée avec succès')
+                    loadData()
+                  } else {
+                    console.error('Erreur suppression:', result.error)
+                  }
+                  setDeleteConfirm(null)
+                }}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
                 Supprimer
@@ -414,19 +677,56 @@ export default function AdminConsole() {
 
 // Composant Gestion Utilisateurs
 function UsersTab({ users, onRefresh }) {
+  const [editModal, setEditModal] = useState({ isOpen: false, user: null })
+  const [newUserModal, setNewUserModal] = useState(false)
+
+  // Fonction pour modifier un utilisateur
+  const handleEditUser = (user) => {
+    setEditModal({ isOpen: true, user })
+  }
+
+  // Fonction pour désactiver/activer un utilisateur
+  const handleToggleUser = async (user) => {
+    try {
+      const newStatus = user.active === false ? true : false
+      const { error } = await supabase
+        .from('profiles')
+        .update({ active: newStatus })
+        .eq('id', user.id)
+
+      if (error) throw error
+      
+      console.log(`Utilisateur ${newStatus ? 'activé' : 'désactivé'} avec succès`)
+      onRefresh()
+    } catch (error) {
+      console.error('Erreur lors du changement de statut:', error)
+    }
+  }
+
+  // Fonction pour créer un nouvel utilisateur
+  const handleNewUser = () => {
+    setNewUserModal(true)
+  }
+
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-6 border-b">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Gestion des Utilisateurs</h2>
-          <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
-            + Nouveau coordinateur
+          <div>
+            <h2 className="text-xl font-semibold">Gestion des Utilisateurs</h2>
+            <p className="text-gray-600 mt-1">Administration des comptes et permissions</p>
+          </div>
+          <button 
+            onClick={handleNewUser}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
+          >
+            + Nouvel utilisateur
           </button>
         </div>
       </div>
       
-      <div className="overflow-x-auto overflow-y-visible">
-        <table className="w-full relative">
+      <div className="overflow-x-auto">
+        <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -450,10 +750,19 @@ function UsersTab({ users, onRefresh }) {
             {users.map(user => (
               <tr key={user.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {user.prenom || user.nom ? 
-                        `${user.prenom} ${user.nom}`.trim() : 'Non renseigné'}
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-8 w-8">
+                      <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                        <span className="text-sm font-medium text-gray-700">
+                          {user.prenom ? user.prenom.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {user.prenom && user.nom ? 
+                          `${user.prenom} ${user.nom}`.trim() : 'Non renseigné'}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -474,35 +783,80 @@ function UsersTab({ users, onRefresh }) {
                   {new Date(user.created_at).toLocaleDateString('fr-FR')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-red-600 hover:text-red-900 mr-3">Modifier</button>
-                  <button className="text-gray-600 hover:text-gray-900">Désactiver</button>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => handleEditUser(user)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1 rounded-lg transition-colors font-medium"
+                    >
+                      Modifier
+                    </button>
+                    <button 
+                      onClick={() => handleToggleUser(user)}
+                      className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                        user.active === false 
+                          ? 'text-green-600 hover:text-green-700 hover:bg-green-50' 
+                          : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                      }`}
+                    >
+                      {user.active === false ? 'Activer' : 'Désactiver'}
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Modal Modifier Utilisateur */}
+      {editModal.isOpen && (
+        <EditUserModal 
+          user={editModal.user}
+          onClose={() => setEditModal({ isOpen: false, user: null })}
+          onSuccess={() => {
+            onRefresh()
+            setEditModal({ isOpen: false, user: null })
+          }}
+        />
+      )}
+
+      {/* Modal Nouvel Utilisateur */}
+      {newUserModal && (
+        <NewUserModal 
+          onClose={() => setNewUserModal(false)}
+          onSuccess={() => {
+            onRefresh()
+            setNewUserModal(false)
+          }}
+        />
+      )}
     </div>
   )
 }
 
-// Composant Toutes les Fiches avec split button
-function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, onMenuAction, getMenuItems }) {
+// Composant Toutes les Fiches avec design moderne
+function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, onMenuAction }) {
+  const [searchTerm, setSearchTerm] = useState("") // ✅ NOUVEAU
   
-  // Générer les items du dropdown (sans "Voir")
+  // ✅ NOUVEAU : Filtrer les fiches selon la recherche
+  const filteredFiches = fiches.filter(fiche => 
+    fiche.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (fiche.creator?.prenom && `${fiche.creator.prenom} ${fiche.creator.nom}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (fiche.creator?.email && fiche.creator.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  )
+  
+  // Générer les items du dropdown
   const getDropdownItems = (fiche) => {
     const items = [
       {
         id: 'reassign',
         label: 'Réaffecter',
         icon: <Edit size={16} />,
-        className: 'text-red-600 hover:bg-red-50'
       },
       {
         id: 'edit',
         label: 'Modifier',
         icon: <Edit size={16} />,
-        className: 'text-blue-600 hover:bg-blue-50'
       }
     ]
 
@@ -512,19 +866,17 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
         id: 'unarchive',
         label: 'Désarchiver',
         icon: <RotateCcw size={16} />,
-        className: 'text-green-600 hover:bg-green-50'
       })
     } else {
       items.push({
         id: 'archive',
         label: 'Archiver',
         icon: <Archive size={16} />,
-        className: 'text-orange-600 hover:bg-orange-50'
       })
     }
 
     // Ajouter Supprimer pour super-admin uniquement
-    if (users.find(u => u.role === 'super_admin')) { // Quick check
+    if (users.find(u => u.role === 'super_admin')) {
       items.push({
         id: 'delete',
         label: 'Supprimer',
@@ -547,8 +899,33 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-6 border-b">
-        <h2 className="text-xl font-semibold">Toutes les Fiches Logement</h2>
-        <p className="text-gray-600 mt-1">Vue globale et gestion complète</p>
+        <div className="flex justify-between items-start gap-4">
+          <div>
+            <h2 className="text-xl font-semibold">Toutes les Fiches Logement</h2>
+            <p className="text-gray-600 mt-1">Vue globale et gestion complète</p>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {/* Compteur de fiches */}
+            <div className="text-sm text-gray-500 whitespace-nowrap">
+              {filteredFiches.length} fiche(s) {searchTerm && `sur ${fiches.length}`}
+            </div>
+            
+            {/* ✅ Barre de recherche compacte */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-64 px-3 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              />
+              <svg className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div className="overflow-x-auto">
@@ -573,7 +950,7 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {fiches.map(fiche => (
+            {filteredFiches.map(fiche => (
               <tr key={fiche.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{fiche.nom}</div>
@@ -597,19 +974,21 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
                   {new Date(fiche.updated_at).toLocaleDateString('fr-FR')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  {/* ✅ NOUVEAU - Split button : [Voir] [▼] */}
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-2">
+                    {/* Bouton Voir moderne */}
                     <button 
                       onClick={() => onPreviewFiche(fiche)}
-                      className="px-3 py-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-l border border-gray-300 transition-colors"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     >
-                      Voir
+                      <Eye size={16} />
+                      <span className="font-medium">Voir</span>
                     </button>
-                    <DropdownMenu
+                    
+                    {/* Dropdown moderne */}
+                    <ModernDropdown
                       items={getDropdownItems(fiche)}
-                      onSelect={(action) => handleDropdownAction(action, fiche)}
-                      triggerClassName="px-2 py-1 border-l-0 border border-gray-300 rounded-r hover:bg-gray-50 transition-colors focus:outline-none focus:ring-0"
-                      menuClassName="right-0 z-50"
+                      onSelect={handleDropdownAction}
+                      fiche={fiche}
                     />
                   </div>
                 </td>

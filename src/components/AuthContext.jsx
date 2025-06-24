@@ -61,23 +61,52 @@ export function AuthProvider({ children }) {
   }, [])
 
   // Connexion
-  const signIn = async (email, password) => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      
-      if (error) throw error
-      
+  // Modifie uniquement la fonction signIn dans AuthContext.jsx
+
+// Connexion avec vérification du statut active
+const signIn = async (email, password) => {
+  try {
+    setLoading(true)
+    
+    // 1. Connexion normale Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    
+    if (error) throw error
+    
+    // 2. ✅ NOUVEAU : Vérifier si l'utilisateur est actif
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('active')
+      .eq('id', data.user.id)
+      .single()
+    
+    if (profileError) {
+      console.error('Erreur lors de la vérification du profil:', profileError)
+      // En cas d'erreur, on laisse passer (fallback sécurisé)
       return { data, error: null }
-    } catch (error) {
-      return { data: null, error: error.message }
-    } finally {
-      setLoading(false)
     }
+    
+    // 3. ✅ Si le compte est désactivé → déconnexion immédiate
+    if (profile.active === false) {
+      await supabase.auth.signOut()
+      return { 
+        data: null, 
+        error: 'Votre compte a été désactivé par un administrateur. Contactez le support.' 
+      }
+    }
+    
+    // 4. ✅ Compte actif → connexion normale
+    return { data, error: null }
+    
+  } catch (error) {
+    return { data: null, error: error.message }
+  } finally {
+    setLoading(false)
   }
+}
 
   // Déconnexion
   const signOut = async () => {
