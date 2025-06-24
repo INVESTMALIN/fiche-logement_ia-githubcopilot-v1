@@ -1,6 +1,6 @@
-// src/pages/Login.jsx
-import { useState, useEffect } from 'react' // Ajout useEffect
-import { useNavigate } from 'react-router-dom' // Ajout useNavigate
+// src/pages/Login.jsx (modifié)
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
 import Button from '../components/Button'
 
@@ -8,24 +8,30 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const { signIn, loading, isAuthenticated } = useAuth()
-  const navigate = useNavigate() // Utilise useNavigate
+  const { signIn, loading, isAuthenticated, userRole } = useAuth() // ✅ Ajout userRole
+  const navigate = useNavigate()
 
-  // 🎯 MODIFIÉ: Redirection si déjà connecté OU récupération params Monday  
+  // ✅ MODIFIÉ: Redirection conditionnelle selon le rôle
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && userRole !== null) { // ✅ Attendre que le rôle soit chargé
       const pendingMondayParams = localStorage.getItem('pendingMondayParams')
       
       if (pendingMondayParams) {
         console.log('✅ Login: Récupération params Monday depuis localStorage:', pendingMondayParams)
-        // ⚠️ NE PAS supprimer localStorage ici - laisser FormContext s'en occuper
-        navigate(`/fiche${pendingMondayParams}`, { replace: true }) // Redirige avec params
+        // Monday params = toujours vers /fiche (même pour super-admin)
+        navigate(`/fiche${pendingMondayParams}`, { replace: true })
       } else {
-        console.log('✅ Login: Connexion normale, redirection Dashboard')
-        navigate('/', { replace: true }) // Dashboard par défaut
+        // ✅ NOUVELLE LOGIQUE: Redirection selon le rôle
+        if (userRole === 'super_admin') {
+          console.log('✅ Login: Super Admin → Console Admin')
+          navigate('/admin', { replace: true })
+        } else {
+          console.log('✅ Login: Coordinateur/Admin → Dashboard')
+          navigate('/', { replace: true })
+        }
       }
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, userRole, navigate]) // ✅ Ajout userRole dans les dépendances
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -69,7 +75,7 @@ export default function Login() {
             <p className="text-gray-600">Accédez à votre espace coordinateur</p>
           </div>
 
-          {/* 🎯 NOUVEAU: Message si params Monday en attente */}
+          {/* ✅ Message si params Monday en attente */}
           {typeof window !== 'undefined' && localStorage.getItem('pendingMondayParams') && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-blue-700 text-sm text-center">
@@ -78,70 +84,51 @@ export default function Login() {
             </div>
           )}
 
+          {/* Message d'erreur */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm text-center">{error}</p>
+            </div>
+          )}
+
           {/* Formulaire */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Adresse email
-              </label>
               <input
                 type="email"
+                placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
-                placeholder="votre@email.com"
-                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                disabled={loading}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mot de passe
-              </label>
               <input
                 type="password"
+                placeholder="Mot de passe"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
-                placeholder="••••••••"
-                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                disabled={loading}
               />
             </div>
 
-            {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm">{error}</p>
-              </div>
-            )}
-
             <Button
               type="submit"
+              className="w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold rounded-xl hover:from-yellow-500 hover:to-yellow-700 transition-all duration-200 disabled:opacity-50"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-black border-t-transparent mr-2"></div>
-                  Se connecter...
-                </div>
-              ) : (
-                'Se connecter'
-              )}
+              {loading ? 'Connexion...' : 'Se connecter'}
             </Button>
           </form>
 
           {/* Footer */}
           <div className="mt-8 text-center">
-            <p className="text-xs text-gray-500 mb-4">
-              Letahost • Conciergerie de luxe
+            <p className="text-xs text-gray-500">
+              Letahost • Conciergerie Premium
             </p>
-            
-            {/* Accès de test */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs font-medium text-blue-800 mb-1">Accès de test :</p>
-              <p className="text-xs text-blue-700">Email: coordinateur@test.com</p>
-              <p className="text-xs text-blue-700">Mot de passe: Test1234</p>
-            </div>
           </div>
         </div>
       </div>
