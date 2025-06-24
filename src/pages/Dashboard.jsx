@@ -8,7 +8,7 @@ import UserRoleBadge from '../components/UserRoleBadge'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { signOut, userEmail, userRole } = useAuth()
+  const { signOut, userEmail, userRole, isSuperAdmin } = useAuth()
   const { 
     fiches, 
     loading, 
@@ -231,12 +231,23 @@ export default function Dashboard() {
               >
                 + Nouvelle fiche
               </button>
+              
               <button
                 onClick={handleLogout}
                 className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-6 py-2.5 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto"
               >
                 Déconnexion
-              </button>           
+              </button>
+              {/* ✅ NOUVEAU BOUTON - Console Admin (visible uniquement pour super_admin) */}
+              {isSuperAdmin && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-3 py-2.5 rounded-xl transition-all duration-200"
+                  title="Console Admin"
+                >
+                  ⚙️
+                </button>
+              )}          
             </div>
           </div>
         </div>

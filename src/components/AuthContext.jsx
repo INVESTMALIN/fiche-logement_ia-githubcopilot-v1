@@ -6,12 +6,11 @@ const AuthContext = createContext()
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [userRole, setUserRole] = useState('coordinateur') // 🔥 NOUVEAU : juste le rôle
+  const [userRole, setUserRole] = useState(null) // 🔥 NOUVEAU : juste le rôle
 
   // 🔥 SIMPLE : récupérer le rôle quand l'utilisateur change
   useEffect(() => {
     if (user) {
-      // Récupérer le rôle depuis la table profiles
       const fetchRole = async () => {
         try {
           const { data } = await supabase
@@ -22,20 +21,21 @@ export function AuthProvider({ children }) {
           
           if (data?.role) {
             console.log("Rôle récupéré:", data.role)
+            console.log("Mise à jour userRole avec:", data.role) // ✅ AJOUTER ÇA
             setUserRole(data.role)
           } else {
             console.log("Pas de rôle trouvé, fallback coordinateur")
-            setUserRole('coordinateur')
+            setUserRole('coordinateur') // Fallback seulement si pas de rôle en base
           }
         } catch (e) {
           console.log("Erreur rôle, fallback coordinateur:", e.message)
-          setUserRole('coordinateur')
+          setUserRole('coordinateur') // Fallback seulement en cas d'erreur
         }
       }
       
       fetchRole()
     } else {
-      setUserRole('coordinateur')
+      setUserRole(null) // Pas d'utilisateur = pas de rôle
     }
   }, [user])
 

@@ -20,17 +20,24 @@ export const useFiches = () => {
       return
     }
 
+    // 🔧 FIX : Ne pas fetch si userRole n'est pas encore récupéré
+    // authLoading = false, user existe, mais userRole pas encore défini = attendre
+    if (!userRole) {
+      console.log("Attente récupération rôle utilisateur...")
+      return
+    }
+
     setLoading(true)
     setError(null)
 
     try {
       let result
       
-      // 🔥 NOUVEAU : adapter la requête selon le rôle
+      // 🔥 Adapter la requête selon le rôle
       if (canViewAllFiches) {
-        // Admin ou Super Admin : récupérer toutes les fiches
+        // Admin ou Super Admin : récupérer toutes les fiches (Y COMPRIS ARCHIVÉES)
         console.log(`Chargement de toutes les fiches (rôle: ${userRole})`)
-        result = await getAllFiches()
+        result = await getAllFiches(true) // ← AJOUTER true pour inclure archivées
       } else {
         // Coordinateur : récupérer seulement ses fiches
         console.log(`Chargement des fiches personnelles (rôle: ${userRole})`)
@@ -113,9 +120,10 @@ export const useFiches = () => {
     }
   }
 
+  // 🔧 FIX : useEffect qui attend la stabilisation du rôle
   useEffect(() => {
     fetchFiches()
-  }, [user, authLoading, userRole, canViewAllFiches]) // 🔥 NOUVEAU : dépendances mises à jour
+  }, [user, authLoading, userRole, canViewAllFiches])
 
   // Fonction pour rafraîchir les données (utile après création/modification)
   const refetch = () => {
@@ -130,7 +138,6 @@ export const useFiches = () => {
     deleteFiche: handleDeleteFiche,
     archiveFiche: handleArchiveFiche,
     unarchiveFiche: handleUnarchiveFiche,
-    // 🔥 NOUVEAU : informations sur le contexte utilisateur
     userRole,
     canViewAllFiches
   }
