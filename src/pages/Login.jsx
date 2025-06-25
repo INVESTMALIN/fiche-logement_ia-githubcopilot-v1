@@ -137,6 +137,16 @@ export default function Login() {
               >
                 {loading ? 'Connexion...' : 'Se connecter'}
               </Button>
+              {/* Lien mot de passe oublié */}
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => navigate('/reset-password')}
+                  className="text-sm text-blue-600 hover:text-blue-700 underline"
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
             </form>
 
             {/* Accès test */}

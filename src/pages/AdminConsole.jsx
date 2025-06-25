@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { Edit, Archive, Trash2, RotateCcw, Eye, MoreHorizontal } from 'lucide-react'
+import { Edit, Archive, Trash2, RotateCcw, Eye, MoreHorizontal, Search, UserPen } from 'lucide-react'
 import FichePreviewModal from '../components/FichePreviewModal'
 import ReassignModal from '../components/ReassignModal'
 import { useAuth } from '../components/AuthContext'
@@ -854,7 +854,7 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
       {
         id: 'reassign',
         label: 'Réaffecter',
-        icon: <Edit size={16} />,
+        icon: <UserPen size={16} />,
       },
       {
         id: 'edit',
@@ -902,33 +902,23 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-6 border-b">
-        <div className="flex justify-between items-start gap-4">
-          <div>
-            <h2 className="text-xl font-semibold">Fiches logement</h2>
-            <p className="text-gray-600 mt-1">Vue globale</p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Compteur de fiches */}
-            <div className="text-sm text-gray-500 whitespace-nowrap">
-              {filteredFiches.length} fiche(s) {searchTerm && `sur ${fiches.length}`}
-            </div>
-            
-            {/* ✅ Barre de recherche compacte */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Rechercher..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64 px-3 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              />
-              <svg className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
+      <div>
+  <h2 className="text-xl font-semibold">Fiches logement</h2>
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
+    <p className="text-gray-600">{filteredFiches.length} fiche(s) {searchTerm && `sur ${fiches.length}`}</p>
+    
+    <div className="relative">
+      <input
+        type="text"
+        placeholder="Rechercher..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full sm:w-64 px-3 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+      />
+      <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+    </div>
+  </div>
+</div>
       </div>
       
       <div className="overflow-x-auto">

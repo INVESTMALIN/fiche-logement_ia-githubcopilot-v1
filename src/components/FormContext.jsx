@@ -146,12 +146,10 @@ export function FormProvider({ children }) {
   };
 
   const generateFicheName = (data) => {
-    // Priorité aux nouveaux champs section_logement
-    const type = data.section_logement?.type_propriete || data.section_logement?.type;
-    const ville = data.section_proprietaire?.adresse?.ville || data.section_logement?.adresse?.ville;
-
-    if (type && ville) return `${capitalize(type)} ${capitalize(ville)}`;
-    if (ville) return `Logement ${capitalize(ville)}`;
+    // Simple : utiliser le numéro de bien qui vient de Monday
+    const numeroBien = data.section_logement?.numero_bien;
+    
+    if (numeroBien) return `Bien ${numeroBien}`;
     return "Nouvelle fiche";
   };
 
@@ -483,16 +481,21 @@ export function FormProvider({ children }) {
       setSaveStatus({ saving: false, saved: false, error: 'Utilisateur non connecté' });
       return { success: false, error: 'Utilisateur non connecté' };
     }
-
+  
     setSaveStatus({ saving: true, saved: false, error: null });
     
     try {
       const dataToSave = {
         ...formData,
-        user_id: user.id
+        user_id: user.id,  // FORCE TOUJOURS
+        updated_at: new Date().toISOString()
       };
-
-      const result = await saveFiche(dataToSave);
+  
+      // DEBUG
+      console.log('🔍 AVANT SAVE - user_id:', dataToSave.user_id);
+      console.log('🔍 AVANT SAVE - user email:', user?.email);
+  
+      const result = await saveFiche(dataToSave, user.id);
       
       if (result.success) {
         setFormData(result.data);
