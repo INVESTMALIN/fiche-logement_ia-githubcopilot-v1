@@ -144,13 +144,13 @@ export default function Login() {
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs text-blue-600 font-medium mb-2">Accès test :</p>
               <p className="text-xs text-blue-600">
-                📧 coordinateur@test.com | 🔑 password123
+                📧 coordinateur1@test.com | 🔑 Test1234
               </p>
               <p className="text-xs text-blue-600">
-                📧 admin@test.com | 🔑 password123
+                📧 coordinateur2@test.com | 🔑 Test1234
               </p>
               <p className="text-xs text-blue-600">
-                📧 superadmin@test.com | 🔑 password123
+                📧 super-admin@test.com | 🔑 Test1234
               </p>
             </div>
 
