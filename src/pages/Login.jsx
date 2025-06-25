@@ -7,7 +7,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const { signIn, loading, isAuthenticated, userRole } = useAuth()
+  const { signIn, loading, isAuthenticated } = useAuth()
   const navigate = useNavigate()
 
   // 💾 Capture params Monday s'ils sont dans l'URL
@@ -23,20 +23,19 @@ export default function Login() {
 
   // ✅ Redirection conditionnelle post-login
   useEffect(() => {
-    if (isAuthenticated && userRole !== null) {
-      // 🎯 NOUVELLE APPROCHE: Laisser FormContext gérer complètement Monday
-      // Login.jsx ne gère QUE les redirections normales (sans params Monday)
+    if (isAuthenticated) {
+      const pendingMondayParams = localStorage.getItem('pendingMondayParams')
       
-      // Redirection normale selon le rôle
-      if (userRole === 'super_admin') {
-        console.log('✅ Login: Super Admin → Console Admin')
-        navigate('/admin', { replace: true })
+      if (pendingMondayParams) {
+        console.log('✅ Login: Récupération params Monday depuis localStorage:', pendingMondayParams)
+        // ⚠️ NE PAS supprimer localStorage ici - laisser FormContext s'en occuper
+        navigate(`/fiche${pendingMondayParams}`, { replace: true }) // ← LIGNE CRITIQUE !
       } else {
-        console.log('✅ Login: Coordinateur/Admin → Dashboard')
+        console.log('✅ Login: Connexion normale, redirection Dashboard')
         navigate('/', { replace: true })
       }
     }
-  }, [isAuthenticated, userRole, navigate])
+  }, [isAuthenticated, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

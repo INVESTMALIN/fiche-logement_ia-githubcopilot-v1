@@ -1,30 +1,23 @@
+// src/components/FormContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom' // Ajout useNavigate
+import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
 import { useAuth } from './AuthContext'
-import { 
-  saveFiche, 
-  loadFiche, 
-  deleteFiche, 
-  checkExistingFiche,
-  mapFormDataToSupabase,
-  mapSupabaseToFormData 
-} from '../lib/supabaseHelpers'
 
 const FormContext = createContext()
 
 const initialFormData = {
   id: null,
   user_id: null,
-  nom: "Nouvelle fiche",
-  statut: "brouillon",
   created_at: null,
   updated_at: null,
+  nom: "Nouvelle fiche",
+  statut: "Brouillon",
   
   section_proprietaire: {
     prenom: "",
     nom: "",
     email: "",
-    telephone: "",
     adresse: {
       rue: "",
       complement: "",
@@ -32,46 +25,80 @@ const initialFormData = {
       codePostal: ""
     }
   },
-  
   section_logement: {
-    // 🎯 CHAMPS MONDAY ESSENTIELS
-    type_propriete: "",
-    surface: "",
-    numero_bien: "",
-    nombre_personnes_max: "",
-    nombre_lits: "",
-    typologie: "",
-    type_autre_precision: "",
+    // Nouveaux champs Monday
+    type_propriete: "",           // Dropdown principal (Appartement, Maison, etc.)
+    surface: "",                  // m² direct depuis Monday
+    numero_bien: "",              // numeroDu depuis Monday
+    typologie: "",                // T2, T3, T4, etc.
+    nombre_personnes_max: "",     // nombreDe depuis Monday
+    nombre_lits: "",              // lits depuis Monday (valeur brute)
+    type_autre_precision: "",     // Si type = "Autre"
     
-    // Structure appartement conditionnelle  
+    // Structure appartement conditionnelle
     appartement: {
       nom_residence: "",
       batiment: "",
-      acces: "",
+      acces: "",                  // RDC, Escalier, Ascenseur
       etage: "",
       numero_porte: ""
     },
     
-    // Legacy pour compatibilité
+    // Legacy - à garder pour compatibilité existante
     type: "",
-    caracteristiques: {
-      surface: "",
-      pieces: "",
-      chambres: "",
-      couchages: "",
-      sdb: ""
-    },
     adresse: {
       rue: "",
       complement: "",
       ville: "",
-      codePostal: ""
+      codePostal: "",
+      batiment: "",
+      etage: "",
+      numeroPorte: ""
+    },
+    caracteristiques: {
+      nombrePieces: "",
+      nombreChambres: "",
+      surface: ""
+    },
+    acces: ""
+  },
+  section_clefs: {
+    interphone: null,
+    interphoneDetails: "",
+    interphonePhoto: null,
+    tempoGache: null,
+    tempoGacheDetails: "",
+    tempoGachePhoto: null,
+    digicode: null,
+    digicodeDetails: "",
+    digicodePhoto: null,
+    clefs: {
+      photos: [],
+      precision: "",
+      prestataire: null,
+      details: ""
     }
   },
-  
-  section_clefs: {},
-  section_airbnb: {},
-  section_booking: {},
+  section_airbnb: {
+    preparation_guide: {
+      video_complete: false,
+      photos_etapes: false
+    },
+    annonce_active: null,
+    url_annonce: "",
+    identifiants_obtenus: null,
+    email_compte: "",
+    mot_passe: "",
+    explication_refus: ""
+  },
+  section_booking: {
+    annonce_active: null,
+    url_annonce: "",
+    identifiants_obtenus: null,
+    email_compte: "",
+    mot_passe: "",
+    explication_refus: ""
+  },
   section_reglementation: {},
   section_exigences: {},
   section_avis: {},
@@ -84,7 +111,7 @@ const initialFormData = {
   section_cuisine_1: {},
   section_cuisine_2: {},
   section_salon_sam: {},
-  section_equipements_exterieur: {},
+  section_equip_spe_exterieur: {},
   section_communs: {},
   section_teletravail: {},
   section_bebe: {},
@@ -92,37 +119,39 @@ const initialFormData = {
 }
 
 export function FormProvider({ children }) {
-  const [formData, setFormData] = useState(initialFormData)
-  const [currentStep, setCurrentStep] = useState(0)
-  const [saveStatus, setSaveStatus] = useState({ saving: false, saved: false, error: null })
-  const [hasManuallyNamedFiche, setHasManuallyNamedFiche] = useState(false)
-  const [duplicateAlert, setDuplicateAlert] = useState(null)
-  
   const location = useLocation()
-  const navigate = useNavigate()
+  const navigate = useNavigate() // Ajout navigation
   const { user, loading: authLoading } = useAuth()
+  const [currentStep, setCurrentStep] = useState(0)
+  const [formData, setFormData] = useState(initialFormData)
+  const [saveStatus, setSaveStatus] = useState({ 
+    saving: false, 
+    saved: false, 
+    error: null 
+  })
+  const [hasManuallyNamedFiche, setHasManuallyNamedFiche] = useState(false)
 
   const sections = [
-    "Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", 
-    "Réglementation", "Exigences", "Avis", "Gestion Linge", 
-    "Équipements", "Consommables", "Visite", "Chambres", 
-    "Salle De Bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", 
-    "Équip. Spé. / Extérieur", "Communs", "Télétravail", "Bébé", "Sécurité"
+    "Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", "Réglementation",
+    "Exigences", "Avis", "Gestion Linge", "Équipements", "Consommables", "Visite",
+    "Chambres", "Salle De Bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. Spé. / Extérieur",
+    "Communs", "Télétravail", "Bébé", "Sécurité"
   ]
 
   const totalSteps = sections.length
 
-  // 🎯 FONCTION: Smart naming avec capitalisation
   const capitalize = (str) => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
   const generateFicheName = (data) => {
-    // Simple : utiliser le numéro de bien qui vient de Monday
-    const numeroBien = data.section_logement?.numero_bien;
-    
-    if (numeroBien) return `Bien ${numeroBien}`;
+    // Priorité aux nouveaux champs section_logement
+    const type = data.section_logement?.type_propriete || data.section_logement?.type;
+    const ville = data.section_proprietaire?.adresse?.ville || data.section_logement?.adresse?.ville;
+
+    if (type && ville) return `${capitalize(type)} ${capitalize(ville)}`;
+    if (ville) return `Logement ${capitalize(ville)}`;
     return "Nouvelle fiche";
   };
 
@@ -140,20 +169,7 @@ export function FormProvider({ children }) {
     if (fullName || email || adresseRue || adresseVille || adressePostal) {
       mondayData.section_proprietaire = {}
       
-      // Séparation fullName en prénom/nom
-      if (fullName) {
-        const decodedFullName = decodeURIComponent(fullName)
-        const nameParts = decodedFullName.trim().split(' ')
-        
-        if (nameParts.length >= 2) {
-          mondayData.section_proprietaire.prenom = nameParts[0]
-          mondayData.section_proprietaire.nom = nameParts.slice(1).join(' ')
-        } else {
-          mondayData.section_proprietaire.prenom = decodedFullName
-          mondayData.section_proprietaire.nom = ""
-        }
-      }
-      
+      if (fullName) mondayData.section_proprietaire.nom = decodeURIComponent(fullName)
       if (email) mondayData.section_proprietaire.email = decodeURIComponent(email)
       
       if (adresseRue || adresseVille || adressePostal) {
@@ -213,6 +229,27 @@ export function FormProvider({ children }) {
     return newFormData
   }, [])
 
+  // 🎯 FONCTION: Appliquer données Monday depuis URL
+  const applyMondayDataFromURL = useCallback((searchParams) => {
+    const params = new URLSearchParams(searchParams)
+    const mondayData = parseMondayParams(params)
+    
+    if (Object.keys(mondayData).length > 0) {
+      console.log('🎯 Application données Monday depuis URL:', mondayData)
+      
+      const newFormData = applyMondayData(formData, mondayData)
+      setFormData(newFormData)
+      
+      // Smart naming avec nouvelles données
+      const generatedName = generateFicheName(newFormData)
+      if (generatedName !== "Nouvelle fiche") {
+        setFormData(prev => ({ ...prev, nom: generatedName }))
+      }
+      
+      console.log('✅ Pré-population Monday terminée')
+    }
+  }, [formData, parseMondayParams, applyMondayData])
+
   // 🎯 FONCTION: Détection params Monday robuste
   const hasMondayParams = useCallback((searchParams) => {
     const params = new URLSearchParams(searchParams)
@@ -220,19 +257,7 @@ export function FormProvider({ children }) {
     return mondayParamKeys.some(param => params.get(param))
   }, [])
 
-  // 🎯 FONCTION: Appliquer données Monday avec smart naming
-  const applyMondayDataAndGenerate = useCallback((mondayData) => {
-    const newFormDataAfterMonday = applyMondayData(formData, mondayData);
-    setFormData(newFormDataAfterMonday);
-
-    const generatedName = generateFicheName(newFormDataAfterMonday);
-    if (generatedName !== "Nouvelle fiche") {
-      setHasManuallyNamedFiche(false);
-      setFormData(prev => ({ ...prev, nom: generatedName }));
-    }
-  }, [formData, applyMondayData, generateFicheName, setHasManuallyNamedFiche]);
-
-  // 🎯 FONCTION: Reset formulaire
+  // DÉPLACER resetForm AVANT useEffect
   const resetForm = useCallback(() => {
     setFormData(initialFormData)
     setCurrentStep(0)
@@ -240,7 +265,7 @@ export function FormProvider({ children }) {
     setSaveStatus({ saving: false, saved: false, error: null })
   }, [])
 
-  // 🎯 FONCTION: handleLoad avec gestion erreurs
+  // handleLoad function
   const handleLoad = useCallback(async (ficheId) => {
     setSaveStatus({ saving: true, saved: false, error: null });
     try {
@@ -264,21 +289,24 @@ export function FormProvider({ children }) {
     }
   }, []);
 
-  // 🎯 useEffect PRINCIPAL - Gestion Monday + Navigation
+  // 🎯 useEffect RÉORGANISÉ - PRIORITÉS selon Gemini
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const ficheId = params.get('id');
     const mondayParamsPresentInURL = hasMondayParams(location.search);
     const pendingMondayParamsInStorage = localStorage.getItem('pendingMondayParams');
 
-    console.log("--- FormContext useEffect ---");
-    console.log("location.search:", location.search);
-    console.log("ficheId:", ficheId);
-    console.log("mondayParamsPresentInURL:", mondayParamsPresentInURL);
-    console.log("pendingMondayParamsInStorage:", pendingMondayParamsInStorage);
-    console.log("authLoading:", authLoading);
-    console.log("user:", !!user);
-    console.log("---------------------------");
+    // 🐛 DEBUG LOGS (commentés pour éviter spam)
+    // console.log("--- FormContext useEffect ---");
+    // console.log("location.search:", location.search);
+    // console.log("ficheId:", ficheId);
+    // console.log("mondayParamsPresentInURL:", mondayParamsPresentInURL);
+    // console.log("pendingMondayParamsInStorage:", pendingMondayParamsInStorage);
+    // console.log("authLoading:", authLoading);
+    // console.log("user:", user);
+    // console.log("formData.id:", formData.id);
+    // console.log("formData.nom:", formData.nom);
+    // console.log("---------------------------");
 
     // 🎯 PRIORITÉ 1: Traiter params Monday en attente APRÈS LOGIN
     if (user && pendingMondayParamsInStorage) {
@@ -286,6 +314,9 @@ export function FormProvider({ children }) {
         localStorage.removeItem('pendingMondayParams');
         const mondayData = parseMondayParams(new URLSearchParams(pendingMondayParamsInStorage));
         const newFormDataAfterMonday = applyMondayData(formData, mondayData);
+        // 🎯 AJOUTER CETTE LIGNE ICI :
+        newFormDataAfterMonday.user_id = user.id;
+        
         setFormData(newFormDataAfterMonday);
 
         // Smart naming
@@ -294,9 +325,6 @@ export function FormProvider({ children }) {
             setHasManuallyNamedFiche(false);
             setFormData(prev => ({ ...prev, nom: generatedName }));
         }
-        
-        // 🎯 REDIRECTION FORCÉE vers /fiche pour éviter que Login.jsx prenne le relais
-        navigate('/fiche', { replace: true });
         return; // STOP - Données appliquées
     }
 
@@ -310,31 +338,19 @@ export function FormProvider({ children }) {
 
     // 🎯 PRIORITÉ 3: Application directe si connecté + params Monday
     if (user && mondayParamsPresentInURL && !ficheId && formData.id === null) {
-      console.log('✅ Utilisateur déjà connecté, vérification doublons avant application...');
-      
-      const mondayData = parseMondayParams(params);
-      const numeroBien = mondayData.section_logement?.numero_bien;
-      
-      // 🔍 Check doublon si numéro de bien présent
-      if (numeroBien) {
-        checkExistingFiche(numeroBien, user.id).then(result => {
-          if (result.exists) {
-            // Afficher modal de confirmation
-            setDuplicateAlert({
-              existingFiche: result.fiche,
-              mondayData: mondayData
-            });
-            return; // STOP - Attendre choix utilisateur
-          } else {
-            // Pas de doublon, application normale
-            applyMondayDataAndGenerate(mondayData);
-          }
-        });
-      } else {
-        // Pas de numéro bien, application normale  
-        applyMondayDataAndGenerate(mondayData);
-      }
-      return;
+        console.log('✅ Utilisateur déjà connecté, application directe des données Monday.');
+        const mondayData = parseMondayParams(params);
+        const newFormDataAfterMonday = applyMondayData(formData, mondayData);
+        // 🎯 AJOUTER CETTE LIGNE ICI :
+        newFormDataAfterMonday.user_id = user.id;
+        setFormData(newFormDataAfterMonday);
+
+        const generatedName = generateFicheName(newFormDataAfterMonday);
+        if (generatedName !== "Nouvelle fiche") {
+            setHasManuallyNamedFiche(false);
+            setFormData(prev => ({ ...prev, nom: generatedName }));
+        }
+        return; // STOP - Données appliquées
     }
 
     // 🎯 PRIORITÉ 4: Chargement fiche existante par ID
@@ -363,30 +379,11 @@ export function FormProvider({ children }) {
     authLoading,
     user,
     navigate
-    // 🚨 DÉPENDANCES LIMITÉES pour éviter boucles infinies
+    // 🚨 SUPPRIMÉ les dépendances problématiques qui causent la boucle :
+    // - formData.id, saveStatus.saving, handleLoad, 
+    // - hasMondayParams, parseMondayParams, applyMondayData, generateFicheName, resetForm
   ]);
 
-  // 🎯 FONCTIONS: Gestion modal doublons
-  const handleOpenExisting = useCallback(() => {
-    if (duplicateAlert?.existingFiche) {
-      navigate(`/fiche?id=${duplicateAlert.existingFiche.id}`);
-      setDuplicateAlert(null);
-    }
-  }, [duplicateAlert, navigate]);
-
-  const handleCreateNew = useCallback(() => {
-    if (duplicateAlert?.mondayData) {
-      applyMondayDataAndGenerate(duplicateAlert.mondayData);
-      setDuplicateAlert(null);
-    }
-  }, [duplicateAlert, applyMondayDataAndGenerate]);
-
-  const handleCancelDuplicate = useCallback(() => {
-    setDuplicateAlert(null);
-    navigate('/');
-  }, [navigate]);
-
-  // 🎯 FONCTIONS: Navigation
   const next = () => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1)
@@ -407,7 +404,6 @@ export function FormProvider({ children }) {
 
   const getCurrentSection = () => sections[currentStep]
 
-  // 🎯 FONCTIONS: Gestion données
   const updateSection = (sectionName, newData) => {
     setFormData(prev => {
       const updatedData = {
@@ -482,20 +478,18 @@ export function FormProvider({ children }) {
     return current !== null && current !== undefined ? current : ""
   }
 
-  // 🎯 FONCTIONS: Sauvegarde Supabase
   const handleSave = async () => {
-    if (!user) {
+    if (!user?.id) {
       setSaveStatus({ saving: false, saved: false, error: 'Utilisateur non connecté' });
       return { success: false, error: 'Utilisateur non connecté' };
     }
 
     setSaveStatus({ saving: true, saved: false, error: null });
-
+    
     try {
       const dataToSave = {
         ...formData,
-        user_id: user.id,
-        updated_at: new Date().toISOString()
+        user_id: user.id
       };
 
       const result = await saveFiche(dataToSave);
@@ -503,11 +497,9 @@ export function FormProvider({ children }) {
       if (result.success) {
         setFormData(result.data);
         setSaveStatus({ saving: false, saved: true, error: null });
-        
         setTimeout(() => {
-          setSaveStatus(prev => ({ ...prev, saved: false }));
-        }, 3000);
-
+          setSaveStatus(prev => ({ ...prev, saved: false }))
+        }, 3000)
         return { success: true, data: result.data };
       } else {
         setSaveStatus({ saving: false, saved: false, error: result.message });
@@ -520,22 +512,42 @@ export function FormProvider({ children }) {
     }
   };
 
-  // 🎯 FONCTIONS: Gestion statuts
   const updateStatut = async (newStatut) => {
-    const updatedData = { ...formData, statut: newStatut };
-    setFormData(updatedData);
-    return await handleSave();
-  };
+    if (!formData.id) {
+      setSaveStatus({ saving: false, saved: false, error: 'Aucune fiche à mettre à jour' });
+      return { success: false, error: 'Aucune fiche à mettre à jour' };
+    }
 
-  const finaliserFiche = async () => {
-    return await updateStatut('termine');
+    try {
+      const updatedData = { ...formData, statut: newStatut };
+      const result = await saveFiche(updatedData);
+      
+      if (result.success) {
+        setFormData(result.data);
+        return { success: true, data: result.data };
+      } else {
+        return { success: false, error: result.message };
+      }
+    } catch (error) {
+      return { success: false, error: error.message || 'Erreur de connexion' };
+    }
   };
+  
+  const finaliserFiche = () => updateStatut('Complété');
+  const archiverFiche = () => updateStatut('Archivé');
 
-  const archiverFiche = async () => {
-    return await updateStatut('archive');
-  };
+  const getFormDataPreview = () => {
+    return {
+      currentSection: getCurrentSection(),
+      completedSections: Object.keys(formData).filter(key => 
+        key.startsWith('section_') && 
+        Object.values(formData[key]).some(val => val !== "" && val !== null)
+      ),
+      formData
+    }
+  }
 
-  // 🎯 FONCTION: Debug Monday
+  // 🐛 DEBUG HELPER (optionnel)
   const getMondayDebugInfo = () => {
     const params = new URLSearchParams(location.search)
     return {
@@ -546,24 +558,8 @@ export function FormProvider({ children }) {
     }
   }
 
-  // 🎯 FONCTION: Preview pour Dashboard
-  const getFormDataPreview = () => {
-    const propriétaire = formData.section_proprietaire || {};
-    const logement = formData.section_logement || {};
-    
-    return {
-      proprietaireNom: `${propriétaire.prenom || ''} ${propriétaire.nom || ''}`.trim() || 'Non renseigné',
-      proprietaireEmail: propriétaire.email || 'Non renseigné',
-      ville: propriétaire.adresse?.ville || logement.adresse?.ville || 'Non renseigné',
-      typeLogement: logement.type_propriete || logement.type || 'Non renseigné',
-      surface: logement.surface || logement.caracteristiques?.surface || 'Non renseigné',
-      numeroBien: logement.numero_bien || 'Non renseigné'
-    };
-  };
-
   return (
     <FormContext.Provider value={{ 
-      // Navigation
       currentStep, 
       totalSteps, 
       sections,
@@ -572,7 +568,6 @@ export function FormProvider({ children }) {
       goTo, 
       getCurrentSection,
       
-      // Données
       formData,
       updateSection,
       updateField,
@@ -580,7 +575,6 @@ export function FormProvider({ children }) {
       getField,
       resetForm,
       
-      // Sauvegarde
       handleSave,
       handleLoad,
       saveStatus,
@@ -588,15 +582,8 @@ export function FormProvider({ children }) {
       finaliserFiche,
       archiverFiche,
       
-      // Utilitaires
       getFormDataPreview,
-      getMondayDebugInfo,
-      
-      // Gestion doublons Monday
-      duplicateAlert,
-      handleOpenExisting,
-      handleCreateNew,
-      handleCancelDuplicate
+      getMondayDebugInfo  // Pour debugging
     }}>
       {children}
     </FormContext.Provider>
