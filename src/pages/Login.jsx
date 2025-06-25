@@ -1,4 +1,4 @@
-// src/pages/Login.jsx (modifié)
+// ✅ Login.jsx complet avec design original + fix Monday
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
@@ -8,20 +8,29 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const { signIn, loading, isAuthenticated, userRole } = useAuth() // ✅ Ajout userRole
+  const { signIn, loading, isAuthenticated, userRole } = useAuth()
   const navigate = useNavigate()
 
-  // ✅ MODIFIÉ: Redirection conditionnelle selon le rôle
+  // 💾 Capture params Monday s'ils sont dans l'URL
   useEffect(() => {
-    if (isAuthenticated && userRole !== null) { // ✅ Attendre que le rôle soit chargé
+    const urlParams = new URLSearchParams(window.location.search)
+    const hasMondayParams = ['fullName', 'nom', 'email'].some(param => urlParams.get(param))
+
+    if (hasMondayParams) {
+      console.log('🔍 Login: Détection params Monday dans URL:', window.location.search)
+      localStorage.setItem('pendingMondayParams', window.location.search)
+    }
+  }, [])
+
+  // ✅ Redirection conditionnelle post-login
+  useEffect(() => {
+    if (isAuthenticated && userRole !== null) {
       const pendingMondayParams = localStorage.getItem('pendingMondayParams')
-      
+
       if (pendingMondayParams) {
         console.log('✅ Login: Récupération params Monday depuis localStorage:', pendingMondayParams)
-        // Monday params = toujours vers /fiche (même pour super-admin)
-        navigate(`/fiche${pendingMondayParams}`, { replace: true })
+        window.location.href = `/fiche${pendingMondayParams}`
       } else {
-        // ✅ NOUVELLE LOGIQUE: Redirection selon le rôle
         if (userRole === 'super_admin') {
           console.log('✅ Login: Super Admin → Console Admin')
           navigate('/admin', { replace: true })
@@ -31,7 +40,7 @@ export default function Login() {
         }
       }
     }
-  }, [isAuthenticated, userRole, navigate]) // ✅ Ajout userRole dans les dépendances
+  }, [isAuthenticated, userRole, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -43,18 +52,16 @@ export default function Login() {
     }
 
     const { error: signInError } = await signIn(email, password)
-    
+
     if (signInError) {
       setError('Email ou mot de passe incorrect')
     }
-    // Si pas d'erreur, la redirection se fait automatiquement via useEffect ci-dessus
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Points scintillants */}
       <div className="absolute inset-0">
-        {/* Points dorés animés */}
         <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-yellow-400 rounded-full opacity-60 animate-pulse"></div>
         <div className="absolute top-3/4 right-1/3 w-1 h-1 bg-yellow-300 rounded-full opacity-80 animate-pulse" style={{animationDelay: '1s'}}></div>
         <div className="absolute bottom-1/4 left-2/3 w-1.5 h-1.5 bg-yellow-500 rounded-full opacity-50 animate-pulse" style={{animationDelay: '2s'}}></div>
@@ -79,7 +86,7 @@ export default function Login() {
           {typeof window !== 'undefined' && localStorage.getItem('pendingMondayParams') && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-blue-700 text-sm text-center">
-                📋 Formulaire Monday en attente - Connectez-vous pour continuer
+                📋 Formulaire Monday en attente – Connectez-vous pour continuer
               </p>
             </div>
           )}
