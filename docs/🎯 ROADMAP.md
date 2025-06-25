@@ -14,7 +14,7 @@
 ### **🎯 Milestone 1 : MVP Fonctionnel** ✅ ATTEINT
 - ✅ 5 sections principales opérationnelles
 - ✅ Dashboard + CRUD complet
-- ✅ Smart naming system
+- ✅ Smart naming system (Bien + <logement_numero_bien>)
 - ✅ Navigation fluide + persistance
 
 ### **🎯 Milestone 2 : Remplacement Jotform** ✅ ATTEINT 🎉
@@ -66,7 +66,7 @@
 ```javascript
 // Système rôles 3 niveaux
 coordinateur: read/write own fiches only
-admin: read all fiches, no management
+admin: pas d'utilisation pour le moment
 super_admin: full access + user management + admin console
 
 // Routes protection

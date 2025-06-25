@@ -1,5 +1,5 @@
 // src/pages/AdminConsole.jsx - Version complète fonctionnelle
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { Edit, Archive, Trash2, RotateCcw, Eye, MoreHorizontal } from 'lucide-react'
@@ -8,22 +8,12 @@ import ReassignModal from '../components/ReassignModal'
 import { useAuth } from '../components/AuthContext'
 
 // ✅ Dropdown moderne avec portal
-function ModernDropdown({ items, onSelect, fiche, trigger }) {
+function ModernDropdown({ items, onSelect, fiche }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [position, setPosition] = useState({ top: 0, left: 0 })
+  const dropdownRef = useRef(null)
 
   const toggleDropdown = (e) => {
     e.stopPropagation()
-    
-    if (!isOpen) {
-      // Calculer la position du dropdown
-      const rect = e.currentTarget.getBoundingClientRect()
-      setPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.right + window.scrollX - 200 // Aligné à droite
-      })
-    }
-    
     setIsOpen(!isOpen)
   }
 
@@ -33,17 +23,25 @@ function ModernDropdown({ items, onSelect, fiche, trigger }) {
     onSelect(action, fiche)
   }
 
-  // Fermeture au clic extérieur
+  // Fermeture au clic extérieur - Simple et efficace
   useEffect(() => {
-    const handleClickOutside = () => setIsOpen(false)
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
     if (isOpen) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isOpen])
 
   return (
-    <>
+    <div className="relative" ref={dropdownRef}>
       {/* Trigger button */}
       <button
         onClick={toggleDropdown}
@@ -52,13 +50,16 @@ function ModernDropdown({ items, onSelect, fiche, trigger }) {
         <MoreHorizontal size={18} className="text-gray-500" />
       </button>
 
-      {/* Menu dropdown avec portal */}
+      {/* Menu dropdown avec position intelligente */}
       {isOpen && (
         <div 
-          className="fixed bg-white rounded-xl shadow-xl border border-gray-200 min-w-48 py-2 z-[9999]"
-          style={{ 
-            top: position.top, 
-            left: position.left,
+          className="absolute right-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-200 min-w-48 py-2 z-[999]"
+          style={{
+            // Si on est dans les 200px du bas, ouvrir vers le haut
+            ...(window.innerHeight - dropdownRef.current?.getBoundingClientRect().bottom < 200 
+              ? { bottom: '100%', marginBottom: '4px', marginTop: '0' }
+              : { top: '100%', marginTop: '4px' }
+            ),
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
           }}
         >
@@ -78,7 +79,7 @@ function ModernDropdown({ items, onSelect, fiche, trigger }) {
           ))}
         </div>
       )}
-    </>
+    </div>
   )
 }
 
@@ -541,17 +542,19 @@ export default function AdminConsole() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header Console Admin avec fond rouge */}
-      <div className="bg-red-600 text-white py-8 px-6">
+      <div className="bg-red-600 text-white py-6 sm:py-8 px-4 sm:px-6">
         <div className="max-w-screen-xl mx-auto">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Console Administration</h1>
-              <p className="text-lg opacity-90">Gestion globale - Accès Super Admin</p>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Console Administration</h1>
+              <p className="text-base sm:text-lg opacity-90">Gestion globale - Accès Super Admin</p>
             </div>
-            <div className="flex gap-3">
+            
+            {/* Boutons empilés sur mobile, côte à côte sur desktop */}
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => navigate('/')}
-                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-2.5 rounded-xl font-medium transition-all duration-200"
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-2.5 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto text-center"
               >
                 Dashboard
               </button>
@@ -560,7 +563,7 @@ export default function AdminConsole() {
                   await supabase.auth.signOut()
                   navigate('/login')
                 }}
-                className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-6 py-2.5 rounded-xl font-medium transition-all duration-200"
+                className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-6 py-2.5 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto text-center"
               >
                 Déconnexion
               </button>
@@ -713,8 +716,8 @@ function UsersTab({ users, onRefresh }) {
       <div className="p-6 border-b">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-semibold">Gestion des Utilisateurs</h2>
-            <p className="text-gray-600 mt-1">Administration des comptes et permissions</p>
+            <h2 className="text-xl font-semibold">Gestion utilisateurs</h2>
+            <p className="text-gray-600 mt-1">Administration des comptes</p>
           </div>
           <button 
             onClick={handleNewUser}
@@ -725,7 +728,7 @@ function UsersTab({ users, onRefresh }) {
         </div>
       </div>
       
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-visible">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -901,8 +904,8 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
       <div className="p-6 border-b">
         <div className="flex justify-between items-start gap-4">
           <div>
-            <h2 className="text-xl font-semibold">Toutes les Fiches Logement</h2>
-            <p className="text-gray-600 mt-1">Vue globale et gestion complète</p>
+            <h2 className="text-xl font-semibold">Fiches logement</h2>
+            <p className="text-gray-600 mt-1">Vue globale</p>
           </div>
           
           <div className="flex items-center gap-4">
