@@ -218,21 +218,25 @@ function NewUserModal({ onClose, onSuccess }) {
       if (authError) throw authError
 
       // 2. Créer le profil dans la table profiles
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: formData.email,
-          prenom: formData.prenom,
-          nom: formData.nom,
-          role: formData.role,
-          active: true
-        })
+      // 2. Créer le profil dans la table profiles (avec upsert)
+const { error: profileError } = await supabase
+.from('profiles')
+.upsert({
+  id: authData.user.id,
+  email: formData.email,
+  prenom: formData.prenom,
+  nom: formData.nom,
+  role: formData.role,
+  active: true
+})
+
+if (profileError) throw profileError
 
       if (profileError) throw profileError
       
       console.log('Nouvel utilisateur créé avec succès')
       onSuccess()
+      onClose()
     } catch (error) {
       console.error('Erreur lors de la création:', error)
     } finally {
