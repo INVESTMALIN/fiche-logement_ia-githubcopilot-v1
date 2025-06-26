@@ -10,6 +10,8 @@ import Button from '../components/Button'
 import FicheReglementation from './FicheReglementation'
 import FicheExigences from './FicheExigences'
 import FicheAvis from './FicheAvis'
+import FicheGestionLinge from './FicheGestionLinge'
+import FicheEquipements from './FicheEquipements'
 
 // Composant placeholder pour les sections pas encore créées
 function PlaceholderSection({ title }) {
@@ -70,8 +72,8 @@ export default function FicheWizard() {
     <FicheReglementation key="reglementation" />,
     <FicheExigences key="exigences" />,
     <FicheAvis key="avis" />,
-    <PlaceholderSection key="linge" title="Gestion Linge" />,
-    <PlaceholderSection key="equipements" title="Équipements" />,
+    <FicheGestionLinge key="linge" />,
+    <FicheEquipements key="equipements" />,
     <PlaceholderSection key="consommables" title="Consommables" />,
     <PlaceholderSection key="visite" title="Visite" />,
     <PlaceholderSection key="chambres" title="Chambres" />,

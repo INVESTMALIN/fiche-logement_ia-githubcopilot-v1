@@ -118,6 +118,136 @@ export const mapFormDataToSupabase = (formData) => {
     avis_notation_confort: formData.section_avis?.notation?.confort || null,
     avis_notation_valeurs: formData.section_avis?.notation?.valeurs || null,
     avis_notation_equipements: formData.section_avis?.notation?.equipements || null,
+
+    // Section Gestion Linge
+    linge_dispose_de_linge: formData.section_gestion_linge?.dispose_de_linge ?? null,
+
+    // Inventaire 90x200
+    linge_90x200_couettes: formData.section_gestion_linge?.inventaire_90x200?.couettes ? parseInt(formData.section_gestion_linge.inventaire_90x200.couettes) : null,
+    linge_90x200_oreillers: formData.section_gestion_linge?.inventaire_90x200?.oreillers ? parseInt(formData.section_gestion_linge.inventaire_90x200.oreillers) : null,
+    linge_90x200_draps_housses: formData.section_gestion_linge?.inventaire_90x200?.draps_housses ? parseInt(formData.section_gestion_linge.inventaire_90x200.draps_housses) : null,
+    linge_90x200_housses_couette: formData.section_gestion_linge?.inventaire_90x200?.housses_couette ? parseInt(formData.section_gestion_linge.inventaire_90x200.housses_couette) : null,
+    linge_90x200_protections_matelas: formData.section_gestion_linge?.inventaire_90x200?.protections_matelas ? parseInt(formData.section_gestion_linge.inventaire_90x200.protections_matelas) : null,
+    linge_90x200_taies_oreillers: formData.section_gestion_linge?.inventaire_90x200?.taies_oreillers ? parseInt(formData.section_gestion_linge.inventaire_90x200.taies_oreillers) : null,
+    linge_90x200_draps_bain: formData.section_gestion_linge?.inventaire_90x200?.draps_bain ? parseInt(formData.section_gestion_linge.inventaire_90x200.draps_bain) : null,
+    linge_90x200_petites_serviettes: formData.section_gestion_linge?.inventaire_90x200?.petites_serviettes ? parseInt(formData.section_gestion_linge.inventaire_90x200.petites_serviettes) : null,
+    linge_90x200_tapis_bain: formData.section_gestion_linge?.inventaire_90x200?.tapis_bain ? parseInt(formData.section_gestion_linge.inventaire_90x200.tapis_bain) : null,
+    linge_90x200_torchons: formData.section_gestion_linge?.inventaire_90x200?.torchons ? parseInt(formData.section_gestion_linge.inventaire_90x200.torchons) : null,
+    linge_90x200_plaids: formData.section_gestion_linge?.inventaire_90x200?.plaids ? parseInt(formData.section_gestion_linge.inventaire_90x200.plaids) : null,
+    linge_90x200_oreillers_decoratifs: formData.section_gestion_linge?.inventaire_90x200?.oreillers_decoratifs ? parseInt(formData.section_gestion_linge.inventaire_90x200.oreillers_decoratifs) : null,
+
+    // Inventaire 140x200 
+    linge_140x200_couettes: formData.section_gestion_linge?.inventaire_140x200?.couettes ? parseInt(formData.section_gestion_linge.inventaire_140x200.couettes) : null,
+    linge_140x200_oreillers: formData.section_gestion_linge?.inventaire_140x200?.oreillers ? parseInt(formData.section_gestion_linge.inventaire_140x200.oreillers) : null,
+    linge_140x200_draps_housses: formData.section_gestion_linge?.inventaire_140x200?.draps_housses ? parseInt(formData.section_gestion_linge.inventaire_140x200.draps_housses) : null,
+    linge_140x200_housses_couette: formData.section_gestion_linge?.inventaire_140x200?.housses_couette ? parseInt(formData.section_gestion_linge.inventaire_140x200.housses_couette) : null,
+    linge_140x200_protections_matelas: formData.section_gestion_linge?.inventaire_140x200?.protections_matelas ? parseInt(formData.section_gestion_linge.inventaire_140x200.protections_matelas) : null,
+    linge_140x200_taies_oreillers: formData.section_gestion_linge?.inventaire_140x200?.taies_oreillers ? parseInt(formData.section_gestion_linge.inventaire_140x200.taies_oreillers) : null,
+    linge_140x200_draps_bain: formData.section_gestion_linge?.inventaire_140x200?.draps_bain ? parseInt(formData.section_gestion_linge.inventaire_140x200.draps_bain) : null,
+    linge_140x200_petites_serviettes: formData.section_gestion_linge?.inventaire_140x200?.petites_serviettes ? parseInt(formData.section_gestion_linge.inventaire_140x200.petites_serviettes) : null,
+    linge_140x200_tapis_bain: formData.section_gestion_linge?.inventaire_140x200?.tapis_bain ? parseInt(formData.section_gestion_linge.inventaire_140x200.tapis_bain) : null,
+    linge_140x200_torchons: formData.section_gestion_linge?.inventaire_140x200?.torchons ? parseInt(formData.section_gestion_linge.inventaire_140x200.torchons) : null,
+    linge_140x200_plaids: formData.section_gestion_linge?.inventaire_140x200?.plaids ? parseInt(formData.section_gestion_linge.inventaire_140x200.plaids) : null,
+    linge_140x200_oreillers_decoratifs: formData.section_gestion_linge?.inventaire_140x200?.oreillers_decoratifs ? parseInt(formData.section_gestion_linge.inventaire_140x200.oreillers_decoratifs) : null,
+
+    // Inventaire 160x200
+    linge_160x200_couettes: formData.section_gestion_linge?.inventaire_160x200?.couettes ? parseInt(formData.section_gestion_linge.inventaire_160x200.couettes) : null,
+    linge_160x200_oreillers: formData.section_gestion_linge?.inventaire_160x200?.oreillers ? parseInt(formData.section_gestion_linge.inventaire_160x200.oreillers) : null,
+    linge_160x200_draps_housses: formData.section_gestion_linge?.inventaire_160x200?.draps_housses ? parseInt(formData.section_gestion_linge.inventaire_160x200.draps_housses) : null,
+    linge_160x200_housses_couette: formData.section_gestion_linge?.inventaire_160x200?.housses_couette ? parseInt(formData.section_gestion_linge.inventaire_160x200.housses_couette) : null,
+    linge_160x200_protections_matelas: formData.section_gestion_linge?.inventaire_160x200?.protections_matelas ? parseInt(formData.section_gestion_linge.inventaire_160x200.protections_matelas) : null,
+    linge_160x200_taies_oreillers: formData.section_gestion_linge?.inventaire_160x200?.taies_oreillers ? parseInt(formData.section_gestion_linge.inventaire_160x200.taies_oreillers) : null,
+    linge_160x200_draps_bain: formData.section_gestion_linge?.inventaire_160x200?.draps_bain ? parseInt(formData.section_gestion_linge.inventaire_160x200.draps_bain) : null,
+    linge_160x200_petites_serviettes: formData.section_gestion_linge?.inventaire_160x200?.petites_serviettes ? parseInt(formData.section_gestion_linge.inventaire_160x200.petites_serviettes) : null,
+    linge_160x200_tapis_bain: formData.section_gestion_linge?.inventaire_160x200?.tapis_bain ? parseInt(formData.section_gestion_linge.inventaire_160x200.tapis_bain) : null,
+    linge_160x200_torchons: formData.section_gestion_linge?.inventaire_160x200?.torchons ? parseInt(formData.section_gestion_linge.inventaire_160x200.torchons) : null,
+    linge_160x200_plaids: formData.section_gestion_linge?.inventaire_160x200?.plaids ? parseInt(formData.section_gestion_linge.inventaire_160x200.plaids) : null,
+    linge_160x200_oreillers_decoratifs: formData.section_gestion_linge?.inventaire_160x200?.oreillers_decoratifs ? parseInt(formData.section_gestion_linge.inventaire_160x200.oreillers_decoratifs) : null,
+
+    // Inventaire 180x200
+    linge_180x200_couettes: formData.section_gestion_linge?.inventaire_180x200?.couettes ? parseInt(formData.section_gestion_linge.inventaire_180x200.couettes) : null,
+    linge_180x200_oreillers: formData.section_gestion_linge?.inventaire_180x200?.oreillers ? parseInt(formData.section_gestion_linge.inventaire_180x200.oreillers) : null,
+    linge_180x200_draps_housses: formData.section_gestion_linge?.inventaire_180x200?.draps_housses ? parseInt(formData.section_gestion_linge.inventaire_180x200.draps_housses) : null,
+    linge_180x200_housses_couette: formData.section_gestion_linge?.inventaire_180x200?.housses_couette ? parseInt(formData.section_gestion_linge.inventaire_180x200.housses_couette) : null,
+    linge_180x200_protections_matelas: formData.section_gestion_linge?.inventaire_180x200?.protections_matelas ? parseInt(formData.section_gestion_linge.inventaire_180x200.protections_matelas) : null,
+    linge_180x200_taies_oreillers: formData.section_gestion_linge?.inventaire_180x200?.taies_oreillers ? parseInt(formData.section_gestion_linge.inventaire_180x200.taies_oreillers) : null,
+    linge_180x200_draps_bain: formData.section_gestion_linge?.inventaire_180x200?.draps_bain ? parseInt(formData.section_gestion_linge.inventaire_180x200.draps_bain) : null,
+    linge_180x200_petites_serviettes: formData.section_gestion_linge?.inventaire_180x200?.petites_serviettes ? parseInt(formData.section_gestion_linge.inventaire_180x200.petites_serviettes) : null,
+    linge_180x200_tapis_bain: formData.section_gestion_linge?.inventaire_180x200?.tapis_bain ? parseInt(formData.section_gestion_linge.inventaire_180x200.tapis_bain) : null,
+    linge_180x200_torchons: formData.section_gestion_linge?.inventaire_180x200?.torchons ? parseInt(formData.section_gestion_linge.inventaire_180x200.torchons) : null,
+    linge_180x200_plaids: formData.section_gestion_linge?.inventaire_180x200?.plaids ? parseInt(formData.section_gestion_linge.inventaire_180x200.plaids) : null,
+    linge_180x200_oreillers_decoratifs: formData.section_gestion_linge?.inventaire_180x200?.oreillers_decoratifs ? parseInt(formData.section_gestion_linge.inventaire_180x200.oreillers_decoratifs) : null,
+
+    // Inventaire Autres
+    linge_autres_couettes: formData.section_gestion_linge?.inventaire_autres?.couettes ? parseInt(formData.section_gestion_linge.inventaire_autres.couettes) : null,
+    linge_autres_oreillers: formData.section_gestion_linge?.inventaire_autres?.oreillers ? parseInt(formData.section_gestion_linge.inventaire_autres.oreillers) : null,
+    linge_autres_draps_housses: formData.section_gestion_linge?.inventaire_autres?.draps_housses ? parseInt(formData.section_gestion_linge.inventaire_autres.draps_housses) : null,
+    linge_autres_housses_couette: formData.section_gestion_linge?.inventaire_autres?.housses_couette ? parseInt(formData.section_gestion_linge.inventaire_autres.housses_couette) : null,
+    linge_autres_protections_matelas: formData.section_gestion_linge?.inventaire_autres?.protections_matelas ? parseInt(formData.section_gestion_linge.inventaire_autres.protections_matelas) : null,
+    linge_autres_taies_oreillers: formData.section_gestion_linge?.inventaire_autres?.taies_oreillers ? parseInt(formData.section_gestion_linge.inventaire_autres.taies_oreillers) : null,
+    linge_autres_draps_bain: formData.section_gestion_linge?.inventaire_autres?.draps_bain ? parseInt(formData.section_gestion_linge.inventaire_autres.draps_bain) : null,
+    linge_autres_petites_serviettes: formData.section_gestion_linge?.inventaire_autres?.petites_serviettes ? parseInt(formData.section_gestion_linge.inventaire_autres.petites_serviettes) : null,
+    linge_autres_tapis_bain: formData.section_gestion_linge?.inventaire_autres?.tapis_bain ? parseInt(formData.section_gestion_linge.inventaire_autres.tapis_bain) : null,
+    linge_autres_torchons: formData.section_gestion_linge?.inventaire_autres?.torchons ? parseInt(formData.section_gestion_linge.inventaire_autres.torchons) : null,
+    linge_autres_plaids: formData.section_gestion_linge?.inventaire_autres?.plaids ? parseInt(formData.section_gestion_linge.inventaire_autres.plaids) : null,
+    linge_autres_oreillers_decoratifs: formData.section_gestion_linge?.inventaire_autres?.oreillers_decoratifs ? parseInt(formData.section_gestion_linge.inventaire_autres.oreillers_decoratifs) : null,
+
+    // État du linge
+    linge_etat_neuf: formData.section_gestion_linge?.etat_neuf ?? null,
+    linge_etat_usage: formData.section_gestion_linge?.etat_usage ?? null,
+    linge_etat_propre: formData.section_gestion_linge?.etat_propre ?? null,
+    linge_etat_sale: formData.section_gestion_linge?.etat_sale ?? null,
+    linge_etat_tache: formData.section_gestion_linge?.etat_tache ?? null,
+    linge_etat_informations: formData.section_gestion_linge?.etat_informations || null,
+
+    // Photos et emplacement
+    linge_photos_linge: formData.section_gestion_linge?.photos_linge || [],
+    linge_emplacement_description: formData.section_gestion_linge?.emplacement_description || null,
+    linge_emplacement_photos: formData.section_gestion_linge?.emplacement_photos || [],
+    linge_emplacement_code_cadenas: formData.section_gestion_linge?.emplacement_code_cadenas || null,
+
+    // Section Équipements
+    equipements_video_acces_poubelle: formData.section_equipements?.video_acces_poubelle ?? null,
+    equipements_poubelle_emplacement: formData.section_equipements?.poubelle_emplacement || null,
+    equipements_poubelle_ramassage: formData.section_equipements?.poubelle_ramassage || null,
+    equipements_poubelle_photos: formData.section_equipements?.poubelle_photos || [],
+    equipements_disjoncteur_emplacement: formData.section_equipements?.disjoncteur_emplacement || null,
+    equipements_disjoncteur_photos: formData.section_equipements?.disjoncteur_photos || [],
+    equipements_vanne_eau_emplacement: formData.section_equipements?.vanne_eau_emplacement || null,
+    equipements_vanne_eau_photos: formData.section_equipements?.vanne_eau_photos || [],
+    equipements_systeme_chauffage_eau: formData.section_equipements?.systeme_chauffage_eau || null,
+    equipements_chauffage_eau_emplacement: formData.section_equipements?.chauffage_eau_emplacement || null,
+    equipements_chauffage_eau_photos: formData.section_equipements?.chauffage_eau_photos || [],
+    equipements_video_systeme_chauffage: formData.section_equipements?.video_systeme_chauffage ?? null,
+
+    // Équipements checklist
+    equipements_wifi: formData.section_equipements?.wifi ?? null,
+    equipements_tv: formData.section_equipements?.tv ?? null,
+    equipements_climatisation: formData.section_equipements?.climatisation ?? null,
+    equipements_chauffage: formData.section_equipements?.chauffage ?? null,
+    equipements_lave_linge: formData.section_equipements?.lave_linge ?? null,
+    equipements_seche_linge: formData.section_equipements?.seche_linge ?? null,
+    equipements_fer_repasser: formData.section_equipements?.fer_repasser ?? null,
+    equipements_etendoir: formData.section_equipements?.etendoir ?? null,
+    equipements_parking_equipement: formData.section_equipements?.parking_equipement ?? null,
+    equipements_tourne_disque: formData.section_equipements?.tourne_disque ?? null,
+    equipements_piano: formData.section_equipements?.piano ?? null,
+    equipements_cinema: formData.section_equipements?.cinema ?? null,
+    equipements_coffre_fort: formData.section_equipements?.coffre_fort ?? null,
+    equipements_ascenseur: formData.section_equipements?.ascenseur ?? null,
+    equipements_compacteur_dechets: formData.section_equipements?.compacteur_dechets ?? null,
+    equipements_accessible_mobilite_reduite: formData.section_equipements?.accessible_mobilite_reduite ?? null,
+    equipements_animaux_acceptes: formData.section_equipements?.animaux_acceptes ?? null,
+    equipements_fetes_autorisees: formData.section_equipements?.fetes_autorisees ?? null,
+    equipements_fumeurs_acceptes: formData.section_equipements?.fumeurs_acceptes ?? null,
+
+    // Parking
+    equipements_parking_type: formData.section_equipements?.parking_type || null,
+    equipements_parking_rue_details: formData.section_equipements?.parking_rue_details || null,
+    equipements_parking_sur_place_types: formData.section_equipements?.parking_sur_place_types || [],
+    equipements_parking_sur_place_details: formData.section_equipements?.parking_sur_place_details || null,
+    equipements_parking_payant_type: formData.section_equipements?.parking_payant_type || null,
+    equipements_parking_payant_details: formData.section_equipements?.parking_payant_details || null,
     
     updated_at: new Date().toISOString()
   }
@@ -297,8 +427,149 @@ export const mapSupabaseToFormData = (supabaseData) => {
       }
     },
 
-    section_gestion_linge: {},
-    section_equipements: {},
+    section_gestion_linge: {
+      // Question principale
+      dispose_de_linge: supabaseData.linge_dispose_de_linge ?? null,
+      
+      // Inventaire 90x200
+      inventaire_90x200: {
+        couettes: supabaseData.linge_90x200_couettes?.toString() || "",
+        oreillers: supabaseData.linge_90x200_oreillers?.toString() || "",
+        draps_housses: supabaseData.linge_90x200_draps_housses?.toString() || "",
+        housses_couette: supabaseData.linge_90x200_housses_couette?.toString() || "",
+        protections_matelas: supabaseData.linge_90x200_protections_matelas?.toString() || "",
+        taies_oreillers: supabaseData.linge_90x200_taies_oreillers?.toString() || "",
+        draps_bain: supabaseData.linge_90x200_draps_bain?.toString() || "",
+        petites_serviettes: supabaseData.linge_90x200_petites_serviettes?.toString() || "",
+        tapis_bain: supabaseData.linge_90x200_tapis_bain?.toString() || "",
+        torchons: supabaseData.linge_90x200_torchons?.toString() || "",
+        plaids: supabaseData.linge_90x200_plaids?.toString() || "",
+        oreillers_decoratifs: supabaseData.linge_90x200_oreillers_decoratifs?.toString() || ""
+      },
+      
+      // Inventaire 140x200
+      inventaire_140x200: {
+        couettes: supabaseData.linge_140x200_couettes?.toString() || "",
+        oreillers: supabaseData.linge_140x200_oreillers?.toString() || "",
+        draps_housses: supabaseData.linge_140x200_draps_housses?.toString() || "",
+        housses_couette: supabaseData.linge_140x200_housses_couette?.toString() || "",
+        protections_matelas: supabaseData.linge_140x200_protections_matelas?.toString() || "",
+        taies_oreillers: supabaseData.linge_140x200_taies_oreillers?.toString() || "",
+        draps_bain: supabaseData.linge_140x200_draps_bain?.toString() || "",
+        petites_serviettes: supabaseData.linge_140x200_petites_serviettes?.toString() || "",
+        tapis_bain: supabaseData.linge_140x200_tapis_bain?.toString() || "",
+        torchons: supabaseData.linge_140x200_torchons?.toString() || "",
+        plaids: supabaseData.linge_140x200_plaids?.toString() || "",
+        oreillers_decoratifs: supabaseData.linge_140x200_oreillers_decoratifs?.toString() || ""
+      },
+      
+      // Inventaire 160x200
+      inventaire_160x200: {
+        couettes: supabaseData.linge_160x200_couettes?.toString() || "",
+        oreillers: supabaseData.linge_160x200_oreillers?.toString() || "",
+        draps_housses: supabaseData.linge_160x200_draps_housses?.toString() || "",
+        housses_couette: supabaseData.linge_160x200_housses_couette?.toString() || "",
+        protections_matelas: supabaseData.linge_160x200_protections_matelas?.toString() || "",
+        taies_oreillers: supabaseData.linge_160x200_taies_oreillers?.toString() || "",
+        draps_bain: supabaseData.linge_160x200_draps_bain?.toString() || "",
+        petites_serviettes: supabaseData.linge_160x200_petites_serviettes?.toString() || "",
+        tapis_bain: supabaseData.linge_160x200_tapis_bain?.toString() || "",
+        torchons: supabaseData.linge_160x200_torchons?.toString() || "",
+        plaids: supabaseData.linge_160x200_plaids?.toString() || "",
+        oreillers_decoratifs: supabaseData.linge_160x200_oreillers_decoratifs?.toString() || ""
+      },
+      
+      // Inventaire 180x200
+      inventaire_180x200: {
+        couettes: supabaseData.linge_180x200_couettes?.toString() || "",
+        oreillers: supabaseData.linge_180x200_oreillers?.toString() || "",
+        draps_housses: supabaseData.linge_180x200_draps_housses?.toString() || "",
+        housses_couette: supabaseData.linge_180x200_housses_couette?.toString() || "",
+        protections_matelas: supabaseData.linge_180x200_protections_matelas?.toString() || "",
+        taies_oreillers: supabaseData.linge_180x200_taies_oreillers?.toString() || "",
+        draps_bain: supabaseData.linge_180x200_draps_bain?.toString() || "",
+        petites_serviettes: supabaseData.linge_180x200_petites_serviettes?.toString() || "",
+        tapis_bain: supabaseData.linge_180x200_tapis_bain?.toString() || "",
+        torchons: supabaseData.linge_180x200_torchons?.toString() || "",
+        plaids: supabaseData.linge_180x200_plaids?.toString() || "",
+        oreillers_decoratifs: supabaseData.linge_180x200_oreillers_decoratifs?.toString() || ""
+      },
+      
+      // Inventaire Autres
+      inventaire_autres: {
+        couettes: supabaseData.linge_autres_couettes?.toString() || "",
+        oreillers: supabaseData.linge_autres_oreillers?.toString() || "",
+        draps_housses: supabaseData.linge_autres_draps_housses?.toString() || "",
+        housses_couette: supabaseData.linge_autres_housses_couette?.toString() || "",
+        protections_matelas: supabaseData.linge_autres_protections_matelas?.toString() || "",
+        taies_oreillers: supabaseData.linge_autres_taies_oreillers?.toString() || "",
+        draps_bain: supabaseData.linge_autres_draps_bain?.toString() || "",
+        petites_serviettes: supabaseData.linge_autres_petites_serviettes?.toString() || "",
+        tapis_bain: supabaseData.linge_autres_tapis_bain?.toString() || "",
+        torchons: supabaseData.linge_autres_torchons?.toString() || "",
+        plaids: supabaseData.linge_autres_plaids?.toString() || "",
+        oreillers_decoratifs: supabaseData.linge_autres_oreillers_decoratifs?.toString() || ""
+      },
+      
+      // État du linge
+      etat_neuf: supabaseData.linge_etat_neuf ?? null,
+      etat_usage: supabaseData.linge_etat_usage ?? null,
+      etat_propre: supabaseData.linge_etat_propre ?? null,
+      etat_sale: supabaseData.linge_etat_sale ?? null,
+      etat_tache: supabaseData.linge_etat_tache ?? null,
+      etat_informations: supabaseData.linge_etat_informations || "",
+      
+      // Photos et emplacement
+      photos_linge: supabaseData.linge_photos_linge || [],
+      emplacement_description: supabaseData.linge_emplacement_description || "",
+      emplacement_photos: supabaseData.linge_emplacement_photos || [],
+      emplacement_code_cadenas: supabaseData.linge_emplacement_code_cadenas || ""
+    },
+
+    section_equipements: {
+      // Équipements techniques essentiels
+      video_acces_poubelle: supabaseData.equipements_video_acces_poubelle ?? null,
+      poubelle_emplacement: supabaseData.equipements_poubelle_emplacement || "",
+      poubelle_ramassage: supabaseData.equipements_poubelle_ramassage || "",
+      poubelle_photos: supabaseData.equipements_poubelle_photos || [],
+      disjoncteur_emplacement: supabaseData.equipements_disjoncteur_emplacement || "",
+      disjoncteur_photos: supabaseData.equipements_disjoncteur_photos || [],
+      vanne_eau_emplacement: supabaseData.equipements_vanne_eau_emplacement || "",
+      vanne_eau_photos: supabaseData.equipements_vanne_eau_photos || [],
+      systeme_chauffage_eau: supabaseData.equipements_systeme_chauffage_eau || "",
+      chauffage_eau_emplacement: supabaseData.equipements_chauffage_eau_emplacement || "",
+      chauffage_eau_photos: supabaseData.equipements_chauffage_eau_photos || [],
+      video_systeme_chauffage: supabaseData.equipements_video_systeme_chauffage ?? null,
+      
+      // Équipements checklist
+      wifi: supabaseData.equipements_wifi ?? null,
+      tv: supabaseData.equipements_tv ?? null,
+      climatisation: supabaseData.equipements_climatisation ?? null,
+      chauffage: supabaseData.equipements_chauffage ?? null,
+      lave_linge: supabaseData.equipements_lave_linge ?? null,
+      seche_linge: supabaseData.equipements_seche_linge ?? null,
+      fer_repasser: supabaseData.equipements_fer_repasser ?? null,
+      etendoir: supabaseData.equipements_etendoir ?? null,
+      parking_equipement: supabaseData.equipements_parking_equipement ?? null,
+      tourne_disque: supabaseData.equipements_tourne_disque ?? null,
+      piano: supabaseData.equipements_piano ?? null,
+      cinema: supabaseData.equipements_cinema ?? null,
+      coffre_fort: supabaseData.equipements_coffre_fort ?? null,
+      ascenseur: supabaseData.equipements_ascenseur ?? null,
+      compacteur_dechets: supabaseData.equipements_compacteur_dechets ?? null,
+      accessible_mobilite_reduite: supabaseData.equipements_accessible_mobilite_reduite ?? null,
+      animaux_acceptes: supabaseData.equipements_animaux_acceptes ?? null,
+      fetes_autorisees: supabaseData.equipements_fetes_autorisees ?? null,
+      fumeurs_acceptes: supabaseData.equipements_fumeurs_acceptes ?? null,
+      
+      // Parking
+      parking_type: supabaseData.equipements_parking_type || "",
+      parking_rue_details: supabaseData.equipements_parking_rue_details || "",
+      parking_sur_place_types: supabaseData.equipements_parking_sur_place_types || [],
+      parking_sur_place_details: supabaseData.equipements_parking_sur_place_details || "",
+      parking_payant_type: supabaseData.equipements_parking_payant_type || "",
+      parking_payant_details: supabaseData.equipements_parking_payant_details || ""
+    },
     section_consommables: {},
     section_visite: {},
     section_chambres: {},
@@ -413,7 +684,6 @@ export const getUserFiches = async (userId) => {
     }
   }
 }
-
 
 
 // 🔥 NOUVELLE FONCTION : Récupérer TOUTES les fiches (pour admin/super admin)

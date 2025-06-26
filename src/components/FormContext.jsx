@@ -99,11 +99,215 @@ const initialFormData = {
     mot_passe: "",
     explication_refus: ""
   },
-  section_reglementation: {},
-  section_exigences: {},
-  section_avis: {},
-  section_gestion_linge: {},
-  section_equipements: {},
+
+  section_reglementation: {
+  ville_changement_usage: "",
+  date_expiration_changement: "",
+  numero_declaration: "",
+  ville_declaration_simple: "",
+  details_reglementation: "",
+  documents: {
+    carte_identite: false,
+    rib: false,
+    cerfa: false,
+    assurance_pno: false,
+    rcp: false,
+    acte_propriete: false
+  }
+},
+
+  section_exigences: {
+    nombre_nuits_minimum: "",
+    tarif_minimum_nuit: "",
+    dates_bloquees: [],
+    precisions_exigences: ""
+  },
+
+  section_avis: {
+    description_emplacement: {
+      tres_bien_situe: null,
+      quartier_calme: null,
+      environnement_rural: null,
+      bord_mer: null,
+      montagne: null,
+      autres_emplacement: null
+    },
+    description_emplacement_autre: "",
+    precisions_emplacement: "",
+    atouts_logement: {
+      luxueux: null,
+      lumineux: null,
+      central: null,
+      spacieux: null,
+      authentique: null,
+      design_moderne: null,
+      terrasse_balcon: null,
+      piscine: null,
+      autres_atouts: null
+    },
+    atouts_logement_autre: "",
+    autres_caracteristiques: "",
+    types_voyageurs: {
+      duo_amoureux: null,
+      nomades_numeriques: null,
+      aventuriers_independants: null,
+      tribus_familiales: null,
+      bandes_amis: null,
+      voyageurs_experience: null,
+      autres_voyageurs: null
+    },
+    types_voyageurs_autre: "",
+    explication_adaptation: "",
+    notation: {
+      emplacement: null,
+      confort: null,
+      valeurs: null,
+      equipements: null
+    }
+  },
+  
+  section_gestion_linge: {
+    // Question principale
+    dispose_de_linge: null,
+    
+    // Inventaire 90x200 (lit simple)
+    inventaire_90x200: {
+      couettes: "",
+      oreillers: "",
+      draps_housses: "",
+      housses_couette: "",
+      protections_matelas: "",
+      taies_oreillers: "",
+      draps_bain: "",
+      petites_serviettes: "",
+      tapis_bain: "",
+      torchons: "",
+      plaids: "",
+      oreillers_decoratifs: ""
+    },
+    
+    // Inventaire 140x200 (lit standard)
+    inventaire_140x200: {
+      couettes: "",
+      oreillers: "",
+      draps_housses: "",
+      housses_couette: "",
+      protections_matelas: "",
+      taies_oreillers: "",
+      draps_bain: "",
+      petites_serviettes: "",
+      tapis_bain: "",
+      torchons: "",
+      plaids: "",
+      oreillers_decoratifs: ""
+    },
+    
+    // Inventaire 160x200 (lit queen size)
+    inventaire_160x200: {
+      couettes: "",
+      oreillers: "",
+      draps_housses: "",
+      housses_couette: "",
+      protections_matelas: "",
+      taies_oreillers: "",
+      draps_bain: "",
+      petites_serviettes: "",
+      tapis_bain: "",
+      torchons: "",
+      plaids: "",
+      oreillers_decoratifs: ""
+    },
+    
+    // Inventaire 180x200 (lit king size)
+    inventaire_180x200: {
+      couettes: "",
+      oreillers: "",
+      draps_housses: "",
+      housses_couette: "",
+      protections_matelas: "",
+      taies_oreillers: "",
+      draps_bain: "",
+      petites_serviettes: "",
+      tapis_bain: "",
+      torchons: "",
+      plaids: "",
+      oreillers_decoratifs: ""
+    },
+    
+    // Inventaire Autres/hors catégorie
+    inventaire_autres: {
+      couettes: "",
+      oreillers: "",
+      draps_housses: "",
+      housses_couette: "",
+      protections_matelas: "",
+      taies_oreillers: "",
+      draps_bain: "",
+      petites_serviettes: "",
+      tapis_bain: "",
+      torchons: "",
+      plaids: "",
+      oreillers_decoratifs: ""
+    },
+    
+    // État du linge (checkboxes)
+    etat_neuf: null,
+    etat_usage: null,
+    etat_propre: null,
+    etat_sale: null,
+    etat_tache: null,
+    etat_informations: "",
+    
+    // Photos et emplacement
+    photos_linge: [],
+    emplacement_description: "",
+    emplacement_photos: [],
+    emplacement_code_cadenas: ""
+  },
+  section_equipements: {
+    // Équipements techniques essentiels
+    video_acces_poubelle: null,
+    poubelle_emplacement: "",
+    poubelle_ramassage: "",
+    poubelle_photos: [],
+    disjoncteur_emplacement: "",
+    disjoncteur_photos: [],
+    vanne_eau_emplacement: "",
+    vanne_eau_photos: [],
+    systeme_chauffage_eau: "",
+    chauffage_eau_emplacement: "",
+    chauffage_eau_photos: [],
+    video_systeme_chauffage: null,
+    
+    // Équipements et Commodités - Checklist
+    wifi: null,
+    tv: null,
+    climatisation: null,
+    chauffage: null,
+    lave_linge: null,
+    seche_linge: null,
+    fer_repasser: null,
+    etendoir: null,
+    parking_equipement: null,
+    tourne_disque: null,
+    piano: null,
+    cinema: null,
+    coffre_fort: null,
+    ascenseur: null,
+    compacteur_dechets: null,
+    accessible_mobilite_reduite: null,
+    animaux_acceptes: null,
+    fetes_autorisees: null,
+    fumeurs_acceptes: null,
+    
+    // Parking principal et champs conditionnels
+    parking_type: "",
+    parking_rue_details: "",
+    parking_sur_place_types: [],
+    parking_sur_place_details: "",
+    parking_payant_type: "",
+    parking_payant_details: ""
+  },
   section_consommables: {},
   section_visite: {},
   section_chambres: {},

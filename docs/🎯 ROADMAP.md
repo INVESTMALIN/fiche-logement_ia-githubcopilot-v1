@@ -125,81 +125,85 @@ super_admin: full access + user management + admin console
 ---
 
 ## 📋 **SPRINT EXPANSION FORMULAIRE (2 semaines)**
-*17 sections manquantes*
+*12 sections manquantes*
 
 ### **📋 Sections prioritaires métier**
 **Critères sélection :** Impact coordinateur + fréquence usage + pattern établi
 
 #### **Batch 1 - Sections réglementation/qualité (5 sections)**
 1. **Réglementation** ✅ FAIT (FicheReglementation.jsx)
-2. **Exigences Letahost** ✅ FAIT (FicheExigences.jsx)
+2. **Exigences** ✅ FAIT (FicheExigences.jsx)
 3. **Avis** ✅ FAIT (FicheAvis.jsx)
 4. **Sécurité** (FicheSécurité.jsx)
    - Détecteurs fumée, CO
    - Alarmes, caméras
    - Consignes sécurité
-   - **Estimation :** 4h
+   - **Estimation :** 3-4h
 
 5. **Visite** (FicheVisite.jsx)
    - Check-list visite initiale
    - Points attention coordinateur
    - Photos obligatoires
-   - **Estimation :** 4h
+   - **Estimation :** 3-4h
 
-**🎯 Batch 1 :** 8h restantes (3/5 fait)
+**🎯 Batch 1 :** 
 
 #### **Batch 2 - Sections équipements (6 sections)**
-6. **Gestion Linge** (FicheGestionLinge.jsx) - **Estimation :** 3h
-7. **Équipements** (FicheEquipements.jsx) - **Estimation :** 4h
-8. **Consommables** (FicheConsommables.jsx) - **Estimation :** 3h
-9. **Chambres** (FicheChambres.jsx) - **Estimation :** 5h
-10. **Salle de Bains** (FicheSalleDeBains.jsx) - **Estimation :** 3h
-11. **Cuisine 1** (FicheCuisine1.jsx) - **Estimation :** 4h
-12. **Cuisine 2** (FicheCuisine2.jsx) - **Estimation :** 3h
-13. **Salon / SAM** (FicheSalonSAM.jsx) - **Estimation :** 3h
-14. **Équipements spé. / Extérieur** (FicheEquipExterieur.jsx) - **Estimation :** 5h
+6. **Gestion Linge** ✅ FAIT (FicheGestionLinge.jsx)
+7. **Équipements** ✅ FAIT (FicheEquipements.jsx)
+8. **Consommables** (FicheConsommables.jsx) - **Estimation :**
+9. **Chambres** (FicheChambres.jsx) - **Estimation :**
+10. **Salle de Bains** (FicheSalleDeBains.jsx) - **Estimation :**
+11. **Cuisine 1** (FicheCuisine1.jsx) - **Estimation :**
+12. **Cuisine 2** (FicheCuisine2.jsx) - **Estimation :** 
+13. **Salon / SAM** (FicheSalonSAM.jsx) - **Estimation :**
+14. **Équipements spé. / Extérieur** (FicheEquipExterieur.jsx) - **Estimation :** 
 
-**🎯 Batch 2 :** 33h
+**🎯 Batch 2 :**
 
 #### **Batch 3 - Sections services (5 sections)**
-15. **Communs** (FicheCommuns.jsx) - **Estimation :** 3h
-16. **Télétravail** (FicheTeletravail.jsx) - **Estimation :** 3h
-17. **Bébé** (FicheBebe.jsx) - **Estimation :** 3h
+15. **Communs** (FicheCommuns.jsx) - **Estimation :**
+16. **Télétravail** (FicheTeletravail.jsx) - **Estimation :**
+17. **Bébé** (FicheBebe.jsx) - **Estimation :** 
 
-**🎯 Batch 3 :** 9h
+**🎯 Batch 3 :** 
 
-**🎯 Total restant :** 50h → **22 sections complètes !**
+
 
 ---
 
-## 🖼️ **SPRINT MULTIMÉDIA & INTEGRATION (3 semaines)**
+## 🖼️ **SPRINT MULTIMÉDIA & INTEGRATION **
 *Photos, vidéos, PDF*
 
 ### **📸 Upload Photos/Vidéos Google Drive**
 
-**Architecture :**
-```javascript
-// Nouveau composant PhotoUpload.jsx
-const PhotoUpload = ({ section, fieldName, multiple = false }) => {
-  const uploadToDrive = async (files) => {
-    // 1. Upload vers Google Drive API
-    // 2. Récupérer URL publique  
-    // 3. Sauver URL dans formData[section][fieldName]
-  }
-  
-  return (
-    <div>
-      <input type="file" accept="image/*,video/*" />
-      <div>Previews photos existantes</div>
-    </div>
-  )
-}
-```
+On va créer une **architecture découplée** avec une interface commune, comme ça le changement Google Drive sera transparent.
 
-**Intégration sections :**
-- FicheClefs → Photos interphone, boîtes, clefs
-- FicheLogement → Photos extérieur, entrée
-- Toutes sections → Photos équipements spécifiques
+**📋 ARCHITECTURE INTELLIGENTE****🎯
+
+**RÉSUMÉ de l'approche intelligente :**
+
+1. **Interface commune** → Même code pour Supabase ET Google Drive
+2. **Provider switching** → 1 variable d'environnement pour changer
+3. **Composants réutilisables** → Même PhotoUpload partout
+4. **Migration transparente** → Aucun code métier à modifier
+
+**PLAN D'ACTION :**
+
+**Phase 1 (2h) :** 
+- Setup Supabase Storage bucket
+- Créer l'interface + provider Supabase
+- Composant PhotoUpload basique
+
+**Phase 2 (1h) :**
+- Intégrer dans sections existantes (Gestion Linge + Équipements)
+- Tester upload/suppression
+
+**Phase 3 (Future) :**
+- Créer googleDriveProvider.js
+- Changer 1 variable d'environnement
+- **MIGRATION TERMINÉE !**
+
 
 **Tasks :**
 - [ ] Setup Google Drive API credentials
@@ -212,7 +216,7 @@ const PhotoUpload = ({ section, fieldName, multiple = false }) => {
 
 ### **📄 Génération PDF Make.com**
 
-**Workflow :**
+**Workflow :** (TBD)
 ```
 Fiche finalisée → Webhook Make.com → 
 GPT enrichissement texte → Template PDF → 
@@ -261,31 +265,18 @@ Sauvegarde Drive → Lien retour Supabase
 - **Sécurité améliorée** → Contrôle accès granulaire
 - **Scaling préparé** → Architecture permissions extensible
 
----
-
-## ⚠️ **POINTS D'ATTENTION IDENTIFIÉS AUJOURD'HUI**
-
-### **Techniques**
-- ✅ **Sur-engineering maîtrisé** → On a su s'arrêter au bon moment
-- ✅ **Dropdown bugs résolus** → Portal CSS + z-index fixes
-- ⚠️ **Schema Supabase** → Champs Monday toujours pas sauvegardés
-
-### **UX/UI**
-- ✅ **Design cohérence** → Rouge admin vs doré coordinateur
-- ✅ **Responsive design** → Mobile + desktop optimisé
-- ✅ **Performance** → Dropdowns fluides + recherche instantanée
 
 ---
 
 ## 🎯 **PROCHAINES PRIORITÉS RÉORGANISÉES**
 
 ### **📋 COURT TERME (1-2 semaines)**
-1. **Sections restantes** → 14 sections manquantes (50h étalées)
+1. **Sections restantes** → 12 sections manquantes au 26 juin
 2. **Polish UX** → Améliorations feedback utilisateurs
 
 ### **🖼️ MOYEN TERME (3-4 semaines)**
-3. **Multimédia** → Photos + PDF (40h)
-4. **Monday sync** → Bidirectionnel (20h)
+3. **Multimédia** → Photos + PDF
+4. **Monday sync** → Bidirectionnel
 
 ### **🔄 LONG TERME (optionnel)**
 5. **Analytics avancées** → Métriques usage détaillées
@@ -302,14 +293,9 @@ Sauvegarde Drive → Lien retour Supabase
 - ✅ **Architecture solide** → Permissions + users + admin
 - ✅ **UX excellence** → Design moderne + recherche + workflows
 - ✅ **Schema BDD complet** → Toutes données Monday sauvegardées
-- 📋 **Contenu formulaire** → 14 sections à compléter
-
-### **🎯 VISION ACTUALISÉE**
-L'application Letahost est maintenant une **solution enterprise complète** avec administration, permissions, et **persistance Monday 100% fonctionnelle**. Aucun point critique bloquant, prêt pour expansion des sections restantes.
-
-**Status global :** 🔥 **PARFAIT - AUCUN POINT CRITIQUE !** 🔥
+- 📋 **Contenu formulaire** → 12 sections à compléter
 
 ---
 
-*Dernière mise à jour : 24 Juin 2025 - Milestone Admin ATTEINT !*  
-*Console administration opérationnelle - Prêt pour scaling équipe* 🎉🚀
+*Dernière mise à jour : 26 Juin 2025
+*Console administration opérationnelle
