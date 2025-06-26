@@ -12,6 +12,9 @@ import FicheExigences from './FicheExigences'
 import FicheAvis from './FicheAvis'
 import FicheGestionLinge from './FicheGestionLinge'
 import FicheEquipements from './FicheEquipements'
+import FicheConsommables from './FicheConsommables'
+import FicheVisite from './FicheVisite'
+
 
 // Composant placeholder pour les sections pas encore créées
 function PlaceholderSection({ title }) {
@@ -74,8 +77,8 @@ export default function FicheWizard() {
     <FicheAvis key="avis" />,
     <FicheGestionLinge key="linge" />,
     <FicheEquipements key="equipements" />,
-    <PlaceholderSection key="consommables" title="Consommables" />,
-    <PlaceholderSection key="visite" title="Visite" />,
+    <FicheConsommables key="consommables" />,
+    <FicheVisite key="visite" />,
     <PlaceholderSection key="chambres" title="Chambres" />,
     <PlaceholderSection key="sdb" title="Salle De Bains" />,
     <PlaceholderSection key="cuisine1" title="Cuisine 1" />,

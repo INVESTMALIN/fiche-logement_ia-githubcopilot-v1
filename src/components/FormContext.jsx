@@ -308,8 +308,52 @@ const initialFormData = {
     parking_payant_type: "",
     parking_payant_details: ""
   },
-  section_consommables: {},
-  section_visite: {},
+  section_consommables: {
+    // Question principale
+    fournis_par_prestataire: null,
+    
+    gel_douche: null,               
+    shampoing: null,                
+    apres_shampoing: null,          
+    pastilles_lave_vaisselle: null, 
+    autre_consommable: null,        
+    autre_consommable_details: "", 
+    
+    cafe_nespresso: null,      
+    cafe_tassimo: null,        
+    cafe_moulu: null,  
+    cafe_senseo: null,  
+    cafe_soluble: null,    
+    cafe_grain: null,              
+    cafe_autre: null, 
+    cafe_autre_details: ""          
+  },
+
+  section_visite: {
+    // Types de pièces (14 checkboxes + Autre)
+    pieces_chambre: null,
+    pieces_salon: null,
+    pieces_salle_bains: null,
+    pieces_salon_prive: null,
+    pieces_kitchenette: null,
+    pieces_cuisine: null,
+    pieces_salle_manger: null,
+    pieces_bureau: null,
+    pieces_salle_jeux: null,
+    pieces_salle_sport: null,
+    pieces_buanderie: null,
+    pieces_terrasse: null,
+    pieces_balcon: null,
+    pieces_jardin: null,
+    pieces_autre: null,
+    pieces_autre_details: "",
+    
+    // Conditionnel chambre
+    nombre_chambres: "",        // "1", "2", "3", "4", "5", "6"
+    
+    // Vidéo visite
+    video_visite: null          // true = Fait, false = À faire
+  },
   section_chambres: {},
   section_salle_de_bains: {},
   section_cuisine_1: {},

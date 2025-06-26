@@ -248,6 +248,46 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_parking_sur_place_details: formData.section_equipements?.parking_sur_place_details || null,
     equipements_parking_payant_type: formData.section_equipements?.parking_payant_type || null,
     equipements_parking_payant_details: formData.section_equipements?.parking_payant_details || null,
+
+    // Section Consommables
+    consommables_fournis_par_prestataire: formData.section_consommables?.fournis_par_prestataire ?? null,
+    consommables_gel_douche: formData.section_consommables?.gel_douche ?? null,
+    consommables_shampoing: formData.section_consommables?.shampoing ?? null,
+    consommables_apres_shampoing: formData.section_consommables?.apres_shampoing ?? null,
+    consommables_pastilles_lave_vaisselle: formData.section_consommables?.pastilles_lave_vaisselle ?? null,
+    consommables_autre_consommable: formData.section_consommables?.autre_consommable ?? null,
+    consommables_autre_consommable_details: formData.section_consommables?.autre_consommable_details || null,
+    consommables_cafe_nespresso: formData.section_consommables?.cafe_nespresso ?? null,
+    consommables_cafe_tassimo: formData.section_consommables?.cafe_tassimo ?? null,
+    consommables_cafe_moulu: formData.section_consommables?.cafe_moulu ?? null,
+    consommables_cafe_senseo: formData.section_consommables?.cafe_senseo ?? null,
+    consommables_cafe_soluble: formData.section_consommables?.cafe_soluble ?? null,
+    consommables_cafe_grain: formData.section_consommables?.cafe_grain ?? null,
+    consommables_cafe_autre: formData.section_consommables?.cafe_autre ?? null,
+    consommables_cafe_autre_details: formData.section_consommables?.cafe_autre_details || null,
+
+    // À AJOUTER dans mapFormDataToSupabase() après la section Consommables :
+
+    // Section Visite
+    // Types de pièces (14 checkboxes)
+    visite_pieces_chambre: formData.section_visite?.pieces_chambre ?? null,
+    visite_pieces_salon: formData.section_visite?.pieces_salon ?? null,
+    visite_pieces_salle_bains: formData.section_visite?.pieces_salle_bains ?? null,
+    visite_pieces_salon_prive: formData.section_visite?.pieces_salon_prive ?? null,
+    visite_pieces_kitchenette: formData.section_visite?.pieces_kitchenette ?? null,
+    visite_pieces_cuisine: formData.section_visite?.pieces_cuisine ?? null,
+    visite_pieces_salle_manger: formData.section_visite?.pieces_salle_manger ?? null,
+    visite_pieces_bureau: formData.section_visite?.pieces_bureau ?? null,
+    visite_pieces_salle_jeux: formData.section_visite?.pieces_salle_jeux ?? null,
+    visite_pieces_salle_sport: formData.section_visite?.pieces_salle_sport ?? null,
+    visite_pieces_buanderie: formData.section_visite?.pieces_buanderie ?? null,
+    visite_pieces_terrasse: formData.section_visite?.pieces_terrasse ?? null,
+    visite_pieces_balcon: formData.section_visite?.pieces_balcon ?? null,
+    visite_pieces_jardin: formData.section_visite?.pieces_jardin ?? null,
+    visite_pieces_autre: formData.section_visite?.pieces_autre ?? null,
+    visite_pieces_autre_details: formData.section_visite?.pieces_autre_details || null,
+    visite_nombre_chambres: formData.section_visite?.nombre_chambres || null,
+    visite_video_visite: formData.section_visite?.video_visite ?? null,
     
     updated_at: new Date().toISOString()
   }
@@ -570,8 +610,54 @@ export const mapSupabaseToFormData = (supabaseData) => {
       parking_payant_type: supabaseData.equipements_parking_payant_type || "",
       parking_payant_details: supabaseData.equipements_parking_payant_details || ""
     },
-    section_consommables: {},
-    section_visite: {},
+
+    section_consommables: {
+      // Question principale
+      fournis_par_prestataire: supabaseData.consommables_fournis_par_prestataire ?? null,
+      
+      // Consommables optionnels "sur demande"
+      gel_douche: supabaseData.consommables_gel_douche ?? null,
+      shampoing: supabaseData.consommables_shampoing ?? null,
+      apres_shampoing: supabaseData.consommables_apres_shampoing ?? null,
+      pastilles_lave_vaisselle: supabaseData.consommables_pastilles_lave_vaisselle ?? null,
+      autre_consommable: supabaseData.consommables_autre_consommable ?? null,
+      autre_consommable_details: supabaseData.consommables_autre_consommable_details || "",
+      
+      // Type café/cafetière
+      cafe_nespresso: supabaseData.consommables_cafe_nespresso ?? null,
+      cafe_tassimo: supabaseData.consommables_cafe_tassimo ?? null,
+      cafe_moulu: supabaseData.consommables_cafe_moulu ?? null,
+      cafe_senseo: supabaseData.consommables_cafe_senseo ?? null,
+      cafe_soluble: supabaseData.consommables_cafe_soluble ?? null,
+      cafe_grain: supabaseData.consommables_cafe_grain ?? null,
+      cafe_autre: supabaseData.consommables_cafe_autre ?? null,
+      cafe_autre_details: supabaseData.consommables_cafe_autre_details || ""
+    },
+    // À REMPLACER dans mapSupabaseToFormData() : 
+// Remplace `section_visite: {},` par :
+
+    section_visite: {
+      // Types de pièces (14 checkboxes)
+      pieces_chambre: supabaseData.visite_pieces_chambre ?? null,
+      pieces_salon: supabaseData.visite_pieces_salon ?? null,
+      pieces_salle_bains: supabaseData.visite_pieces_salle_bains ?? null,
+      pieces_salon_prive: supabaseData.visite_pieces_salon_prive ?? null,
+      pieces_kitchenette: supabaseData.visite_pieces_kitchenette ?? null,
+      pieces_cuisine: supabaseData.visite_pieces_cuisine ?? null,
+      pieces_salle_manger: supabaseData.visite_pieces_salle_manger ?? null,
+      pieces_bureau: supabaseData.visite_pieces_bureau ?? null,
+      pieces_salle_jeux: supabaseData.visite_pieces_salle_jeux ?? null,
+      pieces_salle_sport: supabaseData.visite_pieces_salle_sport ?? null,
+      pieces_buanderie: supabaseData.visite_pieces_buanderie ?? null,
+      pieces_terrasse: supabaseData.visite_pieces_terrasse ?? null,
+      pieces_balcon: supabaseData.visite_pieces_balcon ?? null,
+      pieces_jardin: supabaseData.visite_pieces_jardin ?? null,
+      pieces_autre: supabaseData.visite_pieces_autre ?? null,
+      pieces_autre_details: supabaseData.visite_pieces_autre_details || "",
+      nombre_chambres: supabaseData.visite_nombre_chambres || "",
+      video_visite: supabaseData.visite_video_visite ?? null
+    },
+    
     section_chambres: {},
     section_salle_de_bains: {},
     section_cuisine_1: {},
