@@ -3,6 +3,7 @@ import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
 import UpdatePassword from './pages/UpdatePassword'
+import ConfirmSignup from './pages/ConfirmSignup'
 import NotFound from './pages/NotFound'
 import FicheWizard from './pages/FicheWizard'
 import { FormProvider } from './components/FormContext'
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/update-password" element={<UpdatePassword />} />
+          <Route path="/confirm-signup" element={<ConfirmSignup />} />
 
           <Route 
             path="/" 
