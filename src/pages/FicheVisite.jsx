@@ -15,6 +15,7 @@ export default function FicheVisite() {
   const typologie = formDataLogement.typologie
   const nombreChambres = formDataVisite.nombre_chambres !== "" ? parseInt(formDataVisite.nombre_chambres) : null
   const chambreSelectionnee = formDataVisite.pieces_chambre === true
+  const salleDebainsSelectionnee = formDataVisite.pieces_salle_bains === true
 
   const handleInputChange = (field, value) => {
     updateField(field, value)
@@ -145,6 +146,28 @@ export default function FicheVisite() {
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Conditionnel : Nombre de salles de bains si "Salle de bains" cochée */}
+            {salleDebainsSelectionnee && (
+              <div>
+                <label className="block font-semibold mb-3">
+                  Visite – Nombre de salles de bains <span className="text-red-500">*</span>
+                </label>
+                <select 
+                  className="w-full max-w-xs p-2 border rounded"
+                  value={formDataVisite.nombre_salles_bains || ""}
+                  onChange={(e) => handleInputChange('section_visite.nombre_salles_bains', e.target.value)}
+                >
+                  <option value="">Veuillez sélectionner</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
               </div>
             )}
 

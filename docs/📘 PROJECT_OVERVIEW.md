@@ -4,7 +4,7 @@ L'application Fiche Logement est un outil interne "mobile-first" développé pou
 
 ## 👤 Utilisateurs Cibles & Cas d'Usage
 
-**Utilisateurs Principaux :** Coordinateurs terrain de Letahost (intégration de nouvelles propriétés)
+**Utilisateurs Principaux :** Coordinateurs terrain (intégration de nouvelles propriétés)
 
 **Cas d'Usage :** Remplir et mettre à jour les "fiches logement" structurées sur mobile ou ordinateur
 

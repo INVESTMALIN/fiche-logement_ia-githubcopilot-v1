@@ -8,33 +8,33 @@
 
 ### ✅ **1.1 - Définir la structure des données**
 ```javascript
-// Exemple pour "section_securite"
-section_securite: {
-  detecteur_fumee: null,           // Radio: true/false/null
-  detecteur_fumee_details: "",     // Input text conditionnel
-  detecteur_co: null,              // Radio: true/false/null
-  detecteur_co_details: "",        // Input text conditionnel
-  alarme_incendie: null,           // Radio: true/false/null
-  extincteur: null,                // Radio: true/false/null
-  trousse_secours: null,           // Radio: true/false/null
-  consignes_securite: "",          // Textarea
-  photos_securite: []              // Array de photos
+// Exemple pour "section_exemple"
+section_exemple: {
+  champ_radio: null,               // Radio: true/false/null
+  champ_radio_details: "",         // Input text conditionnel
+  champ_textarea: "",              // Textarea
+  champ_select: "",                // Select dropdown
+  champ_checkbox: null,            // Checkbox: true/false/null
+  photos_exemple: []               // Array de photos
 }
 ```
 
 ### ✅ **1.2 - Lister les colonnes Supabase nécessaires**
 ```sql
--- Colonnes à créer pour section_securite
-securite_detecteur_fumee BOOLEAN
-securite_detecteur_fumee_details TEXT
-securite_detecteur_co BOOLEAN  
-securite_detecteur_co_details TEXT
-securite_alarme_incendie BOOLEAN
-securite_extincteur BOOLEAN
-securite_trousse_secours BOOLEAN
-securite_consignes_securite TEXT
-securite_photos_securite TEXT[]
+-- Pattern de nommage : {section}_{champ}
+exemple_champ_radio BOOLEAN
+exemple_champ_radio_details TEXT
+exemple_champ_textarea TEXT
+exemple_champ_select TEXT
+exemple_champ_checkbox BOOLEAN
+exemple_photos_exemple TEXT[]
 ```
+
+**📊 Organisation table Supabase :**
+- **Colonnes métadonnées** : `id`, `user_id`, `nom`, `statut`, `created_at`, `updated_at`
+- **Sections par ordre** : `proprietaire_*`, `logement_*`, `clefs_*`, `airbnb_*`, `booking_*`, `reglementation_*`, `exigences_*`, `avis_*`, `linge_*`, `equipements_*`, `consommables_*`, `visite_*`, `chambres_*`, `salle_de_bains_*`
+- **Pattern cohérent** : `{section}_{champ}`
+- **Types standards** : `TEXT`, `BOOLEAN`, `INTEGER`, `TEXT[]`
 
 ---
 
@@ -43,22 +43,20 @@ securite_photos_securite TEXT[]
 ### ✅ **2.1 - Exécuter le SQL d'ajout de colonnes**
 ```sql
 -- Dans Supabase SQL Editor
-ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_detecteur_fumee BOOLEAN;
-ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_detecteur_fumee_details TEXT;
-ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_detecteur_co BOOLEAN;
-ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_detecteur_co_details TEXT;
-ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_alarme_incendie BOOLEAN;
-ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_extincteur BOOLEAN;
-ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_trousse_secours BOOLEAN;
-ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_consignes_securite TEXT;
-ALTER TABLE fiches ADD COLUMN IF NOT EXISTS securite_photos_securite TEXT[];
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS exemple_champ_radio BOOLEAN;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS exemple_champ_radio_details TEXT;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS exemple_champ_textarea TEXT;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS exemple_champ_select TEXT;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS exemple_champ_checkbox BOOLEAN;
+ALTER TABLE fiches ADD COLUMN IF NOT EXISTS exemple_photos_exemple TEXT[];
 ```
 
 ### ✅ **2.2 - Vérification**
 ```sql
 -- Vérifier que les colonnes sont créées
 SELECT column_name FROM information_schema.columns 
-WHERE table_name = 'fiches' AND column_name LIKE 'securite_%';
+WHERE table_name = 'fiches' AND column_name LIKE 'exemple_%'
+ORDER BY column_name;
 ```
 
 ---
@@ -67,24 +65,16 @@ WHERE table_name = 'fiches' AND column_name LIKE 'securite_%';
 
 ### ✅ **3.1 - Ajouter dans initialFormData**
 ```javascript
-// Dans src/components/FormContext.jsx, ligne ~100
-section_securite: {
-  detecteur_fumee: null,
-  detecteur_fumee_details: "",
-  detecteur_co: null,
-  detecteur_co_details: "",
-  alarme_incendie: null,
-  extincteur: null,
-  trousse_secours: null,
-  consignes_securite: "",
-  photos_securite: []
+// Dans src/components/FormContext.jsx
+// Remplacer section_exemple: {},
+section_exemple: {
+  champ_radio: null,
+  champ_radio_details: "",
+  champ_textarea: "",
+  champ_select: "",
+  champ_checkbox: null,
+  photos_exemple: []
 },
-```
-
-### ✅ **3.2 - Section déjà vide donc RAS**
-```javascript
-// Ligne ~280 - Déjà présent et vide
-section_securite: {}
 ```
 
 ---
@@ -93,32 +83,27 @@ section_securite: {}
 
 ### ✅ **4.1 - Ajouter dans mapFormDataToSupabase()**
 ```javascript
-// Dans src/lib/supabaseHelpers.js, ligne ~50
-// Section Sécurité
-securite_detecteur_fumee: formData.section_securite?.detecteur_fumee ?? null,
-securite_detecteur_fumee_details: formData.section_securite?.detecteur_fumee_details || null,
-securite_detecteur_co: formData.section_securite?.detecteur_co ?? null,
-securite_detecteur_co_details: formData.section_securite?.detecteur_co_details || null,
-securite_alarme_incendie: formData.section_securite?.alarme_incendie ?? null,
-securite_extincteur: formData.section_securite?.extincteur ?? null,
-securite_trousse_secours: formData.section_securite?.trousse_secours ?? null,
-securite_consignes_securite: formData.section_securite?.consignes_securite || null,
-securite_photos_securite: formData.section_securite?.photos_securite || [],
+// Dans src/lib/supabaseHelpers.js
+// Ajouter après la dernière section
+exemple_champ_radio: formData.section_exemple?.champ_radio ?? null,
+exemple_champ_radio_details: formData.section_exemple?.champ_radio_details || null,
+exemple_champ_textarea: formData.section_exemple?.champ_textarea || null,
+exemple_champ_select: formData.section_exemple?.champ_select || null,
+exemple_champ_checkbox: formData.section_exemple?.champ_checkbox ?? null,
+exemple_photos_exemple: formData.section_exemple?.photos_exemple || [],
 ```
 
 ### ✅ **4.2 - Ajouter dans mapSupabaseToFormData()**
 ```javascript
-// Dans src/lib/supabaseHelpers.js, ligne ~150
-section_securite: {
-  detecteur_fumee: supabaseData.securite_detecteur_fumee ?? null,
-  detecteur_fumee_details: supabaseData.securite_detecteur_fumee_details || "",
-  detecteur_co: supabaseData.securite_detecteur_co ?? null,
-  detecteur_co_details: supabaseData.securite_detecteur_co_details || "",
-  alarme_incendie: supabaseData.securite_alarme_incendie ?? null,
-  extincteur: supabaseData.securite_extincteur ?? null,
-  trousse_secours: supabaseData.securite_trousse_secours ?? null,
-  consignes_securite: supabaseData.securite_consignes_securite || "",
-  photos_securite: supabaseData.securite_photos_securite || []
+// Dans src/lib/supabaseHelpers.js
+// Ajouter après la dernière section
+section_exemple: {
+  champ_radio: supabaseData.exemple_champ_radio ?? null,
+  champ_radio_details: supabaseData.exemple_champ_radio_details || "",
+  champ_textarea: supabaseData.exemple_champ_textarea || "",
+  champ_select: supabaseData.exemple_champ_select || "",
+  champ_checkbox: supabaseData.exemple_champ_checkbox ?? null,
+  photos_exemple: supabaseData.exemple_photos_exemple || []
 },
 ```
 
@@ -126,26 +111,31 @@ section_securite: {
 
 ## 📄 **ÉTAPE 5 : CRÉER LE COMPOSANT PAGE**
 
-### ✅ **5.1 - Créer src/pages/FicheSécurité.jsx**
+### ✅ **5.1 - Template composant**
 ```javascript
-// Copier src/pages/FicheForm.jsx comme template
-// Remplacer le contenu par la nouvelle section
-
+// src/pages/FicheExemple.jsx
 import React from 'react'
 import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
-import { Button } from '../components/ui/button'
+import Button from '../components/Button'
 
-export default function FicheSécurité() {
-  const { next, back, currentStep, totalSteps, getField, updateField, handleSave, saveStatus } = useForm()
+export default function FicheExemple() {
+  const { next, back, getField, updateField, handleSave, saveStatus } = useForm()
 
   // PATTERN IMPORTANT : Récupérer formData pour les booléens
-  const formData = getField('section_securite')
-  const detecteurFumee = formData.detecteur_fumee
+  const formData = getField('section_exemple')
 
   const handleInputChange = (field, value) => {
     updateField(field, value)
+  }
+
+  const handleRadioChange = (field, value) => {
+    updateField(field, value === 'true' ? true : (value === 'false' ? false : null))
+  }
+
+  const handleCheckboxChange = (field, checked) => {
+    updateField(field, checked ? true : null)
   }
 
   return (
@@ -154,66 +144,60 @@ export default function FicheSécurité() {
       <div className="flex-1 flex flex-col">
         <ProgressBar />
         <div className="flex-1 p-6 bg-gray-100">
-          <h1 className="text-2xl font-bold mb-6">Sécurité</h1>
+          <h1 className="text-2xl font-bold mb-6">Titre Section</h1>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow space-y-6">
             
-            {/* Détecteur de fumée */}
+            {/* Exemple radio avec conditionnel */}
             <div>
-              <label className="block font-semibold mb-2">Détecteur de fumée présent ?</label>
-              <div className="flex gap-4 mb-3">
-                <label className="flex items-center">
-                  <input 
-                    type="radio" 
-                    checked={detecteurFumee === true}
-                    onChange={() => handleInputChange('section_securite.detecteur_fumee', true)}
-                    className="mr-2"
+              <label className="block font-semibold mb-3">Question radio</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={formData.champ_radio === true}
+                    onChange={() => handleRadioChange('section_exemple.champ_radio', 'true')}
+                    className="w-4 h-4"
                   />
-                  Oui
+                  <span>Oui</span>
                 </label>
-                <label className="flex items-center">
-                  <input 
-                    type="radio" 
-                    checked={detecteurFumee === false}
-                    onChange={() => handleInputChange('section_securite.detecteur_fumee', false)}
-                    className="mr-2"
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={formData.champ_radio === false}
+                    onChange={() => handleRadioChange('section_exemple.champ_radio', 'false')}
+                    className="w-4 h-4"
                   />
-                  Non
+                  <span>Non</span>
                 </label>
               </div>
               
               {/* Affichage conditionnel */}
-              {detecteurFumee === true && (
-                <div>
-                  <input 
+              {formData.champ_radio === true && (
+                <div className="mt-3">
+                  <input
                     type="text"
-                    placeholder="Précisions sur le détecteur de fumée"
+                    placeholder="Détails..."
+                    value={formData.champ_radio_details || ""}
+                    onChange={(e) => handleInputChange('section_exemple.champ_radio_details', e.target.value)}
                     className="w-full p-2 border rounded"
-                    value={getField('section_securite.detecteur_fumee_details')}
-                    onChange={(e) => handleInputChange('section_securite.detecteur_fumee_details', e.target.value)}
                   />
                 </div>
               )}
             </div>
 
-            {/* Répéter le pattern pour les autres champs... */}
-            
-          </div>
+            {/* Messages sauvegarde */}
+            {saveStatus.saving && <div className="text-blue-600">⏳ Sauvegarde...</div>}
+            {saveStatus.saved && <div className="text-green-600">✅ Sauvegardé !</div>}
+            {saveStatus.error && <div className="text-red-600">❌ {saveStatus.error}</div>}
 
-          {/* Boutons navigation */}
-          <div className="mt-6 flex justify-between">
-            <Button variant="ghost" onClick={back} disabled={currentStep === 0}>
-              Retour
-            </Button>
-            <div className="flex gap-3">
-              <Button 
-                variant="secondary" 
-                onClick={handleSave}
-                disabled={saveStatus.saving}
-              >
-                {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
-              </Button>
-              <Button variant="primary" onClick={next}>Suivant</Button>
+            {/* Boutons navigation */}
+            <div className="flex justify-between items-center pt-6 border-t">
+              <Button variant="ghost" onClick={back}>Retour</Button>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={handleSave}>Enregistrer</Button>
+                <Button variant="primary" onClick={next}>Suivant</Button>
+              </div>
             </div>
           </div>
         </div>
@@ -230,52 +214,27 @@ export default function FicheSécurité() {
 ### ✅ **6.1 - Ajouter dans FicheWizard.jsx**
 ```javascript
 // Dans src/pages/FicheWizard.jsx
-import FicheSécurité from './FicheSécurité'
+import FicheExemple from './FicheExemple'
 
-// Dans le tableau steps (ligne ~15)
-const steps = [
-  <FicheForm />,           // 0 - Propriétaire
-  <FicheLogement />,       // 1 - Logement  
-  <FicheClefs />,          // 2 - Clefs
-  <FicheAirbnb />,         // 3 - Airbnb
-  <FicheBooking />,        // 4 - Booking
-  <FicheReglementation />, // 5 - Réglementation
-  // ... autres sections existantes
-  <FicheSécurité />,       // 21 - Sécurité (dernière position)
-]
-```
-
-### ✅ **6.2 - Vérifier l'ordre des sections**
-```javascript
-// Dans src/components/FormContext.jsx, ligne ~140
-const sections = [
-  "Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", "Réglementation",
-  "Exigences", "Avis", "Gestion Linge", "Équipements", "Consommables", "Visite",
-  "Chambres", "Salle De Bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. Spé. / Extérieur",
-  "Communs", "Télétravail", "Bébé", "Sécurité"  // ← Vérifier position
-]
+// Dans le tableau steps, remplacer le PlaceholderSection par :
+<FicheExemple key="exemple" />,
 ```
 
 ---
 
 ## 🧪 **ÉTAPE 7 : TESTS ET VALIDATION**
 
-### ✅ **7.1 - Test de sauvegarde**
-1. Naviguer vers la nouvelle section
-2. Remplir quelques champs (radio + texte conditionnel)
-3. Cliquer "Enregistrer"
-4. Vérifier message "Sauvegardé avec succès"
+### ✅ **Tests obligatoires**
+1. **Navigation** : Aller à la nouvelle section
+2. **Saisie** : Remplir les champs (radio + conditionnel)
+3. **Sauvegarde** : Cliquer "Enregistrer" → Message succès
+4. **Persistence** : Recharger la page → Données présentes
+5. **Navigation** : Changer de section et revenir → Données conservées
 
-### ✅ **7.2 - Test de chargement**
-1. Aller au Dashboard
-2. Ouvrir la fiche modifiée
-3. Naviguer vers la nouvelle section
-4. Vérifier que les champs sont bien remplis
-
-### ✅ **7.3 - Vérification BDD**
+### ✅ **Vérification BDD**
 ```sql
--- Dans Supabase, vérifier les données
-SELECT securite_* FROM fiches WHERE id = 'ton_id_fiche';
+-- Vérifier les données sauvegardées
+SELECT exemple_* FROM fiches WHERE id = 'ID_FICHE';
 ```
 
 ---
@@ -284,12 +243,12 @@ SELECT securite_* FROM fiches WHERE id = 'ton_id_fiche';
 
 ### ✅ **Radio Buttons avec Booléens**
 ```javascript
-// ❌ MAUVAIS - getField direct sur booléen
-const radioValue = getField('section_securite.detecteur_fumee')
-
 // ✅ CORRECT - Récupérer formData puis propriété
-const formData = getField('section_securite')
-const radioValue = formData.detecteur_fumee  // true/false/null
+const formData = getField('section_exemple')
+const radioValue = formData.champ_radio  // true/false/null
+
+// ❌ MAUVAIS - getField direct sur booléen
+const radioValue = getField('section_exemple.champ_radio')
 ```
 
 ### ✅ **Affichage Conditionnel**
@@ -300,16 +259,16 @@ const radioValue = formData.detecteur_fumee  // true/false/null
 )}
 ```
 
-### ✅ **Classes CSS Standard**
+### ✅ **Mapping Supabase**
 ```javascript
-// Labels
-className="block font-semibold mb-1"
+// Booléens : utiliser ?? null (permet true/false/null)
+exemple_boolean: formData.section_exemple?.boolean_field ?? null,
 
-// Inputs
-className="w-full p-2 border rounded"
+// Textes : utiliser || null (évite chaînes vides)
+exemple_text: formData.section_exemple?.text_field || null,
 
-// Grilles
-className="grid grid-cols-1 md:grid-cols-2 gap-4"
+// Arrays : utiliser || [] (valeur par défaut)
+exemple_array: formData.section_exemple?.array_field || [],
 ```
 
 ---
@@ -322,20 +281,20 @@ className="grid grid-cols-1 md:grid-cols-2 gap-4"
 - [ ] `mapSupabaseToFormData()` étendu  
 - [ ] Composant page créé avec patterns corrects
 - [ ] Import ajouté dans FicheWizard
-- [ ] Ordre sections vérifié
 - [ ] Test sauvegarde ✅
 - [ ] Test chargement ✅
 - [ ] Test navigation ✅
+- [ ] Test affichage conditionnel ✅
 
 ---
 
-## 🎯 **NOTES IMPORTANTES**
+## 🎯 **BONNES PRATIQUES**
 
-1. **Toujours utiliser `??` pour les booléens** dans le mapping Supabase
-2. **Pattern `getField('section_name')` puis propriété** pour les radio buttons
-3. **Affichage conditionnel avec `=== true`** strict
-4. **Classes Tailwind standards** pour cohérence UI
-5. **Tester IMMÉDIATEMENT** après chaque ajout
-6. **Commit Git** après validation complète
+1. **Pattern de nommage cohérent** : `{section}_{champ}`
+2. **Types Supabase standards** : `BOOLEAN`, `TEXT`, `INTEGER`, `TEXT[]`
+3. **Mapping booléens** : Toujours `?? null` pour préserver true/false/null
+4. **Structure composant** : Même layout que les sections existantes
+5. **Tests immédiat** : Valider après chaque étape
+6. **Organisation BDD** : Respecter l'ordre des sections existantes
 
-**Ce process garantit une intégration parfaite sans casser l'existant !**
+**Ce process garantit une intégration parfaite sans casser l'existant !** ✅
