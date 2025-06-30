@@ -879,7 +879,76 @@ section_salon_sam: {
   nombre_places_table: ""               // Number input
 },
 
-  section_equip_spe_exterieur: {},
+  // 🏗️ ÉTAPE 3 - Mise à jour FormContext.jsx
+// Remplacer la ligne : section_equip_spe_exterieur: {},
+
+section_equip_spe_exterieur: {
+  // CHAMPS RACINES (toujours visibles)
+  dispose_exterieur: null,                    // Radio: true/false/null
+  dispose_piscine: null,                      // Radio: true/false/null  
+  dispose_jacuzzi: null,                      // Radio: true/false/null
+  dispose_cuisine_exterieure: null,          // Radio: true/false/null
+  
+  // BRANCHE EXTÉRIEUR (si dispose_exterieur = true)
+  exterieur_type_espace: [],                 // Array checkboxes: ["Balcon", "Terrasse", "Jardin", "Patio", "Aucun"]
+  exterieur_description_generale: "",        // Textarea
+  exterieur_entretien_prestataire: null,     // Radio: true/false/null
+  exterieur_entretien_frequence: "",         // Text (conditionnel si entretien = true)
+  exterieur_entretien_type_prestation: "",   // Text (conditionnel si entretien = true)
+  exterieur_entretien_qui: "",               // Text (conditionnel si entretien = false)
+  exterieur_equipements: [],                 // Array 14 checkboxes + autre
+  exterieur_equipements_autre_details: "",   // Text (conditionnel si "Autre" coché)
+  exterieur_nombre_chaises_longues: null,    // Number (conditionnel si "Chaises longues" coché)
+  exterieur_nombre_parasols: null,           // Number (conditionnel si "Parasol" coché)
+  exterieur_photos: [],                      // Array photos
+  exterieur_acces: "",                       // Textarea
+  exterieur_type_acces: "",                  // Radio: Privé/Partagé logements/Partagé voisinage/Autre
+  exterieur_type_acces_autre_details: "",    // Text (conditionnel si "Autre")
+  
+  // SOUS-BRANCHE BARBECUE (si "Barbecue" dans exterieur_equipements)
+  barbecue_instructions: "",                 // Textarea
+  barbecue_type: "",                         // Text
+  barbecue_combustible_fourni: null,         // Radio: true/false/null
+  barbecue_ustensiles_fournis: null,         // Radio: true/false/null
+  barbecue_photos: [],                       // Array photos
+  
+  // BRANCHE PISCINE (si dispose_piscine = true)
+  piscine_type: "",                          // Radio: Privée/Publique
+  piscine_acces: "",                         // Radio: Intérieur/Extérieur
+  piscine_dimensions: "",                    // Text
+  piscine_disponibilite: "",                 // Radio: Toute l'année/Certaines périodes
+  piscine_periode_disponibilite: "",         // Text (conditionnel)
+  piscine_heures: "",                        // Radio: 24h/24 ou spécifiques
+  piscine_horaires_ouverture: "",            // Text (conditionnel)
+  piscine_caracteristiques: [],              // Array checkboxes (9 options)
+  piscine_periode_chauffage: "",             // Text (conditionnel si "Chauffée")
+  piscine_entretien_prestataire: null,       // Radio: true/false/null
+  piscine_entretien_frequence: "",           // Text (conditionnel)
+  piscine_entretien_type_prestation: "",     // Text (conditionnel)
+  piscine_entretien_qui: "",                 // Text (conditionnel)
+  piscine_regles_utilisation: "",            // Textarea
+  piscine_video: null,                       // Radio: true/false/null (Fait/À faire)
+  
+  // BRANCHE JACUZZI (si dispose_jacuzzi = true)
+  jacuzzi_acces: "",                         // Radio: Intérieur/Extérieur
+  jacuzzi_entretien_prestataire: null,       // Radio: true/false/null
+  jacuzzi_entretien_frequence: "",           // Text (conditionnel)
+  jacuzzi_entretien_type_prestation: "",     // Text (conditionnel)
+  jacuzzi_entretien_qui: "",                 // Text (conditionnel)
+  jacuzzi_taille: "",                        // Text
+  jacuzzi_instructions: "",                  // Textarea
+  jacuzzi_heures_utilisation: "",            // Text
+  jacuzzi_photos: [],                        // Array photos
+  
+  // BRANCHE CUISINE EXTÉRIEURE (si dispose_cuisine_exterieure = true)
+  cuisine_ext_entretien_prestataire: null,   // Radio: true/false/null
+  cuisine_ext_entretien_frequence: "",       // Text (conditionnel)
+  cuisine_ext_entretien_type_prestation: "", // Text (conditionnel)
+  cuisine_ext_entretien_qui: "",             // Text (conditionnel)
+  cuisine_ext_superficie: "",               // Text
+  cuisine_ext_type: "",                     // Radio: Privée/Publique
+  cuisine_ext_caracteristiques: []          // Array checkboxes: ["Four", "Évier"]
+},
   section_communs: {},
   section_teletravail: {},
   section_bebe: {},

@@ -776,7 +776,72 @@ export const mapFormDataToSupabase = (formData) => {
     // Nombre places table (obligatoire)
     salon_sam_nombre_places_table: formData.section_salon_sam?.nombre_places_table ? parseInt(formData.section_salon_sam.nombre_places_table) : null,
 
+    // Section Équipements Spécifiques et Extérieurs
+    // CHAMPS RACINES
+    equip_spe_ext_dispose_exterieur: formData.section_equip_spe_exterieur?.dispose_exterieur ?? null,
+    equip_spe_ext_dispose_piscine: formData.section_equip_spe_exterieur?.dispose_piscine ?? null,
+    equip_spe_ext_dispose_jacuzzi: formData.section_equip_spe_exterieur?.dispose_jacuzzi ?? null,
+    equip_spe_ext_dispose_cuisine_exterieure: formData.section_equip_spe_exterieur?.dispose_cuisine_exterieure ?? null,
 
+    // BRANCHE EXTÉRIEUR
+    equip_spe_ext_exterieur_type_espace: formData.section_equip_spe_exterieur?.exterieur_type_espace || [],
+    equip_spe_ext_exterieur_description_generale: formData.section_equip_spe_exterieur?.exterieur_description_generale || null,
+    equip_spe_ext_exterieur_entretien_prestataire: formData.section_equip_spe_exterieur?.exterieur_entretien_prestataire ?? null,
+    equip_spe_ext_exterieur_entretien_frequence: formData.section_equip_spe_exterieur?.exterieur_entretien_frequence || null,
+    equip_spe_ext_exterieur_entretien_type_prestation: formData.section_equip_spe_exterieur?.exterieur_entretien_type_prestation || null,
+    equip_spe_ext_exterieur_entretien_qui: formData.section_equip_spe_exterieur?.exterieur_entretien_qui || null,
+    equip_spe_ext_exterieur_equipements: formData.section_equip_spe_exterieur?.exterieur_equipements || [],
+    equip_spe_ext_exterieur_equipements_autre_details: formData.section_equip_spe_exterieur?.exterieur_equipements_autre_details || null,
+    equip_spe_ext_exterieur_nombre_chaises_longues: formData.section_equip_spe_exterieur?.exterieur_nombre_chaises_longues ? parseInt(formData.section_equip_spe_exterieur.exterieur_nombre_chaises_longues) : null,
+    equip_spe_ext_exterieur_nombre_parasols: formData.section_equip_spe_exterieur?.exterieur_nombre_parasols ? parseInt(formData.section_equip_spe_exterieur.exterieur_nombre_parasols) : null,
+    equip_spe_ext_exterieur_photos: formData.section_equip_spe_exterieur?.exterieur_photos || [],
+    equip_spe_ext_exterieur_acces: formData.section_equip_spe_exterieur?.exterieur_acces || null,
+    equip_spe_ext_exterieur_type_acces: formData.section_equip_spe_exterieur?.exterieur_type_acces || null,
+    equip_spe_ext_exterieur_type_acces_autre_details: formData.section_equip_spe_exterieur?.exterieur_type_acces_autre_details || null,
+
+    // SOUS-BRANCHE BARBECUE
+    equip_spe_ext_barbecue_instructions: formData.section_equip_spe_exterieur?.barbecue_instructions || null,
+    equip_spe_ext_barbecue_type: formData.section_equip_spe_exterieur?.barbecue_type || null,
+    equip_spe_ext_barbecue_combustible_fourni: formData.section_equip_spe_exterieur?.barbecue_combustible_fourni ?? null,
+    equip_spe_ext_barbecue_ustensiles_fournis: formData.section_equip_spe_exterieur?.barbecue_ustensiles_fournis ?? null,
+    equip_spe_ext_barbecue_photos: formData.section_equip_spe_exterieur?.barbecue_photos || [],
+
+    // BRANCHE PISCINE
+    equip_spe_ext_piscine_type: formData.section_equip_spe_exterieur?.piscine_type || null,
+    equip_spe_ext_piscine_acces: formData.section_equip_spe_exterieur?.piscine_acces || null,
+    equip_spe_ext_piscine_dimensions: formData.section_equip_spe_exterieur?.piscine_dimensions || null,
+    equip_spe_ext_piscine_disponibilite: formData.section_equip_spe_exterieur?.piscine_disponibilite || null,
+    equip_spe_ext_piscine_periode_disponibilite: formData.section_equip_spe_exterieur?.piscine_periode_disponibilite || null,
+    equip_spe_ext_piscine_heures: formData.section_equip_spe_exterieur?.piscine_heures || null,
+    equip_spe_ext_piscine_horaires_ouverture: formData.section_equip_spe_exterieur?.piscine_horaires_ouverture || null,
+    equip_spe_ext_piscine_caracteristiques: formData.section_equip_spe_exterieur?.piscine_caracteristiques || [],
+    equip_spe_ext_piscine_periode_chauffage: formData.section_equip_spe_exterieur?.piscine_periode_chauffage || null,
+    equip_spe_ext_piscine_entretien_prestataire: formData.section_equip_spe_exterieur?.piscine_entretien_prestataire ?? null,
+    equip_spe_ext_piscine_entretien_frequence: formData.section_equip_spe_exterieur?.piscine_entretien_frequence || null,
+    equip_spe_ext_piscine_entretien_type_prestation: formData.section_equip_spe_exterieur?.piscine_entretien_type_prestation || null,
+    equip_spe_ext_piscine_entretien_qui: formData.section_equip_spe_exterieur?.piscine_entretien_qui || null,
+    equip_spe_ext_piscine_regles_utilisation: formData.section_equip_spe_exterieur?.piscine_regles_utilisation || null,
+    equip_spe_ext_piscine_video: formData.section_equip_spe_exterieur?.piscine_video ?? null,
+
+    // BRANCHE JACUZZI
+    equip_spe_ext_jacuzzi_acces: formData.section_equip_spe_exterieur?.jacuzzi_acces || null,
+    equip_spe_ext_jacuzzi_entretien_prestataire: formData.section_equip_spe_exterieur?.jacuzzi_entretien_prestataire ?? null,
+    equip_spe_ext_jacuzzi_entretien_frequence: formData.section_equip_spe_exterieur?.jacuzzi_entretien_frequence || null,
+    equip_spe_ext_jacuzzi_entretien_type_prestation: formData.section_equip_spe_exterieur?.jacuzzi_entretien_type_prestation || null,
+    equip_spe_ext_jacuzzi_entretien_qui: formData.section_equip_spe_exterieur?.jacuzzi_entretien_qui || null,
+    equip_spe_ext_jacuzzi_taille: formData.section_equip_spe_exterieur?.jacuzzi_taille || null,
+    equip_spe_ext_jacuzzi_instructions: formData.section_equip_spe_exterieur?.jacuzzi_instructions || null,
+    equip_spe_ext_jacuzzi_heures_utilisation: formData.section_equip_spe_exterieur?.jacuzzi_heures_utilisation || null,
+    equip_spe_ext_jacuzzi_photos: formData.section_equip_spe_exterieur?.jacuzzi_photos || [],
+
+    // BRANCHE CUISINE EXTÉRIEURE
+    equip_spe_ext_cuisine_ext_entretien_prestataire: formData.section_equip_spe_exterieur?.cuisine_ext_entretien_prestataire ?? null,
+    equip_spe_ext_cuisine_ext_entretien_frequence: formData.section_equip_spe_exterieur?.cuisine_ext_entretien_frequence || null,
+    equip_spe_ext_cuisine_ext_entretien_type_prestation: formData.section_equip_spe_exterieur?.cuisine_ext_entretien_type_prestation || null,
+    equip_spe_ext_cuisine_ext_entretien_qui: formData.section_equip_spe_exterieur?.cuisine_ext_entretien_qui || null,
+    equip_spe_ext_cuisine_ext_superficie: formData.section_equip_spe_exterieur?.cuisine_ext_superficie || null,
+    equip_spe_ext_cuisine_ext_type: formData.section_equip_spe_exterieur?.cuisine_ext_type || null,
+    equip_spe_ext_cuisine_ext_caracteristiques: formData.section_equip_spe_exterieur?.cuisine_ext_caracteristiques || [],
 
 
 
@@ -1651,8 +1716,76 @@ export const mapSupabaseToFormData = (supabaseData) => {
       // Nombre places table (obligatoire)
       nombre_places_table: supabaseData.salon_sam_nombre_places_table?.toString() || ""
     },
+
+    section_equip_spe_exterieur: {
+      // CHAMPS RACINES
+      dispose_exterieur: supabaseData.equip_spe_ext_dispose_exterieur ?? null,
+      dispose_piscine: supabaseData.equip_spe_ext_dispose_piscine ?? null,
+      dispose_jacuzzi: supabaseData.equip_spe_ext_dispose_jacuzzi ?? null,
+      dispose_cuisine_exterieure: supabaseData.equip_spe_ext_dispose_cuisine_exterieure ?? null,
+      
+      // BRANCHE EXTÉRIEUR
+      exterieur_type_espace: supabaseData.equip_spe_ext_exterieur_type_espace || [],
+      exterieur_description_generale: supabaseData.equip_spe_ext_exterieur_description_generale || "",
+      exterieur_entretien_prestataire: supabaseData.equip_spe_ext_exterieur_entretien_prestataire ?? null,
+      exterieur_entretien_frequence: supabaseData.equip_spe_ext_exterieur_entretien_frequence || "",
+      exterieur_entretien_type_prestation: supabaseData.equip_spe_ext_exterieur_entretien_type_prestation || "",
+      exterieur_entretien_qui: supabaseData.equip_spe_ext_exterieur_entretien_qui || "",
+      exterieur_equipements: supabaseData.equip_spe_ext_exterieur_equipements || [],
+      exterieur_equipements_autre_details: supabaseData.equip_spe_ext_exterieur_equipements_autre_details || "",
+      exterieur_nombre_chaises_longues: supabaseData.equip_spe_ext_exterieur_nombre_chaises_longues,
+      exterieur_nombre_parasols: supabaseData.equip_spe_ext_exterieur_nombre_parasols,
+      exterieur_photos: supabaseData.equip_spe_ext_exterieur_photos || [],
+      exterieur_acces: supabaseData.equip_spe_ext_exterieur_acces || "",
+      exterieur_type_acces: supabaseData.equip_spe_ext_exterieur_type_acces || "",
+      exterieur_type_acces_autre_details: supabaseData.equip_spe_ext_exterieur_type_acces_autre_details || "",
+      
+      // SOUS-BRANCHE BARBECUE
+      barbecue_instructions: supabaseData.equip_spe_ext_barbecue_instructions || "",
+      barbecue_type: supabaseData.equip_spe_ext_barbecue_type || "",
+      barbecue_combustible_fourni: supabaseData.equip_spe_ext_barbecue_combustible_fourni ?? null,
+      barbecue_ustensiles_fournis: supabaseData.equip_spe_ext_barbecue_ustensiles_fournis ?? null,
+      barbecue_photos: supabaseData.equip_spe_ext_barbecue_photos || [],
+      
+      // BRANCHE PISCINE
+      piscine_type: supabaseData.equip_spe_ext_piscine_type || "",
+      piscine_acces: supabaseData.equip_spe_ext_piscine_acces || "",
+      piscine_dimensions: supabaseData.equip_spe_ext_piscine_dimensions || "",
+      piscine_disponibilite: supabaseData.equip_spe_ext_piscine_disponibilite || "",
+      piscine_periode_disponibilite: supabaseData.equip_spe_ext_piscine_periode_disponibilite || "",
+      piscine_heures: supabaseData.equip_spe_ext_piscine_heures || "",
+      piscine_horaires_ouverture: supabaseData.equip_spe_ext_piscine_horaires_ouverture || "",
+      piscine_caracteristiques: supabaseData.equip_spe_ext_piscine_caracteristiques || [],
+      piscine_periode_chauffage: supabaseData.equip_spe_ext_piscine_periode_chauffage || "",
+      piscine_entretien_prestataire: supabaseData.equip_spe_ext_piscine_entretien_prestataire ?? null,
+      piscine_entretien_frequence: supabaseData.equip_spe_ext_piscine_entretien_frequence || "",
+      piscine_entretien_type_prestation: supabaseData.equip_spe_ext_piscine_entretien_type_prestation || "",
+      piscine_entretien_qui: supabaseData.equip_spe_ext_piscine_entretien_qui || "",
+      piscine_regles_utilisation: supabaseData.equip_spe_ext_piscine_regles_utilisation || "",
+      piscine_video: supabaseData.equip_spe_ext_piscine_video ?? null,
+      
+      // BRANCHE JACUZZI
+      jacuzzi_acces: supabaseData.equip_spe_ext_jacuzzi_acces || "",
+      jacuzzi_entretien_prestataire: supabaseData.equip_spe_ext_jacuzzi_entretien_prestataire ?? null,
+      jacuzzi_entretien_frequence: supabaseData.equip_spe_ext_jacuzzi_entretien_frequence || "",
+      jacuzzi_entretien_type_prestation: supabaseData.equip_spe_ext_jacuzzi_entretien_type_prestation || "",
+      jacuzzi_entretien_qui: supabaseData.equip_spe_ext_jacuzzi_entretien_qui || "",
+      jacuzzi_taille: supabaseData.equip_spe_ext_jacuzzi_taille || "",
+      jacuzzi_instructions: supabaseData.equip_spe_ext_jacuzzi_instructions || "",
+      jacuzzi_heures_utilisation: supabaseData.equip_spe_ext_jacuzzi_heures_utilisation || "",
+      jacuzzi_photos: supabaseData.equip_spe_ext_jacuzzi_photos || [],
+      
+      // BRANCHE CUISINE EXTÉRIEURE
+      cuisine_ext_entretien_prestataire: supabaseData.equip_spe_ext_cuisine_ext_entretien_prestataire ?? null,
+      cuisine_ext_entretien_frequence: supabaseData.equip_spe_ext_cuisine_ext_entretien_frequence || "",
+      cuisine_ext_entretien_type_prestation: supabaseData.equip_spe_ext_cuisine_ext_entretien_type_prestation || "",
+      cuisine_ext_entretien_qui: supabaseData.equip_spe_ext_cuisine_ext_entretien_qui || "",
+      cuisine_ext_superficie: supabaseData.equip_spe_ext_cuisine_ext_superficie || "",
+      cuisine_ext_type: supabaseData.equip_spe_ext_cuisine_ext_type || "",
+      cuisine_ext_caracteristiques: supabaseData.equip_spe_ext_cuisine_ext_caracteristiques || []
+    },
+
     
-    section_equip_spe_exterieur: {},
     section_communs: {},
     section_teletravail: {},
     section_bebe: {},

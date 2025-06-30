@@ -19,6 +19,7 @@ import FicheSalleDeBains from './FicheSalleDeBains'
 import FicheCuisine1 from './FicheCuisine1'
 import FicheCuisine2 from './FicheCuisine2'
 import FicheSalonSam from './FicheSalonSam'
+import FicheEquipExterieur from './FicheEquipExterieur'
 
 
 // Composant placeholder pour les sections pas encore créées
@@ -89,7 +90,7 @@ export default function FicheWizard() {
     <FicheCuisine1 key="cuisine-1" />,
     <FicheCuisine2 key="cuisine-2" />,
     <FicheSalonSam key="salon-sam" />,
-    <PlaceholderSection key="exterieur" title="Équip. Spé. / Extérieur" />,
+    <FicheEquipExterieur key="exterieur" />,
     <PlaceholderSection key="communs" title="Communs" />,
     <PlaceholderSection key="teletravail" title="Télétravail" />,
     <PlaceholderSection key="bebe" title="Bébé" />,

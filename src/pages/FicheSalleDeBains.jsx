@@ -281,37 +281,37 @@ export default function FicheSalleDeBains() {
             )}
 
             {/* Messages de sauvegarde */}
-            {saveStatus.saving && (
-              <div className="text-blue-600">⏳ Sauvegarde en cours...</div>
-            )}
-            {saveStatus.saved && (
-              <div className="text-green-600">✅ Sauvegardé avec succès !</div>
-            )}
-            {saveStatus.error && (
-              <div className="text-red-600">❌ Erreur : {saveStatus.error}</div>
-            )}
+{saveStatus.saving && (
+  <div className="text-blue-600">⏳ Sauvegarde en cours...</div>
+)}
+{saveStatus.saved && (
+  <div className="text-green-600">✅ Sauvegardé avec succès !</div>
+)}
+{saveStatus.error && (
+  <div className="text-red-600">❌ Erreur : {saveStatus.error}</div>
+)}
 
-            {/* Boutons de navigation */}
-            <div className="flex justify-between items-center pt-6 border-t">
-              <Button 
-                variant="ghost" 
-                onClick={back} 
-                disabled={currentStep === 0}
-              >
-                Retour
-              </Button>
-              
-              <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={handleSave}
-                  disabled={saveStatus.saving}
-                >
-                  {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
-                </Button>
-                <Button variant="primary" onClick={next}>Suivant</Button>
-              </div>
-            </div>
+{/* Boutons de navigation */}
+<div className="flex justify-between items-center pt-6 border-t">
+  <Button 
+    variant="ghost" 
+    onClick={back} 
+    disabled={currentStep === 0}
+  >
+    Retour
+  </Button>
+  
+  <div className="flex gap-2">
+    <Button
+      variant="secondary"
+      onClick={handleSave}
+      disabled={saveStatus.saving}
+    >
+      {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
+    </Button>
+    <Button variant="primary" onClick={next}>Suivant</Button>
+  </div>
+</div>
 
           </div>
         </div>
