@@ -665,9 +665,220 @@ const initialFormData = {
       photos_salle_de_bain: []
     }
   },
-  section_cuisine_1: {},
-  section_cuisine_2: {},
-  section_salon_sam: {},
+  section_cuisine_1: {
+    // Checkboxes principales (16 équipements)
+    equipements_refrigerateur: null,
+    equipements_congelateur: null,
+    equipements_mini_refrigerateur: null,
+    equipements_cuisiniere: null,
+    equipements_plaque_cuisson: null,
+    equipements_four: null,
+    equipements_micro_ondes: null,
+    equipements_lave_vaisselle: null,
+    equipements_cafetiere: null,
+    equipements_bouilloire: null,
+    equipements_grille_pain: null,
+    equipements_blender: null,
+    equipements_cuiseur_riz: null,
+    equipements_machine_pain: null,
+    equipements_lave_linge: null,
+    equipements_autre: null,
+    equipements_autre_details: "",
+  
+    // RÉFRIGÉRATEUR - Champs conditionnels
+    refrigerateur_marque: "",                    // OBLIGATOIRE *
+    refrigerateur_instructions: "",
+    refrigerateur_video: null,                   // true=Fait, false=À faire
+  
+    // CONGÉLATEUR - Champs conditionnels
+    congelateur_instructions: "",
+    congelateur_video: null,
+  
+    // MINI RÉFRIGÉRATEUR - Champs conditionnels
+    mini_refrigerateur_instructions: "",
+    mini_refrigerateur_video: null,
+  
+    // CUISINIÈRE - Champs conditionnels
+    cuisiniere_marque: "",                      // OBLIGATOIRE *
+    cuisiniere_type: "",                        // Select: Électrique/Gaz/Induction/À bois
+    cuisiniere_nombre_feux: "",                 // Number input
+    cuisiniere_instructions: "",
+    cuisiniere_photo: [],                       // Array photos
+    cuisiniere_video: null,
+  
+    // PLAQUE DE CUISSON - Champs conditionnels
+    plaque_cuisson_marque: "",                  // OBLIGATOIRE *
+    plaque_cuisson_type: "",                    // Select: Électrique/Gaz/Induction
+    plaque_cuisson_nombre_feux: "",             // Number input
+    plaque_cuisson_instructions: "",
+    plaque_cuisson_photo: [],                   // Array photos
+    plaque_cuisson_video: null,
+  
+    // FOUR - Champs conditionnels
+    four_marque: "",                            // OBLIGATOIRE *
+    four_type: "",                              // Select: Simple/Double
+    four_instructions: "",
+    four_photo: [],                             // Array photos
+    four_video: null,
+  
+    // FOUR À MICRO-ONDES - Champs conditionnels
+    micro_ondes_instructions: "",
+    micro_ondes_photo: [],                      // Array photos
+    micro_ondes_video: null,
+  
+    // LAVE-VAISSELLE - Champs conditionnels
+    lave_vaisselle_instructions: "",
+    lave_vaisselle_photo: [],                   // Array photos
+    lave_vaisselle_video: null,
+  
+    // CAFETIÈRE - Champs conditionnels
+    cafetiere_marque: "",                       // OBLIGATOIRE *
+    // Types de cafetière (checkboxes multiples)
+    cafetiere_type_filtre: null,
+    cafetiere_type_expresso: null,
+    cafetiere_type_piston: null,
+    cafetiere_type_keurig: null,
+    cafetiere_type_nespresso: null,
+    cafetiere_type_manuelle: null,
+    cafetiere_type_bar_grain: null,
+    cafetiere_type_bar_moulu: null,
+    cafetiere_instructions: "",
+    cafetiere_photo: [],                        // Array photos
+    cafetiere_video: null,
+    cafetiere_cafe_fourni: "",                  // Radio: Non/Oui par le propriétaire/Oui par la fée du logis
+    cafetiere_marque_cafe: "",
+  
+    // BOUILLOIRE ÉLECTRIQUE - Champs conditionnels
+    bouilloire_instructions: "",
+    bouilloire_video: null,
+  
+    // GRILLE-PAIN - Champs conditionnels
+    grille_pain_instructions: "",
+    grille_pain_video: null,
+  
+    // BLENDER - Champs conditionnels
+    blender_instructions: "",
+    blender_video: null,
+  
+    // CUISEUR À RIZ - Champs conditionnels
+    cuiseur_riz_instructions: "",
+    cuiseur_riz_video: null,
+  
+    // MACHINE À PAIN - Champs conditionnels
+    machine_pain_instructions: "",
+    machine_pain_video: null
+  },
+
+  
+  // 🍽 SECTION CUISINE 2 - À ajouter dans FormContext.jsx
+// Remplacer la ligne : section_cuisine_2: {},
+
+section_cuisine_2: {
+  // VAISSELLE (4 compteurs)
+  vaisselle_assiettes_plates: 0,
+  vaisselle_assiettes_dessert: 0,
+  vaisselle_assiettes_creuses: 0,
+  vaisselle_bols: 0,
+  
+  // COUVERTS (11 compteurs)
+  couverts_verres_eau: 0,
+  couverts_verres_vin: 0,
+  couverts_tasses: 0,
+  couverts_flutes_champagne: 0,
+  couverts_mugs: 0,
+  couverts_couteaux_table: 0,
+  couverts_fourchettes: 0,
+  couverts_couteaux_steak: 0,
+  couverts_cuilleres_soupe: 0,
+  couverts_cuilleres_cafe: 0,
+  couverts_cuilleres_dessert: 0,
+  
+  // USTENSILES DE CUISINE (26 compteurs)
+  ustensiles_poeles_differentes_tailles: 0,
+  ustensiles_casseroles_differentes_tailles: 0,
+  ustensiles_faitouts: 0,
+  ustensiles_wok: 0,
+  ustensiles_cocotte_minute: 0,
+  ustensiles_couvercle_anti_eclaboussures: 0,
+  ustensiles_robot_cuisine: 0,
+  ustensiles_batteur_electrique: 0,
+  ustensiles_couteaux_cuisine: 0,
+  ustensiles_spatules: 0,
+  ustensiles_ecumoire: 0,
+  ustensiles_ouvre_boite: 0,
+  ustensiles_rape: 0,
+  ustensiles_tire_bouchon: 0,
+  ustensiles_econome: 0,
+  ustensiles_passoire: 0,
+  ustensiles_planche_decouper: 0,
+  ustensiles_rouleau_patisserie: 0,
+  ustensiles_ciseaux_cuisine: 0,
+  ustensiles_balance_cuisine: 0,
+  ustensiles_bac_glacon: 0,
+  ustensiles_pince_cuisine: 0,
+  ustensiles_couteau_huitre: 0,
+  ustensiles_verre_mesureur: 0,
+  ustensiles_presse_agrume_manuel: 0,
+  ustensiles_pichet: 0,
+  
+  // PLATS ET RÉCIPIENTS (11 compteurs)
+  plats_dessous_plat: 0,
+  plats_plateau: 0,
+  plats_saladiers: 0,
+  plats_a_four: 0,
+  plats_carafes: 0,
+  plats_moules: 0,
+  plats_theiere: 0,
+  plats_cafetiere_piston_filtre: 0,
+  plats_ustensiles_barbecue: 0,
+  plats_gants_cuisine: 0,
+  plats_maniques: 0,
+  
+  // CHAMPS COMPLÉMENTAIRES
+  autres_ustensiles: "",                              // Texte libre
+  quantite_suffisante: null,                          // Radio: true/false/null  
+  quantite_insuffisante_details: "",                  // Conditionnel si quantite_suffisante = false
+  casseroles_poeles_testees: null,                    // Radio: true/false/null
+  photos_tiroirs_placards: []                         // Array photos
+},
+
+  // 🛋️ SECTION SALON / SAM - À ajouter dans FormContext.jsx
+// Remplacer la ligne : section_salon_sam: {},
+
+section_salon_sam: {
+  // Description générale (obligatoire)
+  description_generale: "",
+  
+  // Équipements (13 checkboxes + autre)
+  equipements_table_manger: null,
+  equipements_chaises: null,
+  equipements_canape: null,
+  equipements_canape_lit: null,
+  equipements_fauteuils: null,
+  equipements_table_basse: null,
+  equipements_television: null,
+  equipements_cheminee: null,
+  equipements_jeux_societe: null,
+  equipements_livres_magazines: null,
+  equipements_livres_jouets_enfants: null,
+  equipements_climatisation: null,
+  equipements_chauffage: null,
+  equipements_autre: null,
+  equipements_autre_details: "",
+  
+  // Cheminée type (conditionnel si cheminee cochée)
+  cheminee_type: "",                    // Radio: Électrique/Éthanol/Gaz/Poêle à granulés/Bois/Décorative
+  
+  // Autres équipements (obligatoire)
+  autres_equipements_details: "",
+  
+  // Photos
+  photos_salon_sam: [],
+  
+  // Nombre places table (obligatoire)
+  nombre_places_table: ""               // Number input
+},
+
   section_equip_spe_exterieur: {},
   section_communs: {},
   section_teletravail: {},

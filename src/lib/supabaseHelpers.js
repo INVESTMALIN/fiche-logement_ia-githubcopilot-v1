@@ -574,7 +574,212 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_6_acces: formData.section_salle_de_bains?.salle_de_bain_6?.acces || null,
     salle_de_bains_salle_de_bain_6_photos_salle_de_bain: formData.section_salle_de_bains?.salle_de_bain_6?.photos_salle_de_bain || [],
 
-    
+    // Section Cuisine 1
+    cuisine_1_equipements_refrigerateur: formData.section_cuisine_1?.equipements_refrigerateur ?? null,
+    cuisine_1_equipements_congelateur: formData.section_cuisine_1?.equipements_congelateur ?? null,
+    cuisine_1_equipements_mini_refrigerateur: formData.section_cuisine_1?.equipements_mini_refrigerateur ?? null,
+    cuisine_1_equipements_cuisiniere: formData.section_cuisine_1?.equipements_cuisiniere ?? null,
+    cuisine_1_equipements_plaque_cuisson: formData.section_cuisine_1?.equipements_plaque_cuisson ?? null,
+    cuisine_1_equipements_four: formData.section_cuisine_1?.equipements_four ?? null,
+    cuisine_1_equipements_micro_ondes: formData.section_cuisine_1?.equipements_micro_ondes ?? null,
+    cuisine_1_equipements_lave_vaisselle: formData.section_cuisine_1?.equipements_lave_vaisselle ?? null,
+    cuisine_1_equipements_cafetiere: formData.section_cuisine_1?.equipements_cafetiere ?? null,
+    cuisine_1_equipements_bouilloire: formData.section_cuisine_1?.equipements_bouilloire ?? null,
+    cuisine_1_equipements_grille_pain: formData.section_cuisine_1?.equipements_grille_pain ?? null,
+    cuisine_1_equipements_blender: formData.section_cuisine_1?.equipements_blender ?? null,
+    cuisine_1_equipements_cuiseur_riz: formData.section_cuisine_1?.equipements_cuiseur_riz ?? null,
+    cuisine_1_equipements_machine_pain: formData.section_cuisine_1?.equipements_machine_pain ?? null,
+    cuisine_1_equipements_lave_linge: formData.section_cuisine_1?.equipements_lave_linge ?? null,
+    cuisine_1_equipements_autre: formData.section_cuisine_1?.equipements_autre ?? null,
+    cuisine_1_equipements_autre_details: formData.section_cuisine_1?.equipements_autre_details || null,
+
+    // RÉFRIGÉRATEUR - Champs conditionnels
+    cuisine_1_refrigerateur_marque: formData.section_cuisine_1?.refrigerateur_marque || null,
+    cuisine_1_refrigerateur_instructions: formData.section_cuisine_1?.refrigerateur_instructions || null,
+    cuisine_1_refrigerateur_video: formData.section_cuisine_1?.refrigerateur_video ?? null,
+
+    // CONGÉLATEUR - Champs conditionnels
+    cuisine_1_congelateur_instructions: formData.section_cuisine_1?.congelateur_instructions || null,
+    cuisine_1_congelateur_video: formData.section_cuisine_1?.congelateur_video ?? null,
+
+    // MINI RÉFRIGÉRATEUR - Champs conditionnels
+    cuisine_1_mini_refrigerateur_instructions: formData.section_cuisine_1?.mini_refrigerateur_instructions || null,
+    cuisine_1_mini_refrigerateur_video: formData.section_cuisine_1?.mini_refrigerateur_video ?? null,
+
+    // CUISINIÈRE - Champs conditionnels
+    cuisine_1_cuisiniere_marque: formData.section_cuisine_1?.cuisiniere_marque || null,
+    cuisine_1_cuisiniere_type: formData.section_cuisine_1?.cuisiniere_type || null,
+    cuisine_1_cuisiniere_nombre_feux: formData.section_cuisine_1?.cuisiniere_nombre_feux ? parseInt(formData.section_cuisine_1.cuisiniere_nombre_feux) : null,
+    cuisine_1_cuisiniere_instructions: formData.section_cuisine_1?.cuisiniere_instructions || null,
+    cuisine_1_cuisiniere_photo: formData.section_cuisine_1?.cuisiniere_photo || [],
+    cuisine_1_cuisiniere_video: formData.section_cuisine_1?.cuisiniere_video ?? null,
+
+    // PLAQUE DE CUISSON - Champs conditionnels
+    cuisine_1_plaque_cuisson_marque: formData.section_cuisine_1?.plaque_cuisson_marque || null,
+    cuisine_1_plaque_cuisson_type: formData.section_cuisine_1?.plaque_cuisson_type || null,
+    cuisine_1_plaque_cuisson_nombre_feux: formData.section_cuisine_1?.plaque_cuisson_nombre_feux ? parseInt(formData.section_cuisine_1.plaque_cuisson_nombre_feux) : null,
+    cuisine_1_plaque_cuisson_instructions: formData.section_cuisine_1?.plaque_cuisson_instructions || null,
+    cuisine_1_plaque_cuisson_photo: formData.section_cuisine_1?.plaque_cuisson_photo || [],
+    cuisine_1_plaque_cuisson_video: formData.section_cuisine_1?.plaque_cuisson_video ?? null,
+
+    // FOUR - Champs conditionnels
+    cuisine_1_four_marque: formData.section_cuisine_1?.four_marque || null,
+    cuisine_1_four_type: formData.section_cuisine_1?.four_type || null,
+    cuisine_1_four_instructions: formData.section_cuisine_1?.four_instructions || null,
+    cuisine_1_four_photo: formData.section_cuisine_1?.four_photo || [],
+    cuisine_1_four_video: formData.section_cuisine_1?.four_video ?? null,
+
+    // FOUR À MICRO-ONDES - Champs conditionnels
+    cuisine_1_micro_ondes_instructions: formData.section_cuisine_1?.micro_ondes_instructions || null,
+    cuisine_1_micro_ondes_photo: formData.section_cuisine_1?.micro_ondes_photo || [],
+    cuisine_1_micro_ondes_video: formData.section_cuisine_1?.micro_ondes_video ?? null,
+
+    // LAVE-VAISSELLE - Champs conditionnels
+    cuisine_1_lave_vaisselle_instructions: formData.section_cuisine_1?.lave_vaisselle_instructions || null,
+    cuisine_1_lave_vaisselle_photo: formData.section_cuisine_1?.lave_vaisselle_photo || [],
+    cuisine_1_lave_vaisselle_video: formData.section_cuisine_1?.lave_vaisselle_video ?? null,
+
+    // CAFETIÈRE - Champs conditionnels
+    cuisine_1_cafetiere_marque: formData.section_cuisine_1?.cafetiere_marque || null,
+    cuisine_1_cafetiere_type_filtre: formData.section_cuisine_1?.cafetiere_type_filtre ?? null,
+    cuisine_1_cafetiere_type_expresso: formData.section_cuisine_1?.cafetiere_type_expresso ?? null,
+    cuisine_1_cafetiere_type_piston: formData.section_cuisine_1?.cafetiere_type_piston ?? null,
+    cuisine_1_cafetiere_type_keurig: formData.section_cuisine_1?.cafetiere_type_keurig ?? null,
+    cuisine_1_cafetiere_type_nespresso: formData.section_cuisine_1?.cafetiere_type_nespresso ?? null,
+    cuisine_1_cafetiere_type_manuelle: formData.section_cuisine_1?.cafetiere_type_manuelle ?? null,
+    cuisine_1_cafetiere_type_bar_grain: formData.section_cuisine_1?.cafetiere_type_bar_grain ?? null,
+    cuisine_1_cafetiere_type_bar_moulu: formData.section_cuisine_1?.cafetiere_type_bar_moulu ?? null,
+    cuisine_1_cafetiere_instructions: formData.section_cuisine_1?.cafetiere_instructions || null,
+    cuisine_1_cafetiere_photo: formData.section_cuisine_1?.cafetiere_photo || [],
+    cuisine_1_cafetiere_video: formData.section_cuisine_1?.cafetiere_video ?? null,
+    cuisine_1_cafetiere_cafe_fourni: formData.section_cuisine_1?.cafetiere_cafe_fourni || null,
+    cuisine_1_cafetiere_marque_cafe: formData.section_cuisine_1?.cafetiere_marque_cafe || null,
+
+    // BOUILLOIRE ÉLECTRIQUE - Champs conditionnels
+    cuisine_1_bouilloire_instructions: formData.section_cuisine_1?.bouilloire_instructions || null,
+    cuisine_1_bouilloire_video: formData.section_cuisine_1?.bouilloire_video ?? null,
+
+    // GRILLE-PAIN - Champs conditionnels
+    cuisine_1_grille_pain_instructions: formData.section_cuisine_1?.grille_pain_instructions || null,
+    cuisine_1_grille_pain_video: formData.section_cuisine_1?.grille_pain_video ?? null,
+
+    // BLENDER - Champs conditionnels
+    cuisine_1_blender_instructions: formData.section_cuisine_1?.blender_instructions || null,
+    cuisine_1_blender_video: formData.section_cuisine_1?.blender_video ?? null,
+
+    // CUISEUR À RIZ - Champs conditionnels
+    cuisine_1_cuiseur_riz_instructions: formData.section_cuisine_1?.cuiseur_riz_instructions || null,
+    cuisine_1_cuiseur_riz_video: formData.section_cuisine_1?.cuiseur_riz_video ?? null,
+
+    // MACHINE À PAIN - Champs conditionnels
+    cuisine_1_machine_pain_instructions: formData.section_cuisine_1?.machine_pain_instructions || null,
+    cuisine_1_machine_pain_video: formData.section_cuisine_1?.machine_pain_video ?? null,
+
+    // Section Cuisine 2 - Ustensiles
+    // VAISSELLE (4 compteurs)
+    cuisine_2_vaisselle_assiettes_plates: formData.section_cuisine_2?.vaisselle_assiettes_plates ? parseInt(formData.section_cuisine_2.vaisselle_assiettes_plates) : 0,
+    cuisine_2_vaisselle_assiettes_dessert: formData.section_cuisine_2?.vaisselle_assiettes_dessert ? parseInt(formData.section_cuisine_2.vaisselle_assiettes_dessert) : 0,
+    cuisine_2_vaisselle_assiettes_creuses: formData.section_cuisine_2?.vaisselle_assiettes_creuses ? parseInt(formData.section_cuisine_2.vaisselle_assiettes_creuses) : 0,
+    cuisine_2_vaisselle_bols: formData.section_cuisine_2?.vaisselle_bols ? parseInt(formData.section_cuisine_2.vaisselle_bols) : 0,
+
+    // COUVERTS (11 compteurs)
+    cuisine_2_couverts_verres_eau: formData.section_cuisine_2?.couverts_verres_eau ? parseInt(formData.section_cuisine_2.couverts_verres_eau) : 0,
+    cuisine_2_couverts_verres_vin: formData.section_cuisine_2?.couverts_verres_vin ? parseInt(formData.section_cuisine_2.couverts_verres_vin) : 0,
+    cuisine_2_couverts_tasses: formData.section_cuisine_2?.couverts_tasses ? parseInt(formData.section_cuisine_2.couverts_tasses) : 0,
+    cuisine_2_couverts_flutes_champagne: formData.section_cuisine_2?.couverts_flutes_champagne ? parseInt(formData.section_cuisine_2.couverts_flutes_champagne) : 0,
+    cuisine_2_couverts_mugs: formData.section_cuisine_2?.couverts_mugs ? parseInt(formData.section_cuisine_2.couverts_mugs) : 0,
+    cuisine_2_couverts_couteaux_table: formData.section_cuisine_2?.couverts_couteaux_table ? parseInt(formData.section_cuisine_2.couverts_couteaux_table) : 0,
+    cuisine_2_couverts_fourchettes: formData.section_cuisine_2?.couverts_fourchettes ? parseInt(formData.section_cuisine_2.couverts_fourchettes) : 0,
+    cuisine_2_couverts_couteaux_steak: formData.section_cuisine_2?.couverts_couteaux_steak ? parseInt(formData.section_cuisine_2.couverts_couteaux_steak) : 0,
+    cuisine_2_couverts_cuilleres_soupe: formData.section_cuisine_2?.couverts_cuilleres_soupe ? parseInt(formData.section_cuisine_2.couverts_cuilleres_soupe) : 0,
+    cuisine_2_couverts_cuilleres_cafe: formData.section_cuisine_2?.couverts_cuilleres_cafe ? parseInt(formData.section_cuisine_2.couverts_cuilleres_cafe) : 0,
+    cuisine_2_couverts_cuilleres_dessert: formData.section_cuisine_2?.couverts_cuilleres_dessert ? parseInt(formData.section_cuisine_2.couverts_cuilleres_dessert) : 0,
+
+    // USTENSILES DE CUISINE (26 compteurs)
+    cuisine_2_ustensiles_poeles_differentes_tailles: formData.section_cuisine_2?.ustensiles_poeles_differentes_tailles ? parseInt(formData.section_cuisine_2.ustensiles_poeles_differentes_tailles) : 0,
+    cuisine_2_ustensiles_casseroles_differentes_tailles: formData.section_cuisine_2?.ustensiles_casseroles_differentes_tailles ? parseInt(formData.section_cuisine_2.ustensiles_casseroles_differentes_tailles) : 0,
+    cuisine_2_ustensiles_faitouts: formData.section_cuisine_2?.ustensiles_faitouts ? parseInt(formData.section_cuisine_2.ustensiles_faitouts) : 0,
+    cuisine_2_ustensiles_wok: formData.section_cuisine_2?.ustensiles_wok ? parseInt(formData.section_cuisine_2.ustensiles_wok) : 0,
+    cuisine_2_ustensiles_cocotte_minute: formData.section_cuisine_2?.ustensiles_cocotte_minute ? parseInt(formData.section_cuisine_2.ustensiles_cocotte_minute) : 0,
+    cuisine_2_ustensiles_couvercle_anti_eclaboussures: formData.section_cuisine_2?.ustensiles_couvercle_anti_eclaboussures ? parseInt(formData.section_cuisine_2.ustensiles_couvercle_anti_eclaboussures) : 0,
+    cuisine_2_ustensiles_robot_cuisine: formData.section_cuisine_2?.ustensiles_robot_cuisine ? parseInt(formData.section_cuisine_2.ustensiles_robot_cuisine) : 0,
+    cuisine_2_ustensiles_batteur_electrique: formData.section_cuisine_2?.ustensiles_batteur_electrique ? parseInt(formData.section_cuisine_2.ustensiles_batteur_electrique) : 0,
+    cuisine_2_ustensiles_couteaux_cuisine: formData.section_cuisine_2?.ustensiles_couteaux_cuisine ? parseInt(formData.section_cuisine_2.ustensiles_couteaux_cuisine) : 0,
+    cuisine_2_ustensiles_spatules: formData.section_cuisine_2?.ustensiles_spatules ? parseInt(formData.section_cuisine_2.ustensiles_spatules) : 0,
+    cuisine_2_ustensiles_ecumoire: formData.section_cuisine_2?.ustensiles_ecumoire ? parseInt(formData.section_cuisine_2.ustensiles_ecumoire) : 0,
+    cuisine_2_ustensiles_ouvre_boite: formData.section_cuisine_2?.ustensiles_ouvre_boite ? parseInt(formData.section_cuisine_2.ustensiles_ouvre_boite) : 0,
+    cuisine_2_ustensiles_rape: formData.section_cuisine_2?.ustensiles_rape ? parseInt(formData.section_cuisine_2.ustensiles_rape) : 0,
+    cuisine_2_ustensiles_tire_bouchon: formData.section_cuisine_2?.ustensiles_tire_bouchon ? parseInt(formData.section_cuisine_2.ustensiles_tire_bouchon) : 0,
+    cuisine_2_ustensiles_econome: formData.section_cuisine_2?.ustensiles_econome ? parseInt(formData.section_cuisine_2.ustensiles_econome) : 0,
+    cuisine_2_ustensiles_passoire: formData.section_cuisine_2?.ustensiles_passoire ? parseInt(formData.section_cuisine_2.ustensiles_passoire) : 0,
+    cuisine_2_ustensiles_planche_decouper: formData.section_cuisine_2?.ustensiles_planche_decouper ? parseInt(formData.section_cuisine_2.ustensiles_planche_decouper) : 0,
+    cuisine_2_ustensiles_rouleau_patisserie: formData.section_cuisine_2?.ustensiles_rouleau_patisserie ? parseInt(formData.section_cuisine_2.ustensiles_rouleau_patisserie) : 0,
+    cuisine_2_ustensiles_ciseaux_cuisine: formData.section_cuisine_2?.ustensiles_ciseaux_cuisine ? parseInt(formData.section_cuisine_2.ustensiles_ciseaux_cuisine) : 0,
+    cuisine_2_ustensiles_balance_cuisine: formData.section_cuisine_2?.ustensiles_balance_cuisine ? parseInt(formData.section_cuisine_2.ustensiles_balance_cuisine) : 0,
+    cuisine_2_ustensiles_bac_glacon: formData.section_cuisine_2?.ustensiles_bac_glacon ? parseInt(formData.section_cuisine_2.ustensiles_bac_glacon) : 0,
+    cuisine_2_ustensiles_pince_cuisine: formData.section_cuisine_2?.ustensiles_pince_cuisine ? parseInt(formData.section_cuisine_2.ustensiles_pince_cuisine) : 0,
+    cuisine_2_ustensiles_couteau_huitre: formData.section_cuisine_2?.ustensiles_couteau_huitre ? parseInt(formData.section_cuisine_2.ustensiles_couteau_huitre) : 0,
+    cuisine_2_ustensiles_verre_mesureur: formData.section_cuisine_2?.ustensiles_verre_mesureur ? parseInt(formData.section_cuisine_2.ustensiles_verre_mesureur) : 0,
+    cuisine_2_ustensiles_presse_agrume_manuel: formData.section_cuisine_2?.ustensiles_presse_agrume_manuel ? parseInt(formData.section_cuisine_2.ustensiles_presse_agrume_manuel) : 0,
+    cuisine_2_ustensiles_pichet: formData.section_cuisine_2?.ustensiles_pichet ? parseInt(formData.section_cuisine_2.ustensiles_pichet) : 0,
+
+    // PLATS ET RÉCIPIENTS (11 compteurs)
+    cuisine_2_plats_dessous_plat: formData.section_cuisine_2?.plats_dessous_plat ? parseInt(formData.section_cuisine_2.plats_dessous_plat) : 0,
+    cuisine_2_plats_plateau: formData.section_cuisine_2?.plats_plateau ? parseInt(formData.section_cuisine_2.plats_plateau) : 0,
+    cuisine_2_plats_saladiers: formData.section_cuisine_2?.plats_saladiers ? parseInt(formData.section_cuisine_2.plats_saladiers) : 0,
+    cuisine_2_plats_a_four: formData.section_cuisine_2?.plats_a_four ? parseInt(formData.section_cuisine_2.plats_a_four) : 0,
+    cuisine_2_plats_carafes: formData.section_cuisine_2?.plats_carafes ? parseInt(formData.section_cuisine_2.plats_carafes) : 0,
+    cuisine_2_plats_moules: formData.section_cuisine_2?.plats_moules ? parseInt(formData.section_cuisine_2.plats_moules) : 0,
+    cuisine_2_plats_theiere: formData.section_cuisine_2?.plats_theiere ? parseInt(formData.section_cuisine_2.plats_theiere) : 0,
+    cuisine_2_plats_cafetiere_piston_filtre: formData.section_cuisine_2?.plats_cafetiere_piston_filtre ? parseInt(formData.section_cuisine_2.plats_cafetiere_piston_filtre) : 0,
+    cuisine_2_plats_ustensiles_barbecue: formData.section_cuisine_2?.plats_ustensiles_barbecue ? parseInt(formData.section_cuisine_2.plats_ustensiles_barbecue) : 0,
+    cuisine_2_plats_gants_cuisine: formData.section_cuisine_2?.plats_gants_cuisine ? parseInt(formData.section_cuisine_2.plats_gants_cuisine) : 0,
+    cuisine_2_plats_maniques: formData.section_cuisine_2?.plats_maniques ? parseInt(formData.section_cuisine_2.plats_maniques) : 0,
+
+    // CHAMPS COMPLÉMENTAIRES
+    cuisine_2_autres_ustensiles: formData.section_cuisine_2?.autres_ustensiles || null,
+    cuisine_2_quantite_suffisante: formData.section_cuisine_2?.quantite_suffisante ?? null,
+    cuisine_2_quantite_insuffisante_details: formData.section_cuisine_2?.quantite_insuffisante_details || null,
+    cuisine_2_casseroles_poeles_testees: formData.section_cuisine_2?.casseroles_poeles_testees ?? null,
+    cuisine_2_photos_tiroirs_placards: formData.section_cuisine_2?.photos_tiroirs_placards || [],
+
+    // Section Salon / SAM
+    // Description générale (obligatoire)
+    salon_sam_description_generale: formData.section_salon_sam?.description_generale || null,
+
+    // Équipements (13 checkboxes + autre)
+    salon_sam_equipements_table_manger: formData.section_salon_sam?.equipements_table_manger ?? null,
+    salon_sam_equipements_chaises: formData.section_salon_sam?.equipements_chaises ?? null,
+    salon_sam_equipements_canape: formData.section_salon_sam?.equipements_canape ?? null,
+    salon_sam_equipements_canape_lit: formData.section_salon_sam?.equipements_canape_lit ?? null,
+    salon_sam_equipements_fauteuils: formData.section_salon_sam?.equipements_fauteuils ?? null,
+    salon_sam_equipements_table_basse: formData.section_salon_sam?.equipements_table_basse ?? null,
+    salon_sam_equipements_television: formData.section_salon_sam?.equipements_television ?? null,
+    salon_sam_equipements_cheminee: formData.section_salon_sam?.equipements_cheminee ?? null,
+    salon_sam_equipements_jeux_societe: formData.section_salon_sam?.equipements_jeux_societe ?? null,
+    salon_sam_equipements_livres_magazines: formData.section_salon_sam?.equipements_livres_magazines ?? null,
+    salon_sam_equipements_livres_jouets_enfants: formData.section_salon_sam?.equipements_livres_jouets_enfants ?? null,
+    salon_sam_equipements_climatisation: formData.section_salon_sam?.equipements_climatisation ?? null,
+    salon_sam_equipements_chauffage: formData.section_salon_sam?.equipements_chauffage ?? null,
+    salon_sam_equipements_autre: formData.section_salon_sam?.equipements_autre ?? null,
+    salon_sam_equipements_autre_details: formData.section_salon_sam?.equipements_autre_details || null,
+
+    // Cheminée type (conditionnel)
+    salon_sam_cheminee_type: formData.section_salon_sam?.cheminee_type || null,
+
+    // Autres équipements détails (obligatoire)
+    salon_sam_autres_equipements_details: formData.section_salon_sam?.autres_equipements_details || null,
+
+    // Photos
+    salon_sam_photos_salon_sam: formData.section_salon_sam?.photos_salon_sam || [],
+
+    // Nombre places table (obligatoire)
+    salon_sam_nombre_places_table: formData.section_salon_sam?.nombre_places_table ? parseInt(formData.section_salon_sam.nombre_places_table) : null,
+
+
+
+
+
     updated_at: new Date().toISOString()
   }
 }
@@ -1241,9 +1446,212 @@ export const mapSupabaseToFormData = (supabaseData) => {
         photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_6_photos_salle_de_bain || []
       }
     },
-    section_cuisine_1: {},
-    section_cuisine_2: {},
-    section_salon_sam: {},
+    section_cuisine_1: {
+      // Checkboxes principales (16 équipements)
+      equipements_refrigerateur: supabaseData.cuisine_1_equipements_refrigerateur ?? null,
+      equipements_congelateur: supabaseData.cuisine_1_equipements_congelateur ?? null,
+      equipements_mini_refrigerateur: supabaseData.cuisine_1_equipements_mini_refrigerateur ?? null,
+      equipements_cuisiniere: supabaseData.cuisine_1_equipements_cuisiniere ?? null,
+      equipements_plaque_cuisson: supabaseData.cuisine_1_equipements_plaque_cuisson ?? null,
+      equipements_four: supabaseData.cuisine_1_equipements_four ?? null,
+      equipements_micro_ondes: supabaseData.cuisine_1_equipements_micro_ondes ?? null,
+      equipements_lave_vaisselle: supabaseData.cuisine_1_equipements_lave_vaisselle ?? null,
+      equipements_cafetiere: supabaseData.cuisine_1_equipements_cafetiere ?? null,
+      equipements_bouilloire: supabaseData.cuisine_1_equipements_bouilloire ?? null,
+      equipements_grille_pain: supabaseData.cuisine_1_equipements_grille_pain ?? null,
+      equipements_blender: supabaseData.cuisine_1_equipements_blender ?? null,
+      equipements_cuiseur_riz: supabaseData.cuisine_1_equipements_cuiseur_riz ?? null,
+      equipements_machine_pain: supabaseData.cuisine_1_equipements_machine_pain ?? null,
+      equipements_lave_linge: supabaseData.cuisine_1_equipements_lave_linge ?? null,
+      equipements_autre: supabaseData.cuisine_1_equipements_autre ?? null,
+      equipements_autre_details: supabaseData.cuisine_1_equipements_autre_details || "",
+    
+      // RÉFRIGÉRATEUR - Champs conditionnels
+      refrigerateur_marque: supabaseData.cuisine_1_refrigerateur_marque || "",
+      refrigerateur_instructions: supabaseData.cuisine_1_refrigerateur_instructions || "",
+      refrigerateur_video: supabaseData.cuisine_1_refrigerateur_video ?? null,
+    
+      // CONGÉLATEUR - Champs conditionnels
+      congelateur_instructions: supabaseData.cuisine_1_congelateur_instructions || "",
+      congelateur_video: supabaseData.cuisine_1_congelateur_video ?? null,
+    
+      // MINI RÉFRIGÉRATEUR - Champs conditionnels
+      mini_refrigerateur_instructions: supabaseData.cuisine_1_mini_refrigerateur_instructions || "",
+      mini_refrigerateur_video: supabaseData.cuisine_1_mini_refrigerateur_video ?? null,
+    
+      // CUISINIÈRE - Champs conditionnels
+      cuisiniere_marque: supabaseData.cuisine_1_cuisiniere_marque || "",
+      cuisiniere_type: supabaseData.cuisine_1_cuisiniere_type || "",
+      cuisiniere_nombre_feux: supabaseData.cuisine_1_cuisiniere_nombre_feux?.toString() || "",
+      cuisiniere_instructions: supabaseData.cuisine_1_cuisiniere_instructions || "",
+      cuisiniere_photo: supabaseData.cuisine_1_cuisiniere_photo || [],
+      cuisiniere_video: supabaseData.cuisine_1_cuisiniere_video ?? null,
+    
+      // PLAQUE DE CUISSON - Champs conditionnels
+      plaque_cuisson_marque: supabaseData.cuisine_1_plaque_cuisson_marque || "",
+      plaque_cuisson_type: supabaseData.cuisine_1_plaque_cuisson_type || "",
+      plaque_cuisson_nombre_feux: supabaseData.cuisine_1_plaque_cuisson_nombre_feux?.toString() || "",
+      plaque_cuisson_instructions: supabaseData.cuisine_1_plaque_cuisson_instructions || "",
+      plaque_cuisson_photo: supabaseData.cuisine_1_plaque_cuisson_photo || [],
+      plaque_cuisson_video: supabaseData.cuisine_1_plaque_cuisson_video ?? null,
+    
+      // FOUR - Champs conditionnels
+      four_marque: supabaseData.cuisine_1_four_marque || "",
+      four_type: supabaseData.cuisine_1_four_type || "",
+      four_instructions: supabaseData.cuisine_1_four_instructions || "",
+      four_photo: supabaseData.cuisine_1_four_photo || [],
+      four_video: supabaseData.cuisine_1_four_video ?? null,
+    
+      // FOUR À MICRO-ONDES - Champs conditionnels
+      micro_ondes_instructions: supabaseData.cuisine_1_micro_ondes_instructions || "",
+      micro_ondes_photo: supabaseData.cuisine_1_micro_ondes_photo || [],
+      micro_ondes_video: supabaseData.cuisine_1_micro_ondes_video ?? null,
+    
+      // LAVE-VAISSELLE - Champs conditionnels
+      lave_vaisselle_instructions: supabaseData.cuisine_1_lave_vaisselle_instructions || "",
+      lave_vaisselle_photo: supabaseData.cuisine_1_lave_vaisselle_photo || [],
+      lave_vaisselle_video: supabaseData.cuisine_1_lave_vaisselle_video ?? null,
+    
+      // CAFETIÈRE - Champs conditionnels
+      cafetiere_marque: supabaseData.cuisine_1_cafetiere_marque || "",
+      cafetiere_type_filtre: supabaseData.cuisine_1_cafetiere_type_filtre ?? null,
+      cafetiere_type_expresso: supabaseData.cuisine_1_cafetiere_type_expresso ?? null,
+      cafetiere_type_piston: supabaseData.cuisine_1_cafetiere_type_piston ?? null,
+      cafetiere_type_keurig: supabaseData.cuisine_1_cafetiere_type_keurig ?? null,
+      cafetiere_type_nespresso: supabaseData.cuisine_1_cafetiere_type_nespresso ?? null,
+      cafetiere_type_manuelle: supabaseData.cuisine_1_cafetiere_type_manuelle ?? null,
+      cafetiere_type_bar_grain: supabaseData.cuisine_1_cafetiere_type_bar_grain ?? null,
+      cafetiere_type_bar_moulu: supabaseData.cuisine_1_cafetiere_type_bar_moulu ?? null,
+      cafetiere_instructions: supabaseData.cuisine_1_cafetiere_instructions || "",
+      cafetiere_photo: supabaseData.cuisine_1_cafetiere_photo || [],
+      cafetiere_video: supabaseData.cuisine_1_cafetiere_video ?? null,
+      cafetiere_cafe_fourni: supabaseData.cuisine_1_cafetiere_cafe_fourni || "",
+      cafetiere_marque_cafe: supabaseData.cuisine_1_cafetiere_marque_cafe || "",
+    
+      // BOUILLOIRE ÉLECTRIQUE - Champs conditionnels
+      bouilloire_instructions: supabaseData.cuisine_1_bouilloire_instructions || "",
+      bouilloire_video: supabaseData.cuisine_1_bouilloire_video ?? null,
+    
+      // GRILLE-PAIN - Champs conditionnels
+      grille_pain_instructions: supabaseData.cuisine_1_grille_pain_instructions || "",
+      grille_pain_video: supabaseData.cuisine_1_grille_pain_video ?? null,
+    
+      // BLENDER - Champs conditionnels
+      blender_instructions: supabaseData.cuisine_1_blender_instructions || "",
+      blender_video: supabaseData.cuisine_1_blender_video ?? null,
+    
+      // CUISEUR À RIZ - Champs conditionnels
+      cuiseur_riz_instructions: supabaseData.cuisine_1_cuiseur_riz_instructions || "",
+      cuiseur_riz_video: supabaseData.cuisine_1_cuiseur_riz_video ?? null,
+    
+      // MACHINE À PAIN - Champs conditionnels
+      machine_pain_instructions: supabaseData.cuisine_1_machine_pain_instructions || "",
+      machine_pain_video: supabaseData.cuisine_1_machine_pain_video ?? null
+    },
+
+    section_cuisine_2: {
+      // VAISSELLE (4 compteurs)
+      vaisselle_assiettes_plates: supabaseData.cuisine_2_vaisselle_assiettes_plates || 0,
+      vaisselle_assiettes_dessert: supabaseData.cuisine_2_vaisselle_assiettes_dessert || 0,
+      vaisselle_assiettes_creuses: supabaseData.cuisine_2_vaisselle_assiettes_creuses || 0,
+      vaisselle_bols: supabaseData.cuisine_2_vaisselle_bols || 0,
+      
+      // COUVERTS (11 compteurs)
+      couverts_verres_eau: supabaseData.cuisine_2_couverts_verres_eau || 0,
+      couverts_verres_vin: supabaseData.cuisine_2_couverts_verres_vin || 0,
+      couverts_tasses: supabaseData.cuisine_2_couverts_tasses || 0,
+      couverts_flutes_champagne: supabaseData.cuisine_2_couverts_flutes_champagne || 0,
+      couverts_mugs: supabaseData.cuisine_2_couverts_mugs || 0,
+      couverts_couteaux_table: supabaseData.cuisine_2_couverts_couteaux_table || 0,
+      couverts_fourchettes: supabaseData.cuisine_2_couverts_fourchettes || 0,
+      couverts_couteaux_steak: supabaseData.cuisine_2_couverts_couteaux_steak || 0,
+      couverts_cuilleres_soupe: supabaseData.cuisine_2_couverts_cuilleres_soupe || 0,
+      couverts_cuilleres_cafe: supabaseData.cuisine_2_couverts_cuilleres_cafe || 0,
+      couverts_cuilleres_dessert: supabaseData.cuisine_2_couverts_cuilleres_dessert || 0,
+      
+      // USTENSILES DE CUISINE (26 compteurs)
+      ustensiles_poeles_differentes_tailles: supabaseData.cuisine_2_ustensiles_poeles_differentes_tailles || 0,
+      ustensiles_casseroles_differentes_tailles: supabaseData.cuisine_2_ustensiles_casseroles_differentes_tailles || 0,
+      ustensiles_faitouts: supabaseData.cuisine_2_ustensiles_faitouts || 0,
+      ustensiles_wok: supabaseData.cuisine_2_ustensiles_wok || 0,
+      ustensiles_cocotte_minute: supabaseData.cuisine_2_ustensiles_cocotte_minute || 0,
+      ustensiles_couvercle_anti_eclaboussures: supabaseData.cuisine_2_ustensiles_couvercle_anti_eclaboussures || 0,
+      ustensiles_robot_cuisine: supabaseData.cuisine_2_ustensiles_robot_cuisine || 0,
+      ustensiles_batteur_electrique: supabaseData.cuisine_2_ustensiles_batteur_electrique || 0,
+      ustensiles_couteaux_cuisine: supabaseData.cuisine_2_ustensiles_couteaux_cuisine || 0,
+      ustensiles_spatules: supabaseData.cuisine_2_ustensiles_spatules || 0,
+      ustensiles_ecumoire: supabaseData.cuisine_2_ustensiles_ecumoire || 0,
+      ustensiles_ouvre_boite: supabaseData.cuisine_2_ustensiles_ouvre_boite || 0,
+      ustensiles_rape: supabaseData.cuisine_2_ustensiles_rape || 0,
+      ustensiles_tire_bouchon: supabaseData.cuisine_2_ustensiles_tire_bouchon || 0,
+      ustensiles_econome: supabaseData.cuisine_2_ustensiles_econome || 0,
+      ustensiles_passoire: supabaseData.cuisine_2_ustensiles_passoire || 0,
+      ustensiles_planche_decouper: supabaseData.cuisine_2_ustensiles_planche_decouper || 0,
+      ustensiles_rouleau_patisserie: supabaseData.cuisine_2_ustensiles_rouleau_patisserie || 0,
+      ustensiles_ciseaux_cuisine: supabaseData.cuisine_2_ustensiles_ciseaux_cuisine || 0,
+      ustensiles_balance_cuisine: supabaseData.cuisine_2_ustensiles_balance_cuisine || 0,
+      ustensiles_bac_glacon: supabaseData.cuisine_2_ustensiles_bac_glacon || 0,
+      ustensiles_pince_cuisine: supabaseData.cuisine_2_ustensiles_pince_cuisine || 0,
+      ustensiles_couteau_huitre: supabaseData.cuisine_2_ustensiles_couteau_huitre || 0,
+      ustensiles_verre_mesureur: supabaseData.cuisine_2_ustensiles_verre_mesureur || 0,
+      ustensiles_presse_agrume_manuel: supabaseData.cuisine_2_ustensiles_presse_agrume_manuel || 0,
+      ustensiles_pichet: supabaseData.cuisine_2_ustensiles_pichet || 0,
+      
+      // PLATS ET RÉCIPIENTS (11 compteurs)
+      plats_dessous_plat: supabaseData.cuisine_2_plats_dessous_plat || 0,
+      plats_plateau: supabaseData.cuisine_2_plats_plateau || 0,
+      plats_saladiers: supabaseData.cuisine_2_plats_saladiers || 0,
+      plats_a_four: supabaseData.cuisine_2_plats_a_four || 0,
+      plats_carafes: supabaseData.cuisine_2_plats_carafes || 0,
+      plats_moules: supabaseData.cuisine_2_plats_moules || 0,
+      plats_theiere: supabaseData.cuisine_2_plats_theiere || 0,
+      plats_cafetiere_piston_filtre: supabaseData.cuisine_2_plats_cafetiere_piston_filtre || 0,
+      plats_ustensiles_barbecue: supabaseData.cuisine_2_plats_ustensiles_barbecue || 0,
+      plats_gants_cuisine: supabaseData.cuisine_2_plats_gants_cuisine || 0,
+      plats_maniques: supabaseData.cuisine_2_plats_maniques || 0,
+      
+      // CHAMPS COMPLÉMENTAIRES
+      autres_ustensiles: supabaseData.cuisine_2_autres_ustensiles || "",
+      quantite_suffisante: supabaseData.cuisine_2_quantite_suffisante ?? null,
+      quantite_insuffisante_details: supabaseData.cuisine_2_quantite_insuffisante_details || "",
+      casseroles_poeles_testees: supabaseData.cuisine_2_casseroles_poeles_testees ?? null,
+      photos_tiroirs_placards: supabaseData.cuisine_2_photos_tiroirs_placards || []
+    },
+
+    section_salon_sam: {
+      // Description générale (obligatoire)
+      description_generale: supabaseData.salon_sam_description_generale || "",
+      
+      // Équipements (13 checkboxes + autre)
+      equipements_table_manger: supabaseData.salon_sam_equipements_table_manger ?? null,
+      equipements_chaises: supabaseData.salon_sam_equipements_chaises ?? null,
+      equipements_canape: supabaseData.salon_sam_equipements_canape ?? null,
+      equipements_canape_lit: supabaseData.salon_sam_equipements_canape_lit ?? null,
+      equipements_fauteuils: supabaseData.salon_sam_equipements_fauteuils ?? null,
+      equipements_table_basse: supabaseData.salon_sam_equipements_table_basse ?? null,
+      equipements_television: supabaseData.salon_sam_equipements_television ?? null,
+      equipements_cheminee: supabaseData.salon_sam_equipements_cheminee ?? null,
+      equipements_jeux_societe: supabaseData.salon_sam_equipements_jeux_societe ?? null,
+      equipements_livres_magazines: supabaseData.salon_sam_equipements_livres_magazines ?? null,
+      equipements_livres_jouets_enfants: supabaseData.salon_sam_equipements_livres_jouets_enfants ?? null,
+      equipements_climatisation: supabaseData.salon_sam_equipements_climatisation ?? null,
+      equipements_chauffage: supabaseData.salon_sam_equipements_chauffage ?? null,
+      equipements_autre: supabaseData.salon_sam_equipements_autre ?? null,
+      equipements_autre_details: supabaseData.salon_sam_equipements_autre_details || "",
+      
+      // Cheminée type (conditionnel)
+      cheminee_type: supabaseData.salon_sam_cheminee_type || "",
+      
+      // Autres équipements détails (obligatoire)
+      autres_equipements_details: supabaseData.salon_sam_autres_equipements_details || "",
+      
+      // Photos
+      photos_salon_sam: supabaseData.salon_sam_photos_salon_sam || [],
+      
+      // Nombre places table (obligatoire)
+      nombre_places_table: supabaseData.salon_sam_nombre_places_table?.toString() || ""
+    },
+    
     section_equip_spe_exterieur: {},
     section_communs: {},
     section_teletravail: {},

@@ -6,7 +6,8 @@ import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 
 export default function FicheSalleDeBains() {
-  const { next, back, currentStep, totalSteps, getField, updateField, handleSave, saveStatus } = useForm()
+  const { next, back, goTo, currentStep, totalSteps, getField, updateField, handleSave, saveStatus } = useForm()
+  
 
   // Récupérer le nombre de salles de bains depuis la section Visite
   const formDataVisite = getField('section_visite')
@@ -232,7 +233,7 @@ export default function FicheSalleDeBains() {
       <div className="flex-1 flex flex-col">
         <ProgressBar />
         <div className="flex-1 p-6 bg-gray-100">
-          <h1 className="text-2xl font-bold mb-6">Salle De Bains</h1>
+          <h1 className="text-2xl font-bold mb-6">Salle de bains</h1>
           
           <div className="bg-white p-6 rounded-lg shadow space-y-6">
             
@@ -250,7 +251,7 @@ export default function FicheSalleDeBains() {
                 </p>
                 <Button 
                   variant="primary" 
-                  onClick={back}
+                  onClick={() => goTo(11)} // "Visite" est à l'index 11
                 >
                   Retourner à la section Visite
                 </Button>

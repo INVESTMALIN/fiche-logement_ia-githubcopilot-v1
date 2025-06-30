@@ -16,6 +16,9 @@ import FicheConsommables from './FicheConsommables'
 import FicheVisite from './FicheVisite'
 import FicheChambre from './FicheChambre'
 import FicheSalleDeBains from './FicheSalleDeBains'
+import FicheCuisine1 from './FicheCuisine1'
+import FicheCuisine2 from './FicheCuisine2'
+import FicheSalonSam from './FicheSalonSam'
 
 
 // Composant placeholder pour les sections pas encore créées
@@ -83,9 +86,9 @@ export default function FicheWizard() {
     <FicheVisite key="visite" />,
     <FicheChambre key="chambres" />,
     <FicheSalleDeBains key="sdb" />,
-    <PlaceholderSection key="cuisine1" title="Cuisine 1" />,
-    <PlaceholderSection key="cuisine2" title="Cuisine 2" />,
-    <PlaceholderSection key="salon" title="Salon / SAM" />,
+    <FicheCuisine1 key="cuisine-1" />,
+    <FicheCuisine2 key="cuisine-2" />,
+    <FicheSalonSam key="salon-sam" />,
     <PlaceholderSection key="exterieur" title="Équip. Spé. / Extérieur" />,
     <PlaceholderSection key="communs" title="Communs" />,
     <PlaceholderSection key="teletravail" title="Télétravail" />,
