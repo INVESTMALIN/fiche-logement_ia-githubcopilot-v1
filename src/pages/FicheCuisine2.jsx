@@ -10,6 +10,7 @@ export default function FicheCuisine2() {
     next, 
     back, 
     currentStep,
+    totalSteps,
     getField, 
     updateField, 
     handleSave, 
@@ -317,19 +318,25 @@ export default function FicheCuisine2() {
 
             </div>
 
-            {/* Messages de sauvegarde */}
+            {/* Indicateur de sauvegarde */}
             {saveStatus.saving && (
-              <div className="text-blue-600">⏳ Sauvegarde en cours...</div>
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                ⏳ Sauvegarde en cours...
+              </div>
             )}
             {saveStatus.saved && (
-              <div className="text-green-600">✅ Sauvegardé avec succès !</div>
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                ✅ Sauvegardé avec succès !
+              </div>
             )}
             {saveStatus.error && (
-              <div className="text-red-600">❌ Erreur : {saveStatus.error}</div>
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                ❌ {saveStatus.error}
+              </div>
             )}
 
             {/* Boutons de navigation */}
-            <div className="flex justify-between items-center pt-6 border-t">
+            <div className="mt-6 flex justify-between">
               <Button 
                 variant="ghost" 
                 onClick={back} 
@@ -337,16 +344,21 @@ export default function FicheCuisine2() {
               >
                 Retour
               </Button>
-              
-              <div className="flex gap-2">
-                <Button
+              <div className="flex gap-3">
+                <Button 
                   variant="secondary"
                   onClick={handleSave}
                   disabled={saveStatus.saving}
                 >
                   {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
                 </Button>
-                <Button variant="primary" onClick={next}>Suivant</Button>
+                <Button 
+                  variant="primary" 
+                  onClick={next}
+                  disabled={currentStep === totalSteps - 1}
+                >
+                  Suivant
+                </Button>
               </div>
             </div>
 

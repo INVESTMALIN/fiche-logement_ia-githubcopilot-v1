@@ -20,10 +20,10 @@
 12. ✅ **Visite** - FicheVisite.jsx
 13. ✅ **Chambres** - FicheChambre.jsx
 14. ✅ **Salle De Bains** - FicheSalleDeBains.jsx
-15. 🔲 **Cuisine 1**
-16. 🔲 **Cuisine 2**
-17. 🔲 **Salon / SAM**
-18. 🔲 **Équip. Spé. / Extérieur**
+15. ✅ **Cuisine 1**
+16. ✅ **Cuisine 2**
+17. ✅ **Salon / SAM**
+18. ✅ **Équip. Spé. / Extérieur**
 ### **🔲 Sections restantes** (4/22)
 19. 🔲 **Communs**
 20. 🔲 **Télétravail**

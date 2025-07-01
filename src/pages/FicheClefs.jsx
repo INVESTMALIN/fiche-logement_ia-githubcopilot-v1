@@ -63,23 +63,6 @@ export default function FicheClefs() {
         <div className="flex-1 p-6 bg-gray-100 space-y-6">
           <h1 className="text-2xl font-bold">Gestion des clés et accès</h1>
 
-          {/* Indicateur de sauvegarde */}
-          {saveStatus.saving && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-              ⏳ Sauvegarde en cours...
-            </div>
-          )}
-          {saveStatus.saved && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-              ✅ Sauvegardé avec succès !
-            </div>
-          )}
-          {saveStatus.error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-              ❌ {saveStatus.error}
-            </div>
-          )}
-
           {/* Type de boîte à clés */}
           <div className="mb-4">
             <label className="block font-semibold mb-1">Type de boîte à clés *</label>
@@ -444,8 +427,25 @@ export default function FicheClefs() {
             />
           </div>
 
+          {/* Indicateur de sauvegarde */}
+          {saveStatus.saving && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              ⏳ Sauvegarde en cours...
+            </div>
+          )}
+          {saveStatus.saved && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+              ✅ Sauvegardé avec succès !
+            </div>
+          )}
+          {saveStatus.error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              ❌ {saveStatus.error}
+            </div>
+          )}
+
           {/* Boutons navigation */}
-          <div className="flex justify-between">
+          <div className="mt-6 flex justify-between">
             <Button 
               variant="ghost" 
               onClick={back} 

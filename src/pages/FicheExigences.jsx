@@ -74,6 +74,23 @@ export default function FicheExigences() {
             />
           </div>
 
+          {/* Indicateur de sauvegarde */}
+          {saveStatus.saving && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              ⏳ Sauvegarde en cours...
+            </div>
+          )}
+          {saveStatus.saved && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+              ✅ Sauvegardé avec succès !
+            </div>
+          )}
+          {saveStatus.error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              ❌ {saveStatus.error}
+            </div>
+          )}
+
           {/* Boutons navigation */}
           <div className="mt-6 flex justify-between">
             <Button variant="ghost" onClick={back} disabled={currentStep === 0}>
@@ -85,27 +102,18 @@ export default function FicheExigences() {
                 onClick={handleSave}
                 disabled={saveStatus.saving}
               >
-              {/* Indicateur de sauvegarde */}
-              {saveStatus.saving && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                  ⏳ Sauvegarde en cours...
-                </div>
-              )}
-              {saveStatus.saved && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                  ✅ Sauvegardé avec succès !
-                </div>
-              )}
-              {saveStatus.error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                  ❌ {saveStatus.error}
-                </div>
-              )}
                 {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
-              <Button variant="primary" onClick={next}>Suivant</Button>
+              <Button 
+                variant="primary" 
+                onClick={next}
+                disabled={currentStep === totalSteps - 1}
+              >
+                Suivant
+              </Button>
             </div>
           </div>
+
         </div>
       </div>
     </div>

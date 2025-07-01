@@ -86,6 +86,8 @@ export default function FicheReglementation() {
   const { 
     next, 
     back, 
+    currentStep,
+    totalSteps,
     getField, 
     updateField, 
     handleSave, 
@@ -335,36 +337,32 @@ export default function FicheReglementation() {
                   </label>
                 </div>
               </div>
-            </div>
-
-            {/* Messages de statut de sauvegarde */}
-            {saveStatus.saving && (
-              <div className="flex items-center gap-2 text-blue-600">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-                Sauvegarde en cours...
-              </div>
-            )}
-            
-            {saveStatus.saved && (
-              <div className="flex items-center gap-2 text-green-600">
-                <span>✅</span>
-                Sauvegardé avec succès !
-              </div>
-            )}
-            
-            {saveStatus.error && (
-              <div className="flex items-center gap-2 text-red-600">
-                <span>❌</span>
-                {saveStatus.error}
-              </div>
-            )}
+            </div>    
           </div>
+
+          {/* Indicateur de sauvegarde */}
+          {saveStatus.saving && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              ⏳ Sauvegarde en cours...
+            </div>
+          )}
+          {saveStatus.saved && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+              ✅ Sauvegardé avec succès !
+            </div>
+          )}
+          {saveStatus.error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              ❌ {saveStatus.error}
+            </div>
+          )}
 
           {/* Boutons de navigation */}
           <div className="mt-6 flex justify-between">
             <Button 
               variant="ghost" 
               onClick={back}
+              disabled={currentStep === 0}
             >
               Retour
             </Button>
@@ -374,16 +372,18 @@ export default function FicheReglementation() {
                 onClick={handleSave}
                 disabled={saveStatus.saving}
               >
-                Enregistrer
+                {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
               <Button 
                 variant="primary" 
                 onClick={next}
+                disabled={currentStep === totalSteps - 1}
               >
                 Suivant
               </Button>
             </div>
           </div>
+          
         </div>
       </div>
     </div>

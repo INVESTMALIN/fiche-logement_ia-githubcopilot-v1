@@ -8,7 +8,9 @@ import Button from '../components/Button'
 export default function FicheGestionLinge() {
   const { 
     next, 
-    back, 
+    back,
+    currentStep,
+    totalSteps,
     getField, 
     updateField, 
     handleSave, 
@@ -281,37 +283,51 @@ export default function FicheGestionLinge() {
               </>
             )}
 
-            {/* Messages de sauvegarde */}
-            {saveStatus.saving && (
-              <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
-                ⏳ Sauvegarde en cours...
-              </div>
-            )}
-            {saveStatus.saved && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                ✅ Sauvegardé avec succès !
-              </div>
-            )}
-            {saveStatus.error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                ❌ {saveStatus.error}
-              </div>
-            )}
+            {/* Indicateur de sauvegarde */}
+{saveStatus.saving && (
+  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+    ⏳ Sauvegarde en cours...
+  </div>
+)}
+{saveStatus.saved && (
+  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+    ✅ Sauvegardé avec succès !
+  </div>
+)}
+{saveStatus.error && (
+  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+    ❌ {saveStatus.error}
+  </div>
+)}
 
             {/* Boutons navigation */}
-            <div className="mt-6 flex justify-between">
-              <Button variant="ghost" onClick={back}>Retour</Button>
-              <div className="flex gap-3">
-                <Button 
-                  variant="secondary" 
-                  onClick={handleSave}
-                  disabled={saveStatus.saving}
-                >
-                  {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
-                </Button>
-                <Button variant="primary" onClick={next}>Suivant</Button>
-              </div>
-            </div>
+            {/* Boutons navigation */}
+<div className="mt-6 flex justify-between">
+  <Button 
+    variant="ghost" 
+    onClick={back} 
+    disabled={currentStep === 0}
+  >
+    Retour
+  </Button>
+  <div className="flex gap-3">
+    <Button 
+      variant="secondary" 
+      onClick={handleSave}
+      disabled={saveStatus.saving}
+    >
+      {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
+    </Button>
+    <Button 
+      variant="primary" 
+      onClick={next}
+      disabled={currentStep === totalSteps - 1}
+    >
+      Suivant
+    </Button>
+  </div>
+</div>
+
           </div>
         </div>
       </div>

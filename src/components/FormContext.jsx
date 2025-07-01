@@ -949,7 +949,16 @@ section_equip_spe_exterieur: {
   cuisine_ext_type: "",                     // Radio: Privée/Publique
   cuisine_ext_caracteristiques: []          // Array checkboxes: ["Four", "Évier"]
 },
-  section_communs: {},
+
+section_communs: {
+  dispose_espaces_communs: null,           // Radio: true/false/null
+  description_generale: "",                // Textarea
+  entretien_prestataire: null,            // Radio: true/false/null  
+  entretien_frequence: "",                // Text (conditionnel si entretien = true)
+  entretien_qui: "",                      // Text (conditionnel si entretien = false)
+  photos_espaces_communs: []              // Array photos
+},
+
   section_teletravail: {},
   section_bebe: {},
   section_securite: {}
