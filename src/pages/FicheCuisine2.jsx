@@ -315,11 +315,11 @@ export default function FicheCuisine2() {
                   <p className="text-sm text-gray-500">Fonctionnalité à venir</p>
                 </div>
               </div>
-
             </div>
 
-            {/* Indicateur de sauvegarde */}
-            {saveStatus.saving && (
+          </div>
+          {/* Indicateur de sauvegarde */}
+          {saveStatus.saving && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
                 ⏳ Sauvegarde en cours...
               </div>
@@ -361,8 +361,6 @@ export default function FicheCuisine2() {
                 </Button>
               </div>
             </div>
-
-          </div>
         </div>
       </div>
     </div>

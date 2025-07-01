@@ -959,9 +959,30 @@ section_communs: {
   photos_espaces_communs: []              // Array photos
 },
 
-  section_teletravail: {},
-  section_bebe: {},
-  section_securite: {}
+section_teletravail: {
+  equipements: [],
+  equipements_autre_details: ""
+},
+
+section_bebe: {
+  equipements: [],
+  lit_bebe_type: "",
+  lit_parapluie_disponibilite: "",
+  lit_stores_occultants: null,
+  chaise_haute_type: "",
+  chaise_haute_disponibilite: "",
+  chaise_haute_caracteristiques: [],
+  chaise_haute_prix: "",
+  jouets_tranches_age: [],
+  equipements_autre_details: "",
+  photos_equipements_bebe: []
+},
+
+section_securite: {
+  equipements: [],
+  alarme_desarmement: "",
+  photos_equipements_securite: []
+}
 }
 
 export function FormProvider({ children }) {

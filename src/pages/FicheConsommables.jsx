@@ -241,8 +241,9 @@ export default function FicheConsommables() {
               )}
             </div>
 
-            {/* Indicateur de sauvegarde */}
-            {saveStatus.saving && (
+          </div>
+          {/* Indicateur de sauvegarde */}
+          {saveStatus.saving && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
                 ⏳ Sauvegarde en cours...
               </div>
@@ -284,7 +285,7 @@ export default function FicheConsommables() {
                 </Button>
               </div>
             </div>
-          </div>
+
         </div>
       </div>
     </div>

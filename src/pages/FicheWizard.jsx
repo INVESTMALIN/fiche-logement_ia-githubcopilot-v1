@@ -21,7 +21,9 @@ import FicheCuisine2 from './FicheCuisine2'
 import FicheSalonSam from './FicheSalonSam'
 import FicheEquipExterieur from './FicheEquipExterieur'
 import FicheCommuns from './FicheCommuns'
-
+import FicheTeletravail from './FicheTeletravail'
+import FicheBebe from './FicheBebe'
+import FicheSecurite from './FicheSecurite'
 
 // Composant placeholder pour les sections pas encore créées
 function PlaceholderSection({ title }) {
@@ -93,9 +95,9 @@ export default function FicheWizard() {
     <FicheSalonSam key="salon-sam" />,
     <FicheEquipExterieur key="exterieur" />,
     <FicheCommuns key="communs" />,
-    <PlaceholderSection key="teletravail" title="Télétravail" />,
-    <PlaceholderSection key="bebe" title="Bébé" />,
-    <PlaceholderSection key="securite" title="Sécurité" />
+    <FicheTeletravail key="teletravail" />,
+    <FicheBebe key="bebe" />,
+    <FicheSecurite key="securite" />
   ]
 
   // Vérification de sécurité

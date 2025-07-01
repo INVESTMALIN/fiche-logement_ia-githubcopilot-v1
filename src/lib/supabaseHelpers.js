@@ -851,6 +851,27 @@ export const mapFormDataToSupabase = (formData) => {
     communs_entretien_qui: formData.section_communs?.entretien_qui || null,
     communs_photos_espaces_communs: formData.section_communs?.photos_espaces_communs || [],
 
+    // Section Télétravail
+    teletravail_equipements: formData.section_teletravail?.equipements || [],
+    teletravail_equipements_autre_details: formData.section_teletravail?.equipements_autre_details || null,
+
+    // Section Bébé
+    bebe_equipements: formData.section_bebe?.equipements || [],
+    bebe_lit_bebe_type: formData.section_bebe?.lit_bebe_type || null,
+    bebe_lit_parapluie_disponibilite: formData.section_bebe?.lit_parapluie_disponibilite || null,
+    bebe_lit_stores_occultants: formData.section_bebe?.lit_stores_occultants ?? null,
+    bebe_chaise_haute_type: formData.section_bebe?.chaise_haute_type || null,
+    bebe_chaise_haute_disponibilite: formData.section_bebe?.chaise_haute_disponibilite || null,
+    bebe_chaise_haute_caracteristiques: formData.section_bebe?.chaise_haute_caracteristiques || [],
+    bebe_chaise_haute_prix: formData.section_bebe?.chaise_haute_prix || null,
+    bebe_jouets_tranches_age: formData.section_bebe?.jouets_tranches_age || [],
+    bebe_equipements_autre_details: formData.section_bebe?.equipements_autre_details || null,
+    bebe_photos_equipements_bebe: formData.section_bebe?.photos_equipements_bebe || [],
+
+    // Section Sécurité
+    securite_equipements: formData.section_securite?.equipements || [],
+    securite_alarme_desarmement: formData.section_securite?.alarme_desarmement || null,
+    securite_photos_equipements_securite: formData.section_securite?.photos_equipements_securite || [],
 
     updated_at: new Date().toISOString()
   }
@@ -1802,9 +1823,30 @@ export const mapSupabaseToFormData = (supabaseData) => {
       photos_espaces_communs: supabaseData.communs_photos_espaces_communs || []
     },
 
-    section_teletravail: {},
-    section_bebe: {},
-    section_securite: {}
+    section_teletravail: {
+      equipements: supabaseData.teletravail_equipements || [],
+      equipements_autre_details: supabaseData.teletravail_equipements_autre_details || ""
+    },
+
+    section_bebe: {
+      equipements: supabaseData.bebe_equipements || [],
+      lit_bebe_type: supabaseData.bebe_lit_bebe_type || "",
+      lit_parapluie_disponibilite: supabaseData.bebe_lit_parapluie_disponibilite || "",
+      lit_stores_occultants: supabaseData.bebe_lit_stores_occultants ?? null,
+      chaise_haute_type: supabaseData.bebe_chaise_haute_type || "",
+      chaise_haute_disponibilite: supabaseData.bebe_chaise_haute_disponibilite || "",
+      chaise_haute_caracteristiques: supabaseData.bebe_chaise_haute_caracteristiques || [],
+      chaise_haute_prix: supabaseData.bebe_chaise_haute_prix || "",
+      jouets_tranches_age: supabaseData.bebe_jouets_tranches_age || [],
+      equipements_autre_details: supabaseData.bebe_equipements_autre_details || "",
+      photos_equipements_bebe: supabaseData.bebe_photos_equipements_bebe || []
+    },
+
+    section_securite: {
+      equipements: supabaseData.securite_equipements || [],
+      alarme_desarmement: supabaseData.securite_alarme_desarmement || "",
+      photos_equipements_securite: supabaseData.securite_photos_equipements_securite || []
+    }
   }
 }
 
