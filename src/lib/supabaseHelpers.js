@@ -1,5 +1,5 @@
 // src/lib/supabaseHelpers.js
-import { supabase } from '../lib/supabaseClient'
+import { supabase, safeSupabaseQuery } from './supabaseClient'
 
 // 🔄 Mapping FormContext → Colonnes Supabase
 export const mapFormDataToSupabase = (formData) => {
@@ -1903,19 +1903,23 @@ export const saveFiche = async (formData, userId) => {
     
     if (formData.id) {
       // Mise à jour d'une fiche existante
-      result = await supabase
-        .from('fiches')
-        .update(supabaseData)
-        .eq('id', formData.id)
-        .select()
-        .single()
+      result = await safeSupabaseQuery(
+        supabase
+          .from('fiches')
+          .update(supabaseData)
+          .eq('id', formData.id)
+          .select()
+          .single()
+      )
     } else {
       // Création d'une nouvelle fiche
-      result = await supabase
-        .from('fiches')
-        .insert(supabaseData)
-        .select()
-        .single()
+      result = await safeSupabaseQuery(
+        supabase
+          .from('fiches')
+          .insert(supabaseData)
+          .select()
+          .single()
+      )
     }
     
     if (result.error) {
@@ -1940,19 +1944,21 @@ export const saveFiche = async (formData, userId) => {
 // 📖 Charger une fiche
 export const loadFiche = async (ficheId) => {
   try {
-    const { data, error } = await supabase
-      .from('fiches')
-      .select('*')
-      .eq('id', ficheId)
-      .single()
+    const result = await safeSupabaseQuery(
+      supabase
+        .from('fiches')
+        .select('*')
+        .eq('id', ficheId)
+        .single()
+    )
     
-    if (error) {
-      throw error
+    if (result.error) {
+      throw result.error
     }
     
     return {
       success: true,
-      data: mapSupabaseToFormData(data),
+      data: mapSupabaseToFormData(result.data),
       message: 'Fiche chargée avec succès'
     }
   } catch (error) {
@@ -1968,19 +1974,21 @@ export const loadFiche = async (ficheId) => {
 // 📋 Récupérer toutes les fiches d'un utilisateur
 export const getUserFiches = async (userId) => {
   try {
-    const { data, error } = await supabase
-      .from('fiches')
-      .select('id, nom, statut, created_at, updated_at')
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false })
+    const result = await safeSupabaseQuery(
+      supabase
+        .from('fiches')
+        .select('id, nom, statut, created_at, updated_at')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+    )
     
-    if (error) {
-      throw error
+    if (result.error) {
+      throw result.error
     }
     
     return {
       success: true,
-      data: data || [],
+      data: result.data || [],
       message: 'Fiches récupérées avec succès'
     }
   } catch (error) {

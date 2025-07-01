@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
@@ -11,8 +12,16 @@ import { AuthProvider } from './components/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import AdminConsole from './pages/AdminConsole'
+import { setAuthNavigateCallback } from './lib/supabaseClient'
 
 export default function App() {
+  const navigate = useNavigate()
+  
+  // Configurer la redirection automatique pour les erreurs 401
+  useEffect(() => {
+    setAuthNavigateCallback(navigate)
+  }, [navigate])
+
   return (
     <AuthProvider>
       <FormProvider>

@@ -1,3 +1,4 @@
+// src/components/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
@@ -6,9 +7,23 @@ const AuthContext = createContext()
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [userRole, setUserRole] = useState(null) // 🔥 NOUVEAU : juste le rôle
+  const [userRole, setUserRole] = useState(null)
 
-  // 🔥 SIMPLE : récupérer le rôle quand l'utilisateur change
+  // 🔥 HELPER : Cleanup complet de la session
+  const cleanupSession = () => {
+    console.log('🧹 Cleanup session complet')
+    setUser(null)
+    setUserRole(null)
+    // Cleanup localStorage si besoin
+    try {
+      localStorage.removeItem('supabase.auth.token')
+      // Ajouter d'autres clés si nécessaire
+    } catch (error) {
+      console.warn('Erreur cleanup localStorage:', error)
+    }
+  }
+
+  // Récupération du rôle utilisateur
   useEffect(() => {
     if (user) {
       const fetchRole = async () => {
@@ -21,30 +36,41 @@ export function AuthProvider({ children }) {
           
           if (data?.role) {
             console.log("Rôle récupéré:", data.role)
-            console.log("Mise à jour userRole avec:", data.role) // ✅ AJOUTER ÇA
             setUserRole(data.role)
           } else {
             console.log("Pas de rôle trouvé, fallback coordinateur")
-            setUserRole('coordinateur') // Fallback seulement si pas de rôle en base
+            setUserRole('coordinateur')
           }
         } catch (e) {
           console.log("Erreur rôle, fallback coordinateur:", e.message)
-          setUserRole('coordinateur') // Fallback seulement en cas d'erreur
+          setUserRole('coordinateur')
         }
       }
       
       fetchRole()
     } else {
-      setUserRole(null) // Pas d'utilisateur = pas de rôle
+      setUserRole(null)
     }
   }, [user])
 
   useEffect(() => {
     // Récupérer la session actuelle
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      setLoading(false)
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Erreur récupération session:', error)
+          cleanupSession()
+        } else {
+          setUser(session?.user ?? null)
+        }
+      } catch (error) {
+        console.error('Erreur getSession:', error)
+        cleanupSession()
+      } finally {
+        setLoading(false)
+      }
     }
 
     getSession()
@@ -52,7 +78,14 @@ export function AuthProvider({ children }) {
     // Écouter les changements d'auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null)
+        console.log('🔄 Auth state change:', event, session?.user?.email || 'no user')
+        
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+          cleanupSession()
+        } else {
+          setUser(session?.user ?? null)
+        }
+        
         setLoading(false)
       }
     )
@@ -60,68 +93,78 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Connexion
-  // Modifie uniquement la fonction signIn dans AuthContext.jsx
-
-// Connexion avec vérification du statut active
-const signIn = async (email, password) => {
-  try {
-    setLoading(true)
-    
-    // 1. Connexion normale Supabase Auth
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    
-    if (error) throw error
-    
-    // 2. ✅ NOUVEAU : Vérifier si l'utilisateur est actif
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('active')
-      .eq('id', data.user.id)
-      .single()
-    
-    if (profileError) {
-      console.error('Erreur lors de la vérification du profil:', profileError)
-      // En cas d'erreur, on laisse passer (fallback sécurisé)
-      return { data, error: null }
-    }
-    
-    // 3. ✅ Si le compte est désactivé → déconnexion immédiate
-    if (profile.active === false) {
-      await supabase.auth.signOut()
-      return { 
-        data: null, 
-        error: 'Votre compte a été désactivé par un administrateur. Contactez le support.' 
-      }
-    }
-    
-    // 4. ✅ Compte actif → connexion normale
-    return { data, error: null }
-    
-  } catch (error) {
-    return { data: null, error: error.message }
-  } finally {
-    setLoading(false)
-  }
-}
-
-  // Déconnexion
-  const signOut = async () => {
+  // 🔥 CONNEXION avec vérification du statut active
+  const signIn = async (email, password) => {
     try {
       setLoading(true)
-      const { error } = await supabase.auth.signOut()
+      
+      // 1. Connexion normale Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      
       if (error) throw error
+      
+      // 2. Vérifier si l'utilisateur est actif
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('active')
+        .eq('id', data.user.id)
+        .single()
+      
+      if (profileError) {
+        console.error('Erreur lors de la vérification du profil:', profileError)
+        return { data, error: null }
+      }
+      
+      // 3. Si le compte est désactivé → déconnexion immédiate
+      if (profile.active === false) {
+        await supabase.auth.signOut()
+        cleanupSession()
+        return { 
+          data: null, 
+          error: 'Votre compte a été désactivé par un administrateur. Contactez le support.'
+        }
+      }
+      
+      return { data, error: null }
+      
     } catch (error) {
-      console.error('Error signing out:', error.message)
+      return { data: null, error: error.message }
     } finally {
       setLoading(false)
     }
   }
 
-  // Inscription (si besoin plus tard)
+  // 🔥 DÉCONNEXION ROBUSTE
+  const signOut = async () => {
+    try {
+      setLoading(true)
+      console.log('🚪 Tentative de déconnexion...')
+      
+      // Tentative de signOut Supabase
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.warn('⚠️ Erreur Supabase signOut (session probablement expirée):', error.message)
+        // On continue quand même le cleanup
+      }
+      
+      // 🔥 TOUJOURS faire le cleanup, même en cas d'erreur
+      cleanupSession()
+      console.log('✅ Déconnexion terminée')
+      
+    } catch (error) {
+      console.error('❌ Erreur critique signOut:', error.message)
+      // 🔥 En cas d'erreur critique, on force le cleanup
+      cleanupSession()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Inscription
   const signUp = async (email, password) => {
     try {
       setLoading(true)
@@ -146,10 +189,10 @@ const signIn = async (email, password) => {
     signIn,
     signOut,
     signUp,
-    // Helpers originaux
+    cleanupSession, // 🔥 Exposer pour usage externe si besoin
+    // Helpers
     isAuthenticated: !!user,
     userEmail: user?.email || null,
-    // 🔥 NOUVEAUX helpers rôles (simples)
     userRole,
     isCoordinateur: userRole === 'coordinateur',
     isAdmin: userRole === 'admin',

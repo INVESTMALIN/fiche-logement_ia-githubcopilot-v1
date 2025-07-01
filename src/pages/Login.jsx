@@ -80,7 +80,7 @@ export default function Login() {
               Fiche Logement
             </h1>
             <p className="text-gray-300">
-              Letahost • Conciergerie Premium
+              Conciergerie innovante
             </p>
           </div>
 
@@ -166,7 +166,7 @@ export default function Login() {
             {/* Footer */}
             <div className="mt-8 text-center">
               <p className="text-xs text-gray-500">
-                Letahost • Conciergerie Premium
+                Letahost • Invest Malin • Conciergerie Premium
               </p>
             </div>
           </div>
