@@ -1,11 +1,11 @@
 # 🗺️ ROADMAP - Fiche Logement Letahost
-*Mise à jour : 27 Juin 2025*
+*Mise à jour : 01 juillet 2025*
 
 ---
 
 ## 🎯 **STATUT ACTUEL**
 
-### **✅ Sections complètes** (18/22)
+### **✅ Sections complètes** (19/22)
 1. ✅ **Propriétaire** - FicheForm.jsx
 2. ✅ **Logement** - FicheLogement.jsx  
 3. ✅ **Clefs** - FicheClefs.jsx
@@ -24,8 +24,8 @@
 16. ✅ **Cuisine 2**
 17. ✅ **Salon / SAM**
 18. ✅ **Équip. Spé. / Extérieur**
-### **🔲 Sections restantes** (4/22)
-19. 🔲 **Communs**
+19. ✅ **Communs**
+### **🔲 Sections restantes** (3/22)
 20. 🔲 **Télétravail**
 21. 🔲 **Bébé**
 22. 🔲 **Sécurité**
@@ -43,7 +43,7 @@
 ### **✅ Milestone 2 : Remplacement Jotform**
 - ✅ Pré-population Monday 100% opérationnelle
 - ✅ Workflow statuts (Brouillon → Complété → Archivé)
-- ✅ 14 sections avec patterns établis
+- ✅ 19 sections avec patterns établis
 
 ### **✅ Milestone 3 : Administration** 
 - ✅ Console admin complète (/admin)
@@ -52,7 +52,7 @@
 - ✅ Recherche avancée fiches
 
 ### **🔲 Milestone 4 : Complétion formulaire**
-- 🔲 8 sections restantes à implémenter
+- 🔲 3 sections restantes à implémenter
 - 🔲 Upload photos/vidéos
 - 🔲 Génération PDF
 
@@ -61,7 +61,7 @@
 ## 📋 **PROCHAINES PRIORITÉS**
 
 ### **Court terme** 
-1. **Compléter les 4 sections restantes**
+1. **Compléter les sections restantes**
    - Même process établi : Supabase → FormContext → supabaseHelpers → Composant → Wizard
    - Patterns maîtrisés (accordéons dynamiques, affichage conditionnel)
 
