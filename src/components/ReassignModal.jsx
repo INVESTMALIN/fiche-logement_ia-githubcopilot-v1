@@ -23,11 +23,12 @@ export default function ReassignModal({ fiche, users, isOpen, onClose, onSuccess
     setError('')
 
     try {
-      // Mettre à jour la fiche dans Supabase
+      // ✅ PRÉSERVER le statut existant lors de la réaffectation
       const { error: updateError } = await supabase
         .from('fiches')
         .update({ 
           user_id: selectedUserId,
+          statut: fiche.statut, // ✅ GARDER le statut actuel explicitement
           updated_at: new Date().toISOString()
         })
         .eq('id', fiche.id)
@@ -79,7 +80,10 @@ export default function ReassignModal({ fiche, users, isOpen, onClose, onSuccess
             <p className="text-sm text-gray-600">Fiche à réaffecter :</p>
             <p className="font-medium">{fiche.nom}</p>
             <p className="text-sm text-gray-500">
-              Actuellement assignée à : {currentOwner ? 
+              Statut : <span className="font-medium">{fiche.statut}</span> (préservé)
+            </p>
+            <p className="text-sm text-gray-500">
+              Actuellement assignée à : {currentOwner ?
                 `${currentOwner.prenom} ${currentOwner.nom}`.trim() || currentOwner.email :
                 'Utilisateur supprimé'
               }
@@ -112,7 +116,8 @@ export default function ReassignModal({ fiche, users, isOpen, onClose, onSuccess
               <p className="text-sm text-blue-700">
                 <strong>Changement :</strong><br/>
                 De : {currentOwner ? `${currentOwner.prenom} ${currentOwner.nom}`.trim() || currentOwner.email : 'Inconnu'}<br/>
-                Vers : {`${newOwner.prenom} ${newOwner.nom}`.trim() || newOwner.email}
+                Vers : {`${newOwner.prenom} ${newOwner.nom}`.trim() || newOwner.email}<br/>
+                <span className="text-green-600">Statut "{fiche.statut}" préservé</span>
               </p>
             </div>
           )}

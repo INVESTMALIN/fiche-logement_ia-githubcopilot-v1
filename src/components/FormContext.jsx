@@ -63,20 +63,52 @@ const initialFormData = {
     acces: ""
   },
   section_clefs: {
-    interphone: null,
-    interphoneDetails: "",
-    interphonePhoto: null,
-    tempoGache: null,
-    tempoGacheDetails: "",
-    tempoGachePhoto: null,
-    digicode: null,
-    digicodeDetails: "",
-    digicodePhoto: null,
+    // Type de boîte + emplacement
+    boiteType: "",                    // TEXT
+    emplacementBoite: "",             // TEXT
+    emplacementPhoto: null,           // TEXT
+    
+    // TTlock (conditionnel)
+    ttlock: {
+      masterpinConciergerie: "",      // TEXT
+      codeProprietaire: "",           // TEXT
+      codeMenage: ""                  // TEXT
+    },
+    
+    // Igloohome (conditionnel)  
+    igloohome: {
+      masterpinConciergerie: "",      // TEXT
+      codeVoyageur: "",               // TEXT
+      codeProprietaire: "",           // TEXT
+      codeMenage: ""                  // TEXT
+    },
+    
+    // Masterlock (conditionnel)
+    masterlock: {
+      code: ""                        // TEXT
+    },
+    
+    // Interphone
+    interphone: null,                 // BOOLEAN
+    interphoneDetails: "",            // TEXT
+    interphonePhoto: null,            // TEXT
+    
+    // Tempo-gâche  
+    tempoGache: null,                 // BOOLEAN
+    tempoGacheDetails: "",            // TEXT
+    tempoGachePhoto: null,            // TEXT
+    
+    // Digicode
+    digicode: null,                   // BOOLEAN
+    digicodeDetails: "",              // TEXT
+    digicodePhoto: null,              // TEXT
+    
+    // Clefs (existant)
     clefs: {
-      photos: [],
-      precision: "",
-      prestataire: null,
-      details: ""
+      photos: [],                     // ARRAY
+      precision: "",                  // TEXT
+      prestataire: null,              // BOOLEAN
+      details: ""                     // TEXT
     }
   },
   section_airbnb: {

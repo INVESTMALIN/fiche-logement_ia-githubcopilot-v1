@@ -1,87 +1,131 @@
 // src/components/FichePreviewModal.jsx
 import { X, Edit3 } from 'lucide-react'
+import { mapSupabaseToFormData } from '../lib/supabaseHelpers'
 
 export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
   if (!isOpen || !fiche) return null
 
+  // 🎯 CONVERSION : Données Supabase brutes → Structure FormContext
+  const formData = mapSupabaseToFormData(fiche)
+
+  // 📋 CONFIGURATION : Toutes les 22 sections avec labels et emojis
+  const sectionsConfig = [
+    { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
+    { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
+    { key: 'section_clefs', label: '🔑 Clefs', emoji: '🔑' },
+    { key: 'section_airbnb', label: '🏠 Airbnb', emoji: '🏠' },
+    { key: 'section_booking', label: '📅 Booking', emoji: '📅' },
+    { key: 'section_reglementation', label: '📋 Réglementation', emoji: '📋' },
+    { key: 'section_exigences', label: '⚠️ Exigences', emoji: '⚠️' },
+    { key: 'section_avis', label: '⭐ Avis', emoji: '⭐' },
+    { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
+    { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
+    { key: 'section_consommables', label: '🧴 Consommables', emoji: '🧴' },
+    { key: 'section_visite', label: '🎥 Visite', emoji: '🎥' },
+    { key: 'section_chambres', label: '🛏️ Chambres', emoji: '🛏️' },
+    { key: 'section_salle_de_bains', label: '🚿 Salle de Bains', emoji: '🚿' },
+    { key: 'section_cuisine_1', label: '🍳 Cuisine 1', emoji: '🍳' },
+    { key: 'section_cuisine_2', label: '🍽️ Cuisine 2', emoji: '🍽️' },
+    { key: 'section_salon_sam', label: '🛋️ Salon / SAM', emoji: '🛋️' },
+    { key: 'section_equip_spe_exterieur', label: '🏗️ Équip. Spé. / Extérieur', emoji: '🏗️' },
+    { key: 'section_communs', label: '🏢 Communs', emoji: '🏢' },
+    { key: 'section_teletravail', label: '💻 Télétravail', emoji: '💻' },
+    { key: 'section_bebe', label: '👶 Bébé', emoji: '👶' },
+    { key: 'section_securite', label: '🔒 Sécurité', emoji: '🔒' }
+  ]
+
+  // Helper pour vérifier si une valeur est "vide" ou non significative
+  const isEmpty = (value) => {
+    if (value === null || value === undefined || value === '') return true
+    if (typeof value === 'boolean' && value === false) return true
+    if (typeof value === 'number' && value === 0) return true  // ✅ Filtrer les zéros
+    if (value === '0') return true  // ✅ Filtrer les zéros en string aussi
+    if (Array.isArray(value)) {
+      // Array vide ou contenant seulement des false/null/undefined/""
+      return value.length === 0 || value.every(v => v === false || v === null || v === undefined || v === '' || v === 0 || v === '0')
+    }
+    if (typeof value === 'object') {
+      // Objet sans valeurs significatives
+      return Object.values(value).every(v => isEmpty(v))
+    }
+    return false
+  }
+
   // Helper pour afficher une valeur de façon lisible
   const formatValue = (value) => {
-    if (value === null || value === undefined || value === '') return '—'
+    if (isEmpty(value)) return '—'
+    
     if (typeof value === 'boolean') return value ? 'Oui' : 'Non'
-    if (Array.isArray(value)) return value.length > 0 ? value.join(', ') : '—'
+    
+    if (Array.isArray(value)) {
+      // Pour les arrays, garder seulement les valeurs "vraies"
+      const validValues = value.filter(v => !isEmpty(v))
+      if (validValues.length === 0) return '—'
+      
+      // Si c'est un array de booléens true, on peut supposer que ce sont des checkboxes
+      if (validValues.every(v => v === true)) {
+        return `${validValues.length} élément(s) sélectionné(s)`
+      }
+      
+      return validValues.join(', ')
+    }
+    
+    if (typeof value === 'object') {
+      // Pour les objets imbriqués (comme adresses)
+      const validEntries = Object.entries(value)
+        .filter(([key, val]) => !isEmpty(val))
+        .map(([key, val]) => `${formatFieldName(key)}: ${val}`)
+      
+      return validEntries.length > 0 ? validEntries.join(', ') : '—'
+    }
+    
     return String(value)
   }
 
-  // Helper pour nettoyer les noms de champs
+  // Helper pour nettoyer les noms de champs (enlever prefixes, capitaliser)
   const formatFieldName = (fieldName) => {
     return fieldName
-      .replace(/^(proprietaire|logement|airbnb|booking|reglementation|exigences|avis|clefs)_/, '') // Retirer le préfixe
+      .replace(/([A-Z])/g, ' $1') // Ajouter espaces avant majuscules
       .replace(/_/g, ' ') // Remplacer _ par espaces
       .replace(/\b\w/g, l => l.toUpperCase()) // Capitaliser chaque mot
+      .trim()
   }
 
-  // Colonnes à ignorer (techniques)
-  const ignoredColumns = [
-    'id', 'user_id', 'created_at', 'updated_at', 'nom', 'statut'
-  ]
-
-  // Auto-génération des sections à partir des colonnes
+  // 🎯 GÉNÉRATION : Extraire les sections avec données
   const generateSections = () => {
-    const sections = {}
-    
-    // Parcourir toutes les colonnes de la fiche
-    Object.keys(fiche).forEach(columnName => {
-      // Ignorer les colonnes techniques
-      if (ignoredColumns.includes(columnName)) return
+    const sections = []
+
+    sectionsConfig.forEach(config => {
+      const sectionData = formData[config.key]
       
-      // Détecter le préfixe de section
-      const prefixes = [
-        'proprietaire', 'logement', 'airbnb', 'booking', 
-        'reglementation', 'exigences', 'avis', 'clefs'
-      ]
-      
-      let sectionKey = 'autres' // Section par défaut
-      let sectionLabel = '📋 Autres'
-      
-      for (const prefix of prefixes) {
-        if (columnName.startsWith(prefix + '_')) {
-          sectionKey = prefix
-          // Emojis pour chaque section
-          const emojis = {
-            proprietaire: '👤',
-            logement: '🏠', 
-            airbnb: '🏠',
-            booking: '📅',
-            reglementation: '📋',
-            exigences: '⚠️',
-            avis: '⭐',
-            clefs: '🔑'
-          }
-          sectionLabel = `${emojis[prefix] || '📋'} ${prefix.charAt(0).toUpperCase() + prefix.slice(1)}`
-          break
+      if (!sectionData || typeof sectionData !== 'object') return
+
+      const fields = []
+
+      // Parcourir tous les champs de la section
+      Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+        // Utiliser la fonction isEmpty pour filtrer
+        if (isEmpty(fieldValue)) {
+          return
         }
-      }
-      
-      // Créer la section si elle n'existe pas
-      if (!sections[sectionKey]) {
-        sections[sectionKey] = {
-          label: sectionLabel,
-          fields: []
-        }
-      }
-      
-      // Ajouter le champ à la section
-      const value = fiche[columnName]
-      if (value !== null && value !== undefined && value !== '') {
-        sections[sectionKey].fields.push({
-          key: columnName,
-          label: formatFieldName(columnName),
-          value: value
+
+        fields.push({
+          key: fieldKey,
+          label: formatFieldName(fieldKey),
+          value: fieldValue
+        })
+      })
+
+      // Ajouter la section seulement si elle a des champs
+      if (fields.length > 0) {
+        sections.push({
+          ...config,
+          fields
         })
       }
     })
-    
-    return Object.values(sections).filter(section => section.fields.length > 0)
+
+    return sections
   }
 
   const sections = generateSections()
@@ -94,7 +138,8 @@ export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
           <div>
             <h2 className="text-xl font-semibold text-gray-900">{fiche.nom}</h2>
             <p className="text-sm text-gray-500 mt-1">
-              Créé par {fiche.creator ? `${fiche.creator.prenom} ${fiche.creator.nom}`.trim() || fiche.creator.email : 'Utilisateur supprimé'}
+              Créé par {fiche.creator ? 
+                `${fiche.creator.prenom} ${fiche.creator.nom}`.trim() || fiche.creator.email : 'Utilisateur supprimé'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -123,15 +168,18 @@ export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
           ) : (
             <div className="space-y-6">
               {sections.map((section, index) => (
-                <div key={index} className="border-b border-gray-100 pb-4">
-                  <h3 className="font-medium text-gray-900 mb-3">{section.label}</h3>
-                  <div className="grid grid-cols-1 gap-2">
+                <div key={index} className="border-b border-gray-100 pb-4 last:border-b-0">
+                  <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    <span className="text-lg">{section.emoji}</span>
+                    <span>{section.label.replace(section.emoji + ' ', '')}</span>
+                  </h3>
+                  <div className="grid grid-cols-1 gap-3">
                     {section.fields.map(field => (
-                      <div key={field.key} className="flex justify-between">
-                        <span className="text-sm text-gray-500">
+                      <div key={field.key} className="flex justify-between items-start">
+                        <span className="text-sm text-gray-500 font-medium min-w-0 flex-1 pr-4">
                           {field.label}:
                         </span>
-                        <span className="text-sm text-gray-900 text-right max-w-xs">
+                        <span className="text-sm text-gray-900 text-right max-w-xs min-w-0 flex-1 break-words">
                           {formatValue(field.value)}
                         </span>
                       </div>

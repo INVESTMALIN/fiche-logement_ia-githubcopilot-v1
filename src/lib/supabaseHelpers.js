@@ -42,6 +42,32 @@ export const mapFormDataToSupabase = (formData) => {
     logement_adresse_code_postal: formData.section_logement?.adresse?.codePostal || null,
     logement_etage: formData.section_logement?.adresse?.etage || null,
     logement_acces: formData.section_logement?.acces || null,
+
+    // Section Clefs
+    clefs_boite_type: formData.section_clefs?.boiteType || null,
+    clefs_emplacement_boite: formData.section_clefs?.emplacementBoite || null,
+    clefs_emplacement_photo: formData.section_clefs?.emplacementPhoto || null,
+    clefs_ttlock_masterpin_conciergerie: formData.section_clefs?.ttlock?.masterpinConciergerie || null,
+    clefs_ttlock_code_proprietaire: formData.section_clefs?.ttlock?.codeProprietaire || null,
+    clefs_ttlock_code_menage: formData.section_clefs?.ttlock?.codeMenage || null,
+    clefs_igloohome_masterpin_conciergerie: formData.section_clefs?.igloohome?.masterpinConciergerie || null,
+    clefs_igloohome_code_voyageur: formData.section_clefs?.igloohome?.codeVoyageur || null,
+    clefs_igloohome_code_proprietaire: formData.section_clefs?.igloohome?.codeProprietaire || null,
+    clefs_igloohome_code_menage: formData.section_clefs?.igloohome?.codeMenage || null,
+    clefs_masterlock_code: formData.section_clefs?.masterlock?.code || null,
+    clefs_interphone: formData.section_clefs?.interphone ?? null,
+    clefs_interphone_details: formData.section_clefs?.interphoneDetails || null,
+    clefs_interphone_photo: formData.section_clefs?.interphonePhoto || null,
+    clefs_tempo_gache: formData.section_clefs?.tempoGache ?? null,
+    clefs_tempo_gache_details: formData.section_clefs?.tempoGacheDetails || null,
+    clefs_tempo_gache_photo: formData.section_clefs?.tempoGachePhoto || null,
+    clefs_digicode: formData.section_clefs?.digicode ?? null,
+    clefs_digicode_details: formData.section_clefs?.digicodeDetails || null,
+    clefs_digicode_photo: formData.section_clefs?.digicodePhoto || null,
+    clefs_photos: formData.section_clefs?.clefs?.photos || [],
+    clefs_precision: formData.section_clefs?.clefs?.precision || null,
+    clefs_prestataire: formData.section_clefs?.clefs?.prestataire ?? null,
+    clefs_details: formData.section_clefs?.clefs?.details || null,
     
     // Section Airbnb
     airbnb_annonce_active: formData.section_airbnb?.annonce_active,
@@ -937,16 +963,33 @@ export const mapSupabaseToFormData = (supabaseData) => {
       acces: supabaseData.logement_acces || ""
     },
     
-     section_clefs: {
-      interphone: supabaseData.interphone ?? null,
-      interphoneDetails: supabaseData.interphoneDetails || "",
-      interphonePhoto: supabaseData.interphonePhoto || null,
-      tempoGache: supabaseData.tempoGache ?? null,
-      tempoGacheDetails: supabaseData.tempoGacheDetails || "",
-      tempoGachePhoto: supabaseData.tempoGachePhoto || null,
-      digicode: supabaseData.digicode ?? null,
-      digicodeDetails: supabaseData.digicodeDetails || "",
-      digicodePhoto: supabaseData.digicodePhoto || null,
+    section_clefs: {
+      boiteType: supabaseData.clefs_boite_type || "",
+      emplacementBoite: supabaseData.clefs_emplacement_boite || "",
+      emplacementPhoto: supabaseData.clefs_emplacement_photo || null,
+      ttlock: {
+        masterpinConciergerie: supabaseData.clefs_ttlock_masterpin_conciergerie || "",
+        codeProprietaire: supabaseData.clefs_ttlock_code_proprietaire || "",
+        codeMenage: supabaseData.clefs_ttlock_code_menage || ""
+      },
+      igloohome: {
+        masterpinConciergerie: supabaseData.clefs_igloohome_masterpin_conciergerie || "",
+        codeVoyageur: supabaseData.clefs_igloohome_code_voyageur || "",
+        codeProprietaire: supabaseData.clefs_igloohome_code_proprietaire || "",
+        codeMenage: supabaseData.clefs_igloohome_code_menage || ""
+      },
+      masterlock: {
+        code: supabaseData.clefs_masterlock_code || ""
+      },
+      interphone: supabaseData.clefs_interphone ?? null,
+      interphoneDetails: supabaseData.clefs_interphone_details || "",
+      interphonePhoto: supabaseData.clefs_interphone_photo || null,
+      tempoGache: supabaseData.clefs_tempo_gache ?? null,
+      tempoGacheDetails: supabaseData.clefs_tempo_gache_details || "",
+      tempoGachePhoto: supabaseData.clefs_tempo_gache_photo || null,
+      digicode: supabaseData.clefs_digicode ?? null,
+      digicodeDetails: supabaseData.clefs_digicode_details || "",
+      digicodePhoto: supabaseData.clefs_digicode_photo || null,
       clefs: {
         photos: supabaseData.clefs_photos || [],
         precision: supabaseData.clefs_precision || "",

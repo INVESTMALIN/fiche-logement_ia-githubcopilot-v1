@@ -245,7 +245,7 @@ export default function Dashboard() {
                   className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-3 py-2.5 rounded-xl transition-all duration-200"
                   title="Console Admin"
                 >
-                  ⚙️
+                  Console
                 </button>
               )}          
             </div>
