@@ -63,12 +63,19 @@ export default function FicheEquipements() {
     { key: 'fumeurs_acceptes', label: 'Fumeurs acceptés' }
   ]
 
-  // Types de parking pour les options conditionnelles
-  const typesParkingOptions = [
+  // Types de parking pour GRATUIT SUR PLACE (4 options, checkboxes multiples)
+  const typesParkingGratuitOptions = [
     'Parking sous-terrain',
     'Abri voiture', 
     'Stationnement dans une allée privée',
     'Garage individuel'
+  ]
+
+  // Types de parking pour PAYANT (3 options, radio unique)
+  const typesParkingPayantOptions = [
+    'Parking sous-terrain',
+    'Abri voiture', 
+    'Stationnement dans une allée privée'
   ]
 
   return (
@@ -373,58 +380,56 @@ export default function FicheEquipements() {
                 </div>
               )}
 
-              {formData.parking_type === 'sur_place' && (
-                <>
-                  <div className="mb-4">
-                    <label className="block font-semibold mb-2">Parking - Type * (plusieurs choix possibles)</label>
-                    <div className="space-y-2">
-                      {typesParkingOptions.map(option => (
-                        <label key={option} className="flex items-center gap-2">
-                          <input 
-                            type="checkbox"
-                            checked={(formData.parking_sur_place_types || []).includes(option)}
-                            onChange={(e) => handleCheckboxArrayChange('section_equipements.parking_sur_place_types', option, e.target.checked)}
-                          />
-                          {option}
-                        </label>
-                      ))}
-                    </div>
+
+            {formData.parking_type === 'sur_place' && (
+              <>
+                <div className="mb-4">
+                  <label className="block font-semibold mb-2">Parking - Type * (plusieurs choix possibles)</label>
+                  <div className="space-y-2">
+                    {typesParkingGratuitOptions.map(option => (
+                      <label key={option} className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox"
+                          checked={(formData.parking_sur_place_types || []).includes(option)}
+                          onChange={(e) => handleCheckboxArrayChange('section_equipements.parking_sur_place_types', option, e.target.checked)}
+                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-sm">{option}</span>
+                      </label>
+                    ))}
                   </div>
-                  <div className="mb-4">
-                    <label className="block font-semibold mb-2">
-                      Parking gratuit sur place - Détails *
-                    </label>
-                    <textarea 
-                      className="w-full p-3 border rounded h-32"
-                      placeholder={`Fournissez des informations détaillées sur le parking gratuit :
-• Emplacement des places de stationnement
-• Disponibilité habituelle des places
-• Restrictions éventuelles
-• Distance approximative du logement
-• Conseils pour accéder au parking
-• Sécurité du parking
-• Toute autre information utile pour les voyageurs`}
-                      value={formData.parking_sur_place_details || ""}
-                      onChange={(e) => handleInputChange('section_equipements.parking_sur_place_details', e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
+                </div>
+                <div className="mb-4">
+                  <label className="block font-semibold mb-2">
+                    Parking gratuit sur place - Détails *
+                  </label>
+                  <textarea 
+                    className="w-full p-3 border rounded h-32"
+                    placeholder={`Fournissez des informations détaillées sur le parking gratuit...`}
+                    value={formData.parking_sur_place_details || ""}
+                    onChange={(e) => handleInputChange('section_equipements.parking_sur_place_details', e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+
+
 
               {formData.parking_type === 'payant' && (
                 <>
                   <div className="mb-4">
                     <label className="block font-semibold mb-2">Parking - Stationnement payant - Type *</label>
                     <div className="space-y-2">
-                      {typesParkingOptions.map(option => (
-                        <label key={option} className="flex items-center gap-2">
+                      {typesParkingPayantOptions.map(option => (
+                        <label key={option} className="flex items-center gap-2 cursor-pointer">
                           <input 
-                            type="radio" 
+                            type="radio"
                             name="parking_payant_type"
                             checked={formData.parking_payant_type === option}
                             onChange={() => handleInputChange('section_equipements.parking_payant_type', option)}
+                            className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                           />
-                          {option}
+                          <span className="text-sm">{option}</span>
                         </label>
                       ))}
                     </div>
@@ -435,14 +440,7 @@ export default function FicheEquipements() {
                     </label>
                     <textarea 
                       className="w-full p-3 border rounded h-32"
-                      placeholder={`Fournissez des informations détaillées sur le parking payant :
-• Emplacement des places de stationnement
-• Tarifs de stationnement
-• Modalités de paiement
-• Restrictions éventuelles
-• Distance approximative du logement
-• Conseils pour réserver ou payer
-• Toute autre information utile pour les voyageurs`}
+                      placeholder={`Fournissez des informations détaillées sur le parking payant...`}
                       value={formData.parking_payant_details || ""}
                       onChange={(e) => handleInputChange('section_equipements.parking_payant_details', e.target.value)}
                     />

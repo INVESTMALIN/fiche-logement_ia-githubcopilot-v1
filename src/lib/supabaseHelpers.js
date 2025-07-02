@@ -119,7 +119,6 @@ export const mapFormDataToSupabase = (formData) => {
 
     avis_precisions_emplacement: formData.section_avis?.precisions_emplacement || null,
 
-    avis_atouts_luxueux: formData.section_avis?.atouts_logement?.luxueux ?? null,
     avis_atouts_lumineux: formData.section_avis?.atouts_logement?.lumineux ?? null,
     avis_atouts_central: formData.section_avis?.atouts_logement?.central ?? null,
     avis_atouts_authentique: formData.section_avis?.atouts_logement?.authentique ?? null,
@@ -173,7 +172,7 @@ export const mapFormDataToSupabase = (formData) => {
 
     avis_notation_emplacement: formData.section_avis?.notation?.emplacement || null,
     avis_notation_confort: formData.section_avis?.notation?.confort || null,
-    avis_notation_valeurs: formData.section_avis?.notation?.valeurs || null,
+    avis_notation_vetuste: formData.section_avis?.notation?.vetuste || null,
     avis_notation_equipements: formData.section_avis?.notation?.equipements || null,
 
     // Section Gestion Linge
@@ -1080,47 +1079,79 @@ export const mapSupabaseToFormData = (supabaseData) => {
 
     section_avis: {
       description_emplacement: {
-        tres_bien_situe: supabaseData.avis_description_tres_bien_situe ?? false,
-        quartier_calme: supabaseData.avis_description_quartier_calme ?? false,
-        environnement_rural: supabaseData.avis_description_environnement_rural ?? false,
-        bord_mer: supabaseData.avis_description_bord_mer ?? false,
-        montagne: supabaseData.avis_description_montagne ?? false,
-        autres_emplacement: supabaseData.avis_description_autres_emplacement ?? false
+        tres_bien_situe: supabaseData.avis_description_tres_bien_situe ?? null,
+        quartier_calme: supabaseData.avis_description_quartier_calme ?? null,
+        environnement_rural: supabaseData.avis_description_environnement_rural ?? null,
+        bord_mer: supabaseData.avis_description_bord_mer ?? null,
+        montagne: supabaseData.avis_description_montagne ?? null,
+        autres_emplacement: supabaseData.avis_description_autres_emplacement ?? null
       },
       description_emplacement_autre: supabaseData.avis_description_emplacement_autre || "",
-      
       precisions_emplacement: supabaseData.avis_precisions_emplacement || "",
       
+      // ✅ ATOUTS COMPLETS - TOUS LES NOUVEAUX ATOUTS AJOUTÉS
       atouts_logement: {
-        luxueux: supabaseData.avis_atouts_luxueux ?? false,
-        lumineux: supabaseData.avis_atouts_lumineux ?? false,
-        central: supabaseData.avis_atouts_central ?? false,
-        spacieux: supabaseData.avis_atouts_spacieux ?? false,
-        authentique: supabaseData.avis_atouts_authentique ?? false,
-        design_moderne: supabaseData.avis_atouts_design_moderne ?? false,
-        terrasse_balcon: supabaseData.avis_atouts_terrasse_balcon ?? false,
-        piscine: supabaseData.avis_atouts_piscine ?? false,
-        autres_atouts: supabaseData.avis_atouts_autres_atouts ?? false
+        // Anciens atouts (déjà mappés)
+        lumineux: supabaseData.avis_atouts_lumineux ?? null,
+        central: supabaseData.avis_atouts_central ?? null,
+        authentique: supabaseData.avis_atouts_authentique ?? null,
+        design_moderne: supabaseData.avis_atouts_design_moderne ?? null,
+        terrasse_balcon: supabaseData.avis_atouts_terrasse_balcon ?? null,
+        piscine: supabaseData.avis_atouts_piscine ?? null,
+        
+        // ✅ NOUVEAUX ATOUTS - À AJOUTER
+        rustique: supabaseData.avis_atouts_rustique ?? null,
+        convivial: supabaseData.avis_atouts_convivial ?? null,
+        douillet: supabaseData.avis_atouts_douillet ?? null,
+        proche_transports: supabaseData.avis_atouts_proche_transports ?? null,
+        jacuzzi: supabaseData.avis_atouts_jacuzzi ?? null,
+        cheminee: supabaseData.avis_atouts_cheminee ?? null,
+        charmant: supabaseData.avis_atouts_charmant ?? null,
+        elegant: supabaseData.avis_atouts_elegant ?? null,
+        atypique: supabaseData.avis_atouts_atypique ?? null,
+        renove: supabaseData.avis_atouts_renove ?? null,
+        familial: supabaseData.avis_atouts_familial ?? null,
+        cosy_confortable: supabaseData.avis_atouts_cosy_confortable ?? null,
+        decoration_traditionnelle: supabaseData.avis_atouts_decoration_traditionnelle ?? null,
+        jardin: supabaseData.avis_atouts_jardin ?? null,
+        proche_commerces: supabaseData.avis_atouts_proche_commerces ?? null,
+        sauna_spa: supabaseData.avis_atouts_sauna_spa ?? null,
+        video_projecteur: supabaseData.avis_atouts_video_projecteur ?? null,
+        station_recharge_electrique: supabaseData.avis_atouts_station_recharge_electrique ?? null,
+        romantique: supabaseData.avis_atouts_romantique ?? null,
+        paisible: supabaseData.avis_atouts_paisible ?? null,
+        chic: supabaseData.avis_atouts_chic ?? null,
+        accueillant: supabaseData.avis_atouts_accueillant ?? null,
+        tranquille: supabaseData.avis_atouts_tranquille ?? null,
+        spacieux: supabaseData.avis_atouts_spacieux ?? null,
+        vue_panoramique: supabaseData.avis_atouts_vue_panoramique ?? null,
+        parking_prive: supabaseData.avis_atouts_parking_prive ?? null,
+        equipements_haut_gamme: supabaseData.avis_atouts_equipements_haut_gamme ?? null,
+        billard: supabaseData.avis_atouts_billard ?? null,
+        jeux_arcade: supabaseData.avis_atouts_jeux_arcade ?? null,
+        table_ping_pong: supabaseData.avis_atouts_table_ping_pong ?? null,
+        autres_atouts: supabaseData.avis_atouts_autres_atouts ?? null
       },
+      
       atouts_logement_autre: supabaseData.avis_atouts_logement_autre || "",
       autres_caracteristiques: supabaseData.avis_autres_caracteristiques || "",
+      
       types_voyageurs: {
-        duo_amoureux: supabaseData.avis_voyageurs_duo_amoureux ?? false,
-        nomades_numeriques: supabaseData.avis_voyageurs_nomades_numeriques ?? false,
-        aventuriers_independants: supabaseData.avis_voyageurs_aventuriers_independants ?? false,
-        tribus_familiales: supabaseData.avis_voyageurs_tribus_familiales ?? false,
-        bandes_amis: supabaseData.avis_voyageurs_bandes_amis ?? false,
-        voyageurs_experience: supabaseData.avis_voyageurs_voyageurs_experience ?? false,
-        autres_voyageurs: supabaseData.avis_voyageurs_autres_voyageurs ?? false
+        duo_amoureux: supabaseData.avis_voyageurs_duo_amoureux ?? null,
+        nomades_numeriques: supabaseData.avis_voyageurs_nomades_numeriques ?? null,
+        aventuriers_independants: supabaseData.avis_voyageurs_aventuriers_independants ?? null,
+        tribus_familiales: supabaseData.avis_voyageurs_tribus_familiales ?? null,
+        bandes_amis: supabaseData.avis_voyageurs_bandes_amis ?? null,
+        voyageurs_experience: supabaseData.avis_voyageurs_voyageurs_experience ?? null,
+        autres_voyageurs: supabaseData.avis_voyageurs_autres_voyageurs ?? null
       },
       types_voyageurs_autre: supabaseData.avis_voyageurs_autre || "",
-      
       explication_adaptation: supabaseData.avis_explication_adaptation || "",
       
       notation: {
         emplacement: supabaseData.avis_notation_emplacement || null,
         confort: supabaseData.avis_notation_confort || null,
-        valeurs: supabaseData.avis_notation_valeurs || null,
+        vetuste: supabaseData.avis_notation_vetuste || null,
         equipements: supabaseData.avis_notation_equipements || null
       }
     },
@@ -1265,8 +1296,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       parking_rue_details: supabaseData.equipements_parking_rue_details || "",
       parking_sur_place_types: supabaseData.equipements_parking_sur_place_types || [],
       parking_sur_place_details: supabaseData.equipements_parking_sur_place_details || "",
-      parking_payant_type: supabaseData.equipements_parking_payant_type || "",
-      parking_payant_details: supabaseData.equipements_parking_payant_details || ""
+      parking_payant_type: supabaseData.equipements_parking_payant_type || "",      parking_payant_details: supabaseData.equipements_parking_payant_details || ""
     },
 
     section_consommables: {

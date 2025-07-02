@@ -105,7 +105,7 @@ export default function FicheAvis() {
   const noteFields = [
     { key: 'emplacement', label: 'Emplacement' },
     { key: 'confort', label: 'Confort' },
-    { key: 'valeurs', label: 'Valeurs' },
+    { key: 'vetuste', label: 'Vétusté' },
     { key: 'equipements', label: 'Équipements' },
   ]
 

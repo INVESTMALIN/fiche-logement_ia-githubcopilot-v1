@@ -1,5 +1,5 @@
 // src/pages/FicheChambre.jsx
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
@@ -41,14 +41,14 @@ export default function FicheChambre() {
   }
 
   // Fonction pour modifier un champ simple
-  const handleInputChange = (chambreKey, field, value) => {
+  const handleInputChange = useCallback((chambreKey, field, value) => {
     updateField(`section_chambres.${chambreKey}.${field}`, value)
-  }
+  }, [updateField])
 
   // Fonction pour modifier une checkbox équipement
-  const handleCheckboxChange = (chambreKey, field, checked) => {
+  const handleCheckboxChange = useCallback((chambreKey, field, checked) => {
     updateField(`section_chambres.${chambreKey}.${field}`, checked ? true : null)
-  }
+  }, [updateField])
 
   // Configuration des types de lits
   const typesLits = [

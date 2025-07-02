@@ -169,7 +169,6 @@ const initialFormData = {
     
     // GARDE SEULEMENT CELLE-CI (la complète) :
     atouts_logement: {
-      luxueux: null,
       lumineux: null,
       central: null,
       authentique: null,
@@ -226,7 +225,7 @@ const initialFormData = {
     notation: {
       emplacement: null,
       confort: null,
-      valeurs: null,
+      vetuste: null,
       equipements: null
     }
   },
