@@ -4,6 +4,8 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
+
 
 export default function FicheClefs() {
   const { 
@@ -73,12 +75,11 @@ export default function FicheClefs() {
 
             {/* Photo de l'emplacement */}
             <div className="mb-6">
-              <label className="block font-semibold mb-3">Photo de l'emplacement</label>
-              <input 
-                type="file" 
-                accept="image/*" 
-                capture="environment"
-                className="w-full p-2 border rounded"
+              <PhotoUpload 
+                fieldPath="section_clefs.emplacementPhoto"
+                label="Photo de l'emplacement"
+                multiple={false}
+                maxFiles={1}
               />
               <p className="text-xs text-gray-500 mt-1">Photo obligatoire pour localiser la boîte à clés</p>
             </div>
@@ -228,13 +229,12 @@ export default function FicheClefs() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-2">Photo de l'interphone</label>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    capture="environment"
-                    className="w-full p-2 border rounded"
-                  />
+                <PhotoUpload 
+                  fieldPath="section_clefs.interphonePhoto"
+                  label="Photo de l'interphone"
+                  multiple={false}
+                  maxFiles={1}
+                />
                 </div>
               </div>
             )}
@@ -281,13 +281,12 @@ export default function FicheClefs() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-2">Photo du tempo-gâche</label>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    capture="environment"
-                    className="w-full p-2 border rounded"
-                  />
+                <PhotoUpload 
+                  fieldPath="section_clefs.tempoGachePhoto"
+                  label="Photo du tempo-gâche"
+                  multiple={false}
+                  maxFiles={1}
+                />
                 </div>
               </div>
             )}
@@ -334,13 +333,12 @@ export default function FicheClefs() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold mb-2">Photo du digicode</label>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    capture="environment"
-                    className="w-full p-2 border rounded"
-                  />
+                <PhotoUpload 
+                  fieldPath="section_clefs.digicodePhoto"
+                  label="Photo du digicode"
+                  multiple={false}
+                  maxFiles={1}
+                />
                 </div>
               </div>
             )}
@@ -351,14 +349,13 @@ export default function FicheClefs() {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block font-semibold mb-2">Photos/Vidéos des clefs</label>
-                  <input 
-                    type="file" 
-                    accept="image/*,video/*" 
-                    multiple
-                    capture="environment"
-                    className="w-full p-2 border rounded"
-                  />
+                <PhotoUpload 
+                  fieldPath="section_clefs.clefs.photos"
+                  label="Photos/Vidéos des clefs"
+                  multiple={true}
+                  maxFiles={5}
+                  acceptVideo={true}
+                />
                   <p className="text-xs text-gray-500 mt-1">Photos et vidéos acceptées - Plusieurs fichiers possibles</p>
                 </div>
 
