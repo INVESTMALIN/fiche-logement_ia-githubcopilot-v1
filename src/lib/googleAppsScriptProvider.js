@@ -1,8 +1,7 @@
-// src/lib/googleAppsScriptProvider.js - VERSION CORRIGÉE
+// src/lib/googleAppsScriptProvider.js - VERSION FORMDATA
 export class GoogleAppsScriptProvider {
     constructor() {
-      // NOUVELLE URL
-      this.uploadEndpoint = 'https://script.google.com/macros/s/AKfycbwYpUUEhrvbLT-A-0Edt6ueMRwqcmEYkOWo1hYI-Yd5sMsU5DOS46ZwTq1FFInuDLztRg/exec'
+     this.uploadEndpoint = 'https://script.google.com/macros/s/AKfycbwpKpMwK9TBszHeG76IHo5Iesg3fMDcB5BBlFrvNyfTIF4D8j1hGyT3e1XcVgb8g-cJ8Q/exec'
     }
   
     // 📤 Upload d'un fichier vers Google Drive via Apps Script
@@ -13,18 +12,16 @@ export class GoogleAppsScriptProvider {
         // Convertir le fichier en base64
         const base64Data = await this.fileToBase64(file)
         
-        // Préparer les données pour le script (JSON au lieu de FormData)
-        const payload = {
-          file: base64Data,
-          path: path,
-          filename: file.name,
-          metadata: metadata
-        }
+        // Préparer les données pour le script (FormData)
+        const formData = new FormData()
+        formData.append('file', base64Data)
+        formData.append('path', path)
+        formData.append('filename', file.name)
   
         // Faire l'upload vers Google Apps Script
         const response = await fetch(this.uploadEndpoint, {
-            method: 'POST',
-            body: JSON.stringify(payload)
+          method: 'POST',
+          body: formData
         })
   
         if (!response.ok) {
@@ -69,15 +66,11 @@ export class GoogleAppsScriptProvider {
     // 🗑️ Supprimer un fichier (à implémenter si nécessaire)
     async deletePhoto(photoUrl) {
       try {
-        // Pour l'instant, on ne peut pas supprimer depuis Apps Script facilement
-        // On pourrait étendre le script pour gérer la suppression
         console.warn('Delete not implemented for Google Apps Script provider')
-        
         return {
           success: true,
           error: null
         }
-  
       } catch (error) {
         console.error('Google Apps Script delete error:', error)
         return {
@@ -104,7 +97,6 @@ export class GoogleAppsScriptProvider {
   
     // 📁 Créer un dossier (géré automatiquement par le script)
     async createFolder(folderPath) {
-      // Le script crée automatiquement les dossiers
       return folderPath
     }
   }
