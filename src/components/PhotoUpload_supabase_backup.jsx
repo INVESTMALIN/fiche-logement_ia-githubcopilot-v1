@@ -1,8 +1,8 @@
-// src/components/PhotoUpload.jsx - VERSION GOOGLE DRIVE
+// src/components/PhotoUpload.jsx
 import React, { useState } from 'react'
 import { useForm } from './FormContext'
 import { useAuth } from './AuthContext'
-import GoogleAppsScriptProvider from '../lib/googleAppsScriptProvider'
+import { supabase } from '../lib/supabaseClient'
 
 const PhotoUpload = ({ 
   fieldPath,           // ex: "section_equipements.poubelle_photos"
@@ -17,25 +17,24 @@ const PhotoUpload = ({
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Provider Google Apps Script
-  const googleProvider = new GoogleAppsScriptProvider()
-
   // Récupérer les photos actuelles
   const fieldValue = getField(fieldPath)
   const currentPhotos = Array.isArray(fieldValue) ? fieldValue : (fieldValue ? [fieldValue] : [])
 
-  // Génération du path pour Google Drive (même structure que Supabase)
-  const generateDrivePath = (fileName) => {
+  // Génération du path pour Supabase Storage
+  const generateStoragePath = (fileName) => {
+    const timestamp = Date.now()
+    const randomId = Math.random().toString(36).substr(2, 6)
     const [section, field] = fieldPath.split('.')
     
     // Récupérer le numéro de bien depuis section_logement
-    const numeroBien = getField('section_logement.numero_bien') || `temp-${Date.now()}`
+    const numeroBien = getField('section_logement.numero_bien') || `temp-${timestamp}`
   
-    return `fiche-${numeroBien}/${section}/${field}`
+    return `user-${user.id}/fiche-${numeroBien}/${section}/${field}/${timestamp}_${randomId}_${fileName}`
   }
 
-  // Upload vers Google Drive via Apps Script
-  const uploadToGoogleDrive = async (files) => {
+  // Upload vers Supabase Storage
+  const uploadToSupabase = async (files) => {
     const uploadedUrls = []
     
     try {
@@ -56,28 +55,29 @@ const PhotoUpload = ({
         }
 
         // Génération du path de stockage
-        const drivePath = generateDrivePath(file.name)
+        const ficheId = getField('id')
+        const storagePath = generateStoragePath(file.name, ficheId)
         
-        console.log('Uploading to Google Drive:', { fileName: file.name, path: drivePath })
-        
-        // Upload vers Google Drive via Apps Script
-        const result = await googleProvider.uploadPhoto(file, drivePath, {
-          fieldPath: fieldPath,
-          uploadedBy: user.id,
-          uploadedAt: new Date().toISOString()
-        })
+        // Upload vers Supabase
+        const { data, error } = await supabase.storage
+          .from('fiche-photos')
+          .upload(storagePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          })
 
-        if (!result.success) {
-          throw new Error(result.error || 'Upload failed')
-        }
+        if (error) throw error
 
-        uploadedUrls.push(result.data.url)
-        console.log('Upload réussi:', result.data.url)
+        // Récupération de l'URL publique
+        const { data: urlData } = supabase.storage
+          .from('fiche-photos')
+          .getPublicUrl(storagePath)
+
+        uploadedUrls.push(urlData.publicUrl)
       }
 
       return { success: true, urls: uploadedUrls }
     } catch (error) {
-      console.error('Upload error:', error)
       return { success: false, error: error.message }
     }
   }
@@ -98,7 +98,7 @@ const PhotoUpload = ({
     setError(null)
 
     try {
-      const result = await uploadToGoogleDrive(files)
+      const result = await uploadToSupabase(files)
       
       if (result.success) {
         // Mise à jour du FormContext avec les nouvelles URLs
@@ -115,8 +115,6 @@ const PhotoUpload = ({
         
         // Reset du input
         event.target.value = ''
-        
-        console.log('Photos ajoutées au FormContext:', newUrls)
       } else {
         setError(result.error)
       }
@@ -127,27 +125,42 @@ const PhotoUpload = ({
     }
   }
 
-  // Suppression d'une photo - TEMPORAIRE (Google Apps Script ne supporte pas facilement la suppression)
-  const handleDeletePhoto = async (photoUrl, index) => {
-    try {
-      // Pour l'instant, on retire juste de FormContext
-      // TODO: Implémenter la suppression dans Google Apps Script si nécessaire
-      console.log('Suppression photo:', photoUrl)
-      
-      // Mise à jour du FormContext
-      if (multiple) {
-        const updatedPhotos = currentPhotos.filter((_, i) => i !== index)
-        updateField(fieldPath, updatedPhotos)
-      } else {
-        updateField(fieldPath, null)
-      }
-      
-      console.log('Photo supprimée du FormContext')
-    } catch (err) {
-      console.error('Erreur suppression photo:', err)
-      setError('Erreur lors de la suppression: ' + err.message)
+
+// Suppression d'une photo - VERSION FINALE
+const handleDeletePhoto = async (photoUrl, index) => {
+  try {
+    // Extraire le path depuis l'URL Supabase
+    const urlParts = photoUrl.split('/')
+    const bucketIndex = urlParts.findIndex(part => part === 'fiche-photos')
+    let storagePath = urlParts.slice(bucketIndex + 1).join('/')
+    
+    // DÉCODAGE CRUCIAL pour les caractères spéciaux (%20 → espaces, etc.)
+    storagePath = decodeURIComponent(storagePath)
+    
+    // Suppression du storage Supabase
+    const { error } = await supabase.storage
+      .from('fiche-photos')
+      .remove([storagePath])
+
+    if (error) {
+      console.error('Erreur suppression storage:', error)
+      setError(`Erreur suppression: ${error.message}`)
+      return
     }
+
+    // Mise à jour du FormContext
+    if (multiple) {
+      const updatedPhotos = currentPhotos.filter((_, i) => i !== index)
+      updateField(fieldPath, updatedPhotos)
+    } else {
+      updateField(fieldPath, null)
+    }
+    
+  } catch (err) {
+    console.error('Erreur suppression photo:', err)
+    setError('Erreur lors de la suppression: ' + err.message)
   }
+}
 
   return (
     <div className="space-y-4">
@@ -174,7 +187,7 @@ const PhotoUpload = ({
             {uploading ? (
               <div className="text-blue-600">
                 <div className="animate-spin inline-block w-6 h-6 border-2 border-current border-t-transparent rounded-full mb-2"></div>
-                <p>Upload vers Google Drive...</p>
+                <p>Upload en cours...</p>
               </div>
             ) : (
               <div className="text-gray-600">
@@ -186,62 +199,50 @@ const PhotoUpload = ({
                 </p>
                 <p className="text-sm">Cliquez pour galerie ou caméra</p>
                 <p className="text-xs mt-1">
-                  Max {maxFiles} fichiers, {acceptVideo ? '200MB/vidéo, 50MB/photo' : '50MB/photo'}
+                  Max {maxFiles} fichiers, {acceptVideo ? '50MB/photo, 200MB/vidéo' : '50MB par fichier'}
                 </p>
               </div>
             )}
           </label>
         </div>
-        
-        {/* Messages d'erreur */}
+
+        {/* Affichage erreurs */}
         {error && (
-          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-600 text-sm">❌ {error}</p>
+          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+            {error}
           </div>
+        )}
+
+        {/* Compteur */}
+        {currentPhotos.length > 0 && (
+          <p className="text-sm text-gray-500 mt-2">
+            {currentPhotos.length} / {maxFiles} photos
+          </p>
         )}
       </div>
 
-      {/* Galerie des photos existantes */}
+      {/* Galerie photos existantes */}
       {currentPhotos.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="font-medium text-gray-700">
-            Photos actuelles ({currentPhotos.length}/{maxFiles})
-          </h4>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {currentPhotos.map((photoUrl, index) => (
-              <div key={index} className="relative group">
-                <img 
-                  src={photoUrl} 
-                  alt={`Photo ${index + 1}`}
-                  className="w-full h-24 object-cover rounded-lg border"
-                  onError={(e) => {
-                    e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%23f3f4f6"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%236b7280">Error</text></svg>'
-                  }}
-                />
-                
-                {/* Bouton suppression */}
-                <button
-                  onClick={() => handleDeletePhoto(photoUrl, index)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                  type="button"
-                >
-                  ×
-                </button>
-
-                {/* Overlay hover */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity rounded-lg flex items-center justify-center">
-                  <button
-                    onClick={() => window.open(photoUrl, '_blank')}
-                    className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                    type="button"
-                  >
-                    👁️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {currentPhotos.map((photoUrl, index) => (
+            <div key={index} className="relative group">
+              <img
+                src={photoUrl}
+                alt={`Photo ${index + 1}`}
+                className="w-full h-24 object-cover rounded-lg border shadow-sm"
+                loading="lazy"
+              />
+              
+              {/* Bouton suppression */}
+              <button
+                onClick={() => handleDeletePhoto(photoUrl, index)}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Supprimer cette photo"
+              >
+                ×
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
