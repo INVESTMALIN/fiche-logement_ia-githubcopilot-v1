@@ -101,11 +101,17 @@ const PDFTemplate = ({ formData }) => {
     )
   }
 
-  // Helper pour afficher une valeur de façon lisible (modifié pour gérer les photos)
-  const formatValue = (value, fieldKey) => {
+// Helper pour afficher une valeur de façon lisible (modifié pour gérer les photos ET objets multilignes)
+const formatValue = (value, fieldKey) => {
     if (isEmpty(value)) return '—'
     
     if (typeof value === 'boolean') return value ? 'Oui' : 'Non'
+    
+    // 🎯 FIX : Gérer les strings "true"/"false" (case insensitive)
+    if (typeof value === 'string') {
+      if (value.toLowerCase() === 'true') return 'Oui'
+      if (value.toLowerCase() === 'false') return 'Non'
+    }
     
     // Gérer les champs photos (string unique OU array)
     if (fieldKey && (
@@ -131,15 +137,50 @@ const PDFTemplate = ({ formData }) => {
         return `${validValues.length} élément(s) sélectionné(s)`
       }
       
-      return validValues.join(', ')
+      // 🎯 FIX : Transformer les éléments true/false en Oui/Non dans les arrays aussi
+      const formattedValues = validValues.map(v => {
+        if (v === true) return 'Oui'
+        if (v === false) return 'Non'
+        if (typeof v === 'string' && v.toLowerCase() === 'true') return 'Oui'
+        if (typeof v === 'string' && v.toLowerCase() === 'false') return 'Non'
+        return v
+      })
+      
+      return formattedValues.join(', ')
     }
     
     if (typeof value === 'object') {
       const validEntries = Object.entries(value)
         .filter(([key, val]) => !isEmpty(val))
-        .map(([key, val]) => `${formatFieldName(key)}: ${val}`)
+        .map(([key, val]) => {
+          // 🎯 FIX : Transformer les valeurs true/false dans les objets aussi
+          let formattedVal = val
+          if (val === true) formattedVal = 'Oui'
+          else if (val === false) formattedVal = 'Non'
+          else if (typeof val === 'string' && val.toLowerCase() === 'true') formattedVal = 'Oui'
+          else if (typeof val === 'string' && val.toLowerCase() === 'false') formattedVal = 'Non'
+          
+          return `${formatFieldName(key)}: ${formattedVal}`
+        })
       
-      return validEntries.length > 0 ? validEntries.join(', ') : '—'
+      if (validEntries.length === 0) return '—'
+      
+      // 🆕 OPTION 1 : Affichage multilignes avec puces pour les objets
+      if (validEntries.length === 1) {
+        // Si un seul élément, pas besoin de puces
+        return validEntries[0]
+      } else {
+        // Plusieurs éléments : format multiligne avec puces
+        return (
+          <div style={{ lineHeight: '1.6' }}>
+            {validEntries.map((entry, index) => (
+              <div key={index} style={{ marginBottom: '2px' }}>
+                • {entry}
+              </div>
+            ))}
+          </div>
+        )
+      }
     }
     
     return String(value)
@@ -152,6 +193,26 @@ const PDFTemplate = ({ formData }) => {
       .replace(/_/g, ' ')
       .replace(/\b\w/g, l => l.toUpperCase())
       .trim()
+  }
+
+  // Fonction pour générer le nom du dossier photos :
+    const generatePhotosFolder = () => {
+    const numeroBien = formData.section_logement?.numero_bien || 'XXX'
+    const prenom = formData.section_proprietaire?.prenom || ''
+    const nom = formData.section_proprietaire?.nom || ''
+    const ville = formData.section_proprietaire?.adresse?.ville || ''
+    
+    // Format : "numero-de-bien. prenom nom - ville"
+    const prenomNom = [prenom, nom].filter(Boolean).join(' ')
+    const parts = [numeroBien, prenomNom, ville].filter(Boolean)
+    
+    if (parts.length === 3) {
+      return `${parts[0]}. ${parts[1]} - ${parts[2]}`
+    } else if (parts.length === 2) {
+      return `${parts[0]}. ${parts[1]}`
+    } else {
+      return parts[0] || 'Dossier non défini'
+    }
   }
 
   // 🎯 GÉNÉRATION : Extraire les sections avec données (copié de FichePreviewModal)
@@ -206,7 +267,7 @@ const PDFTemplate = ({ formData }) => {
           .pdf-container {
             max-width: none;
             margin: 0;
-            padding: 20px;
+            padding: 30px 20px 20px 20px;
           }
           
           h1 { 
@@ -301,30 +362,34 @@ const PDFTemplate = ({ formData }) => {
 
       {/* En-tête */}
       <div className="header">
-        <h1>Fiche Logement - {formData.nom || 'Sans nom'}</h1>
+        <h1>📝 Fiche Logement • {formData.nom || 'Sans nom'} • Letahost</h1>
         
         <div className="info-grid">
-          <div className="info-item">
-            <div className="info-label">Statut</div>
-            <div className="info-value">{formData.statut || 'Brouillon'}</div>
-          </div>
-          <div className="info-item">
-            <div className="info-label">Date de création</div>
-            <div className="info-value">
-              {formData.created_at ? new Date(formData.created_at).toLocaleDateString('fr-FR') : 'N/A'}
+
+            <div className="info-item">
+                <div className="info-label">Date de création</div>
+                <div className="info-value">
+                {formData.created_at ? new Date(formData.created_at).toLocaleDateString('fr-FR') : 'N/A'}
+                </div>
             </div>
-          </div>
-          <div className="info-item">
-            <div className="info-label">Dernière modification</div>
-            <div className="info-value">
-              {formData.updated_at ? new Date(formData.updated_at).toLocaleDateString('fr-FR') : 'N/A'}
+            <div className="info-item">
+                <div className="info-label">Dernière modification</div>
+                <div className="info-value">
+                {formData.updated_at ? new Date(formData.updated_at).toLocaleDateString('fr-FR') : 'N/A'}
+                </div>
             </div>
-          </div>
-          <div className="info-item">
-            <div className="info-label">Type de propriété</div>
-            <div className="info-value">{formData.section_logement?.type_propriete || 'Non spécifié'}</div>
-          </div>
-        </div>
+            <div className="info-item">
+                <div className="info-label">Type de propriété</div>
+                <div className="info-value">{formData.section_logement?.type_propriete || 'Non spécifié'}</div>
+            </div>
+            <div className="info-item">
+                <div className="info-label">Dossier photos</div>
+                <div className="info-value" style={{ fontFamily: 'monospace', fontSize: '9pt', color: '#2563eb' }}>
+                {generatePhotosFolder()}
+                </div>
+            </div>
+            </div>
+
       </div>
 
       {/* Toutes les sections avec données */}
@@ -337,7 +402,7 @@ const PDFTemplate = ({ formData }) => {
       ) : (
         <div>
           {sections.map((section, index) => (
-            <div key={index} className={`section ${index > 5 ? 'page-break' : ''}`}>
+            <div key={index} className="section">
               <h2>
                 {section.emoji} {section.label.replace(section.emoji + ' ', '')}
               </h2>

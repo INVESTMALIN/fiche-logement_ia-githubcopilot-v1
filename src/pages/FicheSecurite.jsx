@@ -246,53 +246,55 @@ export default function FicheSecutite() {
         </div>
       </div>
 
-      {/* MODAL DE CONFIRMATION */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
-            <div className="mb-6">
-              <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-3xl">✅</span>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                Fiche finalisée avec succès !
-              </h2>
-              <p className="text-gray-600">
-                La fiche "<strong>{formData.nom}</strong>" a été marquée comme complétée.
-              </p>
-            </div>
-            
-            <div className="flex flex-col gap-4">
-              {/* Bouton PDF en haut, moins visible */}
-              <div className="flex justify-center">
-                <Button 
-                  variant="ghost"
-                  onClick={handleGeneratePDF}
-                  className="text-sm text-gray-600 hover:text-gray-800"
-                >
-                  📄 Télécharger en PDF
-                </Button>
+        {/* MODAL DE CONFIRMATION */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-8 max-w-xl w-full mx-4 text-center">
+              <div className="mb-8">
+                <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <span className="text-3xl">✅</span>
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-3">
+                  Fiche finalisée avec succès !
+                </h2>
+                <p className="text-gray-600 text-base">
+                  La fiche "<strong>{formData.nom}</strong>" a été marquée comme complétée.
+                </p>
               </div>
               
-              {/* Boutons principaux en bas */}
-              <div className="flex gap-3 justify-center">
-                <Button 
-                  variant="secondary"
-                  onClick={() => setShowConfirmModal(false)}
-                >
-                  Continuer à modifier
-                </Button>
-                <Button 
-                  variant="primary"
-                  onClick={() => navigate('/')}
-                >
-                  Retourner au Dashboard
-                </Button>
+              <div className="flex flex-col gap-5">
+                {/* Bouton PDF amélioré */}
+                <div className="flex justify-center">
+                  <Button 
+                    variant="outline"
+                    onClick={handleGeneratePDF}
+                    className="px-6 py-3 border-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                  >
+                    📄 Télécharger le PDF
+                  </Button>
+                </div>
+                
+                {/* Boutons principaux améliorés */}
+                <div className="flex gap-4 justify-center">
+                  <Button 
+                    variant="secondary"
+                    onClick={() => setShowConfirmModal(false)}
+                    className="px-6 py-3 min-w-[140px]"
+                  >
+                    Continuer
+                  </Button>
+                  <Button 
+                    variant="primary"
+                    onClick={() => navigate('/')}
+                    className="px-6 py-3 min-w-[140px]"
+                  >
+                    Dashboard
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
     </div>
   )
