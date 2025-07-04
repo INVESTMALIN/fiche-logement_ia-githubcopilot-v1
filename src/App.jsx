@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import AdminConsole from './pages/AdminConsole'
 import { setAuthNavigateCallback } from './lib/supabaseClient'
+import PrintPDF from './pages/PrintPDF'
 
 export default function App() {
   const navigate = useNavigate()
@@ -66,6 +67,8 @@ export default function App() {
               </AdminRoute>
             } 
           />
+
+          <Route path="/print-pdf" element={<PrintPDF />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,5 +1,5 @@
 # 📸 PLAN UPLOAD PHOTOS - Architecture Complète
-*Mise à jour : 03 juillet 2025 - PHASE 1 TERMINÉE ✅*
+*Mise à jour : 03 juillet 2025 - PHASE 2 PIVOTÉE ⚡*
 
 ## 🎯 **OBJECTIF**
 Intégrer l'upload fonctionnel dans le process d'ajout de sections avec migration transparente Supabase → Google Drive.
@@ -26,521 +26,239 @@ Intégrer l'upload fonctionnel dans le process d'ajout de sections avec migratio
 2. **Photo interphone** → `section_clefs.interphonePhoto` (single, conditionnel)  
 3. **Photo tempo-gâche** → `section_clefs.tempoGachePhoto` (single, conditionnel)
 4. **Photo digicode** → `section_clefs.digicodePhoto` (single, conditionnel)
-5. **Photos/Vidéos clefs** → `section_clefs.clefs.photos` (multiple + vidéos)
+5. **Photos clefs** → `section_clefs.clefs.photos` (multiple)
 
----
-
-## 🏗️ **ARCHITECTURE PROPOSÉE**
-
-### **✅ Phase 1 : Supabase Storage (TERMINÉE)**
-**Avantages :**
-- ✅ Setup immédiat (pas d'autorisation IT)
-- ✅ Intégration native avec Supabase
-- ✅ Sécurité RLS automatique
-- ✅ Base solide pour migration
-
-**Inconvénients :**
-- ❌ Coût par GB stocké
-- ❌ Limite de stockage selon plan
-
-### **⏳ Phase 2 : Google Drive API (EN COURS)**
-**Avantages :**
-- ✅ Stockage gratuit et illimité
-- ✅ URLs publiques partageable
-- ✅ Pas de coût Supabase Storage
-- ✅ Intégration Google Workspace existante
-- ✅ Structure organisée automatique
-
-**Inconvénients :**
-- ❌ Setup API Google nécessite IT
-- ❌ Gestion des permissions
-
----
 
 ## 📁 **STRUCTURE GOOGLE DRIVE (Phase 2)**
 
 ### **Arborescence Automatique**
 ```
-📁 Fiche-Logement-Photos/ (Dossier racine)
-├── 📁 fiche-numero-de-bien/
-│   ├── 📁 section_clefs/
-│   │   ├── 📁 emplacementPhoto/
-│   │   │   └── 📷 emplacement_1640995200_IMG001.jpg
-│   │   ├── 📁 interphonePhoto/
-│   │   ├── 📁 digicodePhoto/
-│   │   └── 📁 clefs/
-│   │       ├── 📷 clefs_1640995200_IMG001.jpg
-│   │       └── 📷 clefs_1640995230_IMG002.jpg
-│   ├── 📁 section_equipements/
-│   │   ├── 📁 poubelle_photos/
-│   │   ├── 📁 disjoncteur_photos/
-│   │   └── 📁 systeme_chauffage_photos/
-│   └── 📁 section_gestion_linge/
-│       ├── 📁 photos_linge/
-│       └── 📁 emplacement_photos/
-├── 📁 fiche-numero-de-bien/
-│   └── 📁 ... (même structure)
-└── 📁 fiche-numero-de-bien/
-    └── 📁 ... (même structure)
-```
-
-### **Logique de Nommage Automatique**
-```javascript
-// Pattern : fiche-{numero-bien}/section/sous-dossier/
-const generateStoragePath = (fileName, fieldPath, getField, user) => {
-  const timestamp = Date.now()
-  const randomId = Math.random().toString(36).substr(2, 6)
-  const [section, field] = fieldPath.split('.')
-  
-  // Récupérer le numéro de bien depuis section_logement (business-friendly)
-  const numeroBien = getField('section_logement.numero_bien') || `temp-${timestamp}`
-  
-  return `user-${user.id}/fiche-${numeroBien}/${section}/${field}/${timestamp}_${randomId}_${fileName}`
-}
-
-// Exemple concret :
-// Input: numeroBien="5566", fieldPath="section_clefs.emplacementPhoto", fileName="photo.jpg"
-// Output: "user-fb6faa31.../fiche-5566/section_clefs/emplacementPhoto/1751504xxx_abc123_photo.jpg"
+📁 2. DOSSIERS PROPRIETAIRES/ (Drive Partagé)
+├── 📁 numero-de-bien. prenom nom - ville/
+│   ├── 📁 3. INFORMATIONS LOGEMENT/
+│   │   ├── 📁 1. Fiche logement
+│   │   │   └── 📄 fiche-logement.pdf
+│   │   │   └── 📄 fiche-menage.pdf
+│   │   ├── 📁 2. Photos Visite Logement
+│   │   │   └── 📷 visite_1640995200_IMG001.jpg
+│   │   │   └── 📷 .... (toutes les photos de la visite)
+│   │   ├── 📁 3. Accès au logement
+│   │   │   └── 📷 accès_1640995200_IMG001.jpg
+│   │   │   └── 📷 .... (toutes les photos)
+│   │   ├── 📁 4. Tour général du logement
+│   │   │   └── 📷 accès_1640995200_IMG001.jpg
+│   │   │   └── 📷 .... (toutes les photos)
+│   │   ├── 📁 5. Tuto équipements
+│   │   │   └── 📷 accès_1640995200_IMG001.jpg
+│   │   │   └── 📷 .... (toutes les photos)
+│   │   ├── 📁 6. Identifiants Wifi 
+             └── 📷 emplacement_1640995200_IMG001.jpg
 ```
 
 ---
 
-## 🔧 **COMPOSANT PHOTOUPLOD - VERSION FINALE ✅**
+## ❌ **PHASE 2 ÉCHEC - Google Apps Script Direct (03/07/2025)**
 
-### **Usage Standard**
-```javascript
-import PhotoUpload from '../components/PhotoUpload'
+### **🔬 Tentative d'implémentation directe**
+**Durée :** 3 heures de debugging intensif  
+**Approche testée :** Google Apps Script appelé directement depuis le browser  
+**URLs testées :** 4 redéploiements successifs avec configurations différentes
 
-// Photo unique
-<PhotoUpload 
-  fieldPath="section_clefs.emplacementPhoto"
-  label="Photo de l'emplacement"
-  multiple={false}
-  maxFiles={1}
-/>
+### **🚫 Problèmes rencontrés**
 
-// Photos multiples avec vidéos
-<PhotoUpload 
-  fieldPath="section_clefs.clefs.photos"
-  label="Photos/Vidéos des clefs"
-  multiple={true}
-  maxFiles={5}
-  acceptVideo={true}
-/>
+**1. CORS Policy Bloquant**
+```
+Access to fetch at 'https://script.google.com/macros/s/AKfyc...' 
+from origin 'http://localhost:5173' has been blocked by CORS policy: 
+No 'Access-Control-Allow-Origin' header is present on the requested resource.
 ```
 
-### **Fix Critique - Décodage URL**
-```javascript
-// PROBLÈME RÉSOLU : Caractères spéciaux dans noms de fichiers
-// Avant : "Screenshot%202025-06-03%20164459.png" → Échec suppression
-// Après : "Screenshot 2025-06-03 164459.png" → Succès
+**2. Configurations testées sans succès**
+- ✅ **Execute as: "Me"** + **Who has access: "Anyone"** → CORS bloqué
+- ✅ **Execute as: "User accessing"** + **Who has access: "Anyone with Google account"** → 401 Unauthorized + CORS
+- ✅ **Headers CORS ajoutés dans le script** → Toujours bloqué
+- ✅ **FormData vs JSON** → Format résolu mais CORS persistant
+- ✅ **Test en production Vercel** → Même erreur CORS qu'en localhost
 
-const handleDeletePhoto = async (photoUrl, index) => {
-  const urlParts = photoUrl.split('/')
-  const bucketIndex = urlParts.findIndex(part => part === 'fiche-photos')
-  let storagePath = urlParts.slice(bucketIndex + 1).join('/')
-  
-  // FIX CRUCIAL : Décodage URL
-  storagePath = decodeURIComponent(storagePath)
-  
-  const { error } = await supabase.storage
-    .from('fiche-photos')
-    .remove([storagePath])
-  // ...
-}
-```
+**3. Diagnostic technique**
+- Le script **reçoit les requêtes** (visible dans la console Google Apps Script)
+- Les **paramètres arrivent correctement** (`fileBase64`, `path`, `filename`)
+- Le **parsing fonctionne** et les variables sont définies
+- **Blocage côté browser** avant même d'obtenir la réponse
+
+### **🔍 Analyse de l'échec**
+**Root cause :** Google Apps Script ne peut **PAS** être appelé directement depuis un browser web à cause des restrictions CORS imposées par Google pour des raisons de sécurité.
+
+**Limitation technique confirmée :** Cette approche n'est **pas viable** pour une application web client-side, même en production HTTPS.
 
 ---
 
-## 📊 **STRUCTURE DONNÉES**
+## 🔄 **NOUVELLE STRATÉGIE - Phase 2 Pivot**
 
-### **Base de Données (Aucun changement)**
-```sql
--- Colonnes existantes et fonctionnelles
-clefs_emplacement_photo TEXT     -- URL photo unique
-clefs_interphone_photo TEXT      -- URL photo unique  
-clefs_tempo_gache_photo TEXT     -- URL photo unique
-clefs_digicode_photo TEXT        -- URL photo unique
-clefs_photos TEXT[]              -- Array URLs multiples
+### **💡 Solutions alternatives identifiées**
+
+**SOLUTION A : MAKE.COM (Recommandée) 🎯**
+- **Principe :** Supabase → Make → Google Drive  
+- **Trigger :** Watch Events sur statut "Complété"
+- **Avantages :** Pas de CORS, robuste, compte business existant
+- **Setup estimé :** 30 minutes
+
+**SOLUTION B : ZAPIER**
+- **Principe :** Identique à Make mais moins flexible
+- **Setup estimé :** 20 minutes
+
+**SOLUTION C : SUPABASE EDGE FUNCTIONS**
+- **Principe :** Fonction serverless dans Supabase
+- **Setup estimé :** 45 minutes (plus technique)
+
+**SOLUTION D : GITHUB ACTIONS**
+- **Principe :** Workflow automatique sur webhook
+- **Setup estimé :** 1 heure
+
+**SOLUTION E : N8N (auto-hébergé)**
+- **Principe :** Comme Make mais self-hosted
+- **Setup estimé :** 2 heures
+
+---
+
+## 🏗️ **ARCHITECTURE FINALE RETENUE - MAKE.COM**
+
+### **🔄 Flow Make.com intelligent**
+
+```
+1. TRIGGER: Supabase "Watch Events"
+   ├── Table: fiches
+   ├── Colonne surveillée: statut
+   └── Filtre: statut = "Complété"
+
+2. ACTION: Supabase "Get Record"
+   ├── Récupère la fiche complète
+   └── Toutes les colonnes photos incluses
+
+3. ACTION: Loop/Iterator
+   ├── Pour chaque champ photo non-vide
+   ├── Download file depuis Supabase Storage
+   └── Prépare données pour Drive
+
+4. ACTION: Google Drive "Upload File"
+   ├── Structure: fiche-{numero_bien}/{section}/{field}/
+   ├── Permissions publiques automatiques
+   └── Retourne URL publique Google Drive
+
+5. ACTION: Supabase "Update Record"
+   ├── Remplace URL Supabase par URL Drive
+   └── Dans la même colonne (migration transparente)
+
+6. ACTION: Supabase Storage "Delete File"
+   ├── Supprime fichier temporaire Supabase
+   └── Économise espace et coûts
 ```
 
-### **FormContext (Structure validée)**
-```javascript
-section_clefs: {
-  // Photos uniques (mode single)
-  emplacementPhoto: null,        // URL ou null
-  interphonePhoto: null,         // URL ou null
-  tempoGachePhoto: null,         // URL ou null
-  digicodePhoto: null,           // URL ou null
-  
-  // Photos multiples (mode array)
-  clefs: {
-    photos: []                   // Array d'URLs
-  }
-}
-```
+### **🎯 Avantages de cette architecture**
+
+**1. Trigger intelligent**
+- ✅ **Pas de bordel** : Sync uniquement sur fiches "Complétées"
+- ✅ **Pas de doublons** : Une seule fois par fiche
+- ✅ **Logique métier** : Respecte le workflow utilisateur existant
+
+**2. Migration transparente**
+- ✅ **Aucun changement** côté app React
+- ✅ **URLs mises à jour** automatiquement en base
+- ✅ **Backward compatible** : anciennes fiches fonctionnent
+
+**3. Économique**
+- ✅ **Supabase = tampon temporaire** seulement
+- ✅ **Google Drive = stockage final** gratuit
+- ✅ **Nettoyage automatique** après migration
+
+**4. Robuste**
+- ✅ **Retry automatique** en cas d'échec
+- ✅ **Monitoring Make** intégré
+- ✅ **Logs détaillés** pour debugging
 
 ---
 
-## 🔌 **INTERFACE COMMUNE - PHASE 2**
+## 📊 **IMPACT SUR L'ARCHITECTURE EXISTANTE**
 
-### **storageInterface.js - Contrat Unifié**
-```javascript
-// Interface standardisée - même signature pour tous les providers
-export class StorageInterface {
-  async uploadPhoto(file, path, metadata) {
-    throw new Error('Method must be implemented')
-  }
-  
-  async deletePhoto(photoUrl) {
-    throw new Error('Method must be implemented')
-  }
-  
-  async createFolder(folderPath) {
-    throw new Error('Method must be implemented')
-  }
-  
-  async getPublicUrl(path) {
-    throw new Error('Method must be implemented')
-  }
-}
+### **✅ Aucun changement nécessaire**
+- **PhotoUpload.jsx** : Reste identique (upload vers Supabase)
+- **FormContext** : Aucune modification
+- **Base de données** : Colonnes existantes conservées
+- **Interface utilisateur** : Transparente pour les coordinateurs
 
-// Format de réponse standardisé (identique pour tous)
-export const PhotoResponse = {
-  success: boolean,
-  data: {
-    url: string,          // URL publique accessible
-    path: string,         // Chemin dans le storage
-    name: string,         // Nom du fichier
-    size: number,         // Taille en bytes
-    folderId?: string,    // ID dossier Google Drive (optionnel)
-    metadata: object      // Infos supplémentaires
-  },
-  error: string | null
-}
-```
+### **🔄 Workflow utilisateur inchangé**
+1. Coordinateur upload photos → **Supabase** (comme maintenant)
+2. Coordinateur clique "Finaliser" → **Statut = "Complété"**
+3. **Make** détecte le changement → **Sync automatique vers Drive**
+4. URLs mises à jour → **Photos accessibles depuis Drive**
 
 ---
 
-## 🗄️ **IMPLEMENTATION SUPABASE - TERMINÉE ✅**
+## 🛠️ **MISE EN ŒUVRE MAKE.COM**
 
-### **supabaseProvider.js**
-```javascript
-import { supabase } from '../supabaseClient'
-import { StorageInterface } from './storageInterface'
+### **Phase 1 : Setup Base (15 min)**
+- [ ] **Connexions Supabase** : Database + Storage
+- [ ] **Connexion Google Drive** : API avec compte business
+- [ ] **Test des connexions** : Validation credentials
 
-export class SupabaseStorageProvider extends StorageInterface {
-  constructor() {
-    super()
-    this.bucket = 'fiche-photos'
-  }
+### **Phase 2 : Scenario Principal (15 min)**
+- [ ] **Watch Events trigger** sur table fiches
+- [ ] **Filter sur statut** = "Complété"
+- [ ] **Get Record** pour récupérer fiche complète
+- [ ] **Test avec fiche factice**
 
-  async uploadPhoto(file, path, metadata = {}) {
-    try {
-      // 1. Upload fichier vers Supabase Storage
-      const { data, error } = await supabase.storage
-        .from(this.bucket)
-        .upload(path, file, {
-          cacheControl: '3600',
-          upsert: false,
-          metadata
-        })
+### **Phase 3 : Loop Photos (30 min)**
+- [ ] **Iterator sur colonnes photos** dynamique
+- [ ] **Download depuis Supabase Storage**
+- [ ] **Upload vers Google Drive** avec structure
+- [ ] **Update record** avec nouvelles URLs
 
-      if (error) throw error
+### **Phase 4 : Cleanup (15 min)**
+- [ ] **Delete files** depuis Supabase Storage
+- [ ] **Error handling** et retry logic
+- [ ] **Tests complets** avec vraie fiche
 
-      // 2. Récupérer URL publique
-      const { data: urlData } = supabase.storage
-        .from(this.bucket)
-        .getPublicUrl(path)
+### **Phase 5 : Production (15 min)**
+- [ ] **Activation scenario** en live
+- [ ] **Monitoring** et alertes
+- [ ] **Documentation** pour l'équipe
 
-      return {
-        success: true,
-        data: {
-          url: urlData.publicUrl,
-          path: path,
-          name: file.name,
-          size: file.size,
-          metadata
-        },
-        error: null
-      }
-    } catch (error) {
-      return {
-        success: false,
-        data: null,
-        error: error.message
-      }
-    }
-  }
-
-  async deletePhoto(photoUrl) {
-    try {
-      const urlParts = photoUrl.split('/')
-      const bucketIndex = urlParts.findIndex(part => part === this.bucket)
-      let storagePath = urlParts.slice(bucketIndex + 1).join('/')
-      
-      // DÉCODAGE CRUCIAL
-      storagePath = decodeURIComponent(storagePath)
-      
-      const { error } = await supabase.storage
-        .from(this.bucket)
-        .remove([storagePath])
-
-      if (error) throw error
-      return { success: true, error: null }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
-}
-```
+**Durée totale estimée : 1h30**
 
 ---
 
-## 🔮 **IMPLEMENTATION GOOGLE DRIVE - PHASE 2**
+## 📈 **BENEFITS BUSINESS**
 
-### **googleDriveProvider.js - À CRÉER**
-```javascript
-import { StorageInterface } from './storageInterface'
+### **💰 Économiques**
+- **Supabase gratuit** : 100GB → usage minimal (tampon seulement)
+- **Google Drive gratuit** : 15GB par compte → largement suffisant
+- **Make.com** : Déjà payé dans compte business
 
-export class GoogleDriveProvider extends StorageInterface {
-  constructor(apiKey, rootFolderId) {
-    super()
-    this.apiKey = apiKey
-    this.rootFolderId = rootFolderId
-    this.folderCache = new Map() // Cache des IDs de dossiers
-  }
+### **🔧 Techniques**
+- **Zéro refactoring** de l'app existante
+- **Architecture évolutive** : Facile d'ajouter d'autres providers
+- **Monitoring intégré** : Logs Make + Supabase
 
-  async uploadPhoto(file, path, metadata = {}) {
-    try {
-      // 1. Créer structure de dossiers si nécessaire
-      const folderId = await this.ensureFolderStructure(path)
-      
-      // 2. Upload vers Google Drive
-      const uploadResult = await this.uploadToGoogleDrive(file, folderId, metadata)
-      
-      // 3. Rendre public et récupérer URL
-      const publicUrl = await this.makePublicAndGetUrl(uploadResult.id)
-      
-      return {
-        success: true,
-        data: {
-          url: publicUrl,
-          path: path,
-          name: file.name,
-          size: file.size,
-          folderId: uploadResult.id,
-          metadata
-        },
-        error: null
-      }
-    } catch (error) {
-      return {
-        success: false,
-        data: null,
-        error: error.message
-      }
-    }
-  }
-
-  async deletePhoto(photoUrl) {
-    try {
-      // Extraire l'ID du fichier depuis l'URL Google Drive
-      const fileId = this.extractFileIdFromUrl(photoUrl)
-      
-      // Supprimer le fichier
-      await gapi.client.drive.files.delete({
-        fileId: fileId
-      })
-      
-      return { success: true, error: null }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
-
-  async ensureFolderStructure(path) {
-    // Logique création structure de dossiers automatique
-  }
-
-  extractFileIdFromUrl(url) {
-    // Pattern Google Drive : https://drive.google.com/file/d/{FILE_ID}/view
-    const match = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/)
-    return match ? match[1] : null
-  }
-}
-```
+### **👥 Utilisateur**
+- **Expérience inchangée** pour les coordinateurs
+- **Performance identique** : Upload rapide vers Supabase
+- **URLs publiques** : Partage facile des photos
 
 ---
 
-## 🔄 **PROVIDER SWITCHING - PHASE 2**
+## 🎯 **VALIDATION FINALE**
 
-### **index.js - Configuration Centralisée**
-```javascript
-import { SupabaseStorageProvider } from './supabaseProvider'
-import { GoogleDriveProvider } from './googleDriveProvider'
+**✅ Upload photos fonctionne** (Supabase validé)  
+**✅ Google Drive faisable** (Make.com confirmé)  
+**✅ Architecture scalable** (Provider pattern établi)  
+**✅ Workflow préservé** (Aucun impact utilisateur)  
+**✅ Budget respecté** (Solutions gratuites/existantes)
 
-// Configuration centralisée via variables d'environnement
-const STORAGE_CONFIG = {
-  provider: import.meta.env.VITE_STORAGE_PROVIDER || 'supabase',
-  supabase: {
-    bucket: 'fiche-photos'
-  },
-  googleDrive: {
-    apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
-    rootFolderId: import.meta.env.VITE_GOOGLE_DRIVE_ROOT_FOLDER
-  }
-}
-
-// Factory pattern - choix automatique du provider
-export const createStorageProvider = () => {
-  switch (STORAGE_CONFIG.provider) {
-    case 'googleDrive':
-      return new GoogleDriveProvider(
-        STORAGE_CONFIG.googleDrive.apiKey,
-        STORAGE_CONFIG.googleDrive.rootFolderId
-      )
-    case 'supabase':
-    default:
-      return new SupabaseStorageProvider()
-  }
-}
-
-// Instance globale utilisée partout
-export const storageProvider = createStorageProvider()
-```
+**Next step : Setup Make.com scenario** 🚀
 
 ---
 
-## 🌍 **VARIABLES D'ENVIRONNEMENT**
-
-### **✅ Phase 1 - Supabase (ACTUEL)**
-```bash
-# Configuration existante (déjà présente)
-VITE_SUPABASE_URL=https://ton-projet.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...
-
-# Configuration Storage
-VITE_STORAGE_PROVIDER=supabase
-```
-
-### **⏳ Phase 2 - Google Drive (PROCHAINE ÉTAPE)**
-```bash
-# Configuration existante (conservée)
-VITE_SUPABASE_URL=https://ton-projet.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...
-
-# Configuration Google Drive (à obtenir)
-VITE_STORAGE_PROVIDER=googleDrive
-VITE_GOOGLE_API_KEY=AIzaSyD-9tSrke72PouQMnMX-a7UUOA8Cc
-VITE_GOOGLE_DRIVE_ROOT_FOLDER=1BxiMVs0XRA5nFMdKvBdBZjgmUGaSnkXU
-```
-
----
-
-## 🎯 **CHECKLIST IT - Google Drive Setup**
-
-### **Ce qu'il faut demander à ton équipe IT :**
-
-**1. Google Cloud Platform**
-- [ ] Accès/création projet Google Cloud
-- [ ] Facturation activée (gratuit jusqu'à quotas)
-
-**2. API Configuration**  
-- [ ] Activer "Google Drive API v3"
-- [ ] Créer "API Key" OU "OAuth 2.0 Client ID"
-- [ ] Configurer domaines autorisés
-
-**3. Drive Setup**
-- [ ] Créer dossier racine "Fiche-Logement-Photos"
-- [ ] Partager en écriture avec le service
-- [ ] Récupérer l'ID du dossier (depuis URL)
-
-**4. Variables à fournir**
-```bash
-VITE_GOOGLE_API_KEY=AIzaSyD...
-VITE_GOOGLE_DRIVE_ROOT_FOLDER=1BxiMVs0XRA5nF...
-```
-
----
-
-## ⚡ **MISE EN ŒUVRE - HISTORIQUE & PROCHAINES ÉTAPES**
-
-### **✅ Phase 1 : Fondations Supabase (TERMINÉE)**
-- [x] **Setup Supabase Storage** - Bucket "fiche-photos" créé
-- [x] **Créer PhotoUpload.jsx** - Composant réutilisable fonctionnel
-- [x] **Fix suppression critique** - Décodage URL implémenté
-- [x] **Tester upload basique** - Validation fonctionnement
-- [x] **Tests FicheClefs complets** - 5 champs validés
-
-### **⏳ Phase 2 : Migration Google Drive (PROCHAINE)**
-- [ ] **Créer storageInterface.js** - Interface commune
-- [ ] **Créer googleDriveProvider.js** - Implémentation Google
-- [ ] **Setup variables d'environnement** - Configuration Google
-- [ ] **Modifier PhotoUpload** - Utilisation provider abstrait
-- [ ] **Tests validation** - Vérifier FicheClefs avec Google Drive
-
-### **📋 Phase 3 : Rollout (FUTURE)**
-- [ ] **Intégration autres sections** - Équipements, Gestion Linge
-- [ ] **Améliorer PhotoGallery** - Modal zoom, navigation
-- [ ] **Optimiser performances** - Compression images, lazy loading
-- [ ] **Documentation usage** - Guide pour nouvelles sections
-
----
-
-## 🔄 **PROCESS MODIFIÉ - Nouvelles Sections**
-
-### **Template Mis à Jour (Étape 5)**
-```javascript
-// Au lieu de :
-<input type="file" accept="image/*" capture="environment" multiple />
-
-// Utiliser dans tous les nouveaux composants :
-import PhotoUpload from '../components/PhotoUpload'
-
-<PhotoUpload 
-  fieldPath="section_nouvelle.photos_field"
-  label="Photos du..."
-  multiple={true}
-  maxFiles={5}
-/>
-```
-
-### **Process Documentation (Aucun changement)**
-- ✅ **Étapes 1-4** : Identiques (planification, BDD, FormContext, supabaseHelpers)
-- ✅ **Étape 5** : Utiliser PhotoUpload (composant validé)
-- ✅ **Étapes 6-7** : Identiques (intégration, tests)
-
----
-
-## ✅ **AVANTAGES DE CETTE APPROCHE**
-
-1. **✅ VALIDÉ : Migration transparente** - Architecture prête pour Google Drive
-2. **✅ VALIDÉ : Testabilité** - Composant battle-tested sur FicheClefs
-3. **✅ VALIDÉ : Évolutivité** - Interface prête pour autres providers
-4. **✅ VALIDÉ : Maintenabilité** - Code découplé et modulaire
-5. **✅ VALIDÉ : Réutilisabilité** - Composant indépendant du storage
-6. **🔄 EN COURS : Économies** - Migration gratuite Supabase → Google Drive
-7. **🔄 EN COURS : Organisation** - Structure automatique professionnelle
-8. **✅ VALIDÉ : Performance** - URLs directes, suppression optimisée
-
----
-
-## 🚀 **RECOMMANDATION FINALE**
-
-**✅ PHASE 1 TERMINÉE AVEC SUCCÈS !**
-
-**Prochaine action : Phase 2 - Migration Google Drive**
-1. Créer l'interface abstraite
-2. Implémenter GoogleDriveProvider
-3. Tester avec credentials personnels
-4. Valider FicheClefs avec Google Drive
-5. Déployer en production
-
-**Le composant PhotoUpload est maintenant PRODUCTION-READY !** 🎉
-
----
-
-**📅 Dernière mise à jour :** 03 juillet 2025  
+**📅 Dernière mise à jour :** 03 juillet 2025 - 17:30  
 **👤 Responsable :** Julien  
-**🔄 Version :** 2.0 - Phase 1 terminée
+**🔄 Version :** 3.0 - Pivot Make.com  
+**📊 Statut :** Phase 1 ✅ | Phase 2 🔄 Pivot réussi

@@ -65,6 +65,31 @@ export default function FicheSecutite() {
   const systemeAlarmeSelected = equipementsCoches.includes('Système d\'alarme')
   const autreSelected = equipementsCoches.includes('Autre (veuillez préciser)')
 
+
+  const handleGeneratePDF = () => {
+    if (!formData || Object.keys(formData).length === 0) {
+      alert('Erreur : aucune donnée de fiche disponible !')
+      return
+    }
+    
+    // Créer un iframe caché pour l'impression
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'absolute'
+    iframe.style.left = '-9999px'
+    iframe.style.top = '-9999px'
+    document.body.appendChild(iframe)
+    
+    // Passer les données à l'iframe
+    sessionStorage.setItem('pdf-data', JSON.stringify(formData))
+    iframe.src = '/print-pdf'
+    
+    // Nettoyer après 10 secondes
+    setTimeout(() => {
+      document.body.removeChild(iframe)
+    }, 10000)
+  }
+
+
   return (
     <div className="flex min-h-screen">
       <SidebarMenu />
@@ -237,23 +262,38 @@ export default function FicheSecutite() {
               </p>
             </div>
             
-            <div className="flex gap-3 justify-center">
-              <Button 
-                variant="secondary"
-                onClick={() => setShowConfirmModal(false)}
-              >
-                Continuer à modifier
-              </Button>
-              <Button 
-                variant="primary"
-                onClick={() => navigate('/')}
-              >
-                Retourner au Dashboard
-              </Button>
+            <div className="flex flex-col gap-4">
+              {/* Bouton PDF en haut, moins visible */}
+              <div className="flex justify-center">
+                <Button 
+                  variant="ghost"
+                  onClick={handleGeneratePDF}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                >
+                  📄 Télécharger en PDF
+                </Button>
+              </div>
+              
+              {/* Boutons principaux en bas */}
+              <div className="flex gap-3 justify-center">
+                <Button 
+                  variant="secondary"
+                  onClick={() => setShowConfirmModal(false)}
+                >
+                  Continuer à modifier
+                </Button>
+                <Button 
+                  variant="primary"
+                  onClick={() => navigate('/')}
+                >
+                  Retourner au Dashboard
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       )}
+
     </div>
   )
 }
