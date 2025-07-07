@@ -1,34 +1,77 @@
-// src/pages/PrintPDF.jsx
+// src/pages/PrintPDF.jsx - QUICK FIX
 import React, { useEffect, useState } from 'react'
 import PDFTemplate from '../components/PDFTemplate'
+import { loadFiche } from '../lib/supabaseHelpers'
 
 const PrintPDF = () => {
   const [formData, setFormData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Récupérer les données depuis sessionStorage
-    const data = sessionStorage.getItem('pdf-data')
-    
-    if (data) {
+    const loadData = async () => {
+      // PRIORITÉ 1 : sessionStorage (système actuel)
+      const sessionData = sessionStorage.getItem('pdf-data')
+      
+      if (sessionData) {
+        // CAS ACTUEL : Utilise sessionStorage (ne change rien!)
         try {
-          const parsed = JSON.parse(data)
+          const parsed = JSON.parse(sessionData)
           setFormData(parsed)
           sessionStorage.removeItem('pdf-data')
+          setLoading(false)
+          return // ← IMPORTANT : sort ici
         } catch (error) {
-          console.error('Erreur parsing PDF data:', error)  // 👈 GARDE ÇA (erreur utile)
+          console.error('Erreur parsing PDF data:', error)
         }
       }
-    }, [])
 
-  // Déclencher l'impression automatiquement
+      // PRIORITÉ 2 : URL parameter (nouveau pour Make)
+      const urlParams = new URLSearchParams(window.location.search)
+      const ficheId = urlParams.get('fiche')
+      
+      if (ficheId) {
+        try {
+          console.log('🔄 Chargement fiche depuis Supabase, ID:', ficheId)
+          const result = await loadFiche(ficheId)
+          
+          if (result.success) {
+            setFormData(result.data)
+            console.log('✅ Fiche chargée depuis Supabase')
+          } else {
+            console.error('❌ Erreur chargement:', result.message)
+          }
+        } catch (error) {
+          console.error('❌ Erreur chargement fiche:', error)
+        }
+      }
+      
+      setLoading(false)
+    }
+
+    loadData()
+  }, [])
+
+  // Déclencher l'impression automatiquement (garde la logique actuelle)
   useEffect(() => {
-    if (formData) {
+    if (formData && !loading) {
       // Petite pause pour laisser le temps au CSS de se charger
       setTimeout(() => {
         window.print()
       }, 1000)
     }
-  }, [formData])
+  }, [formData, loading])
+
+  if (loading) {
+    return (
+      <div style={{ 
+        padding: '40px', 
+        textAlign: 'center', 
+        fontFamily: 'Arial, sans-serif' 
+      }}>
+        <p>Chargement des données pour le PDF...</p>
+      </div>
+    )
+  }
 
   if (!formData) {
     return (
@@ -37,9 +80,9 @@ const PrintPDF = () => {
         textAlign: 'center', 
         fontFamily: 'Arial, sans-serif' 
       }}>
-        <p>Chargement des données pour le PDF...</p>
+        <p>Aucune donnée de fiche disponible pour générer le PDF.</p>
         <p style={{ fontSize: '14px', color: '#666', marginTop: '20px' }}>
-          Si cette page ne se charge pas, retournez à la fiche et essayez à nouveau.
+          Retournez à la fiche et essayez à nouveau.
         </p>
       </div>
     )
