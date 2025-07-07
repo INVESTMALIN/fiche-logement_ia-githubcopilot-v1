@@ -31,7 +31,7 @@ Intégrer l'upload fonctionnel dans le process d'ajout de sections avec migratio
 
 ## 📁 **STRUCTURE GOOGLE DRIVE (Phase 2)**
 
-### **Arborescence Automatique**
+### **Arborescence**
 ```
 📁 2. DOSSIERS PROPRIETAIRES/ (Drive Partagé)
 ├── 📁 numero-de-bien. prenom nom - ville/

@@ -56,85 +56,56 @@
 - ✅ **Patterns UI uniformes** à travers toutes les sections
 - ✅ **Sauvegarde/chargement** fonctionnel sur les 22 sections
 
----
+### **🔄 Milestone 5 : Upload PDF Automatique** - **EN COURS**
+- [ ] **Génération PDF programmatique** réutilisant PDFTemplate existant
+- [ ] **Upload automatique Supabase Storage** lors finalisation fiche  
+- [ ] **Intégration Make** HTTP GET pour récupération PDF
+- [ ] **Organisation Drive** dispatch PDF + photos par dossiers
 
-## 🎉 **TOUTES LES SECTIONS AJOUTÉES**
+### **🎯 Milestone 6 : Finalisation multimédia** - **PLANIFIÉ**
+- [ ] **PDF Ménage** template séparé avec mapping champs spécifiques
+- [ ] **Upload photos** remplacement input file sections restantes
+- [ ] **Tests end-to-end** workflow complet frontend → Make → Drive/Monday
 
 ---
 
 ## 📋 **PROCHAINES PRIORITÉS**
 
-### **Court terme - Phase polish** (EN COURS!!)
-1. **Tests & Debug**
-   - Tests end-to-end des 22 sections
-   - Debug dashboard signalé
-   - Validation workflow complet Brouillon → Complété
+### **🔥 Priorité immédiate**
+1. **Upload PDF automatique** (EN COURS)
+   - [ ] Installer html2pdf.js
+   - [ ] Créer bucket "fiche-pdfs" Supabase
+   - [ ] Adapter generatePDFBlob() réutilisant PDFTemplate
+   - [ ] Modifier handleFinaliser() avec upload automatique
+   - [ ] Configurer modules Make HTTP GET
 
-2. **Upload multimédia** (EN COURS!!)
-   - Composant PhotoUpload réutilisable
-   - Integration Google Drive ou Supabase Storage
-   - Remplacement placeholders input file
+2. **Upload photos sections restantes** 
+   - [ ] Remplacer input file par PhotoUpload dans 8 sections restantes
+   - [ ] Tester workflow complet upload → sauvegarde → chargement
+
+### **Court terme**
+3. **PDF Ménage** 
+   - [ ] Créer PDFMenageTemplate.jsx (mapping champs ménage)
+   - [ ] Intégrer génération double PDF (logement + ménage)
+
+4. **Organisation Drive Make**
+   - [ ] Configurer dispatch photos par dossiers Drive
+   - [ ] Mapping sections → structure dossiers souhaitée
 
 ### **Moyen terme**
-3. **Génération PDF**
-   - Templates professionnels
-   - Integration GPT pour enrichissement
-   - Export fiches complétées
-
-4. **Optimisations UX**
-   - Performance mobile
-   - Améliorations navigation
-   - Feedback utilisateur
+5. **Tests & Stabilisation**
+   - [ ] Tests end-to-end workflow complet
+   - [ ] Validation performance génération PDF
+   - [ ] Monitoring uploads Drive/Monday
 
 ---
 
-## 🎊 **SUCCÈS MAJEURS ATTEINTS**
+## 🔄 **PROCHAINE PHASE : UPLOAD PDF & FINALISATION MULTIMÉDIA**
 
-### **🏗️ Architecture solide**
-- **22 sections fonctionnelles** avec sauvegarde/chargement
-- **Process maîtrisé** : ajout nouvelle section en 1-2h
-- **Patterns UI cohérents** à travers toute l'application
-- **Logique conditionnelle complexe** (accordéons, affichage dynamique)
+### **🎯 Objectifs immédiats**
+1. **PDF automatique** - Upload Storage lors finalisation  
+2. **PDF Ménage** - Template séparé pour coordinateurs ménage
+3. **Photos restantes** - PhotoUpload dans 8 sections manquantes
+4. **Make integration** - Workflow Drive/Monday complet
 
-### **🚀 UX moderne**
-- **Mobile-first** responsive design
-- **Navigation fluide** entre 22 sections
-- **Feedback temps réel** (sauvegarde, erreurs, succès)
-- **Smart naming** automatique des fiches
-- **Modal confirmation** pour finalisation
-
-### **🔗 Intégration Monday**
-- **Pré-population 100% fonctionnelle** depuis liens Monday
-- **Workflow existant préservé** (aucune rupture)
-- **Mapping automatique** des données critiques
-
-### **🛡️ Administration complète**
-- **Console admin sécurisée** (/admin)
-- **Gestion utilisateurs** (création/modification/désactivation)
-- **Système rôles** granulaire
-- **Recherche temps réel** toutes fiches
-
-### **📊 Gestion statuts**
-- **Workflow complet** : Brouillon → Complété → Archivé
-- **Bouton finalisation** avec modal confirmation
-- **Dashboard organisé** par statuts
-- **Redirection intelligente** post-finalisation
-
----
-
-## 🏆 **MÉTRIQUE FINALE**
-
-**✅ FORMULAIRE 22 SECTIONS COMPLET !**
-- **100% des sections** Jotform remplacées
-- **Architecture scalable** pour futures évolutions
-- **Process documenté** et reproductible
-- **Tests validation** en cours... 
-
----
-
-## 🔄 **PROCHAINE PHASE : POLISH & OPTIMISATION**
-
-1. **Debug & Tests** - Stabilisation complète (EN COURS!!)
-2. **Upload photos** - Finalisation multimédia  (EN COURS!!)
-3. **Génération PDF** - Export professionnel
-4. **Monitoring production** - Suivi utilisation coordinateurs
+**🎯 Objectif final :** Workflow 100% automatisé finalisation → PDF + photos → Drive structuré → Monday mis à jour
