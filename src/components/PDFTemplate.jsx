@@ -266,6 +266,10 @@ const formatValue = (value, fieldKey) => {
           background: white;
           border: 1px solid #ddd; 
           box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+          margin-top: 40px;
+          margin-bottom: 40px;
+          padding-top: 30px;
+          padding-bottom: 30px;
         }
         
         .pdf-container h1 { 

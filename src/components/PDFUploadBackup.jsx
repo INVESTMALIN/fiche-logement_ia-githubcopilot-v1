@@ -1,4 +1,4 @@
-// src/components/PDFUpload.jsx - Version avec capture SECTION PAR SECTION
+// src/components/PDFUpload.jsx - Version avec génération double PDF
 import React, { useState } from 'react'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
@@ -48,7 +48,7 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
         iframe.src = pdfUrl
       })
       
-      console.log('📷 Capture des sections PDF logement...')
+      console.log('📷 Capture du contenu iframe logement...')
       
       // Capturer le contenu de l'iframe logement
       const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
@@ -58,89 +58,46 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
         throw new Error('Contenu PDF logement non trouvé dans iframe')
       }
       
-      // ===== NOUVELLE LOGIQUE : CAPTURE SECTION PAR SECTION =====
-      console.log('📑 Capture section par section...')
+      // Capturer avec html2canvas
+      const canvas = await html2canvas(pdfContainer, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: pdfContainer.offsetWidth,
+        height: pdfContainer.offsetHeight
+      })
       
-      // 1. Capturer l'en-tête d'abord
-      const header = pdfContainer.querySelector('.header')
-      const sections = pdfContainer.querySelectorAll('.section')
-      
-      console.log(`📋 Trouvé ${sections.length} sections + header`)
+      console.log('📝 Conversion en PDF logement...')
       
       // Créer PDF logement
       const pdf = new jsPDF('p', 'mm', 'a4')
-      let needsNewPage = false
+      const imgWidth = 190
+      const pageHeight = 270
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
       
-      // Capturer header
-      if (header) {
-        console.log('📸 Capture header...')
-        const headerCanvas = await html2canvas(header, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
-        })
-        
-        const imgWidth = 190
-        const headerHeight = (headerCanvas.height * imgWidth) / headerCanvas.width
-        const headerData = headerCanvas.toDataURL('image/jpeg', 0.9)
-        
-        // Vérifier si header tient sur la page
-        if (headerHeight > 250) {
-          // Header trop grand, le mettre sur sa propre page
-          pdf.addImage(headerData, 'JPEG', 10, 10, imgWidth, headerHeight)
-          needsNewPage = true
-        } else {
-          pdf.addImage(headerData, 'JPEG', 10, 10, imgWidth, headerHeight)
-          needsNewPage = (headerHeight > 200) // Préparer nouvelle page si header prend trop de place
-        }
-      }
+      const imgData = canvas.toDataURL('image/jpeg', 0.9)
       
-      // Capturer chaque section
-      for (let i = 0; i < sections.length; i++) {
-        const section = sections[i]
-        console.log(`📸 Capture section ${i + 1}/${sections.length}...`)
-        
-        const sectionCanvas = await html2canvas(section, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
-        })
-        
-        const imgWidth = 190
-        const sectionHeight = (sectionCanvas.height * imgWidth) / sectionCanvas.width
-        const sectionData = sectionCanvas.toDataURL('image/jpeg', 0.9)
-        
-        // Nouvelle page pour chaque section (sauf la première si header petit)
-        if (needsNewPage || i > 0) {
-          pdf.addPage()
-        }
-        
-        const maxPageHeight = 250 // mm utilisables sur une page A4
-        if (sectionHeight > maxPageHeight) {
-        // Section trop longue → découper en plusieurs pages
+      // Gestion multi-pages si nécessaire
+      if (imgHeight > pageHeight) {
         let position = 0
-        while (position < sectionHeight) {
-            if (position > 0) pdf.addPage()
-            pdf.addImage(sectionData, 'JPEG', 10, 10 - position, imgWidth, sectionHeight)
-            position += maxPageHeight
+        while (position < imgHeight) {
+          pdf.addImage(imgData, 'JPEG', 10, 20 - position, imgWidth, imgHeight)
+          position += pageHeight - 40
+          if (position < imgHeight) {
+            pdf.addPage()
+          }
         }
-        } else {
-        // Section normale → une page
-        pdf.addImage(sectionData, 'JPEG', 10, 10, imgWidth, sectionHeight)
-        }
-        needsNewPage = true // Toutes les sections suivantes sur nouvelle page
+      } else {
+        pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, imgHeight)
       }
-      
-      console.log('📝 PDF logement assemblé avec succès')
       
       // Générer blob logement
       const pdfBlob = pdf.output('blob')
       
       console.log('📊 Taille PDF logement:', (pdfBlob.size / 1024 / 1024).toFixed(2), 'MB')
       
-      if (pdfBlob.size > 10 * 1024 * 1024) {
+      if (pdfBlob.size > 6 * 1024 * 1024) {
         throw new Error(`PDF logement trop volumineux: ${(pdfBlob.size / 1024 / 1024).toFixed(2)}MB`)
       }
       
@@ -197,7 +154,7 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
         iframeMenage.src = pdfMenageUrl
       })
       
-      console.log('📷 Capture des sections PDF ménage...')
+      console.log('📷 Capture du contenu iframe ménage...')
       
       // Capturer le contenu de l'iframe ménage
       const iframeMenageDoc = iframeMenage.contentDocument || iframeMenage.contentWindow.document
@@ -207,88 +164,44 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
         throw new Error('Contenu PDF ménage non trouvé dans iframe')
       }
       
-      // ===== MÊME LOGIQUE POUR MÉNAGE : CAPTURE SECTION PAR SECTION =====
-      console.log('📑 Capture ménage section par section...')
+      // Capturer avec html2canvas ménage
+      const canvasMenage = await html2canvas(pdfMenageContainer, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: pdfMenageContainer.offsetWidth,
+        height: pdfMenageContainer.offsetHeight
+      })
       
-      // 1. Capturer l'en-tête ménage
-      const headerMenage = pdfMenageContainer.querySelector('.header')
-      const sectionsMenage = pdfMenageContainer.querySelectorAll('.section')
-      
-      console.log(`📋 Trouvé ${sectionsMenage.length} sections ménage + header`)
+      console.log('📝 Conversion en PDF ménage...')
       
       // Créer PDF ménage
       const pdfMenage = new jsPDF('p', 'mm', 'a4')
-      let needsNewPageMenage = false
+      const imgHeightMenage = (canvasMenage.height * imgWidth) / canvasMenage.width
       
-      // Capturer header ménage
-      if (headerMenage) {
-        console.log('📸 Capture header ménage...')
-        const headerMenageCanvas = await html2canvas(headerMenage, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
-        })
-        
-        const imgWidthMenage = 190
-        const headerMenageHeight = (headerMenageCanvas.height * imgWidthMenage) / headerMenageCanvas.width
-        const headerMenageData = headerMenageCanvas.toDataURL('image/jpeg', 0.9)
-        
-        // Vérifier si header tient sur la page
-        if (headerMenageHeight > 250) {
-          pdfMenage.addImage(headerMenageData, 'JPEG', 10, 10, imgWidthMenage, headerMenageHeight)
-          needsNewPageMenage = true
-        } else {
-          pdfMenage.addImage(headerMenageData, 'JPEG', 10, 10, imgWidthMenage, headerMenageHeight)
-          needsNewPageMenage = (headerMenageHeight > 200)
-        }
-      }
+      const imgDataMenage = canvasMenage.toDataURL('image/jpeg', 0.9)
       
-      // Capturer chaque section ménage
-      for (let i = 0; i < sectionsMenage.length; i++) {
-        const sectionMenage = sectionsMenage[i]
-        console.log(`📸 Capture section ménage ${i + 1}/${sectionsMenage.length}...`)
-        
-        const sectionMenageCanvas = await html2canvas(sectionMenage, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
-        })
-        
-        const imgWidthMenage = 190
-        const sectionMenageHeight = (sectionMenageCanvas.height * imgWidthMenage) / sectionMenageCanvas.width
-        const sectionMenageData = sectionMenageCanvas.toDataURL('image/jpeg', 0.9)
-        
-        // Nouvelle page pour chaque section
-        if (needsNewPageMenage || i > 0) {
-          pdfMenage.addPage()
-        }
-        
-        const maxPageHeight = 250 // mm utilisables sur une page A4
-        if (sectionMenageHeight > maxPageHeight) {
-        // Section trop longue → découper en plusieurs pages
+      // Gestion multi-pages si nécessaire
+      if (imgHeightMenage > pageHeight) {
         let position = 0
-        while (position < sectionMenageHeight) {
-            if (position > 0) pdfMenage.addPage()
-            pdfMenage.addImage(sectionMenageData, 'JPEG', 10, 10 - position, imgWidthMenage, sectionMenageHeight)
-            position += maxPageHeight
+        while (position < imgHeightMenage) {
+          pdfMenage.addImage(imgDataMenage, 'JPEG', 10, 20 - position, imgWidth, imgHeightMenage)
+          position += pageHeight - 40
+          if (position < imgHeightMenage) {
+            pdfMenage.addPage()
+          }
         }
-        } else {
-        // Section normale → une page
-        pdfMenage.addImage(sectionMenageData, 'JPEG', 10, 10, imgWidthMenage, sectionMenageHeight)
-        }
-        needsNewPageMenage = true
+      } else {
+        pdfMenage.addImage(imgDataMenage, 'JPEG', 10, 10, imgWidth, imgHeightMenage)
       }
-      
-      console.log('📝 PDF ménage assemblé avec succès')
       
       // Générer blob ménage
       const pdfMenageBlob = pdfMenage.output('blob')
       
       console.log('📊 Taille PDF ménage:', (pdfMenageBlob.size / 1024 / 1024).toFixed(2), 'MB')
       
-      if (pdfMenageBlob.size > 10 * 1024 * 1024) {
+      if (pdfMenageBlob.size > 6 * 1024 * 1024) {
         throw new Error(`PDF ménage trop volumineux: ${(pdfMenageBlob.size / 1024 / 1024).toFixed(2)}MB`)
       }
       

@@ -226,17 +226,21 @@ const PDFMenageTemplate = ({ formData }) => {
       <style>{`
         /* STYLES POUR IMPRESSION ET ÉCRAN */
         .pdf-container {
-  font-family: Arial, sans-serif; 
-  font-size: 11pt; 
-  line-height: 1.4; 
-  color: #333;
-  margin: 0 auto;       
-  padding: 30px 20px 20px 20px;
-  max-width: 800px;      
-  background: white;
-  border: 1px solid #ddd;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1); 
-}
+            font-family: Arial, sans-serif; 
+            font-size: 11pt; 
+            line-height: 1.4; 
+            color: #333;
+            margin: 0 auto;       
+            padding: 30px 20px 20px 20px;
+            max-width: 800px;      
+            background: white;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+            margin-top: 40px;
+            margin-bottom: 40px;
+            padding-top: 30px;
+            padding-bottom: 30px;
+            }
         
         .pdf-container h1 { 
           font-size: 18pt; 
@@ -309,6 +313,7 @@ const PDFMenageTemplate = ({ formData }) => {
         .pdf-container .section {
           margin-bottom: 25px;
           page-break-inside: avoid;
+          padding-bottom: 20px; 
         }
         
         /* STYLES SPÉCIFIQUES PRINT */
