@@ -254,6 +254,92 @@ const formatValue = (value, fieldKey) => {
   return (
     <div className="pdf-container">
       <style>{`
+        /* STYLES POUR IMPRESSION ET ÉCRAN */
+        .pdf-container {
+          font-family: Arial, sans-serif; 
+          font-size: 11pt; 
+          line-height: 1.4; 
+          color: #333;
+          margin: 0;
+          padding: 30px 20px 20px 20px;
+          max-width: none;
+          background: white;
+        }
+        
+        .pdf-container h1 { 
+          font-size: 18pt; 
+          margin-bottom: 20px; 
+          color: #1a365d;
+          border-bottom: 3px solid #3182ce;
+          padding-bottom: 10px;
+        }
+        
+        .pdf-container h2 { 
+          font-size: 14pt; 
+          margin: 20px 0 10px 0; 
+          color: #2d3748;
+          background-color: #f7fafc;
+          padding: 8px 12px;
+          border-left: 4px solid #3182ce;
+        }
+        
+        .pdf-container .info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+          margin-bottom: 20px;
+        }
+        
+        .pdf-container .info-item {
+          padding: 8px;
+          border: 1px solid #e2e8f0;
+          border-radius: 4px;
+        }
+        
+        .pdf-container .info-label {
+          font-weight: 600;
+          color: #4a5568;
+          font-size: 10pt;
+        }
+        
+        .pdf-container .info-value {
+          color: #1a202c;
+          margin-top: 2px;
+        }
+        
+        .pdf-container .field-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          padding: 6px 0;
+          border-bottom: 1px dotted #e2e8f0;
+        }
+        
+        .pdf-container .field-label {
+          font-weight: 500;
+          color: #4a5568;
+          font-size: 10pt;
+          flex: 1;
+          padding-right: 15px;
+        }
+        
+        .pdf-container .field-value {
+          color: #1a202c;
+          font-size: 10pt;
+          flex: 1;
+          text-align: right;
+          word-break: break-word;
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+        }
+        
+        .pdf-container .section {
+          margin-bottom: 25px;
+          page-break-inside: avoid;
+        }
+        
+        /* STYLES SPÉCIFIQUES PRINT (gardés pour l'impression) */
         @media print {
           body { 
             font-family: Arial, sans-serif; 
@@ -270,92 +356,8 @@ const formatValue = (value, fieldKey) => {
             padding: 30px 20px 20px 20px;
           }
           
-          h1 { 
-            font-size: 18pt; 
-            margin-bottom: 20px; 
-            color: #1a365d;
-            border-bottom: 3px solid #3182ce;
-            padding-bottom: 10px;
-          }
-          
-          h2 { 
-            font-size: 14pt; 
-            margin: 20px 0 10px 0; 
-            color: #2d3748;
-            background-color: #f7fafc;
-            padding: 8px 12px;
-            border-left: 4px solid #3182ce;
-          }
-          
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-          }
-          
-          .info-item {
-            padding: 8px;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-          }
-          
-          .info-label {
-            font-weight: 600;
-            color: #4a5568;
-            font-size: 10pt;
-          }
-          
-          .info-value {
-            color: #1a202c;
-            margin-top: 2px;
-          }
-          
-          .field-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 6px 0;
-            border-bottom: 1px dotted #e2e8f0;
-          }
-          
-          .field-label {
-            font-weight: 500;
-            color: #4a5568;
-            font-size: 10pt;
-            flex: 1;
-            padding-right: 15px;
-          }
-          
-          .field-value {
-            color: #1a202c;
-            font-size: 10pt;
-            flex: 1;
-            text-align: right;
-            word-break: break-word;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-          }
-          
-          .section {
-            margin-bottom: 25px;
-            page-break-inside: avoid;
-          }
-          
           .page-break { 
             page-break-before: always; 
-          }
-        }
-        
-        @media screen {
-          .pdf-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px;
-            background: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            font-family: Arial, sans-serif;
           }
         }
       `}</style>

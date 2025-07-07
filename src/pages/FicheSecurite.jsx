@@ -5,10 +5,13 @@ import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import { useNavigate } from 'react-router-dom'
+import PDFUpload from '../components/PDFUpload'
 
 export default function FicheSecutite() {
   const navigate = useNavigate()
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pdfGenerating, setPdfGenerating] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState(null)
   
   const { 
     next, 
@@ -89,6 +92,13 @@ export default function FicheSecutite() {
     }, 10000)
   }
 
+  const handlePDFGenerated = (url) => {
+    console.log('✅ PDF généré avec succès:', url)
+    setPdfUrl(url)
+    setPdfGenerating(false)
+    setShowConfirmModal(true)
+  }
+
 
   return (
     <div className="flex min-h-screen">
@@ -100,6 +110,8 @@ export default function FicheSecutite() {
         <div className="flex-1 p-6 bg-gray-100">
           <h1 className="text-2xl font-bold mb-6">Équipements de Sécurité</h1>
           
+
+
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="space-y-6">
               {/* Liste principale des équipements */}
@@ -175,6 +187,12 @@ export default function FicheSecutite() {
                   </p>
                 </div>
               )}
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                <PDFUpload 
+                  formData={formData} 
+                  onPDFGenerated={(url) => console.log('PDF généré:', url)} 
+                />
+              </div>
             </div>
           </div>
 
@@ -242,59 +260,50 @@ export default function FicheSecutite() {
                 </Button>
               </div>
             )}
-          </div>
+          </div>          
         </div>
       </div>
 
-        {/* MODAL DE CONFIRMATION */}
-        {showConfirmModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 max-w-xl w-full mx-4 text-center">
-              <div className="mb-8">
-                <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-3xl">✅</span>
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-3">
-                  Fiche finalisée avec succès !
-                </h2>
-                <p className="text-gray-600 text-base">
-                  La fiche "<strong>{formData.nom}</strong>" a été marquée comme complétée.
-                </p>
+        {/* MODAL DE CONFIRMATION AMÉLIORÉ - Remplace tout le bloc modal existant */}
+      {/* MODAL DE CONFIRMATION */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-xl w-full mx-4 text-center">
+            <div className="mb-8">
+              <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-3xl">✅</span>
               </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">
+                Fiche finalisée avec succès !
+              </h2>
+              <p className="text-gray-600 text-base">
+                La fiche "<strong>{formData.nom}</strong>" a été marquée comme complétée.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-5">
+
               
-              <div className="flex flex-col gap-5">
-                {/* Bouton PDF amélioré */}
-                <div className="flex justify-center">
-                  <Button 
-                    variant="outline"
-                    onClick={handleGeneratePDF}
-                    className="px-6 py-3 border-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                  >
-                    📄 Télécharger le PDF
-                  </Button>
-                </div>
-                
-                {/* Boutons principaux améliorés */}
-                <div className="flex gap-4 justify-center">
-                  <Button 
-                    variant="secondary"
-                    onClick={() => setShowConfirmModal(false)}
-                    className="px-6 py-3 min-w-[140px]"
-                  >
-                    Continuer
-                  </Button>
-                  <Button 
-                    variant="primary"
-                    onClick={() => navigate('/')}
-                    className="px-6 py-3 min-w-[140px]"
-                  >
-                    Dashboard
-                  </Button>
-                </div>
+              <div className="flex gap-4 justify-center">
+                <Button 
+                  variant="secondary"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-6 py-3 min-w-[140px]"
+                >
+                  Continuer
+                </Button>
+                <Button 
+                  variant="primary"
+                  onClick={() => navigate('/')}
+                  className="px-6 py-3 min-w-[140px]"
+                >
+                  Dashboard
+                </Button>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
     </div>
   )
