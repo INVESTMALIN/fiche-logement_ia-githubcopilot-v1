@@ -1,28 +1,23 @@
-// src/components/PDFTemplate.jsx
+// src/components/PDFMenageTemplate.jsx
 import React from 'react'
 
-const PDFTemplate = ({ formData }) => {
+const PDFMenageTemplate = ({ formData }) => {
   // Vérification des données
   if (!formData) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
         <h2>Erreur</h2>
-        <p>Aucune donnée de fiche disponible pour générer le PDF.</p>
+        <p>Aucune donnée de fiche disponible pour générer le PDF ménage.</p>
         <p style={{ fontSize: '14px', color: '#666' }}>Retournez à la fiche et essayez à nouveau.</p>
       </div>
     )
   }
 
-  // 📋 CONFIGURATION : Toutes les 22 sections avec labels et emojis (copiée de FichePreviewModal)
-  const sectionsConfig = [
+  // 📋 CONFIGURATION : Sections spécifiques à la fiche ménage
+  const menageSectionsConfig = [
     { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
     { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
     { key: 'section_clefs', label: '🔑 Clefs', emoji: '🔑' },
-    { key: 'section_airbnb', label: '🏠 Airbnb', emoji: '🏠' },
-    { key: 'section_booking', label: '📅 Booking', emoji: '📅' },
-    { key: 'section_reglementation', label: '📋 Réglementation', emoji: '📋' },
-    { key: 'section_exigences', label: '⚠️ Exigences', emoji: '⚠️' },
-    { key: 'section_avis', label: '⭐ Avis', emoji: '⭐' },
     { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
     { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
     { key: 'section_consommables', label: '🧴 Consommables', emoji: '🧴' },
@@ -33,13 +28,10 @@ const PDFTemplate = ({ formData }) => {
     { key: 'section_cuisine_2', label: '🍽️ Cuisine 2', emoji: '🍽️' },
     { key: 'section_salon_sam', label: '🛋️ Salon / SAM', emoji: '🛋️' },
     { key: 'section_equip_spe_exterieur', label: '🏗️ Équip. Spé. / Extérieur', emoji: '🏗️' },
-    { key: 'section_communs', label: '🏢 Communs', emoji: '🏢' },
-    { key: 'section_teletravail', label: '💻 Télétravail', emoji: '💻' },
-    { key: 'section_bebe', label: '👶 Bébé', emoji: '👶' },
     { key: 'section_securite', label: '🔒 Sécurité', emoji: '🔒' }
   ]
 
-  // Helper pour vérifier si une valeur est "vide" ou non significative (copié de FichePreviewModal)
+  // Helper pour vérifier si une valeur est "vide" ou non significative
   const isEmpty = (value) => {
     if (value === null || value === undefined || value === '') return true
     if (typeof value === 'boolean' && value === false) return true
@@ -60,84 +52,52 @@ const PDFTemplate = ({ formData }) => {
     return url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) !== null
   }
 
-  // Composant pour afficher les photos
-  const PhotoPreview = ({ photos }) => {
-    if (!Array.isArray(photos) || photos.length === 0) return <span>—</span>
-    
-    const imageUrls = photos.filter(isImageUrl)
-    if (imageUrls.length === 0) return <span>—</span>
-    
-    return (
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-        {imageUrls.slice(0, 4).map((url, index) => (
-          <div key={index} style={{ position: 'relative' }}>
-            <img 
-              src={url}
-              alt={`Photo ${index + 1}`}
-              style={{ 
-                width: '40px', 
-                height: '40px', 
-                objectFit: 'cover', 
-                borderRadius: '4px',
-                border: '1px solid #e2e8f0',
-                cursor: 'pointer'
-              }}
-              onClick={() => window.open(url, '_blank')}
-              onError={(e) => {
-                e.target.style.display = 'none'
-              }}
-            />
-          </div>
-        ))}
-        {imageUrls.length > 4 && (
-          <span style={{ fontSize: '10pt', color: '#666' }}>
-            +{imageUrls.length - 4} autres
-          </span>
-        )}
-        <span style={{ fontSize: '9pt', color: '#888', marginLeft: '8px' }}>
-          ({imageUrls.length} photo{imageUrls.length > 1 ? 's' : ''})
-        </span>
-      </div>
-    )
-  }
-
-// Helper pour afficher une valeur de façon lisible (modifié pour gérer les photos ET objets multilignes)
-const formatValue = (value, fieldKey) => {
+  // Helper pour formater les valeurs d'affichage
+  const formatValue = (value) => {
     if (isEmpty(value)) return '—'
     
-    if (typeof value === 'boolean') return value ? 'Oui' : 'Non'
+    if (typeof value === 'boolean') {
+      return value ? 'Oui' : 'Non'
+    }
     
-    // 🎯 FIX : Gérer les strings "true"/"false" (case insensitive)
     if (typeof value === 'string') {
       if (value.toLowerCase() === 'true') return 'Oui'
       if (value.toLowerCase() === 'false') return 'Non'
-    }
-    
-    // Gérer les champs photos (string unique OU array)
-    if (fieldKey && (
-      fieldKey.toLowerCase().includes('photo') || 
-      fieldKey.toLowerCase().includes('image') || 
-      fieldKey.toLowerCase().includes('photos')
-    )) {
-      // Si c'est une string unique, la convertir en array
-      if (typeof value === 'string' && isImageUrl(value)) {
-        return <PhotoPreview photos={[value]} />
+      
+      // Si c'est une URL d'image, afficher "Photo disponible"
+      if (isImageUrl(value)) {
+        return 'Photo disponible'
       }
-      // Si c'est déjà un array
-      if (Array.isArray(value)) {
-        return <PhotoPreview photos={value} />
-      }
+      
+      return value
     }
     
     if (Array.isArray(value)) {
       const validValues = value.filter(v => !isEmpty(v))
       if (validValues.length === 0) return '—'
       
-      if (validValues.every(v => v === true)) {
-        return `${validValues.length} élément(s) sélectionné(s)`
+      // Traiter les URLs d'images dans les arrays
+      const hasImages = validValues.some(v => isImageUrl(v))
+      if (hasImages) {
+        const imageCount = validValues.filter(v => isImageUrl(v)).length
+        const otherValues = validValues.filter(v => !isImageUrl(v))
+        
+        let result = []
+        if (imageCount > 0) {
+          result.push(`${imageCount} photo${imageCount > 1 ? 's' : ''}`)
+        }
+        if (otherValues.length > 0) {
+          result.push(...otherValues.map(v => {
+            if (v === true) return 'Oui'
+            if (v === false) return 'Non'
+            if (typeof v === 'string' && v.toLowerCase() === 'true') return 'Oui'
+            if (typeof v === 'string' && v.toLowerCase() === 'false') return 'Non'
+            return v
+          }))
+        }
+        return result.join(', ')
       }
       
-      // 🎯 FIX : Transformer les éléments true/false en Oui/Non dans les arrays aussi
       const formattedValues = validValues.map(v => {
         if (v === true) return 'Oui'
         if (v === false) return 'Non'
@@ -153,7 +113,6 @@ const formatValue = (value, fieldKey) => {
       const validEntries = Object.entries(value)
         .filter(([key, val]) => !isEmpty(val))
         .map(([key, val]) => {
-          // 🎯 FIX : Transformer les valeurs true/false dans les objets aussi
           let formattedVal = val
           if (val === true) formattedVal = 'Oui'
           else if (val === false) formattedVal = 'Non'
@@ -165,12 +124,9 @@ const formatValue = (value, fieldKey) => {
       
       if (validEntries.length === 0) return '—'
       
-      // 🆕 OPTION 1 : Affichage multilignes avec puces pour les objets
       if (validEntries.length === 1) {
-        // Si un seul élément, pas besoin de puces
         return validEntries[0]
       } else {
-        // Plusieurs éléments : format multiligne avec puces
         return (
           <div style={{ lineHeight: '1.6' }}>
             {validEntries.map((entry, index) => (
@@ -186,7 +142,7 @@ const formatValue = (value, fieldKey) => {
     return String(value)
   }
 
-  // Helper pour nettoyer les noms de champs (copié de FichePreviewModal)
+  // Helper pour nettoyer les noms de champs
   const formatFieldName = (fieldName) => {
     return fieldName
       .replace(/([A-Z])/g, ' $1')
@@ -195,14 +151,13 @@ const formatValue = (value, fieldKey) => {
       .trim()
   }
 
-  // Fonction pour générer le nom du dossier photos :
-    const generatePhotosFolder = () => {
+  // Fonction pour générer le nom du dossier photos
+  const generatePhotosFolder = () => {
     const numeroBien = formData.section_logement?.numero_bien || 'XXX'
     const prenom = formData.section_proprietaire?.prenom || ''
     const nom = formData.section_proprietaire?.nom || ''
     const ville = formData.section_proprietaire?.adresse?.ville || ''
     
-    // Format : "numero-de-bien. prenom nom - ville"
     const prenomNom = [prenom, nom].filter(Boolean).join(' ')
     const parts = [numeroBien, prenomNom, ville].filter(Boolean)
     
@@ -215,20 +170,35 @@ const formatValue = (value, fieldKey) => {
     }
   }
 
-  // 🎯 GÉNÉRATION : Extraire les sections avec données (copié de FichePreviewModal)
-  const generateSections = () => {
+  // 🎯 GÉNÉRATION : Extraire les sections avec données (filtrées pour ménage)
+  const generateMenageSections = () => {
     const sections = []
 
-    sectionsConfig.forEach(config => {
+    menageSectionsConfig.forEach(config => {
       const sectionData = formData[config.key]
       
       if (!sectionData || typeof sectionData !== 'object') return
 
       const fields = []
 
+      // Filtrage spécial pour certaines sections
       Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
         if (isEmpty(fieldValue)) {
           return
+        }
+
+        // Filtrage spécifique pour section_equipements (seulement local poubelle + parking)
+        if (config.key === 'section_equipements') {
+          const menageEquipementsFields = [
+            'poubelle_emplacement',
+            'poubelle_programmation',
+            'poubelle_photos',
+            'parking_stationnement_payant',
+            'parking_details'
+          ]
+          if (!menageEquipementsFields.some(field => fieldKey.includes(field.split('_').pop()))) {
+            return
+          }
         }
 
         fields.push({
@@ -249,24 +219,24 @@ const formatValue = (value, fieldKey) => {
     return sections
   }
 
-  const sections = generateSections()
+  const sections = generateMenageSections()
 
   return (
     <div className="pdf-container">
       <style>{`
         /* STYLES POUR IMPRESSION ET ÉCRAN */
         .pdf-container {
-          font-family: Arial, sans-serif; 
-          font-size: 11pt; 
-          line-height: 1.4; 
-          color: #333;
-          margin: 0 auto; 
-          padding: 30px 20px 20px 20px;
-          max-width: 800px;   
-          background: white;
-          border: 1px solid #ddd; 
-          box-shadow: 0 0 10px rgba(0,0,0,0.1); 
-        }
+  font-family: Arial, sans-serif; 
+  font-size: 11pt; 
+  line-height: 1.4; 
+  color: #333;
+  margin: 0 auto;       
+  padding: 30px 20px 20px 20px;
+  max-width: 800px;      
+  background: white;
+  border: 1px solid #ddd;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+}
         
         .pdf-container h1 { 
           font-size: 18pt; 
@@ -341,7 +311,7 @@ const formatValue = (value, fieldKey) => {
           page-break-inside: avoid;
         }
         
-        /* STYLES SPÉCIFIQUES PRINT (gardés pour l'impression) */
+        /* STYLES SPÉCIFIQUES PRINT */
         @media print {
           body { 
             font-family: Arial, sans-serif; 
@@ -366,78 +336,80 @@ const formatValue = (value, fieldKey) => {
 
       {/* En-tête */}
       <div className="header">
-        <h1>📝 Fiche Logement • {formData.nom || 'Sans nom'} • Letahost</h1>
+        <h1>🧹 Fiche Ménage • {formData.nom || 'Sans nom'} • Letahost</h1>
         
         <div className="info-grid">
-
-            <div className="info-item">
-                <div className="info-label">Date de création</div>
-                <div className="info-value">
-                {formData.created_at ? new Date(formData.created_at).toLocaleDateString('fr-FR') : 'N/A'}
-                </div>
+          <div className="info-item">
+            <div className="info-label">Date de création</div>
+            <div className="info-value">
+              {formData.created_at ? new Date(formData.created_at).toLocaleDateString('fr-FR') : 'N/A'}
             </div>
-            <div className="info-item">
-                <div className="info-label">Dernière modification</div>
-                <div className="info-value">
-                {formData.updated_at ? new Date(formData.updated_at).toLocaleDateString('fr-FR') : 'N/A'}
-                </div>
+          </div>
+          <div className="info-item">
+            <div className="info-label">Dernière modification</div>
+            <div className="info-value">
+              {formData.updated_at ? new Date(formData.updated_at).toLocaleDateString('fr-FR') : 'N/A'}
             </div>
-            <div className="info-item">
-                <div className="info-label">Type de propriété</div>
-                <div className="info-value">{formData.section_logement?.type_propriete || 'Non spécifié'}</div>
+          </div>
+          <div className="info-item">
+            <div className="info-label">Type de propriété</div>
+            <div className="info-value">{formData.section_logement?.type_propriete || 'Non spécifié'}</div>
+          </div>
+          <div className="info-item">
+            <div className="info-label">Dossier photos</div>
+            <div className="info-value" style={{ fontFamily: 'monospace', fontSize: '9pt', color: '#2563eb' }}>
+              {generatePhotosFolder()}
             </div>
-            <div className="info-item">
-                <div className="info-label">Dossier photos</div>
-                <div className="info-value" style={{ fontFamily: 'monospace', fontSize: '9pt', color: '#2563eb' }}>
-                {generatePhotosFolder()}
-                </div>
-            </div>
-            </div>
-
+          </div>
+        </div>
       </div>
 
-      {/* Toutes les sections avec données */}
+      {/* Toutes les sections ménage avec données */}
       {sections.length === 0 ? (
-        <div className="section">
-          <p style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
-            Aucune donnée renseignée dans cette fiche
-          </p>
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '40px', 
+          color: '#666',
+          fontSize: '12pt',
+          border: '2px dashed #ddd',
+          borderRadius: '8px'
+        }}>
+          <p><strong>Aucune donnée ménage disponible</strong></p>
+          <p>Cette fiche ne contient pas encore d'informations relatives au ménage.</p>
         </div>
       ) : (
-        <div>
-          {sections.map((section, index) => (
-            <div key={index} className="section">
-              <h2>
-                {section.emoji} {section.label.replace(section.emoji + ' ', '')}
-              </h2>
-              
-              <div>
-                {section.fields.map(field => (
-                  <div key={field.key} className="field-row">
-                    <div className="field-label">{field.label} :</div>
-                    <div className="field-value">{formatValue(field.value, field.key)}</div>
-                  </div>
-                ))}
+        sections.map((section, sectionIndex) => (
+          <div key={section.key} className="section">
+            <h2>{section.emoji} {section.label}</h2>
+            
+            {section.fields.map((field, fieldIndex) => (
+              <div key={field.key} className="field-row">
+                <div className="field-label">{field.label}</div>
+                <div className="field-value">{formatValue(field.value)}</div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ))
       )}
 
-      {/* Footer */}
+      {/* Pied de page */}
       <div style={{ 
         marginTop: '40px', 
         paddingTop: '20px', 
-        borderTop: '1px solid #e2e8f0', 
-        fontSize: '10pt', 
+        borderTop: '2px solid #e2e8f0',
+        fontSize: '10pt',
         color: '#666',
         textAlign: 'center'
       }}>
-        <p>Fiche générée le {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR')}</p>
-        <p>Letahost - Conciergerie de luxe</p>
+        <p>
+          <strong>Fiche Ménage Letahost</strong> • Générée le {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR')}
+        </p>
+        <p style={{ marginTop: '5px' }}>
+          Numéro de bien: <strong>{formData.section_logement?.numero_bien || 'Non défini'}</strong>
+        </p>
       </div>
     </div>
   )
 }
 
-export default PDFTemplate
+export default PDFMenageTemplate

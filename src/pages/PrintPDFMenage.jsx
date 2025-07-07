@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react'
 import PDFTemplate from '../components/PDFTemplate'
 import { loadFiche } from '../lib/supabaseHelpers'
+import PDFMenageTemplate from '../components/PDFMenageTemplate'
+
 
 const PrintPDF = () => {
   const [formData, setFormData] = useState(null)
@@ -87,7 +89,8 @@ const PrintPDF = () => {
     )
   }
 
-  return <PDFTemplate formData={formData} />
+  // return <PDFTemplate formData={formData} />
+  return <PDFMenageTemplate formData={formData} />
 
 }
 
