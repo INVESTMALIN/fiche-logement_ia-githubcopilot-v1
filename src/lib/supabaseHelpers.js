@@ -105,7 +105,7 @@ export const mapFormDataToSupabase = (formData) => {
     // Section Exigences
     exigences_nombre_nuits_minimum: formData.section_exigences?.nombre_nuits_minimum ? parseInt(formData.section_exigences.nombre_nuits_minimum) : null,
     exigences_tarif_minimum_nuit: formData.section_exigences?.tarif_minimum_nuit ? parseFloat(formData.section_exigences.tarif_minimum_nuit) : null,
-    exigences_dates_bloquees: formData.section_exigences?.dates_bloquees || [],
+    exigences_dates_bloquees: formData.section_exigences?.dates_bloquees || null,
     exigences_precisions_exigences: formData.section_exigences?.precisions_exigences || null,
     
     // Section Avis
@@ -1073,7 +1073,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
     section_exigences: {
       nombre_nuits_minimum: supabaseData.exigences_nombre_nuits_minimum?.toString() || "",
       tarif_minimum_nuit: supabaseData.exigences_tarif_minimum_nuit?.toString() || "",
-      dates_bloquees: supabaseData.exigences_dates_bloquees || [],
+      dates_bloquees: supabaseData.exigences_dates_bloquees || "",
       precisions_exigences: supabaseData.exigences_precisions_exigences || ""
     },
 

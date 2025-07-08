@@ -12,15 +12,27 @@ const PhotoUpload = ({
   capture = true,      // Activer capture mobile
   acceptVideo = false  // Autoriser les vidéos (optionnel)
 }) => {
-  const { getField, updateField } = useForm()
+  const { getField, updateField, handleSave } = useForm()
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
 
   // Récupérer les photos actuelles
   const fieldValue = getField(fieldPath)
-  const currentPhotos = Array.isArray(fieldValue) ? fieldValue : (fieldValue ? [fieldValue] : [])
+let rawPhotos = fieldValue || []
 
+// Parse les strings JSON malformées
+if (typeof rawPhotos === 'string') {
+  if (rawPhotos === '[]' || rawPhotos === '') {
+    rawPhotos = []
+  } else if (rawPhotos.startsWith('[')) {
+    try { rawPhotos = JSON.parse(rawPhotos) } catch { rawPhotos = [] }
+  } else {
+    rawPhotos = [rawPhotos] // Single URL
+  }
+}
+
+const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
   // Génération du path pour Supabase Storage
   const generateStoragePath = (fileName) => {
     const timestamp = Date.now()
@@ -111,13 +123,14 @@ const PhotoUpload = ({
         } else {
           // Mode single : remplacer par la première URL
           updateField(fieldPath, newUrls[0])
-        }
-        
+        }      
+       
         // Reset du input
         event.target.value = ''
       } else {
         setError(result.error)
       }
+
     } catch (err) {
       setError('Erreur lors de l\'upload: ' + err.message)
     } finally {
@@ -127,6 +140,8 @@ const PhotoUpload = ({
 
 
 // Suppression d'une photo - VERSION FINALE
+// Remplacement de la fonction handleDeletePhoto dans PhotoUpload.jsx
+
 const handleDeletePhoto = async (photoUrl, index) => {
   try {
     // Extraire le path depuis l'URL Supabase
@@ -137,18 +152,18 @@ const handleDeletePhoto = async (photoUrl, index) => {
     // DÉCODAGE CRUCIAL pour les caractères spéciaux (%20 → espaces, etc.)
     storagePath = decodeURIComponent(storagePath)
     
-    // Suppression du storage Supabase
+    // Tentative de suppression du storage Supabase
     const { error } = await supabase.storage
       .from('fiche-photos')
       .remove([storagePath])
 
+    // ⚠️ IMPORTANT : On continue même si erreur Storage (fichier déjà supprimé)
     if (error) {
-      console.error('Erreur suppression storage:', error)
-      setError(`Erreur suppression: ${error.message}`)
-      return
+      console.warn('Fichier déjà supprimé du Storage ou erreur:', error)
+      // On ne return pas, on continue pour nettoyer le FormContext
     }
 
-    // Mise à jour du FormContext
+    // Mise à jour du FormContext (TOUJOURS faire ça)
     if (multiple) {
       const updatedPhotos = currentPhotos.filter((_, i) => i !== index)
       updateField(fieldPath, updatedPhotos)
@@ -156,9 +171,20 @@ const handleDeletePhoto = async (photoUrl, index) => {
       updateField(fieldPath, null)
     }
     
+    console.log('✅ Photo supprimée du FormContext')
+    
   } catch (err) {
     console.error('Erreur suppression photo:', err)
-    setError('Erreur lors de la suppression: ' + err.message)
+    
+    // Même si erreur, essayer de nettoyer le FormContext
+    if (multiple) {
+      const updatedPhotos = currentPhotos.filter((_, i) => i !== index)
+      updateField(fieldPath, updatedPhotos)
+    } else {
+      updateField(fieldPath, null)
+    }
+    
+    setError('Photo supprimée (erreur Storage ignorée)')
   }
 }
 
@@ -197,7 +223,6 @@ const handleDeletePhoto = async (photoUrl, index) => {
                 <p className="text-lg font-medium">
                   Ajouter des {acceptVideo ? 'photos/vidéos' : 'photos'}
                 </p>
-                <p className="text-sm">Cliquez pour galerie ou caméra</p>
                 <p className="text-xs mt-1">
                   Max {maxFiles} fichiers, {acceptVideo ? '50MB/photo, 200MB/vidéo' : '50MB par fichier'}
                 </p>
@@ -218,6 +243,18 @@ const handleDeletePhoto = async (photoUrl, index) => {
           <p className="text-sm text-gray-500 mt-2">
             {currentPhotos.length} / {maxFiles} photos
           </p>
+        )}
+        {/* Note conservation des photos */}
+        {currentPhotos.length > 0 && (
+          <div className="text-xs text-orange-600 bg-orange-50 border border-orange-200 p-2 rounded mt-2 flex items-start gap-2">
+            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span>
+              <strong>Photos conservées 30 jours</strong> dans l'application. 
+              Elles seront ensuite disponibles uniquement dans Google Drive.
+            </span>
+          </div>
         )}
       </div>
 

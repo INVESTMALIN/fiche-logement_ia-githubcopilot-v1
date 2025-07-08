@@ -151,7 +151,7 @@ const initialFormData = {
   section_exigences: {
     nombre_nuits_minimum: "",
     tarif_minimum_nuit: "",
-    dates_bloquees: [],
+    dates_bloquees: "",
     precisions_exigences: ""
   },
 

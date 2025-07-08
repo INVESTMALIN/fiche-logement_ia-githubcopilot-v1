@@ -4,6 +4,7 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
 
 export default function FicheEquipements() {
   const { 
@@ -149,13 +150,11 @@ export default function FicheEquipements() {
 
               {/* Photo Local Poubelle */}
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Photo du Local Poubelle</label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  capture="environment"
-                  multiple
-                  className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg"
+                <PhotoUpload 
+                  fieldPath="section_equipements.poubelle_photos"
+                  label="Photos du local poubelle"
+                  multiple={true}
+                  maxFiles={5}
                 />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos du local poubelle
@@ -177,14 +176,12 @@ export default function FicheEquipements() {
 
               {/* Photo Disjoncteur */}
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Photo du disjoncteur</label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  capture="environment"
-                  multiple
-                  className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg"
-                />
+              <PhotoUpload 
+                fieldPath="section_equipements.disjoncteur_photos"
+                label="Photos du disjoncteur"
+                multiple={true}
+                maxFiles={3}
+              />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos du disjoncteur
                 </p>
@@ -205,14 +202,12 @@ export default function FicheEquipements() {
 
               {/* Photo Vanne d'eau */}
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Photo de la vanne d'arrêt d'eau</label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  capture="environment"
-                  multiple
-                  className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg"
-                />
+              <PhotoUpload 
+                fieldPath="section_equipements.vanne_arret_photos"
+                label="Photos de la vanne d'arrêt d'eau"
+                multiple={true}
+                maxFiles={3}
+              />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos de la vanne d'arrêt d'eau
                 </p>
@@ -260,14 +255,12 @@ export default function FicheEquipements() {
 
               {/* Photo système chauffage */}
               <div className="mb-4">
-                <label className="block font-semibold mb-2">Photo du système de chauffage d'eau</label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  capture="environment"
-                  multiple
-                  className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg"
-                />
+              <PhotoUpload 
+                fieldPath="section_equipements.chauffage_eau_photos"
+                label="Photos du système de chauffage d'eau"
+                multiple={true}
+                maxFiles={5}
+              />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos du système de chauffage
                 </p>

@@ -4,6 +4,8 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
+
 
 export default function FicheGestionLinge() {
   const { 
@@ -225,12 +227,11 @@ export default function FicheGestionLinge() {
                 {/* Photos du linge */}
                 <div>
                   <label className="block font-semibold mb-2">Linge - Photos</label>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    capture="environment"
-                    multiple
-                    className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg"
+                  <PhotoUpload 
+                    fieldPath="section_gestion_linge.photos_linge"
+                    label="Photos du linge"
+                    multiple={true}
+                    maxFiles={5}
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     Appuyez pour prendre des photos ou accéder à la pellicule
@@ -255,13 +256,12 @@ export default function FicheGestionLinge() {
                   <label className="block font-semibold mb-2">
                     Linge - Emplacement du stock - Photo
                   </label>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    capture="environment"
-                    multiple
-                    className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg"
-                  />
+                  <PhotoUpload 
+                  fieldPath="section_gestion_linge.emplacement_photos"
+                  label="Photos de l'emplacement du stock"
+                  multiple={true}
+                  maxFiles={5}
+                />
                   <p className="text-sm text-gray-500 mt-1">
                     Appuyez pour prendre des photos des espaces de stockage
                   </p>

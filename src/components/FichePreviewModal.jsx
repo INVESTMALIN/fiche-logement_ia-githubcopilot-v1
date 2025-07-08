@@ -51,17 +51,62 @@ export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
     return false
   }
 
-  // Helper pour afficher une valeur de façon lisible
+  // 🆕 NOUVEAU : Helper pour vérifier si une URL est une image
+  const isImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return false
+    return /\.(jpg|jpeg|png|gif|bmp|webp|svg)(\?.*)?$/i.test(url)
+  }
+
+  // Helper pour afficher une valeur de façon lisible (MODIFIÉ pour gérer les photos)
   const formatValue = (value) => {
     if (isEmpty(value)) return '—'
     
     if (typeof value === 'boolean') return value ? 'Oui' : 'Non'
+    
+    if (typeof value === 'string') {
+      if (value.toLowerCase() === 'true') return 'Oui'
+      if (value.toLowerCase() === 'false') return 'Non'
+      
+      // 🆕 NOUVEAU : Si c'est une URL d'image, afficher un message au lieu de l'URL
+      if (isImageUrl(value)) {
+        return '📸 1 photo disponible'
+      }
+      
+      return value
+    }
     
     if (Array.isArray(value)) {
       // Pour les arrays, garder seulement les valeurs "vraies"
       const validValues = value.filter(v => !isEmpty(v))
       if (validValues.length === 0) return '—'
       
+      // 🆕 NOUVEAU : Séparer les images des autres valeurs
+      const imageUrls = validValues.filter(v => isImageUrl(v))
+      const otherValues = validValues.filter(v => !isImageUrl(v))
+      
+      // Si on a des images, les compter
+      if (imageUrls.length > 0) {
+        // Si on a que des images, afficher le compteur
+        if (otherValues.length === 0) {
+          return `📸 ${imageUrls.length} photo${imageUrls.length > 1 ? 's' : ''} disponible${imageUrls.length > 1 ? 's' : ''}`
+        }
+        
+        // Si on a des images ET d'autres valeurs, afficher les deux
+        const formattedOthers = otherValues.map(v => {
+          if (v === true) return 'Oui'
+          if (v === false) return 'Non'
+          if (typeof v === 'string' && v.toLowerCase() === 'true') return 'Oui'
+          if (typeof v === 'string' && v.toLowerCase() === 'false') return 'Non'
+          return v
+        })
+        
+        const othersText = formattedOthers.length === 1 ? formattedOthers[0] : formattedOthers.join(', ')
+        const photosText = `📸 ${imageUrls.length} photo${imageUrls.length > 1 ? 's' : ''}`
+        
+        return `${othersText} • ${photosText}`
+      }
+      
+      // Pas d'images, traitement normal
       // Si c'est un array de booléens true, on peut supposer que ce sont des checkboxes
       if (validValues.every(v => v === true)) {
         return `${validValues.length} élément(s) sélectionné(s)`
@@ -138,8 +183,7 @@ export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
           <div>
             <h2 className="text-xl font-semibold text-gray-900">{fiche.nom}</h2>
             <p className="text-sm text-gray-500 mt-1">
-              Créé par {fiche.creator ? 
-                `${fiche.creator.prenom} ${fiche.creator.nom}`.trim() || fiche.creator.email : 'Utilisateur supprimé'}
+              Créé par {fiche.creator ? `${fiche.creator.prenom} ${fiche.creator.nom}`.trim() || fiche.creator.email : 'Utilisateur supprimé'}
             </p>
           </div>
           <div className="flex items-center gap-2">
