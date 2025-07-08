@@ -225,117 +225,152 @@ const PDFMenageTemplate = ({ formData }) => {
     <div className="pdf-container">
       <style>{`
         /* STYLES POUR IMPRESSION ET ÉCRAN */
+        /* CSS OPTIMISÉ POUR HTML2PDF - À ajouter dans le <style> de tes templates */
+
         .pdf-container {
-            font-family: Arial, sans-serif; 
-            font-size: 11pt; 
-            line-height: 1.4; 
-            color: #333;
-            margin: 0 auto;       
-            padding: 30px 20px 20px 20px;
-            max-width: 800px;      
-            background: white;
-            border: 1px solid #ddd;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
-            margin-top: 40px;
-            margin-bottom: 40px;
-            padding-top: 30px;
-            padding-bottom: 30px;
-            }
-        
+        font-family: Arial, sans-serif; 
+        font-size: 11pt; 
+        line-height: 1.4; 
+        color: #333;
+        margin: 0 auto;       
+        padding: 20px;
+        max-width: 800px;      
+        background: white;
+        }
+
+        /* 🎯 PAGINATION INTELLIGENTE */
+        .header {
+        page-break-inside: avoid; /* Ne jamais couper le header */
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #3182ce;
+        }
+
+        .section {
+        page-break-inside: avoid; /* Évite de couper une section */
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        }
+
+        /* 🔧 SECTIONS LONGUES : Force page break si nécessaire */
+        .section.long-section {
+        page-break-before: always; /* Force nouvelle page pour sections longues */
+        }
+
+        /* 🎨 TITRES ET CONTENUS */
         .pdf-container h1 { 
-          font-size: 18pt; 
-          margin-bottom: 20px; 
-          color: #1a365d;
-          border-bottom: 3px solid #3182ce;
-          padding-bottom: 10px;
+        font-size: 18pt; 
+        margin-bottom: 20px; 
+        color: #1a365d;
+        border-bottom: 3px solid #3182ce;
+        padding-bottom: 10px;
+        page-break-after: avoid; /* Évite page break après titre */
         }
-        
+
         .pdf-container h2 { 
-          font-size: 14pt; 
-          margin: 20px 0 10px 0; 
-          color: #2d3748;
-          background-color: #f7fafc;
-          padding: 8px 12px;
-          border-left: 4px solid #3182ce;
+        font-size: 14pt; 
+        margin: 20px 0 10px 0; 
+        color: #2d3748;
+        background-color: #f7fafc;
+        padding: 8px 12px;
+        border-left: 4px solid #3182ce;
+        page-break-after: avoid; /* Évite page break après sous-titre */
         }
-        
-        .pdf-container .info-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 15px;
-          margin-bottom: 20px;
+
+        /* 📊 GRILLES ET DONNÉES */
+        .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+        page-break-inside: avoid; /* Ne coupe pas la grille */
         }
-        
-        .pdf-container .info-item {
-          padding: 8px;
-          border: 1px solid #e2e8f0;
-          border-radius: 4px;
+
+        .field-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 6px 0;
+        border-bottom: 1px dotted #e2e8f0;
+        page-break-inside: avoid; /* Ne coupe pas un champ */
         }
-        
-        .pdf-container .info-label {
-          font-weight: 600;
-          color: #4a5568;
-          font-size: 10pt;
+
+        /* 🔗 RÈGLES DE GROUPEMENT */
+        .field-group {
+        page-break-inside: avoid; /* Garde les groupes de champs ensemble */
+        margin-bottom: 15px;
         }
-        
-        .pdf-container .info-value {
-          color: #1a202c;
-          margin-top: 2px;
+
+        /* 📄 CONTRÔLE AVANCÉ DES PAGES */
+        .force-new-page {
+        page-break-before: always; /* Force nouvelle page */
         }
-        
-        .pdf-container .field-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          padding: 6px 0;
-          border-bottom: 1px dotted #e2e8f0;
+
+        .keep-together {
+        page-break-inside: avoid; /* Garde ensemble */
         }
-        
-        .pdf-container .field-label {
-          font-weight: 500;
-          color: #4a5568;
-          font-size: 10pt;
-          flex: 1;
-          padding-right: 15px;
+
+        .allow-break {
+        page-break-inside: auto; /* Autorise les coupures */
         }
+
+        /* 🎯 RÈGLES SPÉCIALES POUR HTML2PDF */
+        @media print, (max-width: 0) {
+        /* Ces règles s'appliquent lors de la génération PDF */
         
-        .pdf-container .field-value {
-          color: #1a202c;
-          font-size: 10pt;
-          flex: 1;
-          text-align: right;
-          word-break: break-word;
-          display: flex;
-          justify-content: flex-end;
-          align-items: center;
-        }
-        
-        .pdf-container .section {
-          margin-bottom: 25px;
-          page-break-inside: avoid;
-          padding-bottom: 20px; 
-        }
-        
-        /* STYLES SPÉCIFIQUES PRINT */
-        @media print {
-          body { 
-            font-family: Arial, sans-serif; 
-            font-size: 11pt; 
-            line-height: 1.4; 
-            color: #333;
-            margin: 0;
-            padding: 0;
-          }
-          
-          .pdf-container {
+        .pdf-container {
             max-width: none;
             margin: 0;
-            padding: 30px 20px 20px 20px;
-          }
-          
-          .page-break { 
-            page-break-before: always; 
-          }
+            padding: 15mm;
+        }
+        
+        /* Évite les veuves et orphelines */
+        .section {
+            orphans: 3; /* Min 3 lignes en bas de page */
+            widows: 3;  /* Min 3 lignes en haut de nouvelle page */
+        }
+        
+        /* Force les sauts intelligents */
+        .section:nth-child(3n) {
+            page-break-after: avoid; /* Évite coupure toutes les 3 sections */
+        }
+        }
+
+        /* 🎨 AMÉLIORATIONS VISUELLES */
+        .field-label {
+        font-weight: 500;
+        color: #4a5568;
+        font-size: 10pt;
+        flex: 1;
+        padding-right: 15px;
+        }
+
+        .field-value {
+        color: #1a202c;
+        font-size: 10pt;
+        flex: 1;
+        text-align: right;
+        word-break: break-word;
+        }
+
+        .info-item {
+        padding: 8px;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        page-break-inside: avoid;
+        }
+
+        .info-label {
+        font-weight: 600;
+        color: #4a5568;
+        font-size: 10pt;
+        }
+
+        .info-value {
+        color: #1a202c;
+        margin-top: 2px;
+        }
         }
       `}</style>
 
