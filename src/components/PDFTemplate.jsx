@@ -60,7 +60,7 @@ const PDFTemplate = ({ formData }) => {
     return url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) !== null
   }
 
-  // Composant pour afficher les photos
+  // Composant pour afficher les photos en mode rpeview cliquable
   const PhotoPreview = ({ photos }) => {
     if (!Array.isArray(photos) || photos.length === 0) return <span>—</span>
     
@@ -71,22 +71,28 @@ const PDFTemplate = ({ formData }) => {
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
         {imageUrls.slice(0, 4).map((url, index) => (
           <div key={index} style={{ position: 'relative' }}>
-            <img 
-              src={url}
-              alt={`Photo ${index + 1}`}
-              style={{ 
-                width: '40px', 
-                height: '40px', 
-                objectFit: 'cover', 
-                borderRadius: '4px',
-                border: '1px solid #e2e8f0',
-                cursor: 'pointer'
-              }}
-              onClick={() => window.open(url, '_blank')}
-              onError={(e) => {
-                e.target.style.display = 'none'
-              }}
-            />
+            <a 
+              href={url} 
+              target="_blank"
+              style={{ display: 'block', textDecoration: 'none' }}
+            >
+              <img 
+                src={url}
+                alt={`Photo ${index + 1}`}
+                style={{ 
+                  display: 'block', // 🔧 IMPORTANT pour la zone cliquable
+                  width: '40px', 
+                  height: '40px', 
+                  objectFit: 'cover', 
+                  borderRadius: '4px',
+                  border: '2px solid #3182ce', // 🔗 Bordure bleue pour indiquer cliquable
+                  cursor: 'pointer'
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none'
+                }}
+              />
+            </a>
           </div>
         ))}
         {imageUrls.length > 4 && (

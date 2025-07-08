@@ -1,4 +1,4 @@
-// src/components/PDFMenageTemplate.jsx
+// src/components/PDFMenageTemplate.jsx - VERSION AVEC PHOTOS INTÉGRÉES
 import React from 'react'
 
 const PDFMenageTemplate = ({ formData }) => {
@@ -52,8 +52,109 @@ const PDFMenageTemplate = ({ formData }) => {
     return url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) !== null
   }
 
-  // Helper pour formater les valeurs d'affichage
-  const formatValue = (value) => {
+  // 📸 NOUVEAU : Composant pour afficher les photos
+  const PhotoDisplay = ({ photos, label }) => {
+    if (!photos || photos.length === 0) return null
+  
+    const validPhotos = Array.isArray(photos) ? photos.filter(isImageUrl) : (isImageUrl(photos) ? [photos] : [])
+    if (validPhotos.length === 0) return null
+  
+    // 🎯 OPTION B : Limiter à 2 photos max par section
+    const maxPhotosPerSection = 2
+    const displayPhotos = validPhotos.slice(0, maxPhotosPerSection)
+    const remainingPhotos = validPhotos.length - maxPhotosPerSection
+  
+    return (
+      <div style={{ 
+        marginTop: '10px',
+        padding: '12px',
+        border: '1px solid #e2e8f0',
+        borderRadius: '6px',
+        backgroundColor: '#f8fafc',
+        pageBreakInside: 'avoid'
+      }}>
+        <div style={{ 
+          fontSize: '10pt', 
+          fontWeight: '600', 
+          color: '#4a5568',
+          marginBottom: '8px'
+        }}>
+          📸 {label} ({validPhotos.length} photo{validPhotos.length > 1 ? 's' : ''})
+          {remainingPhotos > 0 && (
+            <span style={{ fontSize: '9pt', color: '#6b7280', fontWeight: 'normal' }}>
+              {" "}(2 affichées)
+            </span>
+          )}
+        </div>
+        
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: displayPhotos.length === 1 ? '1fr' : 'repeat(2, 1fr)',
+          gap: '8px',
+          alignItems: 'start'
+        }}>
+          {displayPhotos.map((photoUrl, index) => (
+            <div key={index} style={{ 
+              textAlign: 'center',
+              pageBreakInside: 'avoid'
+            }}>
+                
+                <a 
+  href={photoUrl} 
+  target="_blank"
+  style={{ display: 'block', textDecoration: 'none' }}
+>
+  <img 
+    src={photoUrl}
+    alt={`${label} ${index + 1}`}
+    style={{
+        display: 'block',
+      maxWidth: '100%',
+      maxHeight: displayPhotos.length === 1 ? '150px' : '100px',
+      width: 'auto',
+      height: 'auto',
+      objectFit: 'contain',
+      border: '2px solid #3182ce', // 🔗 Bordure bleue pour indiquer cliquable
+      borderRadius: '4px',
+      backgroundColor: '#ffffff',
+      cursor: 'pointer' // 🔗 Indication cliquable
+    }}
+    onError={(e) => {
+      e.target.style.display = 'none'
+    }}
+  />
+</a>
+              
+              {displayPhotos.length > 1 && (
+                <div style={{ 
+                  fontSize: '8pt', 
+                  color: '#6b7280', 
+                  marginTop: '2px' 
+                }}>
+                  Photo {index + 1}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        
+        {remainingPhotos > 0 && (
+          <div style={{ 
+            fontSize: '9pt', 
+            color: '#6b7280', 
+            textAlign: 'center',
+            marginTop: '6px',
+            fontStyle: 'italic'
+          }}>
+            ... et {remainingPhotos} photo{remainingPhotos > 1 ? 's' : ''} supplémentaire{remainingPhotos > 1 ? 's' : ''} disponible{remainingPhotos > 1 ? 's' : ''} dans la fiche complète
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Helper pour formater les valeurs d'affichage SANS photos (les photos sont gérées séparément)
+  const formatValue = (value, fieldKey = '') => {
     if (isEmpty(value)) return '—'
     
     if (typeof value === 'boolean') {
@@ -64,9 +165,9 @@ const PDFMenageTemplate = ({ formData }) => {
       if (value.toLowerCase() === 'true') return 'Oui'
       if (value.toLowerCase() === 'false') return 'Non'
       
-      // Si c'est une URL d'image, afficher "Photo disponible"
+      // Si c'est une URL d'image, on ne l'affiche pas ici (sera gérée par PhotoDisplay)
       if (isImageUrl(value)) {
-        return 'Photo disponible'
+        return null // On retourne null pour ne pas afficher dans la liste normale
       }
       
       return value
@@ -76,29 +177,16 @@ const PDFMenageTemplate = ({ formData }) => {
       const validValues = value.filter(v => !isEmpty(v))
       if (validValues.length === 0) return '—'
       
-      // Traiter les URLs d'images dans les arrays
-      const hasImages = validValues.some(v => isImageUrl(v))
-      if (hasImages) {
-        const imageCount = validValues.filter(v => isImageUrl(v)).length
-        const otherValues = validValues.filter(v => !isImageUrl(v))
-        
-        let result = []
-        if (imageCount > 0) {
-          result.push(`${imageCount} photo${imageCount > 1 ? 's' : ''}`)
-        }
-        if (otherValues.length > 0) {
-          result.push(...otherValues.map(v => {
-            if (v === true) return 'Oui'
-            if (v === false) return 'Non'
-            if (typeof v === 'string' && v.toLowerCase() === 'true') return 'Oui'
-            if (typeof v === 'string' && v.toLowerCase() === 'false') return 'Non'
-            return v
-          }))
-        }
-        return result.join(', ')
+      // Séparer les images des autres valeurs
+      const imageUrls = validValues.filter(v => isImageUrl(v))
+      const otherValues = validValues.filter(v => !isImageUrl(v))
+      
+      // On ne retourne que les valeurs non-images (les images seront gérées par PhotoDisplay)
+      if (otherValues.length === 0) {
+        return null // Que des images, pas de texte à afficher
       }
       
-      const formattedValues = validValues.map(v => {
+      const formattedValues = otherValues.map(v => {
         if (v === true) return 'Oui'
         if (v === false) return 'Non'
         if (typeof v === 'string' && v.toLowerCase() === 'true') return 'Oui'
@@ -118,11 +206,13 @@ const PDFMenageTemplate = ({ formData }) => {
           else if (val === false) formattedVal = 'Non'
           else if (typeof val === 'string' && val.toLowerCase() === 'true') formattedVal = 'Oui'
           else if (typeof val === 'string' && val.toLowerCase() === 'false') formattedVal = 'Non'
+          else if (isImageUrl(val)) return null // Skip images dans objects
           
           return `${formatFieldName(key)}: ${formattedVal}`
         })
+        .filter(entry => entry !== null)
       
-      if (validEntries.length === 0) return '—'
+      if (validEntries.length === 0) return null
       
       if (validEntries.length === 1) {
         return validEntries[0]
@@ -140,6 +230,27 @@ const PDFMenageTemplate = ({ formData }) => {
     }
     
     return String(value)
+  }
+
+  // 🔧 NOUVELLE FONCTION : Extraire toutes les photos d'une valeur
+  const extractPhotos = (value, fieldKey) => {
+    const photos = []
+    
+    if (typeof value === 'string' && isImageUrl(value)) {
+      photos.push(value)
+    } else if (Array.isArray(value)) {
+      photos.push(...value.filter(v => isImageUrl(v)))
+    } else if (typeof value === 'object' && value !== null) {
+      Object.entries(value).forEach(([key, val]) => {
+        if (typeof val === 'string' && isImageUrl(val)) {
+          photos.push(val)
+        } else if (Array.isArray(val)) {
+          photos.push(...val.filter(v => isImageUrl(v)))
+        }
+      })
+    }
+    
+    return photos
   }
 
   // Helper pour nettoyer les noms de champs
@@ -191,7 +302,7 @@ const PDFMenageTemplate = ({ formData }) => {
         if (config.key === 'section_equipements') {
           const menageEquipementsFields = [
             'poubelle_emplacement',
-            'poubelle_programmation',
+            'poubelle_programmation', 
             'poubelle_photos',
             'parking_stationnement_payant',
             'parking_details'
@@ -225,159 +336,137 @@ const PDFMenageTemplate = ({ formData }) => {
     <div className="pdf-container">
       <style>{`
         /* STYLES POUR IMPRESSION ET ÉCRAN */
-        /* CSS OPTIMISÉ POUR HTML2PDF - À ajouter dans le <style> de tes templates */
-
         .pdf-container {
-        font-family: Arial, sans-serif; 
-        font-size: 11pt; 
-        line-height: 1.4; 
-        color: #333;
-        margin: 0 auto;       
-        padding: 20px;
-        max-width: 800px;      
-        background: white;
+          font-family: Arial, sans-serif; 
+          font-size: 11pt; 
+          line-height: 1.4; 
+          color: #333;
+          margin: 0 auto;       
+          padding: 20px;
+          max-width: 800px;      
+          background: white;
         }
 
         /* 🎯 PAGINATION INTELLIGENTE */
         .header {
-        page-break-inside: avoid; /* Ne jamais couper le header */
-        margin-bottom: 25px;
-        padding-bottom: 15px;
-        border-bottom: 2px solid #3182ce;
+          page-break-inside: avoid;
+          margin-bottom: 25px;
+          padding-bottom: 15px;
+          border-bottom: 2px solid #3182ce;
         }
 
         .section {
-        page-break-inside: avoid; /* Évite de couper une section */
-        margin-bottom: 25px;
-        padding-bottom: 20px;
-        border-bottom: 1px solid #e2e8f0;
+          page-break-inside: avoid;
+          margin-bottom: 25px;
+          padding-bottom: 20px;
+          border-bottom: 1px solid #e2e8f0;
         }
 
-        /* 🔧 SECTIONS LONGUES : Force page break si nécessaire */
-        .section.long-section {
-        page-break-before: always; /* Force nouvelle page pour sections longues */
-        }
-
-        /* 🎨 TITRES ET CONTENUS */
         .pdf-container h1 { 
-        font-size: 18pt; 
-        margin-bottom: 20px; 
-        color: #1a365d;
-        border-bottom: 3px solid #3182ce;
-        padding-bottom: 10px;
-        page-break-after: avoid; /* Évite page break après titre */
+          font-size: 18pt; 
+          margin-bottom: 20px; 
+          color: #1a365d;
+          border-bottom: 3px solid #3182ce;
+          padding-bottom: 10px;
+          page-break-after: avoid;
         }
-
+        
         .pdf-container h2 { 
-        font-size: 14pt; 
-        margin: 20px 0 10px 0; 
-        color: #2d3748;
-        background-color: #f7fafc;
-        padding: 8px 12px;
-        border-left: 4px solid #3182ce;
-        page-break-after: avoid; /* Évite page break après sous-titre */
+          font-size: 14pt; 
+          margin: 20px 0 10px 0; 
+          color: #2d3748;
+          background-color: #f7fafc;
+          padding: 8px 12px;
+          border-left: 4px solid #3182ce;
+          page-break-after: avoid;
         }
-
-        /* 📊 GRILLES ET DONNÉES */
+        
         .info-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        margin-bottom: 20px;
-        page-break-inside: avoid; /* Ne coupe pas la grille */
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+          margin-bottom: 20px;
+          page-break-inside: avoid;
         }
-
+        
+        .info-item {
+          padding: 8px;
+          border: 1px solid #e2e8f0;
+          border-radius: 4px;
+          page-break-inside: avoid;
+        }
+        
+        .info-label {
+          font-weight: 600;
+          color: #4a5568;
+          font-size: 10pt;
+        }
+        
+        .info-value {
+          color: #1a202c;
+          margin-top: 2px;
+        }
+        
         .field-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        padding: 6px 0;
-        border-bottom: 1px dotted #e2e8f0;
-        page-break-inside: avoid; /* Ne coupe pas un champ */
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          padding: 6px 0;
+          border-bottom: 1px dotted #e2e8f0;
+          page-break-inside: avoid;
+        }
+        
+        .field-label {
+          font-weight: 500;
+          color: #4a5568;
+          font-size: 10pt;
+          flex: 1;
+          padding-right: 15px;
+        }
+        
+        .field-value {
+          color: #1a202c;
+          font-size: 10pt;
+          flex: 1;
+          text-align: right;
+          word-break: break-word;
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
         }
 
-        /* 🔗 RÈGLES DE GROUPEMENT */
-        .field-group {
-        page-break-inside: avoid; /* Garde les groupes de champs ensemble */
-        margin-bottom: 15px;
+        /* 📸 STYLES SPÉCIFIQUES PHOTOS */
+        .photo-container {
+          page-break-inside: avoid;
         }
 
-        /* 📄 CONTRÔLE AVANCÉ DES PAGES */
         .force-new-page {
-        page-break-before: always; /* Force nouvelle page */
+          page-break-before: always;
         }
 
         .keep-together {
-        page-break-inside: avoid; /* Garde ensemble */
+          page-break-inside: avoid;
         }
-
-        .allow-break {
-        page-break-inside: auto; /* Autorise les coupures */
-        }
-
-        /* 🎯 RÈGLES SPÉCIALES POUR HTML2PDF */
-        @media print, (max-width: 0) {
-        /* Ces règles s'appliquent lors de la génération PDF */
         
-        .pdf-container {
+        /* STYLES SPÉCIFIQUES PRINT */
+        @media print, (max-width: 0) {
+          .pdf-container {
             max-width: none;
             margin: 0;
             padding: 15mm;
-        }
-        
-        /* Évite les veuves et orphelines */
-        .section {
-            orphans: 3; /* Min 3 lignes en bas de page */
-            widows: 3;  /* Min 3 lignes en haut de nouvelle page */
-        }
-        
-        /* Force les sauts intelligents */
-        .section:nth-child(3n) {
-            page-break-after: avoid; /* Évite coupure toutes les 3 sections */
-        }
-        }
-
-        /* 🎨 AMÉLIORATIONS VISUELLES */
-        .field-label {
-        font-weight: 500;
-        color: #4a5568;
-        font-size: 10pt;
-        flex: 1;
-        padding-right: 15px;
-        }
-
-        .field-value {
-        color: #1a202c;
-        font-size: 10pt;
-        flex: 1;
-        text-align: right;
-        word-break: break-word;
-        }
-
-        .info-item {
-        padding: 8px;
-        border: 1px solid #e2e8f0;
-        border-radius: 4px;
-        page-break-inside: avoid;
-        }
-
-        .info-label {
-        font-weight: 600;
-        color: #4a5568;
-        font-size: 10pt;
-        }
-
-        .info-value {
-        color: #1a202c;
-        margin-top: 2px;
-        }
+          }
+          
+          .section {
+            orphans: 3;
+            widows: 3;
+          }
         }
       `}</style>
 
       {/* En-tête */}
       <div className="header">
         <h1>🧹 Fiche Ménage • {formData.nom || 'Sans nom'} • Letahost</h1>
-        
+
         <div className="info-grid">
           <div className="info-item">
             <div className="info-label">Date de création</div>
@@ -404,7 +493,7 @@ const PDFMenageTemplate = ({ formData }) => {
         </div>
       </div>
 
-      {/* Toutes les sections ménage avec données */}
+      {/* Toutes les sections ménage avec données ET PHOTOS */}
       {sections.length === 0 ? (
         <div style={{ 
           textAlign: 'center', 
@@ -420,14 +509,34 @@ const PDFMenageTemplate = ({ formData }) => {
       ) : (
         sections.map((section, sectionIndex) => (
           <div key={section.key} className="section">
-            <h2>{section.emoji} {section.label}</h2>
+            <h2>{section.emoji} {section.label.replace(section.emoji + ' ', '')}</h2>
             
-            {section.fields.map((field, fieldIndex) => (
-              <div key={field.key} className="field-row">
-                <div className="field-label">{field.label}</div>
-                <div className="field-value">{formatValue(field.value)}</div>
-              </div>
-            ))}
+            {/* 📝 CHAMPS TEXTE */}
+            {section.fields.map((field, fieldIndex) => {
+              const textValue = formatValue(field.value, field.key)
+              if (textValue === null) return null // Skip si que des photos
+              
+              return (
+                <div key={field.key} className="field-row">
+                  <div className="field-label">{field.label}</div>
+                  <div className="field-value">{textValue}</div>
+                </div>
+              )
+            }).filter(Boolean)}
+
+            {/* 📸 PHOTOS DE LA SECTION */}
+            {section.fields.map((field, fieldIndex) => {
+              const photos = extractPhotos(field.value, field.key)
+              if (photos.length === 0) return null
+              
+              return (
+                <PhotoDisplay 
+                  key={`photos-${field.key}`}
+                  photos={photos}
+                  label={field.label}
+                />
+              )
+            }).filter(Boolean)}
           </div>
         ))
       )}

@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
 import { useFiches } from '../hooks/useFiches'
-import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List } from 'lucide-react'
+import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List, UserPen } from 'lucide-react'
 import DropdownMenu from '../components/DropdownMenu'
 import UserRoleBadge from '../components/UserRoleBadge'
+import ReassignModal from '../components/ReassignModal'
+import { supabase } from '../lib/supabaseClient'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -22,6 +24,58 @@ export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState("Tous")
   const [viewMode, setViewMode] = useState('grid') // 'grid' ou 'list'
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+
+  // 🆕 AJOUTS RÉAFFECTATION
+  const [reassignModal, setReassignModal] = useState({
+    isOpen: false,
+    fiche: null
+  })
+  const [users, setUsers] = useState([])
+
+  // 🆕 AJOUT FONCTION CHARGER USERS
+  const loadUsers = async () => {
+    try {
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'coordinateur')
+        .eq('active', true)
+        .order('prenom', { ascending: true })
+
+      if (profilesError) throw profilesError
+      setUsers(profilesData || [])
+    } catch (error) {
+      console.error('Erreur chargement utilisateurs:', error)
+    }
+  }
+
+  // 🆕 AJOUT USEEFFECT
+  useEffect(() => {
+    loadUsers()
+  }, [])
+
+  // 🆕 AJOUT FONCTIONS RÉAFFECTATION
+  const handleReassignFiche = (fiche) => {
+    setReassignModal({
+      isOpen: true,
+      fiche: fiche
+    })
+  }
+
+  const handleCloseReassign = () => {
+    setReassignModal({
+      isOpen: false,
+      fiche: null
+    })
+  }
+
+  const handleReassignSuccess = () => {
+    refetch()
+    setReassignModal({
+      isOpen: false,
+      fiche: null
+    })
+  }
 
   // Déconnexion
   const handleLogout = async () => {
@@ -80,6 +134,11 @@ export default function Dashboard() {
       case 'delete':
         setDeleteConfirm(fiche)
         break
+
+      // 🆕 AJOUT CASE RÉAFFECTER
+      case 'reassign':
+        handleReassignFiche(fiche)
+        break
         
       default:
         console.warn('Action inconnue:', action.id)
@@ -94,11 +153,19 @@ export default function Dashboard() {
         label: 'Modifier',
         icon: <Edit size={16} />,
         className: 'text-blue-600 hover:bg-blue-50'
+      },
+      // 🆕 AJOUT RÉAFFECTER
+      {
+        id: 'reassign',
+        label: 'Réaffecter',
+        icon: <UserPen size={16} />,
+        className: 'text-purple-600 hover:bg-purple-50'
       }
     ]
   
     if (fiche.statut === 'Archivé') {
       const archivedItems = [
+        ...baseItems,
         {
           id: 'unarchive',
           label: 'Désarchiver',
@@ -452,6 +519,15 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* 🆕 AJOUT MODAL RÉAFFECTATION */}
+      <ReassignModal
+        fiche={reassignModal.fiche}
+        users={users}
+        isOpen={reassignModal.isOpen}
+        onClose={handleCloseReassign}
+        onSuccess={handleReassignSuccess}
+      />
     </div>
   )
 }

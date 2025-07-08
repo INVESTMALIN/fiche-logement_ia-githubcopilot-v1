@@ -1,4 +1,4 @@
-// src/components/PDFUpload-html2pdf.jsx - Version html2pdf AMÉLIORÉE
+// src/components/PDFUpload.jsx - VERSION COMPLÈTE OPTIMISÉE
 import React, { useState } from 'react'
 import html2pdf from 'html2pdf.js'
 import { supabase } from '../lib/supabaseClient'
@@ -37,7 +37,21 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
       console.log('✅ PDF Ménage généré, taille:', (menagePdfBlob.size / 1024 / 1024).toFixed(2), 'MB')
       
       // ===============================
-      // 3. UPLOAD VERS SUPABASE STORAGE
+      // 3. VÉRIFICATION TAILLE - LIMITE AUGMENTÉE
+      // ===============================
+      const maxSizeMB = 15 // 🎯 AUGMENTÉ de 6MB → 15MB
+      const maxSizeBytes = maxSizeMB * 1024 * 1024
+      
+      if (logementPdfBlob.size > maxSizeBytes) {
+        throw new Error(`PDF logement trop volumineux: ${(logementPdfBlob.size / 1024 / 1024).toFixed(2)}MB (limite: ${maxSizeMB}MB). Réduisez le nombre de photos ou contactez l'administrateur.`)
+      }
+      
+      if (menagePdfBlob.size > maxSizeBytes) {
+        throw new Error(`PDF ménage trop volumineux: ${(menagePdfBlob.size / 1024 / 1024).toFixed(2)}MB (limite: ${maxSizeMB}MB). Le PDF a été généré avec moins de photos.`)
+      }
+      
+      // ===============================
+      // 4. UPLOAD VERS SUPABASE STORAGE
       // ===============================
       console.log('📤 Upload des 2 PDF vers Supabase Storage...')
       
@@ -66,7 +80,7 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
       if (menageError) throw new Error(`Erreur upload ménage: ${menageError.message}`)
 
       // ===============================
-      // 4. GÉNÉRATION URLS PUBLIQUES
+      // 5. GÉNÉRATION URLS PUBLIQUES
       // ===============================
       const { data: logementUrlData } = supabase.storage
         .from('fiche-pdfs')
@@ -84,7 +98,7 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
       console.log('  - Ménage:', finalMenageUrl)
 
       // ===============================
-      // 5. FINALISATION
+      // 6. FINALISATION
       // ===============================
       setPdfUrl(finalLogementUrl)
       
@@ -99,14 +113,20 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
 
     } catch (err) {
       console.error('❌ Erreur génération PDF:', err)
-      setError(err.message || 'Erreur lors de la génération du PDF')
+      
+      // 🎯 GESTION ERREUR AMÉLIORÉE avec conseils
+      if (err.message.includes('trop volumineux')) {
+        setError(`${err.message}\n\n💡 Conseil: Les PDF avec beaucoup de photos peuvent être volumineux. Le PDF logement complet contient toutes les photos.`)
+      } else {
+        setError(err.message || 'Erreur lors de la génération du PDF')
+      }
     } finally {
       setGenerating(false)
     }
   }
 
   // ===============================
-  // FONCTION GÉNÉRATION PDF BLOB
+  // FONCTION GÉNÉRATION PDF BLOB - OPTIMISÉE
   // ===============================
   const generatePDFBlob = async (url) => {
     return new Promise((resolve, reject) => {
@@ -140,18 +160,18 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
             throw new Error('Élément .pdf-container non trouvé')
           }
 
-          console.log('📄 Génération PDF avec html2pdf...')
+          console.log('📄 Génération PDF avec html2pdf optimisé...')
           
-          // ✨ CONFIGURATION OPTIMALE HTML2PDF
+          // ✨ CONFIGURATION HTML2PDF OPTIMISÉE POUR COMPRESSION
           const options = {
             margin: [15, 15, 15, 15], // mm : top, right, bottom, left
             filename: 'document.pdf',
             image: { 
               type: 'jpeg', 
-              quality: 0.95 // Qualité élevée
+              quality: 0.8 // 🎯 COMPRESSION : Réduit de 0.95 → 0.8
             },
             html2canvas: { 
-              scale: 2, // Résolution élevée
+              scale: 1.5, // 🎯 COMPRESSION : Réduit de 2 → 1.5 pour moins de pixels
               useCORS: true,
               letterRendering: true,
               logging: false,
@@ -161,15 +181,15 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
               unit: 'mm', 
               format: 'a4', 
               orientation: 'portrait',
-              compress: true
+              compress: true // Garder compression PDF
             },
             pagebreak: { 
               mode: ['avoid-all', 'css'], // Respecte les CSS page-break
-              avoid: ['.section', '.header'] // Évite de couper ces éléments
+              avoid: ['.section', '.header', '.photo-container'] // 🎯 AJOUTÉ .photo-container
             }
           }
 
-          // 🚀 GÉNÉRATION avec gestion d'erreur
+          // 🚀 GÉNÉRATION avec gestion d'erreur sécurisée
           html2pdf()
             .from(element)
             .set(options)
@@ -214,16 +234,15 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
   return (
     <div className="pdf-upload-container">
       {/* Bouton principal */}
-      <div>
-        <button
-          onClick={generateAndUploadPDF}
-          disabled={generating || !formData?.id}
-          className={`py-4 px-8 rounded-lg font-semibold text-white text-lg transition-all ${
-            generating || !formData?.id
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
-          }`}
-        >
+      <button
+        onClick={generateAndUploadPDF}
+        disabled={generating || !formData?.id}
+        className={`py-4 px-8 rounded-lg font-semibold text-white text-lg transition-all ${
+          generating || !formData?.id
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+        }`}
+      >
         {generating ? (
           <span className="flex items-center justify-center gap-2">
             <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -232,25 +251,24 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
                 <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
               </circle>
             </svg>
-            ⏳ Génération 2 PDF (html2pdf)...
+            ⏳ Génération 2 PDF...
           </span>
         ) : (
-          '📄 Générer PDF automatique'
+          '📄 Générer la Fiche logement (PDF)'
         )}
-              </button>
-      </div>
+      </button>
 
       {/* États d'affichage */}
       {error && (
         <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 text-red-700">
           <p className="font-semibold">❌ Erreur</p>
-          <p className="text-sm">{error}</p>
+          <div className="text-sm whitespace-pre-line">{error}</div>
         </div>
       )}
 
       {pdfUrl && !generating && (
         <div className="mt-4 p-4 bg-green-50 border-l-4 border-green-400 text-green-700">
-          <p className="font-semibold">✅ PDF logement généré avec succès!</p>
+          <p className="font-semibold">✅ Fiche logement générée avec succès !</p>
           <a 
             href={pdfUrl} 
             target="_blank" 
@@ -267,9 +285,9 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
 
       {generating && (
         <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-700">
-          <p className="font-semibold">⏳ Génération en cours...</p>
+          <p className="font-semibold">⏳ Génération de la fiche logement et de la fiche ménage en cours...</p>
           <p className="text-sm">
-            Utilisation de html2pdf pour une pagination intelligente
+            Veuillez patienter un instant.
           </p>
         </div>
       )}
