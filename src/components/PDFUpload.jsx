@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import html2pdf from 'html2pdf.js'
 import { supabase } from '../lib/supabaseClient'
 
-const PDFUpload = ({ formData, onPDFGenerated }) => {
+const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
   const [generating, setGenerating] = useState(false)
   const [pdfUrl, setPdfUrl] = useState(null)
   const [error, setError] = useState(null)
@@ -101,7 +101,13 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
       // 6. FINALISATION
       // ===============================
       setPdfUrl(finalLogementUrl)
-      
+
+      // 🆕 SAUVEGARDE URLs POUR MAKE
+      await handleSave({
+        pdf_logement_url: finalLogementUrl,
+        pdf_menage_url: finalMenageUrl
+      })
+
       if (onPDFGenerated) {
         onPDFGenerated({
           logement: finalLogementUrl,

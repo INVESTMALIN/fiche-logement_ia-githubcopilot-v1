@@ -59,19 +59,18 @@
 ### **🔄 Milestone 5 : Upload PDF Automatique** - **EN COURS**
 - ✅ **Génération PDF programmatique** réutilisant PDFTemplate existant
 - ✅ **Upload automatique Supabase Storage** lors finalisation fiche  
-- [ ] **Intégration Make** HTTP GET pour récupération PDF
+- 🔄 **Intégration Make** HTTP GET pour récupération PDF
 - [ ] **Organisation Drive** dispatch PDF + photos par dossiers
 
 ### **🔄 Milestone 6 : Finalisation multimédia** - **EN COURS**
 - ✅ **PDF Ménage** template séparé avec mapping champs spécifiques
-- 🔄 **Upload photos** remplacement input file sections restantes (en cours)
-- [ ] **Tests end-to-end** workflow complet frontend → Make → Drive/Monday
+- ✅ **Upload photos** remplacement input file sections restantes
+- 🔄 **Tests end-to-end** workflow complet frontend → Make → Drive/Monday (en cours)
 
 ---
 
 ## 📋 **PROCHAINES PRIORITÉS**
 
-### **🔥 Priorité immédiate**
 1. **Upload PDF automatique** (EN COURS)
    - ✅ Installer html2pdf.js
    - ✅ Créer bucket "fiche-pdfs" Supabase
@@ -79,12 +78,11 @@
    - ✅ Modifier handleFinaliser() avec upload automatique
    - [ ] Configurer modules Make HTTP GET
 
-2. **Upload photos sections restantes** 
-   - [ ] Remplacer input file par PhotoUpload dans toutes les sections
+2. **Upload photos sections restantes** (EN COURS)
+   - ✅ Remplacer input file par PhotoUpload dans toutes les sections
    - [ ] Tester workflow complet upload → sauvegarde → chargement
 
-### **Court terme**
-3. **PDF Ménage** 
+3. **PDF Ménage** (Terminé)
    - ✅ Créer PDFMenageTemplate.jsx (mapping champs ménage)
    - ✅ Intégrer génération double PDF (logement + ménage)
 

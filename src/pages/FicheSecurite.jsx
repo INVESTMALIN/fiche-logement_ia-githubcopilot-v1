@@ -185,10 +185,12 @@ export default function FicheSecutite() {
                 </div>
               )}
               <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-                <PDFUpload 
-                  formData={formData} 
-                  onPDFGenerated={(url) => console.log('PDF généré:', url)} 
-                />
+              <PDFUpload 
+                formData={formData} 
+                onPDFGenerated={(url) => console.log('PDF généré:', url)} 
+                updateField={updateField}
+                handleSave={handleSave}
+              />
               </div>
 
               {/* 📝 NOTE EXPLICATIVE PDF - Design sympa */}

@@ -1419,7 +1419,7 @@ export function FormProvider({ children }) {
     return current !== null && current !== undefined ? current : ""
   }
 
-  const handleSave = async () => {
+  const handleSave = async (customData = {}) => {
     if (!user?.id) {
       setSaveStatus({ saving: false, saved: false, error: 'Utilisateur non connecté' });
       return { success: false, error: 'Utilisateur non connecté' };
@@ -1441,6 +1441,7 @@ export function FormProvider({ children }) {
     try {
       const dataToSave = {
         ...formData,
+        ...customData,
         user_id: user.id,  // FORCE TOUJOURS
         updated_at: new Date().toISOString()
       };

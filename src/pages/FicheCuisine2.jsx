@@ -306,13 +306,13 @@ export default function FicheCuisine2() {
 
               {/* Upload photos */}
               <div>
-  <PhotoUpload 
-    fieldPath="section_cuisine_2.photos_tiroirs_placards"
-    label="Photos de tous les tiroirs et placards de la cuisine"
-    multiple={true}
-    maxFiles={8}
-  />
-</div>
+                <PhotoUpload 
+                  fieldPath="section_cuisine_2.photos_tiroirs_placards"
+                  label="Photos de tous les tiroirs et placards de la cuisine"
+                  multiple={true}
+                  maxFiles={8}
+                />
+              </div>
 
             </div>
 

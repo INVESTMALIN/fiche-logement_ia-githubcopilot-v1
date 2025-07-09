@@ -928,6 +928,9 @@ export const mapFormDataToSupabase = (formData) => {
     securite_equipements: formData.section_securite?.equipements || [],
     securite_alarme_desarmement: formData.section_securite?.alarme_desarmement || null,
     securite_photos_equipements_securite: formData.section_securite?.photos_equipements_securite || [],
+    // PDF URLs - AJOUT POUR MAKE
+    pdf_logement_url: formData.pdf_logement_url || null,
+    pdf_menage_url: formData.pdf_menage_url || null,
 
     updated_at: new Date().toISOString()
   }
@@ -1950,7 +1953,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
       equipements: supabaseData.securite_equipements || [],
       alarme_desarmement: supabaseData.securite_alarme_desarmement || "",
       photos_equipements_securite: supabaseData.securite_photos_equipements_securite || []
-    }
+    },
+    pdf_logement_url: supabaseData.pdf_logement_url || null,
+    pdf_menage_url: supabaseData.pdf_menage_url || null
   }
 }
 
