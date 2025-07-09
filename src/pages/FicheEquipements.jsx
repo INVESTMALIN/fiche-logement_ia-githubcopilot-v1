@@ -125,7 +125,7 @@ export default function FicheEquipements() {
               {/* Local Poubelle - Emplacement */}
               <div className="mb-4">
                 <label className="block font-semibold mb-2">
-                  Local Poubelle - Emplacement du local Poubelle *
+                  Emplacement du local Poubelle *
                 </label>
                 <textarea 
                   className="w-full p-3 border rounded h-24"
@@ -138,7 +138,7 @@ export default function FicheEquipements() {
               {/* Local Poubelle - Ramassage */}
               <div className="mb-4">
                 <label className="block font-semibold mb-2">
-                  Local Poubelle - Programmation du ramassage des déchets *
+                  Programmation du ramassage des déchets *
                 </label>
                 <textarea 
                   className="w-full p-3 border rounded h-24"
@@ -164,7 +164,7 @@ export default function FicheEquipements() {
               {/* Disjoncteur - Emplacement */}
               <div className="mb-4">
                 <label className="block font-semibold mb-2">
-                  Disjoncteur - Emplacement du disjoncteur *
+                  Emplacement du disjoncteur *
                 </label>
                 <textarea 
                   className="w-full p-3 border rounded h-24"
@@ -190,7 +190,7 @@ export default function FicheEquipements() {
               {/* Vanne d'arrêt d'eau - Emplacement */}
               <div className="mb-4">
                 <label className="block font-semibold mb-2">
-                  Vanne d'arrêt d'eau - Emplacement de la vanne *
+                  Emplacement de la vanne d'arrêt d'eau *
                 </label>
                 <textarea 
                   className="w-full p-3 border rounded h-24"

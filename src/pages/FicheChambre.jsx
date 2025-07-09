@@ -4,8 +4,9 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
 
-// ✅ COMPOSANT ACCORDEON SORTI EN DEHORS - C'EST LE FIX !
+// ✅ COMPOSANT ACCORDEON SORTI EN DEHORS
 const AccordeonChambre = ({ 
   chambreKey, 
   numeroAffiche, 
@@ -166,20 +167,13 @@ const AccordeonChambre = ({
 
           {/* 5. Photos chambre */}
           <div>
-            <label className="block font-semibold mb-2">
-              Photos de la chambre
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              multiple
-              className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg"
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              Ajoutez des photos représentatives de la chambre
-            </p>
-          </div>
+  <PhotoUpload 
+    fieldPath={`section_chambres.${chambreKey}.photos_chambre`}
+    label="Photos de la chambre avec tous les équipements"
+    multiple={true}
+    maxFiles={8}
+  />
+</div>
 
         </div>
       )}

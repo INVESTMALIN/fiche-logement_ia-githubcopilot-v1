@@ -226,7 +226,6 @@ export default function FicheGestionLinge() {
 
                 {/* Photos du linge */}
                 <div>
-                  <label className="block font-semibold mb-2">Linge - Photos</label>
                   <PhotoUpload 
                     fieldPath="section_gestion_linge.photos_linge"
                     label="Photos du linge"
@@ -253,9 +252,6 @@ export default function FicheGestionLinge() {
 
                 {/* Emplacement du stock - Photo */}
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Linge - Emplacement du stock - Photo
-                  </label>
                   <PhotoUpload 
                   fieldPath="section_gestion_linge.emplacement_photos"
                   label="Photos de l'emplacement du stock"

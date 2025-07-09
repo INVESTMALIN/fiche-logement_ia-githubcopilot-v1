@@ -9,7 +9,7 @@ const PhotoUpload = ({
   label,               // ex: "Photos du local poubelle"
   multiple = true,     // Plusieurs photos ou une seule
   maxFiles = 10,       // Limite nombre de fichiers
-  capture = true,      // Activer capture mobile
+  capture = false,      // Activer capture mobile
   acceptVideo = false  // Autoriser les vidéos (optionnel)
 }) => {
   const { getField, updateField, handleSave } = useForm()
