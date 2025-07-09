@@ -47,6 +47,12 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
 
   // Upload vers Supabase Storage
   const uploadToSupabase = async (files) => {
+    // 🚨 VALIDATION CRITIQUE - Numéro de bien obligatoire
+    const numeroBien = getField('section_logement.numero_bien')
+    if (!numeroBien || numeroBien.trim() === '') {
+      throw new Error('Impossible d\'uploader : le numéro de bien est obligatoire. Remplissez ce champ dans la section "Logement" avant d\'ajouter des photos.')
+    }
+  
     const uploadedUrls = []
     
     try {
@@ -58,14 +64,14 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
         if (!isImage && !(acceptVideo && isVideo)) {
           throw new Error(`${file.name} n'est pas un format valide`)
         }
-
+  
         // Validation taille (max 50MB pour images, 200MB pour vidéos)
         const maxSize = isVideo ? 200 * 1024 * 1024 : 50 * 1024 * 1024
         if (file.size > maxSize) {
           const maxSizeMB = isVideo ? '200MB' : '50MB'
           throw new Error(`${file.name} est trop volumineux (max ${maxSizeMB})`)
         }
-
+  
         // Génération du path de stockage
         const ficheId = getField('id')
         const storagePath = generateStoragePath(file.name, ficheId)
@@ -77,17 +83,17 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
             cacheControl: '3600',
             upsert: false
           })
-
+  
         if (error) throw error
-
+  
         // Récupération de l'URL publique
         const { data: urlData } = supabase.storage
           .from('fiche-photos')
           .getPublicUrl(storagePath)
-
+  
         uploadedUrls.push(urlData.publicUrl)
       }
-
+  
       return { success: true, urls: uploadedUrls }
     } catch (error) {
       return { success: false, error: error.message }

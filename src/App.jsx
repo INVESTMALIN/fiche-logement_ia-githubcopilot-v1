@@ -15,6 +15,7 @@ import AdminConsole from './pages/AdminConsole'
 import { setAuthNavigateCallback } from './lib/supabaseClient'
 import PrintPDF from './pages/PrintPDF'
 import PrintPDFMenage from './pages/PrintPDFMenage'
+import DuplicateAlertModal from './components/DuplicateAlertModal'
 
 
 export default function App() {
@@ -76,6 +77,9 @@ export default function App() {
 
           <Route path="*" element={<NotFound />} />
         </Routes>
+
+        <DuplicateAlertModal />
+
       </FormProvider>
     </AuthProvider>
   )

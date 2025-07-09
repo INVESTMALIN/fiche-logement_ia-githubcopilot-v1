@@ -2103,10 +2103,75 @@ export const getAllFiches = async (includeArchived = false) => {
 }
 
 
-
-// 🗑️ Supprimer une fiche
+// 🗑️ Supprimer une fiche + cleanup storage (VERSION RÉCURSIVE)
 export const deleteFiche = async (ficheId) => {
   try {
+    // 1. D'abord récupérer la fiche pour accéder à user_id et numero_bien
+    const { data: ficheData, error: fetchError } = await supabase
+      .from('fiches')
+      .select('user_id, logement_numero_bien')
+      .eq('id', ficheId)
+      .single()
+
+    if (fetchError) {
+      throw fetchError
+    }
+
+    // 2. Supprimer le dossier photos complet du storage (RÉCURSIF)
+    if (ficheData.user_id && ficheData.logement_numero_bien) {
+      const basePath = `user-${ficheData.user_id}/fiche-${ficheData.logement_numero_bien}`
+      
+      console.log(`🗑️ Suppression récursive dossier: ${basePath}`)
+      
+      // Fonction récursive pour lister tous les fichiers
+      const getAllFilesRecursive = async (path = basePath, allFiles = []) => {
+        const { data: items, error } = await supabase.storage
+          .from('fiche-photos')
+          .list(path, { limit: 1000 })
+
+        if (error) {
+          console.warn(`Erreur listage ${path}:`, error)
+          return allFiles
+        }
+
+        for (const item of items || []) {
+          const fullPath = `${path}/${item.name}`
+          
+          if (item.metadata === null) {
+            // C'est un dossier, lister récursivement
+            await getAllFilesRecursive(fullPath, allFiles)
+          } else {
+            // C'est un fichier, l'ajouter à la liste
+            allFiles.push(fullPath)
+          }
+        }
+        
+        return allFiles
+      }
+
+      // Récupérer tous les fichiers récursivement
+      const allFiles = await getAllFilesRecursive()
+      
+      if (allFiles.length > 0) {
+        console.log(`📁 ${allFiles.length} fichiers trouvés:`, allFiles)
+        
+        // Supprimer tous les fichiers
+        const { error: deleteError } = await supabase.storage
+          .from('fiche-photos')
+          .remove(allFiles)
+
+        if (deleteError) {
+          console.warn('Erreur suppression photos:', deleteError)
+          // Continue quand même
+        } else {
+          console.log(`✅ ${allFiles.length} fichiers supprimés du storage`)
+        }
+      } else {
+        console.log('📁 Aucun fichier trouvé dans le dossier')
+      }
+    }
+
+    // 3. Supprimer la fiche de la base de données
     const { error } = await supabase
       .from('fiches')
       .delete()
@@ -2118,7 +2183,7 @@ export const deleteFiche = async (ficheId) => {
     
     return {
       success: true,
-      message: 'Fiche supprimée avec succès'
+      message: 'Fiche et photos supprimées avec succès'
     }
   } catch (error) {
     console.error('Erreur lors de la suppression:', error)
@@ -2129,6 +2194,8 @@ export const deleteFiche = async (ficheId) => {
     }
   }
 }
+
+
 
 // Fonction pour mettre à jour le statut d'une fiche
 export const updateFicheStatut = async (ficheId, newStatut) => {

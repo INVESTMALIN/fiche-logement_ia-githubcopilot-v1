@@ -136,11 +136,20 @@ export default function FicheLogement() {
               <label className="block mb-1 font-semibold">Numéro du bien *</label>
               <input 
                 type="text" 
-                placeholder="par ex. 23"
-                className="w-full p-2 border rounded"
-                value={getField('section_logement.numero_bien')}
+                placeholder="par ex. 1234"
+                className={`w-full p-2 border rounded ${
+                  !getField('section_logement.numero_bien') || getField('section_logement.numero_bien').trim() === '' 
+                    ? 'border-red-500' 
+                    : ''
+                }`}
+                value={getField('section_logement.numero_bien') || ''}
                 onChange={(e) => handleInputChange('section_logement.numero_bien', e.target.value)}
               />
+              {(!getField('section_logement.numero_bien') || getField('section_logement.numero_bien').trim() === '') && (
+                <p className="text-red-600 text-sm mt-1">
+                  ⚠️ Le numéro de bien est obligatoire
+                </p>
+              )}
             </div>
 
             {/* Typologie */}

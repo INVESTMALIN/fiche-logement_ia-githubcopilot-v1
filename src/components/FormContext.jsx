@@ -1,8 +1,9 @@
 // src/components/FormContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom' // Ajout useNavigate
+import { useLocation, useNavigate } from 'react-router-dom'
 import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
 import { useAuth } from './AuthContext'
+import { supabase } from '../lib/supabaseClient'
 
 const FormContext = createContext()
 
@@ -1062,6 +1063,8 @@ export function FormProvider({ children }) {
   })
   const [hasManuallyNamedFiche, setHasManuallyNamedFiche] = useState(false)
 
+  const [duplicateAlert, setDuplicateAlert] = useState(null)
+
   const sections = [
     "Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", "Réglementation",
     "Exigences", "Avis", "Gestion Linge", "Équipements", "Consommables", "Visite",
@@ -1267,19 +1270,28 @@ export function FormProvider({ children }) {
 
     // 🎯 PRIORITÉ 3: Application directe si connecté + params Monday
     if (user && mondayParamsPresentInURL && !ficheId && formData.id === null) {
-        console.log('✅ Utilisateur déjà connecté, application directe des données Monday.');
-        const mondayData = parseMondayParams(params);
-        const newFormDataAfterMonday = applyMondayData(formData, mondayData);
-        // 🎯 AJOUTER CETTE LIGNE ICI :
-        newFormDataAfterMonday.user_id = user.id;
-        setFormData(newFormDataAfterMonday);
+      console.log('✅ Utilisateur déjà connecté, application directe des données Monday.');
+      const mondayData = parseMondayParams(params);
+      const newFormDataAfterMonday = applyMondayData(formData, mondayData);
+      newFormDataAfterMonday.user_id = user.id;
 
-        const generatedName = generateFicheName(newFormDataAfterMonday);
-        if (generatedName !== "Nouvelle fiche") {
-            setHasManuallyNamedFiche(false);
-            setFormData(prev => ({ ...prev, nom: generatedName }));
-        }
-        return; // STOP - Données appliquées
+      const generatedName = generateFicheName(newFormDataAfterMonday);
+      if (generatedName !== "Nouvelle fiche") {
+          // 🆕 VÉRIFICATION DUPLICATE
+          checkForDuplicate(generatedName).then(isDuplicate => {
+              if (!isDuplicate) {
+                  // Pas de duplicate, application normale
+                  setFormData(newFormDataAfterMonday);
+                  setHasManuallyNamedFiche(false);
+                  setFormData(prev => ({ ...prev, nom: generatedName }));
+              }
+              // Si duplicate, le modal s'affiche automatiquement via setDuplicateAlert
+          });
+      } else {
+          // Pas de nom généré, application directe
+          setFormData(newFormDataAfterMonday);
+      }
+      return; // STOP - Données appliquées ou en cours de vérification
     }
 
     // 🎯 PRIORITÉ 4: Chargement fiche existante par ID
@@ -1413,6 +1425,17 @@ export function FormProvider({ children }) {
       return { success: false, error: 'Utilisateur non connecté' };
     }
   
+    // 🚨 VALIDATION CRITIQUE - Numéro de bien obligatoire
+    const numeroBien = formData.section_logement?.numero_bien
+    if (!numeroBien || numeroBien.trim() === '') {
+      setSaveStatus({
+        saving: false,
+        saved: false,
+        error: 'Impossible de sauvegarder : le numéro de bien est obligatoire. Remplissez ce champ dans la section "Logement".'
+      })
+      return { success: false, error: 'Numéro de bien obligatoire' }
+    }
+  
     setSaveStatus({ saving: true, saved: false, error: null });
     
     try {
@@ -1481,6 +1504,7 @@ export function FormProvider({ children }) {
     }
   }
 
+
   // 🐛 DEBUG HELPER (optionnel)
   const getMondayDebugInfo = () => {
     const params = new URLSearchParams(location.search)
@@ -1491,6 +1515,60 @@ export function FormProvider({ children }) {
       hasMondayParams: hasMondayParams(location.search)
     }
   }
+
+  // Dans FormContext.jsx - Ajouter APRÈS handleCancelDuplicate et AVANT getMondayDebugInfo
+
+  const checkForDuplicate = useCallback(async (generatedName) => {
+    if (!user?.id || !generatedName || generatedName === "Nouvelle fiche") {
+      return false
+    }
+
+    try {
+      // Check en base si une fiche avec ce nom existe déjà pour cet utilisateur
+      const { data, error } = await supabase
+        .from('fiches')
+        .select('id, nom, statut')
+        .eq('user_id', user.id)
+        .eq('nom', generatedName)
+        .limit(1)
+
+      if (error) {
+        console.error('Erreur lors de la vérification de duplicate:', error)
+        return false
+      }
+
+      if (data && data.length > 0) {
+        console.log('🚨 Fiche duplicate détectée:', data[0])
+        setDuplicateAlert({
+          existingFiche: data[0]
+        })
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error('Erreur checkForDuplicate:', error)
+      return false
+    }
+  }, [user?.id])
+
+
+  const handleOpenExisting = useCallback(() => {
+    if (duplicateAlert?.existingFiche) {
+      navigate(`/fiche?id=${duplicateAlert.existingFiche.id}`)
+    }
+    setDuplicateAlert(null)
+  }, [duplicateAlert, navigate])
+  
+  const handleCreateNew = useCallback(() => {
+    setDuplicateAlert(null)
+    // Continue avec la nouvelle fiche (ne fait rien d'autre)
+  }, [])
+  
+  const handleCancelDuplicate = useCallback(() => {
+    setDuplicateAlert(null)
+    navigate('/')
+  }, [navigate])
 
   return (
     <FormContext.Provider value={{ 
@@ -1517,7 +1595,14 @@ export function FormProvider({ children }) {
       archiverFiche,
       
       getFormDataPreview,
-      getMondayDebugInfo  // Pour debugging
+      getMondayDebugInfo,
+      
+      // 🆕 AJOUT FONCTIONS DUPLICATE
+      duplicateAlert,
+      handleOpenExisting,
+      handleCreateNew,
+      handleCancelDuplicate,
+      checkForDuplicate
     }}>
       {children}
     </FormContext.Provider>

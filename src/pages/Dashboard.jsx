@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
 import { useFiches } from '../hooks/useFiches'
-import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List, UserPen } from 'lucide-react'
+import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List, UserPen, Share } from 'lucide-react'
 import DropdownMenu from '../components/DropdownMenu'
 import UserRoleBadge from '../components/UserRoleBadge'
 import ReassignModal from '../components/ReassignModal'
@@ -24,6 +24,10 @@ export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState("Tous")
   const [viewMode, setViewMode] = useState('grid') // 'grid' ou 'list'
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [shareModal, setShareModal] = useState({
+    isOpen: false,
+    fiche: null
+  })
 
   // 🆕 AJOUTS RÉAFFECTATION
   const [reassignModal, setReassignModal] = useState({
@@ -72,6 +76,20 @@ export default function Dashboard() {
   const handleReassignSuccess = () => {
     refetch()
     setReassignModal({
+      isOpen: false,
+      fiche: null
+    })
+  }
+
+  const handleShareFiche = (fiche) => {
+    setShareModal({
+      isOpen: true,
+      fiche: fiche
+    })
+  }
+  
+  const handleCloseShare = () => {
+    setShareModal({
       isOpen: false,
       fiche: null
     })
@@ -139,6 +157,10 @@ export default function Dashboard() {
       case 'reassign':
         handleReassignFiche(fiche)
         break
+
+      case 'share':
+          handleShareFiche(fiche)
+          break
         
       default:
         console.warn('Action inconnue:', action.id)
@@ -154,6 +176,13 @@ export default function Dashboard() {
         icon: <Edit size={16} />,
         className: 'text-blue-600 hover:bg-blue-50'
       },
+            // 🆕 NOUVEAU : Bouton partage conditionnel
+      ...(fiche.statut === 'Complété' ? [{
+        id: 'share',
+        label: 'Partager...',
+        icon: <Share size={16} />,
+        className: 'text-green-600 hover:bg-green-50'
+      }] : []),
       // 🆕 AJOUT RÉAFFECTER
       {
         id: 'reassign',
@@ -528,6 +557,101 @@ export default function Dashboard() {
         onClose={handleCloseReassign}
         onSuccess={handleReassignSuccess}
       />
+
+{/* 🆕 MODAL DE PARTAGE */}
+{shareModal.isOpen && shareModal.fiche && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-xl p-6 max-w-lg w-full">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        🔗 Partager la fiche "{shareModal.fiche.nom}"
+      </h3>
+      
+      <div className="space-y-4">
+        {/* PDF Logement */}
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-medium text-gray-900">📄 PDF Logement</span>
+          </div>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              readOnly 
+              value={`${window.location.origin}/print-pdf?fiche=${shareModal.fiche.id}`}
+              className="flex-1 px-3 py-2 bg-white border rounded text-sm"
+            />
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/print-pdf?fiche=${shareModal.fiche.id}`
+                navigator.clipboard.writeText(url)
+                // TODO: Ajouter feedback "Copié !"
+              }}
+              className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            >
+              Copier
+            </button>
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/print-pdf?fiche=${shareModal.fiche.id}`
+                const message = `Voici le PDF Logement de la fiche "${shareModal.fiche.nom}" : ${url}`
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                window.open(whatsappUrl, '_blank')
+              }}
+              className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+            >
+              WhatsApp
+            </button>
+          </div>
+        </div>
+
+        {/* PDF Ménage */}
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-medium text-gray-900">🧹 PDF Ménage</span>
+          </div>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              readOnly 
+              value={`${window.location.origin}/print-pdf-menage?fiche=${shareModal.fiche.id}`}
+              className="flex-1 px-3 py-2 bg-white border rounded text-sm"
+            />
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/print-pdf-menage?fiche=${shareModal.fiche.id}`
+                navigator.clipboard.writeText(url)
+                // TODO: Ajouter feedback "Copié !"
+              }}
+              className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            >
+              Copier
+            </button>
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/print-pdf-menage?fiche=${shareModal.fiche.id}`
+                const message = `Voici le PDF Ménage de la fiche "${shareModal.fiche.nom}" : ${url}`
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                window.open(whatsappUrl, '_blank')
+              }}
+              className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+            >
+              WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          onClick={handleCloseShare}
+          className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+        >
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   )
 }
