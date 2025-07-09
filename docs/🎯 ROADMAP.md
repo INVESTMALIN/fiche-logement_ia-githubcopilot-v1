@@ -57,14 +57,14 @@
 - ✅ **Sauvegarde/chargement** fonctionnel sur les 22 sections
 
 ### **🔄 Milestone 5 : Upload PDF Automatique** - **EN COURS**
-- [ ] **Génération PDF programmatique** réutilisant PDFTemplate existant
-- [ ] **Upload automatique Supabase Storage** lors finalisation fiche  
+- ✅ **Génération PDF programmatique** réutilisant PDFTemplate existant
+- ✅ **Upload automatique Supabase Storage** lors finalisation fiche  
 - [ ] **Intégration Make** HTTP GET pour récupération PDF
 - [ ] **Organisation Drive** dispatch PDF + photos par dossiers
 
-### **🎯 Milestone 6 : Finalisation multimédia** - **PLANIFIÉ**
-- [ ] **PDF Ménage** template séparé avec mapping champs spécifiques
-- [ ] **Upload photos** remplacement input file sections restantes
+### **🔄 Milestone 6 : Finalisation multimédia** - **EN COURS**
+- ✅ **PDF Ménage** template séparé avec mapping champs spécifiques
+- 🔄 **Upload photos** remplacement input file sections restantes (en cours)
 - [ ] **Tests end-to-end** workflow complet frontend → Make → Drive/Monday
 
 ---
@@ -73,20 +73,20 @@
 
 ### **🔥 Priorité immédiate**
 1. **Upload PDF automatique** (EN COURS)
-   - [ ] Installer html2pdf.js
-   - [ ] Créer bucket "fiche-pdfs" Supabase
-   - [ ] Adapter generatePDFBlob() réutilisant PDFTemplate
-   - [ ] Modifier handleFinaliser() avec upload automatique
+   - ✅ Installer html2pdf.js
+   - ✅ Créer bucket "fiche-pdfs" Supabase
+   - ✅ Adapter generatePDFBlob() réutilisant PDFTemplate
+   - ✅ Modifier handleFinaliser() avec upload automatique
    - [ ] Configurer modules Make HTTP GET
 
 2. **Upload photos sections restantes** 
-   - [ ] Remplacer input file par PhotoUpload dans 8 sections restantes
+   - [ ] Remplacer input file par PhotoUpload dans toutes les sections
    - [ ] Tester workflow complet upload → sauvegarde → chargement
 
 ### **Court terme**
 3. **PDF Ménage** 
-   - [ ] Créer PDFMenageTemplate.jsx (mapping champs ménage)
-   - [ ] Intégrer génération double PDF (logement + ménage)
+   - ✅ Créer PDFMenageTemplate.jsx (mapping champs ménage)
+   - ✅ Intégrer génération double PDF (logement + ménage)
 
 4. **Organisation Drive Make**
    - [ ] Configurer dispatch photos par dossiers Drive
@@ -104,8 +104,8 @@
 
 ### **🎯 Objectifs immédiats**
 1. **PDF automatique** - Upload Storage lors finalisation  
-2. **PDF Ménage** - Template séparé pour coordinateurs ménage
-3. **Photos restantes** - PhotoUpload dans 8 sections manquantes
+2. **PDF Ménage** - Template séparé pour les prestataires du ménage
+3. **Photos restantes** - PhotoUpload dans les sections manquantes
 4. **Make integration** - Workflow Drive/Monday complet
 
 **🎯 Objectif final :** Workflow 100% automatisé finalisation → PDF + photos → Drive structuré → Monday mis à jour
