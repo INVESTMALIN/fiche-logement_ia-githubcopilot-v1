@@ -167,13 +167,13 @@ const AccordeonChambre = ({
 
           {/* 5. Photos chambre */}
           <div>
-  <PhotoUpload 
-    fieldPath={`section_chambres.${chambreKey}.photos_chambre`}
-    label="Photos de la chambre avec tous les équipements"
-    multiple={true}
-    maxFiles={8}
-  />
-</div>
+            <PhotoUpload 
+              fieldPath={`section_chambres.${chambreKey}.photos_chambre`}
+              label="Photos de la chambre avec tous les équipements"
+              multiple={true}
+              maxFiles={3}
+            />
+          </div>
 
         </div>
       )}

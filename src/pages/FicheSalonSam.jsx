@@ -4,6 +4,8 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
+
 
 export default function FicheSalonSam() {
   const { 
@@ -161,16 +163,12 @@ export default function FicheSalonSam() {
 
             {/* 5. Photos du Salon et de la Salle à Manger */}
             <div>
-              <label className="block font-semibold mb-2">
-                Photos du Salon et de la Salle à Manger
-              </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 515.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <p className="text-blue-600 font-medium">Parcourir les fichiers</p>
-                <p className="text-sm text-gray-500 mt-1">Drag and drop files here</p>
-              </div>
+              <PhotoUpload 
+                fieldPath="section_salon_sam.photos_salon_sam"
+                label="Photos du Salon et de la Salle à Manger"
+                multiple={true}
+                maxFiles={8}
+              />
             </div>
 
             {/* 6. Nombre de places assises à la table à manger */}

@@ -4,6 +4,8 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
+
 
 export default function FicheBebe() {
   const { 
@@ -293,17 +295,12 @@ export default function FicheBebe() {
                 {/* PHOTOS (toujours visible si au moins un équipement coché) */}
                 {equipementsCoches.length > 0 && (
                   <div className="border-t pt-6">
-                    <label className="block font-semibold mb-2">Photos - Tous les équipements bébé sélectionnés</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      multiple
-                      className="w-full p-2 border rounded"
+                    <PhotoUpload 
+                      fieldPath="section_bebe.photos_equipements_bebe"
+                      label="Photos - Tous les équipements bébé sélectionnés"
+                      multiple={true}
+                      maxFiles={12}
                     />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Prenez des photos de tous les équipements bébé que vous avez sélectionnés
-                    </p>
                   </div>
                 )}
               </div>

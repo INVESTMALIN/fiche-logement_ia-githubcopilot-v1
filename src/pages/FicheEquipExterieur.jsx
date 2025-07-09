@@ -4,6 +4,8 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
+
 
 export default function FicheEquipExterieur() {
   const { next, back, currentStep, getField, updateField, handleSave, saveStatus } = useForm()
@@ -330,13 +332,11 @@ export default function FicheEquipExterieur() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-1">Photos de l'extérieur</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    multiple
-                    className="w-full p-2 border rounded"
+                  <PhotoUpload 
+                    fieldPath="section_equip_spe_exterieur.exterieur_photos"
+                    label="Photos de l'extérieur"
+                    multiple={true}
+                    maxFiles={8}
                   />
                 </div>
 
@@ -467,13 +467,11 @@ export default function FicheEquipExterieur() {
                     </div>
 
                     <div>
-                      <label className="block font-semibold mb-1">Photos du barbecue et des ustensiles</label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        multiple
-                        className="w-full p-2 border rounded"
+                      <PhotoUpload 
+                        fieldPath="section_equip_spe_exterieur.barbecue_photos"
+                        label="Photos du barbecue et des ustensiles"
+                        multiple={true}
+                        maxFiles={3}
                       />
                     </div>
                   </div>
@@ -764,13 +762,11 @@ export default function FicheEquipExterieur() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-1">Photos</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    multiple
-                    className="w-full p-2 border rounded"
+                  <PhotoUpload 
+                    fieldPath="section_equip_spe_exterieur.jacuzzi_photos"
+                    label="Photos du Jacuzzi"
+                    multiple={true}
+                    maxFiles={3}
                   />
                 </div>
               </div>

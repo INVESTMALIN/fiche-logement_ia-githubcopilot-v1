@@ -4,6 +4,8 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
+
 
 export default function FicheCuisine2() {
   const { 
@@ -304,17 +306,14 @@ export default function FicheCuisine2() {
 
               {/* Upload photos */}
               <div>
-                <label className="block font-semibold mb-2">
-                  Photos de tous les tiroirs et placards de la cuisine
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 515.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <p className="text-gray-600">Photos des tiroirs et placards</p>
-                  <p className="text-sm text-gray-500">Fonctionnalité à venir</p>
-                </div>
-              </div>
+  <PhotoUpload 
+    fieldPath="section_cuisine_2.photos_tiroirs_placards"
+    label="Photos de tous les tiroirs et placards de la cuisine"
+    multiple={true}
+    maxFiles={8}
+  />
+</div>
+
             </div>
 
           </div>

@@ -258,6 +258,7 @@ const PDFUpload = ({ formData, onPDFGenerated }) => {
         )}
       </button>
 
+
       {/* États d'affichage */}
       {error && (
         <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-400 text-red-700">

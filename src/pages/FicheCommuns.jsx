@@ -4,6 +4,8 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
+
 
 export default function FicheCommuns() {
   const { next, back, currentStep, totalSteps, getField, updateField, handleSave, saveStatus } = useForm()
@@ -138,19 +140,12 @@ export default function FicheCommuns() {
 
                 {/* Upload photos */}
                 <div>
-                  <label className="block font-semibold mb-1">
-                    Photos des espaces communs
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    multiple
-                    className="w-full p-2 border rounded"
+                  <PhotoUpload 
+                    fieldPath="section_communs.photos_espaces_communs"
+                    label="Photos des espaces communs"
+                    multiple={true}
+                    maxFiles={8}
                   />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Vous pouvez sélectionner plusieurs photos
-                  </p>
                 </div>
 
               </div>

@@ -4,6 +4,8 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
+
 
 // ✅ COMPOSANT ACCORDEON SORTI EN DEHORS - FIX DU PROBLÈME FOCUS !
 const AccordeonSalleDeBain = ({ 
@@ -46,7 +48,7 @@ const AccordeonSalleDeBain = ({
           {/* 1. Nom ou description */}
           <div>
             <label className="block font-semibold mb-2">
-              Salle de Bain {numeroAffiche} : Nom ou description
+              Salle de bain {numeroAffiche} : Nom ou description
             </label>
             <input
               type="text"
@@ -60,7 +62,7 @@ const AccordeonSalleDeBain = ({
           {/* 2. Équipements (obligatoire) */}
           <div>
             <label className="block font-semibold mb-3">
-              Salle de Bain {numeroAffiche} – Équipements <span className="text-red-500">*</span>
+              Salle de bain {numeroAffiche} – Équipements <span className="text-red-500">*</span>
             </label>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -127,7 +129,7 @@ const AccordeonSalleDeBain = ({
           {/* 3. Accès (obligatoire) */}
           <div>
             <label className="block font-semibold mb-3">
-              Salle de Bain {numeroAffiche} – Accès <span className="text-red-500">*</span>
+              Salle de bain {numeroAffiche} – Accès <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
               <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-3 rounded-lg border border-gray-200">
@@ -155,20 +157,14 @@ const AccordeonSalleDeBain = ({
             </div>
           </div>
 
-          {/* 4. Photos - Placeholder pour l'instant */}
+          {/* 4. Photos - Salle de bains */}
           <div>
-            <label className="block font-semibold mb-3">
-              Salle de Bain {numeroAffiche} – Photos
-            </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <div className="space-y-2">
-                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <p className="text-gray-600">Parcourir les fichiers</p>
-                <p className="text-sm text-gray-500">Drag and drop files here</p>
-              </div>
-            </div>
+            <PhotoUpload 
+              fieldPath={`section_salle_de_bains.${salleKey}.photos_salle_de_bain`}
+              label={`Salle de bain ${numeroAffiche} - Photos`}
+              multiple={true}
+              maxFiles={5}
+            />
           </div>
 
         </div>

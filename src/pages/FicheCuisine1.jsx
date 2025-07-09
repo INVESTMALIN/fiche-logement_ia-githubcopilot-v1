@@ -4,6 +4,7 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
 
 export default function FicheCuisine1() {
   const { 
@@ -336,13 +337,12 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Cuisinière - Photo
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <p className="text-gray-600">Photo de la cuisinière</p>
-                    <p className="text-sm text-gray-500">Fonctionnalité à venir</p>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.cuisiniere_photo"
+                    label="Cuisinière - Photo"
+                    multiple={true}
+                    maxFiles={3}
+                  />
                 </div>
 
                 <div>
@@ -437,13 +437,12 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Plaque de cuisson - Photo
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <p className="text-gray-600">Photo de la plaque de cuisson</p>
-                    <p className="text-sm text-gray-500">Fonctionnalité à venir</p>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.plaque_cuisson_photo"
+                    label="Plaque de cuisson - Photo"
+                    multiple={true}
+                    maxFiles={3}
+                  />
                 </div>
 
                 <div>
@@ -524,13 +523,12 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Four - Photo
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <p className="text-gray-600">Photo du four</p>
-                    <p className="text-sm text-gray-500">Fonctionnalité à venir</p>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.four_photo"
+                    label="Four - Photo"
+                    multiple={true}
+                    maxFiles={3}
+                  />
                 </div>
 
                 <div>
@@ -583,13 +581,12 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Four à micro-ondes - Photo
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <p className="text-gray-600">Photo du four à micro-ondes</p>
-                    <p className="text-sm text-gray-500">Fonctionnalité à venir</p>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.micro_ondes_photo"
+                    label="Four à micro-ondes - Photo"
+                    multiple={true}
+                    maxFiles={3}
+                  />
                 </div>
 
                 <div>
@@ -642,13 +639,12 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Lave-vaisselle - Photo
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <p className="text-gray-600">Photo du lave-vaisselle</p>
-                    <p className="text-sm text-gray-500">Fonctionnalité à venir</p>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.lave_vaisselle_photo"
+                    label="Lave-vaisselle - Photo"
+                    multiple={true}
+                    maxFiles={3}
+                  />
                 </div>
 
                 <div>
@@ -733,13 +729,12 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Cafetière - Photo
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <p className="text-gray-600">Photo de la cafetière</p>
-                    <p className="text-sm text-gray-500">Fonctionnalité à venir</p>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.cafetiere_photo"
+                    label="Cafetière - Photo"
+                    multiple={true}
+                    maxFiles={3}
+                  />
                 </div>
 
                 <div>
