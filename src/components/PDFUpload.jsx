@@ -19,6 +19,16 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
     
     try {
       const numeroBien = formData.section_logement?.numero_bien || 'sans-numero'
+
+
+// 🔍 DEBUG SECTION CLEFS
+console.log('🔍 CLEFS DATA au moment génération PDF:', JSON.stringify(formData.section_clefs, null, 2))
+console.log('🔍 STRUCTURE ATTENDUE vs RÉELLE:')
+console.log('  - emplacementPhoto:', formData.section_clefs?.emplacementPhoto)
+console.log('  - interphonePhoto:', formData.section_clefs?.interphonePhoto)  
+console.log('  - tempoGachePhoto:', formData.section_clefs?.tempoGachePhoto)
+console.log('  - digicodePhoto:', formData.section_clefs?.digicodePhoto)
+console.log('  - clefs.photos (imbriqué):', formData.section_clefs?.clefs?.photos)
       
       // ===============================
       // 1. GÉNÉRATION PDF LOGEMENT

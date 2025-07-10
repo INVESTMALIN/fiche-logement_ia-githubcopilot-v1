@@ -156,6 +156,13 @@ const PDFMenageTemplate = ({ formData }) => {
   // Helper pour formater les valeurs d'affichage SANS photos (les photos sont gérées séparément)
   const formatValue = (value, fieldKey = '') => {
     if (isEmpty(value)) return '—'
+
+  // ✅ FIX CLEFS MÉNAGE AVEC DEBUG
+  if (fieldKey === 'clefs' && typeof value === 'object' && value.photos) {
+    console.log('🚨 FIX CLEFS MÉNAGE EXÉCUTÉ!', value.photos)
+    return null // Skip pour que extractPhotos s'en occupe
+  }
+  // ✅ FIN DU FIX ⬆️
     
     if (typeof value === 'boolean') {
       return value ? 'Oui' : 'Non'
@@ -234,6 +241,8 @@ const PDFMenageTemplate = ({ formData }) => {
 
   // 🔧 NOUVELLE FONCTION : Extraire toutes les photos d'une valeur
   const extractPhotos = (value, fieldKey) => {
+      
+    
     const photos = []
     
     if (typeof value === 'string' && isImageUrl(value)) {

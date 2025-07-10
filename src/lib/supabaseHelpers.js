@@ -999,7 +999,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
     section_clefs: {
       boiteType: supabaseData.clefs_boite_type || "",
       emplacementBoite: supabaseData.clefs_emplacement_boite || "",
-      emplacementPhoto: supabaseData.clefs_emplacement_photo || null,
+      emplacementPhoto: supabaseData.clefs_emplacement_photo || [],
       ttlock: {
         masterpinConciergerie: supabaseData.clefs_ttlock_masterpin_conciergerie || "",
         codeProprietaire: supabaseData.clefs_ttlock_code_proprietaire || "",
@@ -1016,13 +1016,13 @@ export const mapSupabaseToFormData = (supabaseData) => {
       },
       interphone: supabaseData.clefs_interphone ?? null,
       interphoneDetails: supabaseData.clefs_interphone_details || "",
-      interphonePhoto: supabaseData.clefs_interphone_photo || null,
+      interphonePhoto: supabaseData.clefs_interphone_photo || [],
       tempoGache: supabaseData.clefs_tempo_gache ?? null,
       tempoGacheDetails: supabaseData.clefs_tempo_gache_details || "",
-      tempoGachePhoto: supabaseData.clefs_tempo_gache_photo || null,
+      tempoGachePhoto: supabaseData.clefs_tempo_gache_photo || [],
       digicode: supabaseData.clefs_digicode ?? null,
       digicodeDetails: supabaseData.clefs_digicode_details || "",
-      digicodePhoto: supabaseData.clefs_digicode_photo || null,
+      digicodePhoto: supabaseData.clefs_digicode_photo || [],
       clefs: {
         photos: supabaseData.clefs_photos || [],
         precision: supabaseData.clefs_precision || "",

@@ -118,12 +118,40 @@ const formatValue = (value, fieldKey) => {
       if (value.toLowerCase() === 'true') return 'Oui'
       if (value.toLowerCase() === 'false') return 'Non'
     }
+
+    // 🔧 NOUVEAU FIX PONCTUEL - AJOUTER ICI ⬇️
+    if (fieldKey && fieldKey.toLowerCase().includes('photo') && typeof value === 'string' && value.startsWith('[')) {
+      try {
+        const parsedArray = JSON.parse(value)
+        if (Array.isArray(parsedArray)) {
+          value = parsedArray
+        }
+      } catch (e) {
+        // Continuer avec la valeur originale si parsing échoue
+      }
+    }    
     
     // Gérer les champs photos (string unique OU array)
+    if (fieldKey && (fieldKey === 'photos' || fieldKey.includes('clef'))) {
+      console.log('🔍 CLEFS RELATED:', fieldKey, typeof value, value)
+    }
+
+// ✅ FIX AVEC DEBUG
+if (fieldKey === 'clefs' && typeof value === 'object' && value.photos) {
+  console.log('🚨 FIX CLEFS EXÉCUTÉ!', value.photos)
+  return (
+    <div>
+      <span>Photos: </span>
+      <PhotoPreview photos={value.photos} />
+    </div>
+  )
+}
+    
     if (fieldKey && (
       fieldKey.toLowerCase().includes('photo') || 
       fieldKey.toLowerCase().includes('image') || 
-      fieldKey.toLowerCase().includes('photos')
+      fieldKey.toLowerCase().includes('photos') ||
+      fieldKey === 'photos' || fieldKey.endsWith('photos')
     )) {
       // Si c'est une string unique, la convertir en array
       if (typeof value === 'string' && isImageUrl(value)) {
