@@ -44,23 +44,23 @@ export default function FicheClefs() {
             
             {/* Type de boîte à clés */}
             <div className="mb-6">
-  <label className="block font-semibold mb-3">Type de boîte à clés *</label>
-  <div className="flex flex-col gap-2">
-    {["TTlock", "Igloohome", "Masterlock"].map(type => (
-      <label key={type} className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="radio"
-          name="boiteType"
-          value={type}
-          checked={formData.boiteType === type}
-          onChange={(e) => handleInputChange('section_clefs.boiteType', e.target.value)}
-          className="w-4 h-4 cursor-pointer"
-        />
-        <span>{type}</span>
-      </label>
-    ))}
-  </div>
-</div>
+              <label className="block font-semibold mb-3">Type de boîte à clés *</label>
+              <div className="flex flex-col gap-2">
+                {["TTlock", "Igloohome", "Masterlock"].map(type => (
+                  <label key={type} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="boiteType"
+                      value={type}
+                      checked={formData.boiteType === type}
+                      onChange={(e) => handleInputChange('section_clefs.boiteType', e.target.value)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>{type}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
 
             {/* Emplacement de la boîte à clés */}
@@ -191,28 +191,28 @@ export default function FicheClefs() {
             {/* Interphone */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Logement équipé d'un interphone ? *</label>
-              <div className="flex flex-wrap gap-4">
-              <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
                     name="interphone" 
                     value="true"
                     checked={formData.interphone === true}
                     onChange={(e) => handleRadioChange('section_clefs.interphone', e.target.value)}
-                    className="text-primary focus:ring-primary"
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  Oui
+                  <span>Oui</span>
                 </label>
-                <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
                     name="interphone" 
                     value="false"
                     checked={formData.interphone === false}
                     onChange={(e) => handleRadioChange('section_clefs.interphone', e.target.value)}
-                    className="text-primary focus:ring-primary"
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  Non
+                  <span>Non</span>
                 </label>
               </div>
             </div>
@@ -243,28 +243,28 @@ export default function FicheClefs() {
             {/* Tempo-gâche */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Logement équipé d'un tempo-gâche ? *</label>
-              <div className="flex flex-wrap gap-4">
-              <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
                     name="tempoGache" 
                     value="true"
                     checked={formData.tempoGache === true}
                     onChange={(e) => handleRadioChange('section_clefs.tempoGache', e.target.value)}
-                    className="text-primary focus:ring-primary"
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  Oui
+                  <span>Oui</span>
                 </label>
-                <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
                     name="tempoGache" 
                     value="false"
                     checked={formData.tempoGache === false}
                     onChange={(e) => handleRadioChange('section_clefs.tempoGache', e.target.value)}
-                    className="text-primary focus:ring-primary"
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  Non
+                  <span>Non</span>
                 </label>
               </div>
             </div>
@@ -292,31 +292,31 @@ export default function FicheClefs() {
               </div>
             )}
 
-            {/* Digicode */}
+           {/* Digicode */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Logement équipé d'un digicode ? *</label>
-              <div className="flex flex-wrap gap-4">
-              <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
                     name="digicode" 
                     value="true"
                     checked={formData.digicode === true}
                     onChange={(e) => handleRadioChange('section_clefs.digicode', e.target.value)}
-                    className="text-primary focus:ring-primary"
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  Oui
+                  <span>Oui</span>
                 </label>
-                <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
                     name="digicode" 
                     value="false"
                     checked={formData.digicode === false}
                     onChange={(e) => handleRadioChange('section_clefs.digicode', e.target.value)}
-                    className="text-primary focus:ring-primary"
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  Non
+                  <span>Non</span>
                 </label>
               </div>
             </div>
@@ -371,29 +371,29 @@ export default function FicheClefs() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-3">Le prestataire a-t-il reçu les clefs ? *</label>
-                  <div className="flex flex-wrap gap-4">
-                  <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
+                  <label className="block font-semibold mb-3">Le prestataire a-t-il reçu les clefs ?</label>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input 
                         type="radio" 
-                        name="clefsPrestataire" 
+                        name="clefs_prestataire" 
                         value="true"
                         checked={formData.clefs?.prestataire === true}
                         onChange={(e) => handleRadioChange('section_clefs.clefs.prestataire', e.target.value)}
-                        className="text-primary focus:ring-primary"
+                        className="w-4 h-4 cursor-pointer"
                       />
-                      Oui
+                      <span>Oui</span>
                     </label>
-                    <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input 
                         type="radio" 
-                        name="clefsPrestataire" 
+                        name="clefs_prestataire" 
                         value="false"
                         checked={formData.clefs?.prestataire === false}
                         onChange={(e) => handleRadioChange('section_clefs.clefs.prestataire', e.target.value)}
-                        className="text-primary focus:ring-primary"
+                        className="w-4 h-4 cursor-pointer"
                       />
-                      Non
+                      <span>Non</span>
                     </label>
                   </div>
                 </div>
