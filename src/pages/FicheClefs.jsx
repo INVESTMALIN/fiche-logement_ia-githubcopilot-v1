@@ -47,7 +47,7 @@ export default function FicheClefs() {
               <label className="block font-semibold mb-3">Type de boîte à clés *</label>
               <div className="flex flex-wrap gap-4">
                 {["TTlock", "Igloohome", "Masterlock"].map(type => (
-                  <label key={type} className="inline-flex items-center gap-2 cursor-pointer">
+                  <label key={type} className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
                     <input 
                       type="radio" 
                       name="boiteType" 
@@ -191,7 +191,7 @@ export default function FicheClefs() {
             <div className="mb-6">
               <label className="block font-semibold mb-3">Logement équipé d'un interphone ? *</label>
               <div className="flex flex-wrap gap-4">
-                <label className="inline-flex items-center gap-2 cursor-pointer">
+              <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
                   <input 
                     type="radio" 
                     name="interphone" 
@@ -202,7 +202,7 @@ export default function FicheClefs() {
                   />
                   Oui
                 </label>
-                <label className="inline-flex items-center gap-2 cursor-pointer">
+                <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
                   <input 
                     type="radio" 
                     name="interphone" 
@@ -243,7 +243,7 @@ export default function FicheClefs() {
             <div className="mb-6">
               <label className="block font-semibold mb-3">Logement équipé d'un tempo-gâche ? *</label>
               <div className="flex flex-wrap gap-4">
-                <label className="inline-flex items-center gap-2 cursor-pointer">
+              <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
                   <input 
                     type="radio" 
                     name="tempoGache" 
@@ -254,7 +254,7 @@ export default function FicheClefs() {
                   />
                   Oui
                 </label>
-                <label className="inline-flex items-center gap-2 cursor-pointer">
+                <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
                   <input 
                     type="radio" 
                     name="tempoGache" 
@@ -295,7 +295,7 @@ export default function FicheClefs() {
             <div className="mb-6">
               <label className="block font-semibold mb-3">Logement équipé d'un digicode ? *</label>
               <div className="flex flex-wrap gap-4">
-                <label className="inline-flex items-center gap-2 cursor-pointer">
+              <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
                   <input 
                     type="radio" 
                     name="digicode" 
@@ -306,7 +306,7 @@ export default function FicheClefs() {
                   />
                   Oui
                 </label>
-                <label className="inline-flex items-center gap-2 cursor-pointer">
+                <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
                   <input 
                     type="radio" 
                     name="digicode" 
@@ -372,7 +372,7 @@ export default function FicheClefs() {
                 <div>
                   <label className="block font-semibold mb-3">Le prestataire a-t-il reçu les clefs ? *</label>
                   <div className="flex flex-wrap gap-4">
-                    <label className="inline-flex items-center gap-2 cursor-pointer">
+                  <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
                       <input 
                         type="radio" 
                         name="clefsPrestataire" 
@@ -383,7 +383,7 @@ export default function FicheClefs() {
                       />
                       Oui
                     </label>
-                    <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <label className="inline-flex items-center gap-2 cursor-pointer min-w-[100px]">
                       <input 
                         type="radio" 
                         name="clefsPrestataire" 
