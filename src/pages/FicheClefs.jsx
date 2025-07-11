@@ -45,23 +45,18 @@ export default function FicheClefs() {
             {/* Type de boîte à clés */}
             <div className="mb-6">
   <label className="block font-semibold mb-3">Type de boîte à clés *</label>
-  <div className="flex flex-col items-start gap-2">
+  <div className="flex flex-col gap-2">
     {["TTlock", "Igloohome", "Masterlock"].map(type => (
-      <label
-        key={type}
-        className="flex items-center gap-2 cursor-pointer"
-      >
+      <label key={type} className="flex items-center gap-2 cursor-pointer">
         <input
           type="radio"
           name="boiteType"
           value={type}
           checked={formData.boiteType === type}
-          onChange={(e) =>
-            handleInputChange('section_clefs.boiteType', e.target.value)
-          }
-          className="accent-primary"
+          onChange={(e) => handleInputChange('section_clefs.boiteType', e.target.value)}
+          className="w-4 h-4 cursor-pointer"
         />
-        <span className="text-sm font-medium">{type}</span>
+        <span>{type}</span>
       </label>
     ))}
   </div>
