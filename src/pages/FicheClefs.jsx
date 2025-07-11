@@ -45,7 +45,7 @@ export default function FicheClefs() {
             {/* Type de boîte à clés */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Type de boîte à clés *</label>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-4">
                 {["TTlock", "Igloohome", "Masterlock"].map(type => (
                   <label key={type} className="inline-flex items-center gap-2 cursor-pointer">
                     <input 
@@ -190,7 +190,7 @@ export default function FicheClefs() {
             {/* Interphone */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Logement équipé d'un interphone ? *</label>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-4">
                 <label className="inline-flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
@@ -242,7 +242,7 @@ export default function FicheClefs() {
             {/* Tempo-gâche */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Logement équipé d'un tempo-gâche ? *</label>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-4">
                 <label className="inline-flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
@@ -294,7 +294,7 @@ export default function FicheClefs() {
             {/* Digicode */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Logement équipé d'un digicode ? *</label>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-4">
                 <label className="inline-flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
@@ -371,7 +371,7 @@ export default function FicheClefs() {
 
                 <div>
                   <label className="block font-semibold mb-3">Le prestataire a-t-il reçu les clefs ? *</label>
-                  <div className="flex gap-6">
+                  <div className="flex flex-wrap gap-4">
                     <label className="inline-flex items-center gap-2 cursor-pointer">
                       <input 
                         type="radio" 
