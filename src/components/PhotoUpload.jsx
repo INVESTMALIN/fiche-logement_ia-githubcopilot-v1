@@ -45,6 +45,78 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
     return `user-${user.id}/fiche-${numeroBien}/${section}/${field}/${timestamp}_${randomId}_${fileName}`
   }
 
+   // 🔧 FONCTION COMPRESSION AUTOMATIQUE - Ajout pour anciens Android
+  const compressImage = async (file) => {
+    return new Promise((resolve) => {
+      // Si c'est une vidéo, on ne compresse pas
+      if (file.type.startsWith('video/')) {
+        resolve(file)
+        return
+      }
+
+      // Si l'image fait moins de 1MB, on ne compresse pas
+      if (file.size < 1024 * 1024) {
+        resolve(file)
+        return
+      }
+
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+
+      img.onload = () => {
+        // 🎯 CALCUL TAILLE OPTIMALE
+        let { width, height } = img
+        
+        // Limiter les dimensions max (crucial pour anciens Android)
+        const maxDimension = 1920 // Max 1920px sur le côté le plus grand
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height * maxDimension) / width
+            width = maxDimension
+          } else {
+            width = (width * maxDimension) / height
+            height = maxDimension
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        // Dessiner l'image redimensionnée
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // 🎯 COMPRESSION JPEG avec qualité adaptative
+        const quality = file.size > 5 * 1024 * 1024 ? 0.6 : 0.8 // Plus aggressif pour grosses images
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              // Créer un nouveau File avec le nom original
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              })
+              
+              console.log(`📷 Compression: ${(file.size / 1024 / 1024).toFixed(1)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(1)}MB`)
+              resolve(compressedFile)
+            } else {
+              resolve(file) // Fallback si compression échoue
+            }
+          },
+          'image/jpeg',
+          quality
+        )
+      }
+
+      img.onerror = () => {
+        resolve(file) // Fallback si erreur de chargement
+      }
+
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
   // Upload vers Supabase Storage
   const uploadToSupabase = async (files) => {
     // 🚨 VALIDATION CRITIQUE - Numéro de bien obligatoire
@@ -64,22 +136,29 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
         if (!isImage && !(acceptVideo && isVideo)) {
           throw new Error(`${file.name} n'est pas un format valide`)
         }
+
+        // 🆕 COMPRESSION AUTOMATIQUE pour les images
+        let fileToUpload = file
+        if (isImage) {
+          console.log(`📷 Compression de ${file.name}...`)
+          fileToUpload = await compressImage(file)
+        }        
   
-        // Validation taille (max 50MB pour images, 200MB pour vidéos)
-        const maxSize = isVideo ? 200 * 1024 * 1024 : 50 * 1024 * 1024
-        if (file.size > maxSize) {
-          const maxSizeMB = isVideo ? '200MB' : '50MB'
-          throw new Error(`${file.name} est trop volumineux (max ${maxSizeMB})`)
+        // Validation taille APRÈS compression (modifiée)
+        const maxSize = isVideo ? 200 * 1024 * 1024 : 20 * 1024 * 1024 // 20MB max pour images
+        if (fileToUpload.size > maxSize) {
+          const maxSizeMB = isVideo ? '200MB' : '20MB'
+          throw new Error(`${file.name} est encore trop volumineux après compression (max ${maxSizeMB})`)
         }
   
         // Génération du path de stockage
         const ficheId = getField('id')
-        const storagePath = generateStoragePath(file.name, ficheId)
+        const storagePath = generateStoragePath(fileToUpload.name, ficheId)
         
         // Upload vers Supabase
         const { data, error } = await supabase.storage
           .from('fiche-photos')
-          .upload(storagePath, file, {
+          .upload(storagePath, fileToUpload, {
             cacheControl: '3600',
             upsert: false
           })
@@ -230,7 +309,7 @@ const handleDeletePhoto = async (photoUrl, index) => {
                   Ajouter des {acceptVideo ? 'photos/vidéos' : 'photos'}
                 </p>
                 <p className="text-xs mt-1">
-                  Max {maxFiles} fichiers, {acceptVideo ? '50MB/photo, 200MB/vidéo' : '50MB par fichier'}
+                  Max {maxFiles} fichiers, {acceptVideo ? '50MB/photo, 200MB/vidéo' : '20MB par fichier'}
                 </p>
               </div>
             )}

@@ -22,16 +22,45 @@ export default function FicheBebe() {
   // PATTERN IMPORTANT : Récupérer formData pour les arrays et booléens
   const formData = getField('section_bebe')
 
-  const handleArrayCheckboxChange = (field, option, checked) => {
-    const currentArray = formData[field.split('.').pop()] || []
-    let newArray
-    if (checked) {
-      newArray = [...currentArray, option]
-    } else {
-      newArray = currentArray.filter(item => item !== option)
+// 🔧 REMPLACER la fonction handleArrayCheckboxChange dans FicheBebe.jsx
+
+const handleArrayCheckboxChange = (field, option, checked) => {
+  const currentArray = formData[field.split('.').pop()] || []
+  let newArray
+  if (checked) {
+    newArray = [...currentArray, option]
+  } else {
+    newArray = currentArray.filter(item => item !== option)
+    
+    // 🆕 NETTOYAGE AUTOMATIQUE des champs liés quand on décoche
+    if (option === 'Lit bébé') {
+      // Nettoyer tous les champs liés au lit bébé
+      updateField('section_bebe.lit_bebe_type', '')
+      updateField('section_bebe.lit_parapluie_disponibilite', '')
+      updateField('section_bebe.lit_stores_occultants', null)
     }
-    updateField(field, newArray)
+    
+    if (option === 'Chaise haute') {
+      // Nettoyer tous les champs liés à la chaise haute
+      updateField('section_bebe.chaise_haute_type', '')
+      updateField('section_bebe.chaise_haute_disponibilite', '')
+      updateField('section_bebe.chaise_haute_caracteristiques', [])
+      updateField('section_bebe.chaise_haute_prix', '')
+    }
+    
+    if (option === 'Jouets pour enfants') {
+      // Nettoyer tous les champs liés aux jouets
+      updateField('section_bebe.jouets_tranches_age', [])
+    }
+    
+    if (option === 'Autre') {
+      // Nettoyer le champ détails
+      updateField('section_bebe.equipements_autre_details', '')
+    }
   }
+  
+  updateField(field, newArray)
+}
 
   const handleInputChange = (field, value) => {
     updateField(field, value)

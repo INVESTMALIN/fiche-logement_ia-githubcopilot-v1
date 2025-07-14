@@ -229,86 +229,101 @@ const PDFMenageTemplate = ({ formData }) => {
   }
 
   // 🎯 COMPOSANT: Rendu GRAND des photos pour ménage
-  const PhotosDisplayMenage = ({ photos, sectionTitle }) => {
-    if (!photos || photos.length === 0) return null
+// 🎯 COMPOSANT: Rendu GRAND des photos pour ménage - VERSION CORRIGÉE
+const PhotosDisplayMenage = ({ photos, sectionTitle }) => {
+  if (!photos || photos.length === 0) return null
 
-    return (
-      <div style={{
-        marginTop: '20px',
-        padding: '20px',
-        backgroundColor: '#f8fafc',
-        border: '1px solid #e2e8f0',
-        borderRadius: '8px',
-        pageBreakInside: 'avoid'
+  return (
+    <div style={{
+      marginTop: '20px',
+      padding: '20px',
+      backgroundColor: '#f8fafc',
+      border: '1px solid #e2e8f0',
+      borderRadius: '8px',
+      pageBreakInside: 'avoid'
+    }}>
+      <h4 style={{
+        margin: '0 0 16px 0',
+        fontSize: '12pt',
+        fontWeight: '600',
+        color: '#4a5568',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
       }}>
-        <h4 style={{
-          margin: '0 0 16px 0',
-          fontSize: '12pt',
-          fontWeight: '600',
-          color: '#4a5568',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          📸 Photos {sectionTitle} ({photos.length})
-        </h4>
-        
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: photos.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '16px',
-          maxWidth: '100%'
-        }}>
-          {photos.map((photo, index) => (
-            <div key={index} style={{
-              textAlign: 'center',
-              pageBreakInside: 'avoid'
-            }}>
-              <a 
-                href={photo.url} 
-                target="_blank"
-                style={{ 
-                  display: 'block', 
-                  textDecoration: 'none',
-                  border: '3px solid #3182ce',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  backgroundColor: '#ffffff',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        📸 Photos {sectionTitle} ({photos.length})
+      </h4>
+      
+      {/* 🔧 SOLUTION: Flexbox responsive pour photos GRANDES */}
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '16px',
+        justifyContent: 'flex-start', // Aligne à gauche
+        alignItems: 'flex-start'
+      }}>
+        {photos.map((photo, index) => (
+          <div key={index} style={{
+            // 🔧 CONTENEUR adaptatif pour grandes photos
+            display: 'inline-block',
+            textAlign: 'center',
+            pageBreakInside: 'avoid',
+            // Pas de width fixe
+          }}>
+            <a 
+              href={photo.url} 
+              target="_blank"
+              style={{ 
+                display: 'block', 
+                textDecoration: 'none',
+                border: '3px solid #3182ce',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                backgroundColor: '#ffffff',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                // 🔧 Le lien s'adapte à l'image
+                width: 'fit-content'
+              }}
+            >
+              <img 
+                src={photo.url}
+                alt={photo.label}
+                style={{
+                  display: 'block',
+                  // 🔧 TAILLES PLUS GRANDES pour le ménage
+                  maxWidth: photos.length === 1 ? '350px' : 
+         photos.length === 2 ? '280px' : 
+         photos.length <= 3 ? '220px' : '170px',
+maxHeight: photos.length === 1 ? '250px' : 
+          photos.length === 2 ? '200px' : 
+          photos.length <= 3 ? '170px' : '140px',
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
+                  backgroundColor: '#f7fafc'
                 }}
-              >
-                <img 
-                  src={photo.url}
-                  alt={photo.label}
-                  style={{
-                    display: 'block',
-                    maxWidth: '100%',
-                    maxHeight: '120px',
-                    width: 'auto',         // 🔧 AUTO au lieu de 100%
-                    height: 'auto',        // 🔧 AUTO au lieu de fixe
-                    objectFit: 'contain',  // 🔧 CONTAIN au lieu de cover
-                    backgroundColor: '#f7fafc'
-                  }}
-                  onError={(e) => {
-                    e.target.style.display = 'none'
-                  }}
-                />
-              </a>
-              <div style={{
-                fontSize: '9pt',
-                color: '#4a5568',
-                marginTop: '8px',
-                lineHeight: '1.3',
-                fontWeight: '500'
-              }}>
-                {photo.label}
-              </div>
+                onError={(e) => {
+                  e.target.style.display = 'none'
+                }}
+              />
+            </a>
+            <div style={{
+              fontSize: '9pt',
+              color: '#4a5568',
+              marginTop: '8px',
+              lineHeight: '1.3',
+              fontWeight: '500',
+              maxWidth: '150px', // Limite plus large pour les grandes photos
+              wordWrap: 'break-word'
+            }}>
+              {photo.label}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   // 🎯 Fonction pour générer le nom du dossier photos
   const generatePhotosFolder = () => {

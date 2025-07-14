@@ -6,6 +6,79 @@ import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 
+// 🔧 COMPOSANT ENTRETIEN PATTERN - À PLACER AVANT export default function FicheEquipExterieur()
+// (juste après les imports et avant la fonction principale)
+// Composant réutilisable pour pattern entretien
+const EntretienPattern = ({ prefix, label, formData, getField, handleInputChange, handleRadioChange }) => {
+  const entretienField = `${prefix}_entretien_prestataire`
+  const entretienValue = formData[entretienField.split('.').pop()]
+  
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block font-semibold mb-3">
+          Le prestataire doit-il gérer l'entretien {label} ?
+        </label>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              checked={entretienValue === true}
+              onChange={() => handleRadioChange(entretienField, 'true')}
+              className="w-4 h-4"
+            />
+            <span>Oui</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              checked={entretienValue === false}
+              onChange={() => handleRadioChange(entretienField, 'false')}
+              className="w-4 h-4"
+            />
+            <span>Non</span>
+          </label>
+        </div>
+      </div>
+
+      {entretienValue === true && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+          <div>
+            <label className="block font-semibold mb-1">Fréquence d'entretien</label>
+            <input
+              type="text"
+              placeholder="Ex : 2 fois par semaine (lundi / vendredi)"
+              className="w-full p-2 border rounded"
+              value={getField(`${prefix}_entretien_frequence`)}
+              onChange={(e) => handleInputChange(`${prefix}_entretien_frequence`, e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Type de prestation</label>
+            <textarea
+              placeholder="Ex : ajout des produits d'entretien"
+              className="w-full p-2 border rounded h-20"
+              value={getField(`${prefix}_entretien_type_prestation`)}
+              onChange={(e) => handleInputChange(`${prefix}_entretien_type_prestation`, e.target.value)}
+            />
+          </div>
+        </div>
+      )}
+
+      {entretienValue === false && (
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <label className="block font-semibold mb-1">Qui s'occupe de l'entretien ?</label>
+          <textarea
+            placeholder="Ex : Une entreprise spécialisée..."
+            className="w-full p-2 border rounded h-20"
+            value={getField(`${prefix}_entretien_qui`)}
+            onChange={(e) => handleInputChange(`${prefix}_entretien_qui`, e.target.value)}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function FicheEquipExterieur() {
   const { next, back, currentStep, getField, updateField, handleSave, saveStatus } = useForm()
@@ -36,77 +109,7 @@ export default function FicheEquipExterieur() {
     updateField(field, value === '' ? null : parseInt(value))
   }
 
-  // Composant réutilisable pour pattern entretien
-  const EntretienPattern = ({ prefix, label }) => {
-    const entretienField = `${prefix}_entretien_prestataire`
-    const entretienValue = formData[entretienField.split('.').pop()]
-    
-    return (
-      <div className="space-y-4">
-        <div>
-          <label className="block font-semibold mb-3">
-            Le prestataire doit-il gérer l'entretien {label} ?
-          </label>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                checked={entretienValue === true}
-                onChange={() => handleRadioChange(entretienField, 'true')}
-                className="w-4 h-4"
-              />
-              <span>Oui</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                checked={entretienValue === false}
-                onChange={() => handleRadioChange(entretienField, 'false')}
-                className="w-4 h-4"
-              />
-              <span>Non</span>
-            </label>
-          </div>
-        </div>
 
-        {entretienValue === true && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
-            <div>
-              <label className="block font-semibold mb-1">Fréquence d'entretien</label>
-              <input
-                type="text"
-                placeholder="Ex : 2 fois par semaine (lundi / vendredi)"
-                className="w-full p-2 border rounded"
-                value={getField(`${prefix}_entretien_frequence`)}
-                onChange={(e) => handleInputChange(`${prefix}_entretien_frequence`, e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Type de prestation</label>
-              <textarea
-                placeholder="Ex : ajout des produits d'entretien"
-                className="w-full p-2 border rounded h-20"
-                value={getField(`${prefix}_entretien_type_prestation`)}
-                onChange={(e) => handleInputChange(`${prefix}_entretien_type_prestation`, e.target.value)}
-              />
-            </div>
-          </div>
-        )}
-
-        {entretienValue === false && (
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <label className="block font-semibold mb-1">Qui s'occupe de l'entretien ?</label>
-            <textarea
-              placeholder="Ex : Une entreprise spécialisée..."
-              className="w-full p-2 border rounded h-20"
-              value={getField(`${prefix}_entretien_qui`)}
-              onChange={(e) => handleInputChange(`${prefix}_entretien_qui`, e.target.value)}
-            />
-          </div>
-        )}
-      </div>
-    )
-  }
 
   return (
     <div className="flex min-h-screen">
@@ -264,7 +267,11 @@ export default function FicheEquipExterieur() {
 
                 <EntretienPattern 
                   prefix="section_equip_spe_exterieur.exterieur" 
-                  label="de l'extérieur" 
+                  label="de l'extérieur"
+                  formData={formData}
+                  getField={getField}
+                  handleInputChange={handleInputChange}
+                  handleRadioChange={handleRadioChange}
                 />
 
                 <div>
@@ -655,7 +662,11 @@ export default function FicheEquipExterieur() {
 
                 <EntretienPattern 
                   prefix="section_equip_spe_exterieur.piscine" 
-                  label="de la piscine" 
+                  label="de la piscine"
+                  formData={formData}
+                  getField={getField}
+                  handleInputChange={handleInputChange}
+                  handleRadioChange={handleRadioChange}
                 />
 
                 <div>
@@ -725,7 +736,11 @@ export default function FicheEquipExterieur() {
 
                 <EntretienPattern 
                   prefix="section_equip_spe_exterieur.jacuzzi" 
-                  label="du jacuzzi" 
+                  label="du jacuzzi"
+                  formData={formData}
+                  getField={getField}
+                  handleInputChange={handleInputChange}
+                  handleRadioChange={handleRadioChange}
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -779,7 +794,11 @@ export default function FicheEquipExterieur() {
                 
                 <EntretienPattern 
                   prefix="section_equip_spe_exterieur.cuisine_ext" 
-                  label="de la cuisine extérieure" 
+                  label="de la cuisine extérieure"
+                  formData={formData}
+                  getField={getField}
+                  handleInputChange={handleInputChange}
+                  handleRadioChange={handleRadioChange}
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

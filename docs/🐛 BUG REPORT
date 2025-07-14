@@ -1,9 +1,10 @@
-# 🐛 Bug Report - Boutons Radio iPhone
+# 🐛 Bug Report - Fiche Logement
 
 *Historique des bugs rencontrés et leurs solutions*
 
+---
 
-## 🚨 **BUG #001 -Affichage Boutons Radio sur iPhone**
+## 🚨 **BUG #001 - Affichage Boutons Radio sur iPhone**
 **Date :** 11 juillet 2025  
 **Gravité :** Faible  
 **Statut :** ✅ RÉSOLU  
@@ -13,16 +14,15 @@ Les boutons radio ne s'affichent pas correctement sur **iPhone** (testé sur iPh
 - L'alignement est cassé spécifiquement sur iOS
 - **Android et Desktop** : ✅ Fonctionnent correctement
 
-## 🔍 **Cause du Bug**
-
+### **Cause du Bug**
 Problème de CSS spécifique iOS avec la combinaison :
 - `inline-flex` sur les labels
 - Classes CSS custom au lieu de dimensions fixes
 - Structure HTML non optimale pour iOS
 
-## ✅ **Solution Testée et Validée**
+### **Solution Testée et Validée**
 
-### ❌ **Pattern Buggy (à corriger)**
+#### ❌ **Pattern Buggy (à corriger)**
 ```javascript
 <div className="flex gap-6">
   <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -35,7 +35,7 @@ Problème de CSS spécifique iOS avec la combinaison :
 </div>
 ```
 
-### ✅ **Pattern Correct (à utiliser)**
+#### ✅ **Pattern Correct (à utiliser)**
 ```javascript
 <div className="flex flex-col gap-2">  {/* ou flex gap-6 pour horizontal */}
   <label className="flex items-center gap-2 cursor-pointer">
@@ -48,57 +48,10 @@ Problème de CSS spécifique iOS avec la combinaison :
 </div>
 ```
 
-## 🎯 **Changements Obligatoires**
-
+### **Changements Obligatoires**
 1. **Label** : `inline-flex` → `flex`
 2. **Input** : `text-primary focus:ring-primary` → `w-4 h-4 cursor-pointer`
 3. **Texte** : Texte direct → `<span>Texte</span>`
-
-## 📋 **Pages à Corriger**
-
-### 🔴 **FicheClefs** - ✅ CORRIGÉ
-- Type de boîte à clés
-- Interphone (Oui/Non)
-- Tempo-gâche (Oui/Non)
-- Digicode (Oui/Non)
-- Clefs remises (Oui/Non)
-
-### 🟡 **À Vérifier** (potentiellement touchées)
-- **FicheVisite** - A priori OK (utilise déjà le bon pattern)
-- **FicheCuisine1** - A priori OK 
-- **Autres sections** avec boutons radio
-
-## 🔧 **Script de Correction Rapide**
-
-Pour corriger rapidement, rechercher et remplacer :
-
-1. **Rechercher** : `inline-flex items-center gap-2 cursor-pointer`
-   **Remplacer** : `flex items-center gap-2 cursor-pointer`
-
-2. **Rechercher** : `className="text-primary focus:ring-primary"`
-   **Remplacer** : `className="w-4 h-4 cursor-pointer"`
-
-3. **Vérifier manuellement** que les textes sont dans des `<span>`
-
-## 📚 **Référence**
-
-**Pages qui utilisent déjà le bon pattern :**
-- ✅ **FicheAirbnb** 
-- ✅ **FicheBooking**
-
-Ces pages peuvent servir de modèle pour les corrections.
-
-## ⚠️ **Notes Importantes**
-
-- Le bug est **spécifique à iOS** - ne pas casser desktop/Android
-- Tester systématiquement sur iPhone après correction
-- Le pattern en colonne (`flex-col`) est plus safe pour mobile
-- Garder `cursor-pointer` pour l'UX tactile
-
----
-
-**Status :** 🟢 Solution validée sur iPhone 12  
-**Priorité :** Faible (impact UX mobile limitée)
 
 ---
 
@@ -160,10 +113,133 @@ CREATE TRIGGER fiche_completed_webhook
 - ✅ Webhook Make reçoit payload complet (~750 colonnes)
 - ✅ Pas d'erreur console
 
-### **Prévention**
-- ⚠️ Toujours utiliser la syntaxe nommée avec `:=` pour `net.http_post`
-- ⚠️ Vérifier que l'extension `http` est bien activée : `CREATE EXTENSION IF NOT EXISTS http;`
-- ⚠️ Tester le trigger avec `to_jsonb(NEW)` avant de complexifier le payload
+---
+
+## 🚨 **BUG #003 - Champs input perdent focus à chaque frappe**
+**Date :** 15 juillet 2025  
+**Gravité :** Majeure  
+**Statut :** ✅ RÉSOLU  
+
+### **Symptômes**
+- Dans `FicheEquipExterieur.jsx`, champs "Fréquence d'entretien" et "Type de prestation" se réinitialisent à chaque frappe
+- L'utilisateur ne peut taper qu'une lettre à la fois, doit recliquer dans le champ
+- Bug présent sur tous les champs conditionnels imbriqués (extérieur, piscine, jacuzzi, cuisine extérieure)
+- Même problème résolu précédemment sur FicheChambre et FicheSalleDeBains
+
+### **Cause racine**
+Composant `EntretienPattern` défini **à l'intérieur** de la fonction `FicheEquipExterieur()`, causant :
+- Re-création du composant à chaque render
+- Perte de référence React
+- Réinitialisation des inputs
+
+### **Solution finale**
+```javascript
+// ✅ AVANT - Sortir le composant EntretienPattern HORS de la fonction principale
+const EntretienPattern = ({ prefix, label, formData, getField, handleInputChange, handleRadioChange }) => {
+  const entretienField = `${prefix}_entretien_prestataire`
+  const entretienValue = formData[entretienField.split('.').pop()]
+  
+  return (
+    <div className="space-y-4">
+      {/* Contenu du composant... */}
+    </div>
+  )
+}
+
+// ✅ APRÈS - Dans la fonction principale, passer toutes les props nécessaires
+export default function FicheEquipExterieur() {
+  // ...fonctions...
+  
+  return (
+    <EntretienPattern 
+      prefix="section_equip_spe_exterieur.exterieur" 
+      label="de l'extérieur"
+      formData={formData}
+      getField={getField}
+      handleInputChange={handleInputChange}
+      handleRadioChange={handleRadioChange}
+    />
+  )
+}
+```
+
+### **Changements requis**
+1. **Déplacer** `EntretienPattern` avant `export default function FicheEquipExterieur()`
+2. **Ajouter** les props : `formData`, `getField`, `handleInputChange`, `handleRadioChange`
+3. **Modifier** les 4 appels du composant pour passer ces props
+4. **Supprimer** l'ancien composant de l'intérieur de la fonction
+
+### **Tests validés**
+- ✅ Frappe continue possible dans "Fréquence d'entretien"
+- ✅ Frappe continue possible dans "Type de prestation" 
+- ✅ Pas de perte de focus sur les 4 sections (extérieur, piscine, jacuzzi, cuisine ext.)
+- ✅ Fonctionnalité conditionnelle intacte
+
+---
+
+## 🚨 **BUG #004 - Champs conditionnels gardent valeurs fantômes**
+**Date :** 15 juillet 2025  
+**Gravité :** Mineure  
+**Statut :** ✅ RÉSOLU  
+
+### **Symptômes**
+- Dans `FicheBebe.jsx`, après avoir coché "Lit bébé" puis choisi un type, si on décoche "Lit bébé" :
+  - Les champs conditionnels disparaissent visuellement ✅
+  - Mais les valeurs restent stockées dans FormContext ❌
+- Même problème pour "Chaise haute", "Jouets pour enfants", etc.
+- Valeurs "fantômes" invisibles mais présentes dans les données
+
+### **Cause racine**
+La fonction `handleArrayCheckboxChange` ne nettoie que l'array principal, pas les champs liés conditionnels.
+
+### **Solution finale**
+```javascript
+// ✅ Fonction modifiée avec nettoyage automatique
+const handleArrayCheckboxChange = (field, option, checked) => {
+  const currentArray = formData[field.split('.').pop()] || []
+  let newArray
+  if (checked) {
+    newArray = [...currentArray, option]
+  } else {
+    newArray = currentArray.filter(item => item !== option)
+    
+    // 🆕 NETTOYAGE AUTOMATIQUE des champs liés quand on décoche
+    if (option === 'Lit bébé') {
+      // Nettoyer tous les champs liés au lit bébé
+      updateField('section_bebe.lit_bebe_type', '')
+      updateField('section_bebe.lit_parapluie_disponibilite', '')
+      updateField('section_bebe.lit_stores_occultants', null)
+    }
+    
+    if (option === 'Chaise haute') {
+      // Nettoyer tous les champs liés à la chaise haute
+      updateField('section_bebe.chaise_haute_type', '')
+      updateField('section_bebe.chaise_haute_disponibilite', '')
+      updateField('section_bebe.chaise_haute_caracteristiques', [])
+      updateField('section_bebe.chaise_haute_prix', '')
+    }
+    
+    if (option === 'Jouets pour enfants') {
+      updateField('section_bebe.jouets_tranches_age', [])
+    }
+    
+    if (option === 'Autre') {
+      updateField('section_bebe.equipements_autre_details', '')
+    }
+  }
+  
+  updateField(field, newArray)
+}
+```
+
+### **Tests validés**
+- ✅ Cocher "Lit bébé" → choisir type → décocher "Lit bébé" → champs effacés
+- ✅ Même comportement pour "Chaise haute" et "Jouets"
+- ✅ Plus de valeurs fantômes dans FormContext
+- ✅ Interface cohérente avec les données
+
+### **Applications potentielles**
+Ce pattern peut être appliqué à d'autres sections avec champs conditionnels similaires.
 
 ---
 

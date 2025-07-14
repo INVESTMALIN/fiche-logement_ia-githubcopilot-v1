@@ -250,7 +250,7 @@ const PDFTemplate = ({ formData }) => {
   // 🎯 COMPOSANT: Rendu moderne des photos
   const PhotosDisplay = ({ photos, sectionTitle }) => {
     if (!photos || photos.length === 0) return null
-
+  
     return (
       <div style={{
         marginTop: '16px',
@@ -272,16 +272,21 @@ const PDFTemplate = ({ formData }) => {
           📸 Photos {sectionTitle} ({photos.length})
         </h4>
         
+        {/* 🔧 SOLUTION: Flexbox au lieu de Grid rigide */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: photos.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(80px, 1fr))',
+          display: 'flex',
+          flexWrap: 'wrap',
           gap: '12px',
-          maxWidth: '100%'
+          justifyContent: 'flex-start', // Aligne à gauche
+          alignItems: 'flex-start'
         }}>
           {photos.slice(0, 6).map((photo, index) => (
             <div key={index} style={{
+              // 🔧 CONTENEUR qui s'adapte au contenu
+              display: 'inline-block',
               textAlign: 'center',
-              pageBreakInside: 'avoid'
+              pageBreakInside: 'avoid',
+              // Pas de width fixe, laisse l'image définir la taille
             }}>
               <a 
                 href={photo.url} 
@@ -293,7 +298,9 @@ const PDFTemplate = ({ formData }) => {
                   borderRadius: '6px',
                   overflow: 'hidden',
                   backgroundColor: '#ffffff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  // 🔧 Le lien s'adapte à l'image
+                  width: 'fit-content'
                 }}
               >
                 <img 
@@ -301,11 +308,15 @@ const PDFTemplate = ({ formData }) => {
                   alt={photo.label}
                   style={{
                     display: 'block',
-                    maxWidth: '100%',
-                    maxHeight: '60px',
-                    width: 'auto',         // 🔧 AUTO au lieu de 100%
-                    height: 'auto',        // 🔧 AUTO au lieu de fixe
-                    objectFit: 'contain',  // 🔧 CONTAIN au lieu de cover
+                    // 🔧 TAILLE RESPONSIVE basée sur le nombre de photos
+                    maxWidth: photos.length === 1 ? '150px' : 
+         photos.length === 2 ? '120px' : 
+         photos.length <= 4 ? '100px' : '80px',
+maxHeight: photos.length === 1 ? '120px' : 
+          photos.length === 2 ? '100px' : '70px',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
                     backgroundColor: '#f7fafc'
                   }}
                   onError={(e) => {
@@ -317,7 +328,9 @@ const PDFTemplate = ({ formData }) => {
                 fontSize: '8pt',
                 color: '#6b7280',
                 marginTop: '4px',
-                lineHeight: '1.2'
+                lineHeight: '1.2',
+                maxWidth: '100px', // Limite la largeur du texte
+                wordWrap: 'break-word'
               }}>
                 {photo.label}
               </div>
@@ -332,7 +345,11 @@ const PDFTemplate = ({ formData }) => {
               fontSize: '9pt',
               color: '#6b7280',
               fontStyle: 'italic',
-              textAlign: 'center'
+              textAlign: 'center',
+              padding: '20px',
+              border: '1px dashed #cbd5e0',
+              borderRadius: '6px',
+              minWidth: '100px'
             }}>
               +{photos.length - 6} autres photos disponibles
             </div>

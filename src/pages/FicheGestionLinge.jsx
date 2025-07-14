@@ -101,10 +101,10 @@ export default function FicheGestionLinge() {
       housses_couette: "Housses de couette",
       protections_matelas: "Protections matelas / Alaises",
       taies_oreillers: "Taies d'oreillers",
-      draps_bain: "Draps de bain / Grandes serviettes",
-      petites_serviettes: "Petites serviettes",
-      tapis_bain: "Tapis de bain",
-      torchons: "Torchons",
+      draps_bain: "Grandes serviettes (par logement)",
+      petites_serviettes: "Petites serviette (par logement)",
+      tapis_bain: "Tapis de bain (par logement)",
+      torchons: "Torchons (par logement)",
       plaids: "Plaids",
       oreillers_decoratifs: "Oreillers décoratifs"
     }
