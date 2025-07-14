@@ -23,6 +23,7 @@ import FicheEquipExterieur from './FicheEquipExterieur'
 import FicheCommuns from './FicheCommuns'
 import FicheTeletravail from './FicheTeletravail'
 import FicheBebe from './FicheBebe'
+import FicheGuideAcces from './FicheGuideAcces'
 import FicheSecurite from './FicheSecurite'
 
 // Composant placeholder pour les sections pas encore créées
@@ -97,6 +98,7 @@ export default function FicheWizard() {
     <FicheCommuns key="communs" />,
     <FicheTeletravail key="teletravail" />,
     <FicheBebe key="bebe" />,
+    <FicheGuideAcces key="guide-acces" />,
     <FicheSecurite key="securite" />
   ]
 

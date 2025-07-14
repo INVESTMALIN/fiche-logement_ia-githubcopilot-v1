@@ -1043,6 +1043,11 @@ section_bebe: {
   photos_equipements_bebe: []
 },
 
+section_guide_acces: {
+  photos_etapes: [],
+  video_acces: []
+},
+
 section_securite: {
   equipements: [],
   alarme_desarmement: "",
@@ -1067,9 +1072,9 @@ export function FormProvider({ children }) {
 
   const sections = [
     "Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", "Réglementation",
-    "Exigences", "Avis", "Gestion Linge", "Équipements", "Consommables", "Visite",
-    "Chambres", "Salle De Bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. Spé. / Extérieur",
-    "Communs", "Télétravail", "Bébé", "Sécurité"
+    "Exigences", "Avis", "Gestion linge", "Équipements", "Consommables", "Visite",
+    "Chambres", "Salle de bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. spé. / Extérieur",
+    "Communs", "Télétravail", "Bébé", "Guide d'accès", "Sécurité"
   ]
 
   const totalSteps = sections.length

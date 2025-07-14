@@ -1,5 +1,8 @@
 # 🐛 Bug Report - Boutons Radio iPhone
 
+*Historique des bugs rencontrés et leurs solutions*
+
+
 ## 🚨 **BUG #001 -Affichage Boutons Radio sur iPhone**
 **Date :** 11 juillet 2025  
 **Gravité :** Faible  
@@ -95,12 +98,7 @@ Ces pages peuvent servir de modèle pour les corrections.
 ---
 
 **Status :** 🟢 Solution validée sur iPhone 12  
-**Priorité :** Haute (impact UX mobile critique)
-
-
-# 🐛 BUG REPORT - Fiche Logement
-
-*Historique des bugs rencontrés et leurs solutions*
+**Priorité :** Faible (impact UX mobile limitée)
 
 ---
 

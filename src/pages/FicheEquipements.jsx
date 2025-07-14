@@ -101,23 +101,25 @@ export default function FicheEquipements() {
                   Faire une vidéo de l'accès au local poubelle
                 </label>
                 <div className="flex gap-6">
-                  <label className="inline-flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="radio" 
                       name="video_acces_poubelle"
                       checked={formData.video_acces_poubelle === true}
                       onChange={() => handleInputChange('section_equipements.video_acces_poubelle', true)}
+                      className="w-4 h-4 cursor-pointer"
                     />
-                    Fait
+                    <span>Fait</span>
                   </label>
-                  <label className="inline-flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="radio" 
                       name="video_acces_poubelle"
                       checked={formData.video_acces_poubelle === false}
                       onChange={() => handleInputChange('section_equipements.video_acces_poubelle', false)}
+                      className="w-4 h-4 cursor-pointer"
                     />
-                    À faire
+                    <span>À faire</span>
                   </label>
                 </div>
               </div>
@@ -219,23 +221,25 @@ export default function FicheEquipements() {
                   Système de chauffage d'eau *
                 </label>
                 <div className="flex gap-6">
-                  <label className="inline-flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="radio" 
                       name="systeme_chauffage_eau"
                       checked={formData.systeme_chauffage_eau === 'Chaudière'}
                       onChange={() => handleInputChange('section_equipements.systeme_chauffage_eau', 'Chaudière')}
+                      className="w-4 h-4 cursor-pointer"
                     />
-                    Chaudière
+                    <span>Chaudière</span>
                   </label>
-                  <label className="inline-flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="radio" 
                       name="systeme_chauffage_eau"
                       checked={formData.systeme_chauffage_eau === 'Ballon d\'eau chaude'}
                       onChange={() => handleInputChange('section_equipements.systeme_chauffage_eau', 'Ballon d\'eau chaude')}
+                      className="w-4 h-4 cursor-pointer"
                     />
-                    Ballon d'eau chaude
+                    <span>Ballon d'eau chaude</span>
                   </label>
                 </div>
               </div>
@@ -272,23 +276,25 @@ export default function FicheEquipements() {
                   Faire une vidéo du système de chauffage
                 </label>
                 <div className="flex gap-6">
-                  <label className="inline-flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="radio" 
                       name="video_systeme_chauffage"
                       checked={formData.video_systeme_chauffage === true}
                       onChange={() => handleInputChange('section_equipements.video_systeme_chauffage', true)}
+                      className="w-4 h-4 cursor-pointer"
                     />
-                    Fait
+                    <span>Fait</span>
                   </label>
-                  <label className="inline-flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="radio" 
                       name="video_systeme_chauffage"
                       checked={formData.video_systeme_chauffage === false}
                       onChange={() => handleInputChange('section_equipements.video_systeme_chauffage', false)}
+                      className="w-4 h-4 cursor-pointer"
                     />
-                    À faire
+                    <span>À faire</span>
                   </label>
                 </div>
               </div>

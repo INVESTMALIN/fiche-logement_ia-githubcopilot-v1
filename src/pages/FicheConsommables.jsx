@@ -36,30 +36,30 @@ export default function FicheConsommables() {
             {/* Question principale */}
             <div>
               <label className="block font-semibold mb-3">
-                Consommables - Sont-ils fournis par le prestataire de ménage ? <span className="text-red-500">*</span>
+                 Les consommables sont-ils fournis par le prestataire de ménage ? <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-4">
-                <label className="flex items-center">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name="fournis_par_prestataire"
                     value="true"
                     checked={fournisParPrestataire === true}
                     onChange={(e) => handleRadioChange('section_consommables.fournis_par_prestataire', e.target.value)}
-                    className="mr-2"
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  Oui
+                  <span>Oui</span>
                 </label>
-                <label className="flex items-center">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name="fournis_par_prestataire"
                     value="false"
                     checked={fournisParPrestataire === false}
                     onChange={(e) => handleRadioChange('section_consommables.fournis_par_prestataire', e.target.value)}
-                    className="mr-2"
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  Non
+                  <span>Non</span>
                 </label>
               </div>
             </div>
@@ -159,7 +159,7 @@ export default function FicheConsommables() {
             {/* Section Type de Café - TOUJOURS AFFICHÉE */}
             <div>
               <label className="block font-semibold mb-3">
-                Consommables - Type de Café / Cafetière <span className="text-red-500">*</span>
+                Consommables "Café / Cafetière" <span className="text-red-500">*</span>
               </label>
               <div className="space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">

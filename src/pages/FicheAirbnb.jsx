@@ -16,7 +16,6 @@ export default function FicheAirbnb() {
   } = useForm()
 
   // Récupération des valeurs depuis FormContext
-  const preparationGuide = getField('section_airbnb.preparation_guide') || {}
   const annonceActive = getField('section_airbnb.annonce_active')
   const urlAnnonce = getField('section_airbnb.url_annonce')
   // Fix pour les booléens : ne pas utiliser getField() qui retourne "" par défaut
@@ -34,32 +33,6 @@ export default function FicheAirbnb() {
         <div className="flex-1 p-6 bg-gray-100">
           <h1 className="text-2xl font-bold mb-6">Airbnb</h1>
 
-          {/* Préparation Guide d'accès Airbnb */}
-          <div className="mb-6">
-            <h3 className="font-semibold text-lg mb-4">Préparation Guide d'accès Airbnb - De la rue jusqu'à l'intérieur de l'appartement</h3>
-            
-            <div className="space-y-3">
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={preparationGuide.video_complete || false}
-                  onChange={(e) => updateField('section_airbnb.preparation_guide.video_complete', e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <span>Faire une vidéo complète</span>
-              </label>
-
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={preparationGuide.photos_etapes || false}
-                  onChange={(e) => updateField('section_airbnb.preparation_guide.photos_etapes', e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <span>Faire des photos propres de chaque étape</span>
-              </label>
-            </div>
-          </div>
 
           {/* Annonce active sur Airbnb */}
           <div className="mb-6">

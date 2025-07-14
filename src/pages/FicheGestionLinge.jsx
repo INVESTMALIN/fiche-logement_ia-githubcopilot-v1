@@ -129,25 +129,28 @@ export default function FicheGestionLinge() {
                 Le logement dispose-t-il de linge ? *
               </label>
               <div className="flex gap-6 mt-2">
-                <label className="inline-flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
                     name="dispose_de_linge"
                     checked={disposeDeLingeData === true}
                     onChange={() => handleInputChange('section_gestion_linge.dispose_de_linge', true)}
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  Oui
+                  <span>Oui</span>
                 </label>
-                <label className="inline-flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input 
                     type="radio" 
                     name="dispose_de_linge"
                     checked={disposeDeLingeData === false}
                     onChange={() => handleInputChange('section_gestion_linge.dispose_de_linge', false)}
+                    className="w-4 h-4 cursor-pointer"
                   />
-                  Non
+                  <span>Non</span>
                 </label>
               </div>
+
             </div>
 
             {/* Sections conditionnelles si OUI */}

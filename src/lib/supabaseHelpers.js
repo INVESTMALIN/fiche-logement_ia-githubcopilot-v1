@@ -70,8 +70,6 @@ export const mapFormDataToSupabase = (formData) => {
     clefs_details: formData.section_clefs?.clefs?.details || null,
     
     // Section Airbnb
-    airbnb_preparation_video_complete: formData.section_airbnb?.preparation_guide?.video_complete ?? null,
-    airbnb_preparation_photos_etapes: formData.section_airbnb?.preparation_guide?.photos_etapes ?? null,
     airbnb_annonce_active: formData.section_airbnb?.annonce_active,
     airbnb_url: formData.section_airbnb?.url_annonce || null,
     airbnb_identifiants_obtenus: formData.section_airbnb?.identifiants_obtenus,
@@ -924,6 +922,10 @@ export const mapFormDataToSupabase = (formData) => {
     bebe_equipements_autre_details: formData.section_bebe?.equipements_autre_details || null,
     bebe_photos_equipements_bebe: formData.section_bebe?.photos_equipements_bebe || [],
 
+    // Section Guide d'accès
+    guide_acces_photos_etapes: formData.section_guide_acces?.photos_etapes || [],
+    guide_acces_video_acces: formData.section_guide_acces?.video_acces || [],
+  
     // Section Sécurité
     securite_equipements: formData.section_securite?.equipements || [],
     securite_alarme_desarmement: formData.section_securite?.alarme_desarmement || null,
@@ -933,6 +935,8 @@ export const mapFormDataToSupabase = (formData) => {
     pdf_menage_url: formData.pdf_menage_url || null,
 
     updated_at: new Date().toISOString()
+
+    
   }
 }
 
@@ -1032,10 +1036,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
     },
     
     section_airbnb: {
-      preparation_guide: {
-        video_complete: supabaseData.airbnb_preparation_video_complete ?? false,
-        photos_etapes: supabaseData.airbnb_preparation_photos_etapes ?? false
-      },
       annonce_active: supabaseData.airbnb_annonce_active ?? null,
       url_annonce: supabaseData.airbnb_url || "",
       identifiants_obtenus: supabaseData.airbnb_identifiants_obtenus ?? null,
@@ -1949,11 +1949,17 @@ export const mapSupabaseToFormData = (supabaseData) => {
       photos_equipements_bebe: supabaseData.bebe_photos_equipements_bebe || []
     },
 
+    section_guide_acces: {
+      photos_etapes: supabaseData.guide_acces_photos_etapes || [],
+      video_acces: supabaseData.guide_acces_video_acces || []
+    },
+
     section_securite: {
       equipements: supabaseData.securite_equipements || [],
       alarme_desarmement: supabaseData.securite_alarme_desarmement || "",
       photos_equipements_securite: supabaseData.securite_photos_equipements_securite || []
     },
+
     pdf_logement_url: supabaseData.pdf_logement_url || null,
     pdf_menage_url: supabaseData.pdf_menage_url || null
   }
