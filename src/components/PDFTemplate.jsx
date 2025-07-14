@@ -1,4 +1,4 @@
-// src/components/PDFTemplate.jsx
+// src/components/PDFTemplate.jsx - VERSION 2 CLEAN & COMPLETE
 import React from 'react'
 
 const PDFTemplate = ({ formData }) => {
@@ -8,12 +8,11 @@ const PDFTemplate = ({ formData }) => {
       <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
         <h2>Erreur</h2>
         <p>Aucune donnée de fiche disponible pour générer le PDF.</p>
-        <p style={{ fontSize: '14px', color: '#666' }}>Retournez à la fiche et essayez à nouveau.</p>
       </div>
     )
   }
 
-  // 📋 CONFIGURATION : Toutes les 22 sections avec labels et emojis (copiée de FichePreviewModal)
+  // 📋 CONFIGURATION : Toutes les 22 sections avec labels et emojis
   const sectionsConfig = [
     { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
     { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
@@ -39,217 +38,311 @@ const PDFTemplate = ({ formData }) => {
     { key: 'section_securite', label: '🔒 Sécurité', emoji: '🔒' }
   ]
 
-  // Helper pour vérifier si une valeur est "vide" ou non significative (copié de FichePreviewModal)
+  // Helper pour vérifier si c'est une URL d'image valide
+  const isImageUrl = (url) => {
+    if (typeof url !== 'string' || url.trim() === '') return false
+    return url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) !== null || 
+           url.includes('supabase') || 
+           url.includes('storage')
+  }
+
+  // 🧹 Helper pour nettoyer les URLs malformées
+  const cleanUrl = (url) => {
+    if (typeof url !== 'string') return url
+    
+    return url
+      .trim() // Enlever espaces
+      .replace(/^["'\[]/, '') // Enlever [, ", ' au début
+      .replace(/["'\]]$/, '') // Enlever ], ", ' à la fin
+      .replace(/\\"/g, '"') // Remplacer \" par "
+      .replace(/%22/g, '') // Enlever %22 (caractères d'échappement)
+      .replace(/^\[/, '') // Sécurité : enlever [ restant
+      .replace(/\]$/, '') // Sécurité : enlever ] restant
+  }
+
+  // 🔧 Helper pour parser les strings JSON malformées + nettoyage URLs
+  const parsePhotoValue = (value) => {
+    if (Array.isArray(value)) {
+      return value.filter(isImageUrl).map(url => cleanUrl(url))
+    }
+    
+    if (typeof value === 'string') {
+      // Si c'est une URL directe, la retourner
+      if (isImageUrl(value)) {
+        return [cleanUrl(value)]
+      }
+      
+      // Si c'est un JSON string, essayer de le parser
+      if (value.startsWith('[') || value.startsWith('"[')) {
+        try {
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            return parsed.filter(isImageUrl).map(url => cleanUrl(url))
+          }
+        } catch (e) {
+          console.warn('🔧 Erreur parsing JSON:', value, e)
+          return []
+        }
+      }
+    }
+    
+    return []
+  }
+
+  // 🔍 FONCTION PRINCIPALE : Détection intelligente de TOUTES les photos
+  const extractAllPhotos = (sectionData, sectionKey) => {
+    const photos = []
+    
+    if (!sectionData || typeof sectionData !== 'object') {
+      return photos
+    }
+
+    // Helper pour créer un objet photo standardisé
+    const createPhotoObject = (url, label, fieldKey) => {
+      const cleanedUrl = cleanUrl(url)
+      return {
+        url: cleanedUrl,
+        label: label,
+        fieldKey: fieldKey,
+        isValid: isImageUrl(cleanedUrl)
+      }
+    }
+
+    // 🎯 PATTERN 1: Arrays directs + Strings JSON (ex: photos_salle_de_bain, emplacementPhoto)
+    Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+      const urls = parsePhotoValue(fieldValue)
+      if (urls.length > 0) {
+        const label = formatFieldName(fieldKey)
+        urls.forEach((url, index) => {
+          photos.push(createPhotoObject(url, urls.length > 1 ? `${label} ${index + 1}` : label, fieldKey))
+        })
+      }
+    })
+
+    // 🎯 PATTERN 2: Objects imbriqués (ex: clefs.photos, chambre_1.photos)
+    Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+      if (typeof fieldValue === 'object' && fieldValue !== null && !Array.isArray(fieldValue)) {
+        // Chercher récursivement dans l'objet
+        Object.entries(fieldValue).forEach(([subKey, subValue]) => {
+          const urls = parsePhotoValue(subValue)
+          if (urls.length > 0) {
+            const label = `${formatFieldName(fieldKey)} - ${formatFieldName(subKey)}`
+            urls.forEach((url, index) => {
+              photos.push(createPhotoObject(url, urls.length > 1 ? `${label} ${index + 1}` : label, `${fieldKey}.${subKey}`))
+            })
+          }
+        })
+      }
+    })
+
+    return photos.filter(photo => photo.isValid)
+  }
+
+  // 🔍 Helper pour formater les noms de champs
+  const formatFieldName = (fieldName) => {
+    return fieldName
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/_/g, ' ')
+      .replace(/photo/gi, 'Photo')
+      .replace(/\b\w/g, l => l.toUpperCase())
+      .trim()
+  }
+
+  // 🔍 Helper pour vérifier si une valeur est vide
   const isEmpty = (value) => {
     if (value === null || value === undefined || value === '') return true
-    if (typeof value === 'boolean' && value === false) return true
     if (typeof value === 'number' && value === 0) return true
     if (value === '0') return true
+    
+    // 🔧 Amélioration : Arrays vides ou avec que des valeurs vides
     if (Array.isArray(value)) {
-      return value.length === 0 || value.every(v => v === false || v === null || v === undefined || v === '' || v === 0 || v === '0')
+      return value.length === 0 || value.every(v => 
+        v === null || v === undefined || v === '' || v === 0 || v === '0'
+      )
     }
+    
+    // 🔧 Amélioration : Strings d'arrays vides
+    if (typeof value === 'string') {
+      if (value === '[]' || value === '[null]' || value === '[undefined]' || value === '[""]') return true
+    }
+    
     if (typeof value === 'object') {
       return Object.values(value).every(v => isEmpty(v))
     }
     return false
   }
 
-  // Helper pour détecter si c'est une URL d'image
-  const isImageUrl = (url) => {
-    if (typeof url !== 'string') return false
-    return url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) !== null
-  }
-
-  // Composant pour afficher les photos en mode rpeview cliquable
-  const PhotoPreview = ({ photos }) => {
-    if (!Array.isArray(photos) || photos.length === 0) return <span>—</span>
+  // 🔄 Helper pour formater les valeurs (booléens, arrays, etc.)
+  const formatValue = (value, fieldKey = '') => {
+    if (isEmpty(value)) return null // null = pas affiché
     
-    const imageUrls = photos.filter(isImageUrl)
-    if (imageUrls.length === 0) return <span>—</span>
+    // 🚫 EXCLURE LES CHAMPS PHOTOS - ils sont gérés séparément
+    if (fieldKey.toLowerCase().includes('photo') || 
+        fieldKey.toLowerCase().includes('photos') || 
+        fieldKey === 'photos' || 
+        fieldKey.endsWith('_photos') ||
+        fieldKey.endsWith('Photo')) {
+      return null
+    }
     
-    return (
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-        {imageUrls.slice(0, 4).map((url, index) => (
-          <div key={index} style={{ position: 'relative' }}>
-            <a 
-              href={url} 
-              target="_blank"
-              style={{ display: 'block', textDecoration: 'none' }}
-            >
-              <img 
-                src={url}
-                alt={`Photo ${index + 1}`}
-                style={{ 
-                  display: 'block', // 🔧 IMPORTANT pour la zone cliquable
-                  width: '40px', 
-                  height: '40px', 
-                  objectFit: 'cover', 
-                  borderRadius: '4px',
-                  border: '2px solid #3182ce', // 🔗 Bordure bleue pour indiquer cliquable
-                  cursor: 'pointer'
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none'
-                }}
-              />
-            </a>
-          </div>
-        ))}
-        {imageUrls.length > 4 && (
-          <span style={{ fontSize: '10pt', color: '#666' }}>
-            +{imageUrls.length - 4} autres
-          </span>
-        )}
-        <span style={{ fontSize: '9pt', color: '#888', marginLeft: '8px' }}>
-          ({imageUrls.length} photo{imageUrls.length > 1 ? 's' : ''})
-        </span>
-      </div>
-    )
-  }
-
-// Helper pour afficher une valeur de façon lisible (modifié pour gérer les photos ET objets multilignes)
-const formatValue = (value, fieldKey) => {
-    if (isEmpty(value)) return '—'
+    // Booléens
+    if (typeof value === 'boolean') {
+      return value ? 'Oui' : 'Non'
+    }
     
-    if (typeof value === 'boolean') return value ? 'Oui' : 'Non'
-    
-    // 🎯 FIX : Gérer les strings "true"/"false" (case insensitive)
+    // Strings boolean-like  
     if (typeof value === 'string') {
       if (value.toLowerCase() === 'true') return 'Oui'
       if (value.toLowerCase() === 'false') return 'Non'
-    }
-
-    // 🔧 NOUVEAU FIX PONCTUEL - AJOUTER ICI ⬇️
-    if (fieldKey && fieldKey.toLowerCase().includes('photo') && typeof value === 'string' && value.startsWith('[')) {
-      try {
-        const parsedArray = JSON.parse(value)
-        if (Array.isArray(parsedArray)) {
-          value = parsedArray
-        }
-      } catch (e) {
-        // Continuer avec la valeur originale si parsing échoue
-      }
-    }    
-    
-    // Gérer les champs photos (string unique OU array)
-    if (fieldKey && (fieldKey === 'photos' || fieldKey.includes('clef'))) {
-      console.log('🔍 CLEFS RELATED:', fieldKey, typeof value, value)
-    }
-
-// ✅ FIX AVEC DEBUG
-if (fieldKey === 'clefs' && typeof value === 'object' && value.photos) {
-  console.log('🚨 FIX CLEFS EXÉCUTÉ!', value.photos)
-  return (
-    <div>
-      <span>Photos: </span>
-      <PhotoPreview photos={value.photos} />
-    </div>
-  )
-}
-    
-    if (fieldKey && (
-      fieldKey.toLowerCase().includes('photo') || 
-      fieldKey.toLowerCase().includes('image') || 
-      fieldKey.toLowerCase().includes('photos') ||
-      fieldKey === 'photos' || fieldKey.endsWith('photos')
-    )) {
-      // Si c'est une string unique, la convertir en array
-      if (typeof value === 'string' && isImageUrl(value)) {
-        return <PhotoPreview photos={[value]} />
-      }
-      // Si c'est déjà un array
-      if (Array.isArray(value)) {
-        return <PhotoPreview photos={value} />
-      }
+      
+      // 🚫 Filtrer les URLs d'images qui apparaissent comme string
+      if (isImageUrl(value)) return null
+      
+      // 🚫 Filtrer les arrays JSON vides comme "[]"
+      if (value === '[]' || value === '[null]' || value === '[undefined]') return null
     }
     
+    // Arrays (mais pas photos)
     if (Array.isArray(value)) {
-      const validValues = value.filter(v => !isEmpty(v))
-      if (validValues.length === 0) return '—'
+      const nonPhotoValues = value.filter(v => !isEmpty(v) && !isImageUrl(v))
+      if (nonPhotoValues.length === 0) return null
       
-      if (validValues.every(v => v === true)) {
-        return `${validValues.length} élément(s) sélectionné(s)`
-      }
-      
-      // 🎯 FIX : Transformer les éléments true/false en Oui/Non dans les arrays aussi
-      const formattedValues = validValues.map(v => {
+      return nonPhotoValues.map(v => {
         if (v === true) return 'Oui'
         if (v === false) return 'Non'
-        if (typeof v === 'string' && v.toLowerCase() === 'true') return 'Oui'
-        if (typeof v === 'string' && v.toLowerCase() === 'false') return 'Non'
         return v
-      })
-      
-      return formattedValues.join(', ')
+      }).join(', ')
     }
     
+    // Objects (sauf objets photos complexes)
     if (typeof value === 'object') {
-      const validEntries = Object.entries(value)
-        .filter(([key, val]) => !isEmpty(val))
-        .map(([key, val]) => {
-          // 🎯 FIX : Transformer les valeurs true/false dans les objets aussi
-          let formattedVal = val
-          if (val === true) formattedVal = 'Oui'
-          else if (val === false) formattedVal = 'Non'
-          else if (typeof val === 'string' && val.toLowerCase() === 'true') formattedVal = 'Oui'
-          else if (typeof val === 'string' && val.toLowerCase() === 'false') formattedVal = 'Non'
-          
-          return `${formatFieldName(key)}: ${formattedVal}`
+      // 🚫 Filtrer les objets qui ne contiennent que des photos
+      const nonPhotoEntries = Object.entries(value)
+        .filter(([key, val]) => {
+          if (isEmpty(val)) return false
+          // Exclure les clés photos
+          if (key.toLowerCase().includes('photo') || key === 'photos') return false
+          return true
         })
       
-      if (validEntries.length === 0) return '—'
+      if (nonPhotoEntries.length === 0) return null
       
-      // 🆕 OPTION 1 : Affichage multilignes avec puces pour les objets
-      if (validEntries.length === 1) {
-        // Si un seul élément, pas besoin de puces
-        return validEntries[0]
-      } else {
-        // Plusieurs éléments : format multiligne avec puces
-        return (
-          <div style={{ lineHeight: '1.6' }}>
-            {validEntries.map((entry, index) => (
-              <div key={index} style={{ marginBottom: '2px' }}>
-                • {entry}
-              </div>
-            ))}
-          </div>
-        )
+      const validEntries = nonPhotoEntries.map(([key, val]) => {
+        let formattedVal = val
+        if (val === true) formattedVal = 'Oui'
+        else if (val === false) formattedVal = 'Non'
+        
+        return `${formatFieldName(key)}: ${formattedVal}`
+      })
+      
+      if (validEntries.length === 0) return null
+      
+      // 🎯 RETOURNER UN OBJET SPÉCIAL pour bullet list au lieu d'une string
+      return {
+        type: 'bullet-list',
+        items: validEntries
       }
     }
     
     return String(value)
   }
 
-  // Helper pour nettoyer les noms de champs (copié de FichePreviewModal)
-  const formatFieldName = (fieldName) => {
-    return fieldName
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, l => l.toUpperCase())
-      .trim()
+  // 🎯 COMPOSANT: Rendu moderne des photos
+  const PhotosDisplay = ({ photos, sectionTitle }) => {
+    if (!photos || photos.length === 0) return null
+
+    return (
+      <div style={{
+        marginTop: '16px',
+        padding: '16px',
+        backgroundColor: '#f8fafc',
+        border: '1px solid #e2e8f0',
+        borderRadius: '8px',
+        pageBreakInside: 'avoid'
+      }}>
+        <h4 style={{
+          margin: '0 0 12px 0',
+          fontSize: '11pt',
+          fontWeight: '600',
+          color: '#4a5568',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          📸 Photos {sectionTitle} ({photos.length})
+        </h4>
+        
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: photos.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(80px, 1fr))',
+          gap: '12px',
+          maxWidth: '100%'
+        }}>
+          {photos.slice(0, 6).map((photo, index) => (
+            <div key={index} style={{
+              textAlign: 'center',
+              pageBreakInside: 'avoid'
+            }}>
+              <a 
+                href={photo.url} 
+                target="_blank"
+                style={{ 
+                  display: 'block', 
+                  textDecoration: 'none',
+                  border: '2px solid #3182ce',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                  backgroundColor: '#ffffff',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                <img 
+                  src={photo.url}
+                  alt={photo.label}
+                  style={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    maxHeight: '60px',
+                    width: 'auto',         // 🔧 AUTO au lieu de 100%
+                    height: 'auto',        // 🔧 AUTO au lieu de fixe
+                    objectFit: 'contain',  // 🔧 CONTAIN au lieu de cover
+                    backgroundColor: '#f7fafc'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                  }}
+                />
+              </a>
+              <div style={{
+                fontSize: '8pt',
+                color: '#6b7280',
+                marginTop: '4px',
+                lineHeight: '1.2'
+              }}>
+                {photo.label}
+              </div>
+            </div>
+          ))}
+          
+          {photos.length > 6 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '9pt',
+              color: '#6b7280',
+              fontStyle: 'italic',
+              textAlign: 'center'
+            }}>
+              +{photos.length - 6} autres photos disponibles
+            </div>
+          )}
+        </div>
+      </div>
+    )
   }
 
-  // Fonction pour générer le nom du dossier photos :
-    const generatePhotosFolder = () => {
-    const numeroBien = formData.section_logement?.numero_bien || 'XXX'
-    const prenom = formData.section_proprietaire?.prenom || ''
-    const nom = formData.section_proprietaire?.nom || ''
-    const ville = formData.section_proprietaire?.adresse?.ville || ''
-    
-    // Format : "numero-de-bien. prenom nom - ville"
-    const prenomNom = [prenom, nom].filter(Boolean).join(' ')
-    const parts = [numeroBien, prenomNom, ville].filter(Boolean)
-    
-    if (parts.length === 3) {
-      return `${parts[0]}. ${parts[1]} - ${parts[2]}`
-    } else if (parts.length === 2) {
-      return `${parts[0]}. ${parts[1]}`
-    } else {
-      return parts[0] || 'Dossier non défini'
-    }
-  }
-
-  // 🎯 GÉNÉRATION : Extraire les sections avec données (copié de FichePreviewModal)
+  // 🎯 GÉNÉRATION DES SECTIONS COMPLÈTES
   const generateSections = () => {
     const sections = []
 
@@ -258,24 +351,28 @@ if (fieldKey === 'clefs' && typeof value === 'object' && value.photos) {
       
       if (!sectionData || typeof sectionData !== 'object') return
 
+      // Extraire les photos de cette section
+      const photos = extractAllPhotos(sectionData, config.key)
+
+      // Extraire les champs non-photos
       const fields = []
-
       Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
-        if (isEmpty(fieldValue)) {
-          return
+        const formattedValue = formatValue(fieldValue, fieldKey)
+        if (formattedValue !== null) {
+          fields.push({
+            key: fieldKey,
+            label: formatFieldName(fieldKey),
+            value: formattedValue
+          })
         }
-
-        fields.push({
-          key: fieldKey,
-          label: formatFieldName(fieldKey),
-          value: fieldValue
-        })
       })
 
-      if (fields.length > 0) {
+      // Ajouter la section seulement si elle a du contenu (champs OU photos)
+      if (fields.length > 0 || photos.length > 0) {
         sections.push({
           ...config,
-          fields
+          fields,
+          photos
         })
       }
     })
@@ -286,230 +383,163 @@ if (fieldKey === 'clefs' && typeof value === 'object' && value.photos) {
   const sections = generateSections()
 
   return (
-    <div className="pdf-container">
-      <style>{`
-        /* STYLES POUR IMPRESSION ET ÉCRAN */
-        /* CSS OPTIMISÉ POUR HTML2PDF - À ajouter dans le <style> de tes templates */
-
-        .pdf-container {
-          font-family: Arial, sans-serif; 
-          font-size: 11pt; 
-          line-height: 1.4; 
-          color: #333;
-          margin: 0 auto;       
-          padding: 20px;
-          max-width: 800px;      
-          background: white;
-        }
-
-        /* 🎯 PAGINATION INTELLIGENTE */
-        .header {
-          page-break-inside: avoid; /* Ne jamais couper le header */
-          margin-bottom: 25px;
-          padding-bottom: 15px;
-          border-bottom: 2px solid #3182ce;
-        }
-
-        .section {
-          page-break-inside: avoid; /* Évite de couper une section */
-          margin-bottom: 25px;
-          padding-bottom: 20px;
-          border-bottom: 1px solid #e2e8f0;
-        }
-
-        /* 🔧 SECTIONS LONGUES : Force page break si nécessaire */
-        .section.long-section {
-          page-break-before: always; /* Force nouvelle page pour sections longues */
-        }
-
-        /* 🎨 TITRES ET CONTENUS */
-        .pdf-container h1 { 
-          font-size: 18pt; 
-          margin-bottom: 20px; 
-          color: #1a365d;
-          border-bottom: 3px solid #3182ce;
-          padding-bottom: 10px;
-          page-break-after: avoid; /* Évite page break après titre */
-        }
-
-        .pdf-container h2 { 
-          font-size: 14pt; 
-          margin: 20px 0 10px 0; 
-          color: #2d3748;
-          background-color: #f7fafc;
-          padding: 8px 12px;
-          border-left: 4px solid #3182ce;
-          page-break-after: avoid; /* Évite page break après sous-titre */
-        }
-
-        /* 📊 GRILLES ET DONNÉES */
-        .info-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 15px;
-          margin-bottom: 20px;
-          page-break-inside: avoid; /* Ne coupe pas la grille */
-        }
-
-        .field-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          padding: 6px 0;
-          border-bottom: 1px dotted #e2e8f0;
-          page-break-inside: avoid; /* Ne coupe pas un champ */
-        }
-
-        /* 🔗 RÈGLES DE GROUPEMENT */
-        .field-group {
-          page-break-inside: avoid; /* Garde les groupes de champs ensemble */
-          margin-bottom: 15px;
-        }
-
-        /* 📄 CONTRÔLE AVANCÉ DES PAGES */
-        .force-new-page {
-          page-break-before: always; /* Force nouvelle page */
-        }
-
-        .keep-together {
-          page-break-inside: avoid; /* Garde ensemble */
-        }
-
-        .allow-break {
-          page-break-inside: auto; /* Autorise les coupures */
-        }
-
-        /* 🎯 RÈGLES SPÉCIALES POUR HTML2PDF */
-        @media print, (max-width: 0) {
-          /* Ces règles s'appliquent lors de la génération PDF */
-          
-          .pdf-container {
-            max-width: none;
-            margin: 0;
-            padding: 15mm;
-          }
-          
-          /* Évite les veuves et orphelines */
-          .section {
-            orphans: 3; /* Min 3 lignes en bas de page */
-            widows: 3;  /* Min 3 lignes en haut de nouvelle page */
-          }
-          
-          /* Force les sauts intelligents */
-          .section:nth-child(3n) {
-            page-break-after: avoid; /* Évite coupure toutes les 3 sections */
-          }
-        }
-
-        /* 🎨 AMÉLIORATIONS VISUELLES */
-        .field-label {
-          font-weight: 500;
-          color: #4a5568;
-          font-size: 10pt;
-          flex: 1;
-          padding-right: 15px;
-        }
-
-        .field-value {
-          color: #1a202c;
-          font-size: 10pt;
-          flex: 1;
-          text-align: right;
-          word-break: break-word;
-        }
-
-        .info-item {
-          padding: 8px;
-          border: 1px solid #e2e8f0;
-          border-radius: 4px;
-          page-break-inside: avoid;
-        }
-
-        .info-label {
-          font-weight: 600;
-          color: #4a5568;
-          font-size: 10pt;
-        }
-
-        .info-value {
-          color: #1a202c;
-          margin-top: 2px;
-        }
-        }
-      `}</style>
-
-      {/* En-tête */}
-      <div className="header">
-        <h1>📝 Fiche Logement • {formData.nom || 'Sans nom'} • Letahost</h1>
+    <div className="pdf-container" style={{
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '10pt',
+      lineHeight: '1.4',
+      color: '#2d3748',
+      maxWidth: '800px',
+      margin: '0 auto',
+      padding: '20px',
+      backgroundColor: '#ffffff'
+    }}>
+      {/* Header moderne et propre */}
+      <div className="header" style={{
+        textAlign: 'center',
+        marginBottom: '30px',
+        paddingBottom: '20px',
+        borderBottom: '2px solid #3182ce',
+        pageBreakInside: 'avoid'
+      }}>
+        <h1 style={{
+          margin: '0 0 8px 0',
+          fontSize: '22pt',
+          fontWeight: 'bold',
+          color: '#1a365d'
+        }}>
+          🏠 Fiche Logement • {formData.nom || 'Sans nom'} • Letahost
+        </h1>
         
-        <div className="info-grid">
-
-            <div className="info-item">
-                <div className="info-label">Date de création</div>
-                <div className="info-value">
-                {formData.created_at ? new Date(formData.created_at).toLocaleDateString('fr-FR') : 'N/A'}
-                </div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '15px',
+          marginTop: '15px',
+          fontSize: '10pt'
+        }}>
+          <div style={{
+            padding: '8px',
+            border: '1px solid #e2e8f0',
+            borderRadius: '4px',
+            pageBreakInside: 'avoid'
+          }}>
+            <div style={{ fontWeight: '600', color: '#4a5568', marginBottom: '4px' }}>
+              Généré le
             </div>
-            <div className="info-item">
-                <div className="info-label">Dernière modification</div>
-                <div className="info-value">
-                {formData.updated_at ? new Date(formData.updated_at).toLocaleDateString('fr-FR') : 'N/A'}
-                </div>
+            <div style={{ color: '#1a202c' }}>
+              {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
             </div>
-            <div className="info-item">
-                <div className="info-label">Type de propriété</div>
-                <div className="info-value">{formData.section_logement?.type_propriete || 'Non spécifié'}</div>
+          </div>
+          
+          <div style={{
+            padding: '8px',
+            border: '1px solid #e2e8f0',
+            borderRadius: '4px',
+            pageBreakInside: 'avoid'
+          }}>
+            <div style={{ fontWeight: '600', color: '#4a5568', marginBottom: '4px' }}>
+              Type de propriété
             </div>
-            <div className="info-item">
-                <div className="info-label">Dossier photos</div>
-                <div className="info-value" style={{ fontFamily: 'monospace', fontSize: '9pt', color: '#2563eb' }}>
-                {generatePhotosFolder()}
-                </div>
+            <div style={{ color: '#1a202c' }}>
+              {formData.section_logement?.type_propriete || 'Non spécifié'}
             </div>
-            </div>
-
+          </div>
+        </div>
       </div>
 
-      {/* Toutes les sections avec données */}
+      {/* CONTENU PRINCIPAL : TOUTES LES SECTIONS */}
       {sections.length === 0 ? (
-        <div className="section">
-          <p style={{ textAlign: 'center', color: '#666', fontStyle: 'italic' }}>
-            Aucune donnée renseignée dans cette fiche
-          </p>
+        <div style={{
+          textAlign: 'center',
+          padding: '40px',
+          color: '#6b7280',
+          fontStyle: 'italic'
+        }}>
+          Aucune donnée disponible pour cette fiche
         </div>
       ) : (
-        <div>
-          {sections.map((section, index) => (
-            <div key={index} className="section">
-              <h2>
-                {section.emoji} {section.label.replace(section.emoji + ' ', '')}
-              </h2>
-              
-              <div>
-                {section.fields.map(field => (
-                  <div key={field.key} className="field-row">
-                    <div className="field-label">{field.label} :</div>
-                    <div className="field-value">{formatValue(field.value, field.key)}</div>
+        sections.map((section, index) => (
+          <div key={section.key} className="section" style={{
+            marginBottom: '32px',
+            pageBreakInside: 'avoid'
+          }}>
+            {/* Header section */}
+            <h3 style={{
+              fontSize: '14pt',
+              fontWeight: 'bold',
+              color: '#2d3748',
+              marginBottom: '16px',
+              borderLeft: '4px solid #3182ce',
+              paddingLeft: '12px'
+            }}>
+              {section.label}
+            </h3>
+
+            {/* Champs de la section */}
+            {section.fields.length > 0 && (
+              <div style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                padding: '16px',
+                marginBottom: section.photos.length > 0 ? '16px' : '0'
+              }}>
+                {section.fields.map((field, fieldIndex) => (
+                  <div key={field.key} style={{
+                    marginBottom: fieldIndex < section.fields.length - 1 ? '12px' : '0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}>
+                    <span style={{
+                      fontSize: '9pt',
+                      fontWeight: '600',
+                      color: '#4a5568',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      {field.label}
+                    </span>
+                    <span style={{
+                      fontSize: '10pt',
+                      color: '#2d3748',
+                      lineHeight: '1.4'
+                    }}>
+                      {/* 🎯 GESTION BULLET LIST pour les objects */}
+                      {typeof field.value === 'object' && field.value.type === 'bullet-list' ? (
+                        <div style={{ marginTop: '4px' }}>
+                          {field.value.items.map((item, itemIndex) => (
+                            <div key={itemIndex} style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '6px',
+                              marginBottom: itemIndex < field.value.items.length - 1 ? '3px' : '0'
+                            }}>
+                              <span style={{ 
+                                color: '#3182ce', 
+                                fontSize: '8pt',
+                                marginTop: '1px'
+                              }}>•</span>
+                              <span>{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        field.value
+                      )}
+                    </span>
                   </div>
                 ))}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            )}
 
-      {/* Footer */}
-      <div style={{ 
-        marginTop: '40px', 
-        paddingTop: '20px', 
-        borderTop: '1px solid #e2e8f0', 
-        fontSize: '10pt', 
-        color: '#666',
-        textAlign: 'center'
-      }}>
-        <p>Fiche générée le {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR')}</p>
-        <p>Letahost - Conciergerie de luxe</p>
-      </div>
+            {/* Photos de la section */}
+            {section.photos.length > 0 && (
+              <PhotosDisplay photos={section.photos} sectionTitle={section.label} />
+            )}
+          </div>
+        ))
+      )}
     </div>
   )
 }
