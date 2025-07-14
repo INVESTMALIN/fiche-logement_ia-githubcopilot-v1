@@ -1,0 +1,203 @@
+# 🐛 Bug Report - Boutons Radio iPhone
+
+## 🚨 **BUG #001 -Affichage Boutons Radio sur iPhone**
+**Date :** 11 juillet 2025  
+**Gravité :** Faible  
+**Statut :** ✅ RÉSOLU  
+
+Les boutons radio ne s'affichent pas correctement sur **iPhone** (testé sur iPhone 12) :
+- Les labels sont décalés vers la droite et sortent de la page au lieu d'être collés aux boutons
+- L'alignement est cassé spécifiquement sur iOS
+- **Android et Desktop** : ✅ Fonctionnent correctement
+
+## 🔍 **Cause du Bug**
+
+Problème de CSS spécifique iOS avec la combinaison :
+- `inline-flex` sur les labels
+- Classes CSS custom au lieu de dimensions fixes
+- Structure HTML non optimale pour iOS
+
+## ✅ **Solution Testée et Validée**
+
+### ❌ **Pattern Buggy (à corriger)**
+```javascript
+<div className="flex gap-6">
+  <label className="inline-flex items-center gap-2 cursor-pointer">
+    <input 
+      type="radio" 
+      className="text-primary focus:ring-primary"
+    />
+    Texte label
+  </label>
+</div>
+```
+
+### ✅ **Pattern Correct (à utiliser)**
+```javascript
+<div className="flex flex-col gap-2">  {/* ou flex gap-6 pour horizontal */}
+  <label className="flex items-center gap-2 cursor-pointer">
+    <input 
+      type="radio" 
+      className="w-4 h-4 cursor-pointer"
+    />
+    <span>Texte label</span>
+  </label>
+</div>
+```
+
+## 🎯 **Changements Obligatoires**
+
+1. **Label** : `inline-flex` → `flex`
+2. **Input** : `text-primary focus:ring-primary` → `w-4 h-4 cursor-pointer`
+3. **Texte** : Texte direct → `<span>Texte</span>`
+
+## 📋 **Pages à Corriger**
+
+### 🔴 **FicheClefs** - ✅ CORRIGÉ
+- Type de boîte à clés
+- Interphone (Oui/Non)
+- Tempo-gâche (Oui/Non)
+- Digicode (Oui/Non)
+- Clefs remises (Oui/Non)
+
+### 🟡 **À Vérifier** (potentiellement touchées)
+- **FicheVisite** - A priori OK (utilise déjà le bon pattern)
+- **FicheCuisine1** - A priori OK 
+- **Autres sections** avec boutons radio
+
+## 🔧 **Script de Correction Rapide**
+
+Pour corriger rapidement, rechercher et remplacer :
+
+1. **Rechercher** : `inline-flex items-center gap-2 cursor-pointer`
+   **Remplacer** : `flex items-center gap-2 cursor-pointer`
+
+2. **Rechercher** : `className="text-primary focus:ring-primary"`
+   **Remplacer** : `className="w-4 h-4 cursor-pointer"`
+
+3. **Vérifier manuellement** que les textes sont dans des `<span>`
+
+## 📚 **Référence**
+
+**Pages qui utilisent déjà le bon pattern :**
+- ✅ **FicheAirbnb** 
+- ✅ **FicheBooking**
+
+Ces pages peuvent servir de modèle pour les corrections.
+
+## ⚠️ **Notes Importantes**
+
+- Le bug est **spécifique à iOS** - ne pas casser desktop/Android
+- Tester systématiquement sur iPhone après correction
+- Le pattern en colonne (`flex-col`) est plus safe pour mobile
+- Garder `cursor-pointer` pour l'UX tactile
+
+---
+
+**Status :** 🟢 Solution validée sur iPhone 12  
+**Priorité :** Haute (impact UX mobile critique)
+
+
+# 🐛 BUG REPORT - Fiche Logement
+
+*Historique des bugs rencontrés et leurs solutions*
+
+---
+
+## 🚨 **BUG #002 - Trigger Webhook ne fonctionne pas**
+**Date :** 14 juillet 2025  
+**Gravité :** Critique  
+**Statut :** ✅ RÉSOLU  
+
+### **Symptômes**
+- Bouton "Finaliser la fiche" ne change pas le statut (reste en "Brouillon")
+- Erreur console : `PATCH 404 (Not Found)` ou `400 (Bad Request)`
+- Erreur Supabase : `function supabase_functions.http_request(...) does not exist`
+- Trigger webhook ne se déclenche pas
+
+### **Cause racine**
+Syntaxe incorrecte pour l'appel HTTP dans le trigger SQL Supabase. Plusieurs fonctions testées :
+- ❌ `supabase_functions.http_request()` → N'existe pas
+- ❌ `net.http_post()` avec syntaxe positionnelle → Erreur de type  
+- ✅ `net.http_post()` avec syntaxe nommée → **FONCTIONNE**
+
+### **Solution finale**
+```sql
+-- Supprimer l'ancien trigger défaillant
+DROP TRIGGER IF EXISTS fiche_completed_webhook ON public.fiches;
+DROP FUNCTION IF EXISTS notify_fiche_completed();
+
+-- Créer la fonction avec la syntaxe correcte
+CREATE OR REPLACE FUNCTION notify_fiche_completed()
+RETURNS trigger AS $$
+BEGIN
+  -- Seulement si statut passe à "Complété"
+  IF NEW.statut = 'Complété' AND (OLD.statut IS NULL OR OLD.statut != 'Complété') THEN
+    PERFORM net.http_post(
+      url := 'https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj',
+      body := to_jsonb(NEW),
+      headers := '{"Content-Type": "application/json"}'::jsonb
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Recréer le trigger
+CREATE TRIGGER fiche_completed_webhook
+  AFTER UPDATE ON public.fiches
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_fiche_completed();
+```
+
+### **Points clés de la solution**
+1. **Syntaxe nommée** : `url :=`, `body :=`, `headers :=` 
+2. **Fonction correcte** : `net.http_post` (pas `supabase_functions.http_request`)
+3. **Headers format** : `'{"Content-Type": "application/json"}'::jsonb`
+4. **Body format** : `to_jsonb(NEW)` pour convertir la ligne en JSON
+
+### **Tests validés**
+- ✅ Bouton "Finaliser" change le statut vers "Complété"
+- ✅ Trigger se déclenche uniquement sur changement de statut (pas doublons)
+- ✅ Webhook Make reçoit payload complet (~750 colonnes)
+- ✅ Pas d'erreur console
+
+### **Prévention**
+- ⚠️ Toujours utiliser la syntaxe nommée avec `:=` pour `net.http_post`
+- ⚠️ Vérifier que l'extension `http` est bien activée : `CREATE EXTENSION IF NOT EXISTS http;`
+- ⚠️ Tester le trigger avec `to_jsonb(NEW)` avant de complexifier le payload
+
+---
+
+## 🔧 **Template pour nouveaux bugs**
+
+```markdown
+## 🚨 **BUG #XXX - Titre du bug**
+**Date :** JJ/MM/AAAA  
+**Gravité :** Critique/Majeure/Mineure  
+**Statut :** 🔄 EN COURS / ✅ RÉSOLU / ❌ NON RÉSOLU  
+
+### **Symptômes**
+- Comportement observé
+- Messages d'erreur exacts
+- Actions qui ne fonctionnent pas
+
+### **Cause racine**
+Explication technique du problème
+
+### **Solution finale**
+```code
+Code de la solution qui fonctionne
+```
+
+### **Tests validés**
+- ✅ Test 1
+- ✅ Test 2
+
+### **Prévention**
+- ⚠️ Points d'attention pour éviter le problème
+```
+
+---
+
+*📝 Maintenez ce fichier à jour à chaque bug critique rencontré*

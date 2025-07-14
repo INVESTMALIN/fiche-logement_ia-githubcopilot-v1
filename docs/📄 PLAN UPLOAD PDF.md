@@ -47,7 +47,7 @@ graph TD
 
 ### **Base de Données (Future)**
 ```sql
--- Colonnes à ajouter (pas encore implémenté)
+-- Colonnes à ajoutées à Supabase
 ALTER TABLE fiches ADD COLUMN pdf_logement_url TEXT;
 ALTER TABLE fiches ADD COLUMN pdf_menage_url TEXT;
 ```
