@@ -1,9 +1,9 @@
-// src/components/PDFUpload.jsx - VERSION COMPLÈTE OPTIMISÉE
+// src/components/PDFUpload.jsx - VERSION DEBUG COMPLÈTE AVEC TOUT LE CODE ORIGINAL
 import React, { useState } from 'react'
 import html2pdf from 'html2pdf.js'
 import { supabase } from '../lib/supabaseClient'
 
-const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
+const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
   const [generating, setGenerating] = useState(false)
   const [pdfUrl, setPdfUrl] = useState(null)
   const [error, setError] = useState(null)
@@ -21,7 +21,7 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
       const numeroBien = formData.section_logement?.numero_bien || 'sans-numero'
       
       // ===============================
-      // 1. GÉNÉRATION PDF LOGEMENT
+      // 1. GÉNÉRATION PDF LOGEMENT AVEC DEBUG
       // ===============================
       console.log('📄 Début génération PDF Logement avec html2pdf...')
       
@@ -29,7 +29,7 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
       console.log('✅ PDF Logement généré, taille:', (logementPdfBlob.size / 1024 / 1024).toFixed(2), 'MB')
       
       // ===============================
-      // 2. GÉNÉRATION PDF MÉNAGE
+      // 2. GÉNÉRATION PDF MÉNAGE AVEC DEBUG
       // ===============================
       console.log('📄 Début génération PDF Ménage avec html2pdf...')
       
@@ -39,7 +39,7 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
       // ===============================
       // 3. VÉRIFICATION TAILLE - LIMITE AUGMENTÉE
       // ===============================
-      const maxSizeMB = 15 // 🎯 AUGMENTÉ de 6MB → 15MB
+      const maxSizeMB = 15
       const maxSizeBytes = maxSizeMB * 1024 * 1024
       
       if (logementPdfBlob.size > maxSizeBytes) {
@@ -51,76 +51,63 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
       }
       
       // ===============================
-      // 4. UPLOAD VERS SUPABASE STORAGE
+      // 4. UPLOAD PDF LOGEMENT
       // ===============================
-      console.log('📤 Upload des 2 PDF vers Supabase Storage...')
+      console.log('☁️ Upload PDF logement vers Supabase...')
       
-      // Upload PDF Logement
-      const logementFileName = `fiche-logement-${numeroBien}.pdf`
-      const { data: logementData, error: logementError } = await supabase.storage
+      const fileName = `fiche-logement-${numeroBien}.pdf`
+      const { data, error: uploadError } = await supabase.storage
         .from('fiche-pdfs')
-        .upload(logementFileName, logementPdfBlob, {
+        .upload(fileName, logementPdfBlob, {
           cacheControl: '3600',
           upsert: true,
           contentType: 'application/pdf'
         })
 
-      if (logementError) throw new Error(`Erreur upload logement: ${logementError.message}`)
+      if (uploadError) throw uploadError
 
-      // Upload PDF Ménage
-      const menageFileName = `fiche-menage-${numeroBien}.pdf`
-      const { data: menageData, error: menageError } = await supabase.storage
+      const { data: urlData } = supabase.storage
         .from('fiche-pdfs')
-        .upload(menageFileName, menagePdfBlob, {
+        .getPublicUrl(fileName)
+
+      const finalUrl = urlData.publicUrl
+      
+      // ===============================
+      // 5. UPLOAD PDF MÉNAGE
+      // ===============================
+      console.log('☁️ Upload PDF ménage vers Supabase...')
+      
+      const fileNameMenage = `fiche-menage-${numeroBien}.pdf`
+      const { data: dataMenage, error: uploadErrorMenage } = await supabase.storage
+        .from('fiche-pdfs')
+        .upload(fileNameMenage, menagePdfBlob, {
           cacheControl: '3600',
           upsert: true,
           contentType: 'application/pdf'
         })
 
-      if (menageError) throw new Error(`Erreur upload ménage: ${menageError.message}`)
+      if (uploadErrorMenage) throw uploadErrorMenage
 
-      // ===============================
-      // 5. GÉNÉRATION URLS PUBLIQUES
-      // ===============================
-      const { data: logementUrlData } = supabase.storage
+      const { data: urlDataMenage } = supabase.storage
         .from('fiche-pdfs')
-        .getPublicUrl(logementFileName)
+        .getPublicUrl(fileNameMenage)
 
-      const { data: menageUrlData } = supabase.storage
-        .from('fiche-pdfs')
-        .getPublicUrl(menageFileName)
-
-      const finalLogementUrl = logementUrlData.publicUrl
-      const finalMenageUrl = menageUrlData.publicUrl
-
-      console.log('🔗 URLs générées:')
-      console.log('  - Logement:', finalLogementUrl)
-      console.log('  - Ménage:', finalMenageUrl)
-
-      // ===============================
-      // 6. FINALISATION
-      // ===============================
-      setPdfUrl(finalLogementUrl)
-
-      // 🆕 SAUVEGARDE URLs POUR MAKE
-      await handleSave({
-        pdf_logement_url: finalLogementUrl,
-        pdf_menage_url: finalMenageUrl
-      })
-
+      const finalUrlMenage = urlDataMenage.publicUrl
+      
+      console.log('✅ PDF logement:', finalUrl)
+      console.log('✅ PDF ménage:', finalUrlMenage)
+      
+      setPdfUrl(finalUrl)
+      
       if (onPDFGenerated) {
-        onPDFGenerated({
-          logement: finalLogementUrl,
-          menage: finalMenageUrl
-        })
+        onPDFGenerated(finalUrl)
       }
-
-      console.log('🎉 Génération et upload terminés avec succès!')
-
+      
+      console.log('🎉 Génération complète des 2 PDF terminée!')
+      
     } catch (err) {
       console.error('❌ Erreur génération PDF:', err)
       
-      // 🎯 GESTION ERREUR AMÉLIORÉE avec conseils
       if (err.message.includes('trop volumineux')) {
         setError(`${err.message}\n\n💡 Conseil: Les PDF avec beaucoup de photos peuvent être volumineux. Le PDF logement complet contient toutes les photos.`)
       } else {
@@ -132,10 +119,12 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
   }
 
   // ===============================
-  // FONCTION GÉNÉRATION PDF BLOB - OPTIMISÉE
+  // FONCTION GÉNÉRATION PDF BLOB - VERSION DEBUG AVANCÉE
   // ===============================
   const generatePDFBlob = async (url) => {
     return new Promise((resolve, reject) => {
+      console.log('🔗 Création iframe pour:', url)
+      
       // Créer iframe caché
       const iframe = document.createElement('iframe')
       iframe.style.position = 'absolute'
@@ -145,28 +134,51 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
       iframe.style.height = '1200px'
       iframe.style.border = 'none'
       
+      // 🔥 TIMEOUT AUGMENTÉ : 15 secondes au lieu de 10
       const timeoutId = setTimeout(() => {
+        console.error('⏰ TIMEOUT: Iframe trop long à charger')
         if (iframe.parentNode) {
           document.body.removeChild(iframe)
         }
-        reject(new Error('Timeout: Chargement iframe trop long'))
-      }, 10000)
+        reject(new Error('Timeout: Chargement iframe trop long (15s)'))
+      }, 15000)
       
       iframe.onload = async () => {
         try {
           console.log('📄 Iframe chargé, attente rendu complet...')
           
-          // 🔑 CRUCIAL : Attendre que tous les styles soient chargés
-          await new Promise(resolve => setTimeout(resolve, 3000))
+          // 🔥 ATTENTE AUGMENTÉE : 5 secondes au lieu de 3
+          await new Promise(resolve => setTimeout(resolve, 5000))
           
           const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
-          const element = iframeDoc.querySelector('.pdf-container')
+          console.log('🔍 Recherche du conteneur PDF dans l\'iframe...')
+          
+          // 🔥 DEBUG AVANCÉ : Voir ce qu'il y a dans l'iframe
+          console.log('📋 Document title:', iframeDoc.title)
+          console.log('📋 Body innerHTML length:', iframeDoc.body?.innerHTML?.length || 'NO BODY')
+          
+          // Chercher plusieurs sélecteurs possibles
+          let element = iframeDoc.querySelector('.pdf-container')
           
           if (!element) {
+            console.log('⚠️ .pdf-container introuvable, recherche d\'alternatives...')
+            element = iframeDoc.querySelector('.container')
+            if (element) console.log('✅ Trouvé .container comme alternative')
+          }
+          
+          if (!element) {
+            element = iframeDoc.querySelector('div')
+            if (element) console.log('✅ Trouvé premier div comme alternative')
+          }
+          
+          if (!element) {
+            console.error('❌ Aucun élément trouvé dans l\'iframe')
+            console.log('📋 Contenu body:', iframeDoc.body?.innerHTML?.substring(0, 500))
             throw new Error('Élément .pdf-container non trouvé')
           }
 
           console.log('📄 Génération PDF avec html2pdf optimisé...')
+          console.log('📐 Dimensions élément:', element.offsetWidth, 'x', element.offsetHeight)
           
           // ✨ CONFIGURATION HTML2PDF OPTIMISÉE POUR COMPRESSION
           const options = {
@@ -174,14 +186,15 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
             filename: 'document.pdf',
             image: { 
               type: 'jpeg', 
-              quality: 0.8 // 🎯 COMPRESSION : Réduit de 0.95 → 0.8
+              quality: 0.7 // 🔥 COMPRESSION RÉDUITE pour fiabilité
             },
             html2canvas: { 
-              scale: 1.5, // 🎯 COMPRESSION : Réduit de 2 → 1.5 pour moins de pixels
+              scale: 1.2, // 🔥 SCALE RÉDUIT pour performance
               useCORS: true,
               letterRendering: true,
               logging: false,
-              backgroundColor: '#ffffff'
+              backgroundColor: '#ffffff',
+              timeout: 10000 // 🔥 TIMEOUT CANVAS
             },
             jsPDF: { 
               unit: 'mm', 
@@ -201,6 +214,7 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
             .set(options)
             .outputPdf('blob')
             .then(blob => {
+              console.log('✅ PDF généré avec succès, taille:', (blob.size / 1024 / 1024).toFixed(2), 'MB')
               clearTimeout(timeoutId)
               if (iframe.parentNode) {
                 document.body.removeChild(iframe)
@@ -208,6 +222,7 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
               resolve(blob)
             })
             .catch(err => {
+              console.error('❌ Erreur html2pdf:', err)
               clearTimeout(timeoutId)
               if (iframe.parentNode) {
                 document.body.removeChild(iframe)
@@ -216,6 +231,7 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
             })
 
         } catch (err) {
+          console.error('❌ Erreur dans iframe.onload:', err)
           clearTimeout(timeoutId)
           if (iframe.parentNode) {
             document.body.removeChild(iframe)
@@ -224,7 +240,8 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
         }
       }
       
-      iframe.onerror = () => {
+      iframe.onerror = (error) => {
+        console.error('❌ Erreur chargement iframe:', error)
         clearTimeout(timeoutId)
         if (iframe.parentNode) {
           document.body.removeChild(iframe)
@@ -232,6 +249,7 @@ const PDFUpload = ({ formData, onPDFGenerated, handleSave  }) => {
         reject(new Error('Erreur chargement iframe'))
       }
       
+      console.log('📱 Ajout iframe au DOM et chargement de:', url)
       document.body.appendChild(iframe)
       iframe.src = url
     })
