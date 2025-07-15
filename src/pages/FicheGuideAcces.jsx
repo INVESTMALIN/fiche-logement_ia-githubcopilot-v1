@@ -34,7 +34,7 @@ export default function FicheGuideAcces() {
             {/* Introduction */}
             <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
               <h3 className="font-semibold text-blue-800 mb-2">
-                Préparation Guide d'accès - De la rue jusqu'à l'intérieur de l'appartement
+                Préparation Guide d'accès : depuis le panneau de la rue ou un élément identifiable, jusqu'à l'intérieur de l'appartement
               </h3>
               <p className="text-blue-700 text-sm">
                 Fournissez les éléments visuels nécessaires pour créer un guide d'accès complet pour les voyageurs.

@@ -63,7 +63,7 @@ export const mapFormDataToSupabase = (formData) => {
     clefs_tempo_gache_photo: formData.section_clefs?.tempoGachePhoto || null,
     clefs_digicode: formData.section_clefs?.digicode ?? null,
     clefs_digicode_details: formData.section_clefs?.digicodeDetails || null,
-    clefs_digicode_photo: formData.section_clefs?.digicodePhoto || null,
+    clefs_digicode_photo: formData.section_clefs?.digicodePhoto || [],
     clefs_photos: formData.section_clefs?.clefs?.photos || [],
     clefs_precision: formData.section_clefs?.clefs?.precision || null,
     clefs_prestataire: formData.section_clefs?.clefs?.prestataire ?? null,

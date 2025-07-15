@@ -123,7 +123,6 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
   // ===============================
   const generatePDFBlob = async (url) => {
     return new Promise((resolve, reject) => {
-      console.log('🔗 Création iframe pour:', url)
       
       // Créer iframe caché
       const iframe = document.createElement('iframe')
@@ -151,12 +150,7 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
           await new Promise(resolve => setTimeout(resolve, 5000))
           
           const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
-          console.log('🔍 Recherche du conteneur PDF dans l\'iframe...')
-          
-          // 🔥 DEBUG AVANCÉ : Voir ce qu'il y a dans l'iframe
-          console.log('📋 Document title:', iframeDoc.title)
-          console.log('📋 Body innerHTML length:', iframeDoc.body?.innerHTML?.length || 'NO BODY')
-          
+                    
           // Chercher plusieurs sélecteurs possibles
           let element = iframeDoc.querySelector('.pdf-container')
           
@@ -178,7 +172,6 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
           }
 
           console.log('📄 Génération PDF avec html2pdf optimisé...')
-          console.log('📐 Dimensions élément:', element.offsetWidth, 'x', element.offsetHeight)
           
           // ✨ CONFIGURATION HTML2PDF OPTIMISÉE POUR COMPRESSION
           const options = {
@@ -249,7 +242,6 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
         reject(new Error('Erreur chargement iframe'))
       }
       
-      console.log('📱 Ajout iframe au DOM et chargement de:', url)
       document.body.appendChild(iframe)
       iframe.src = url
     })

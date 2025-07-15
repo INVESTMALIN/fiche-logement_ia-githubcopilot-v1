@@ -67,7 +67,7 @@ const initialFormData = {
     // Type de boîte + emplacement
     boiteType: "",                    // TEXT
     emplacementBoite: "",             // TEXT
-    emplacementPhoto: null,           // TEXT
+    emplacementPhoto: [],             // ARRAY
     
     // TTlock (conditionnel)
     ttlock: {
@@ -92,17 +92,17 @@ const initialFormData = {
     // Interphone
     interphone: null,                 // BOOLEAN
     interphoneDetails: "",            // TEXT
-    interphonePhoto: null,            // TEXT
+    interphonePhoto: [],              // ARRAY
     
     // Tempo-gâche  
     tempoGache: null,                 // BOOLEAN
     tempoGacheDetails: "",            // TEXT
-    tempoGachePhoto: null,            // TEXT
+    tempoGachePhoto: [],              // ARRAY
     
     // Digicode
     digicode: null,                   // BOOLEAN
     digicodeDetails: "",              // TEXT
-    digicodePhoto: null,              // TEXT
+    digicodePhoto: [],                // ARRAY
     
     // Clefs (existant)
     clefs: {
