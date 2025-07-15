@@ -7,6 +7,68 @@ import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 
 
+  // Composant pour une section d'inventaire
+  const InventaireSection = ({ taille, titre, dataKey, formData, handleInputChange, openSections, toggleSection, getLingeLabel }) => {
+    const inventaireData = formData[dataKey] || {}
+    const isOpen = openSections[taille]
+    
+    return (
+      <div className="border rounded-lg">
+        <button
+          type="button"
+          onClick={() => toggleSection(taille)}
+          className="w-full p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg font-semibold flex justify-between items-center"
+        >
+          <span>{titre}</span>
+          <span className="text-gray-500">{isOpen ? '▼' : '▶'}</span>
+        </button>
+        
+        {isOpen && (
+          <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+            {Object.keys(formData.inventaire_90x200 || {}).map((typeLingeKey) => {
+              const typeLingeLabel = getLingeLabel(typeLingeKey)
+              return (
+                <div key={typeLingeKey}>
+                  <label className="block text-sm font-medium mb-1">
+                    {typeLingeLabel}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    className="w-full p-2 border rounded text-sm"
+                    value={inventaireData[typeLingeKey] || ""}
+                    onChange={(e) => handleInputChange(`section_gestion_linge.${dataKey}.${typeLingeKey}`, e.target.value)}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+// Helper pour les labels des types de linge
+const getLingeLabel = (key) => {
+  const labels = {
+    couettes: "Couettes",
+    oreillers: "Oreillers", 
+    draps_housses: "Draps housses (plats)",
+    housses_couette: "Housses de couette",
+    protections_matelas: "Protections matelas / Alaises",
+    taies_oreillers: "Taies d'oreillers",
+    draps_bain: "Grandes serviettes (par logement)",
+    petites_serviettes: "Petites serviette (par logement)",
+    tapis_bain: "Tapis de bain (par logement)",
+    torchons: "Torchons (par logement)",
+    plaids: "Plaids",
+    oreillers_decoratifs: "Oreillers décoratifs"
+  }
+  return labels[key] || key
+}
+
+
 export default function FicheGestionLinge() {
   const { 
     next, 
@@ -50,66 +112,7 @@ export default function FicheGestionLinge() {
     }))
   }
 
-  // Composant pour une section d'inventaire
-  const InventaireSection = ({ taille, titre, dataKey }) => {
-    const inventaireData = formData[dataKey] || {}
-    const isOpen = openSections[taille]
-    
-    return (
-      <div className="border rounded-lg">
-        <button
-          type="button"
-          onClick={() => toggleSection(taille)}
-          className="w-full p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-t-lg font-semibold flex justify-between items-center"
-        >
-          <span>{titre}</span>
-          <span className="text-gray-500">{isOpen ? '▼' : '▶'}</span>
-        </button>
-        
-        {isOpen && (
-          <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-            {Object.keys(formData.inventaire_90x200 || {}).map((typeLingeKey) => {
-              const typeLingeLabel = getLingeLabel(typeLingeKey)
-              return (
-                <div key={typeLingeKey}>
-                  <label className="block text-sm font-medium mb-1">
-                    {typeLingeLabel}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    className="w-full p-2 border rounded text-sm"
-                    value={inventaireData[typeLingeKey] || ""}
-                    onChange={(e) => handleInputChange(`section_gestion_linge.${dataKey}.${typeLingeKey}`, e.target.value)}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    )
-  }
 
-  // Helper pour les labels des types de linge
-  const getLingeLabel = (key) => {
-    const labels = {
-      couettes: "Couettes",
-      oreillers: "Oreillers", 
-      draps_housses: "Draps housses (plats)",
-      housses_couette: "Housses de couette",
-      protections_matelas: "Protections matelas / Alaises",
-      taies_oreillers: "Taies d'oreillers",
-      draps_bain: "Grandes serviettes (par logement)",
-      petites_serviettes: "Petites serviette (par logement)",
-      tapis_bain: "Tapis de bain (par logement)",
-      torchons: "Torchons (par logement)",
-      plaids: "Plaids",
-      oreillers_decoratifs: "Oreillers décoratifs"
-    }
-    return labels[key] || key
-  }
 
   return (
     <div className="flex min-h-screen">
@@ -162,31 +165,56 @@ export default function FicheGestionLinge() {
                     Inventaire - Veuillez indiquer les quantités par taille de lit
                   </h2>
                   <div className="space-y-3">
-                    <InventaireSection 
-                      taille="90x200" 
-                      titre="90x200 (lit simple)" 
-                      dataKey="inventaire_90x200"
-                    />
-                    <InventaireSection 
-                      taille="140x200" 
-                      titre="140x200 (lit standard)" 
-                      dataKey="inventaire_140x200"
-                    />
-                    <InventaireSection 
-                      taille="160x200" 
-                      titre="160x200 (lit queen size)" 
-                      dataKey="inventaire_160x200"
-                    />
-                    <InventaireSection 
-                      taille="180x200" 
-                      titre="180x200 (lit king size)" 
-                      dataKey="inventaire_180x200"
-                    />
-                    <InventaireSection 
-                      taille="autres" 
-                      titre="Autres ou hors catégorie (serviettes, oreillers, taies, torchons etc)" 
-                      dataKey="inventaire_autres"
-                    />
+                  <InventaireSection 
+                    taille="90x200" 
+                    titre="90x200 (lit simple)" 
+                    dataKey="inventaire_90x200"
+                    formData={formData}
+                    handleInputChange={handleInputChange}
+                    openSections={openSections}
+                    toggleSection={toggleSection}
+                    getLingeLabel={getLingeLabel}
+                  />
+                  <InventaireSection 
+                    taille="140x200" 
+                    titre="140x200 (lit standard)" 
+                    dataKey="inventaire_140x200"
+                    formData={formData}
+                    handleInputChange={handleInputChange}
+                    openSections={openSections}
+                    toggleSection={toggleSection}
+                    getLingeLabel={getLingeLabel}
+                  />
+                  <InventaireSection 
+                    taille="160x200" 
+                    titre="160x200 (lit queen size)" 
+                    dataKey="inventaire_160x200"
+                    formData={formData}
+                    handleInputChange={handleInputChange}
+                    openSections={openSections}
+                    toggleSection={toggleSection}
+                    getLingeLabel={getLingeLabel}
+                  />
+                  <InventaireSection 
+                    taille="180x200" 
+                    titre="180x200 (lit king size)" 
+                    dataKey="inventaire_180x200"
+                    formData={formData}
+                    handleInputChange={handleInputChange}
+                    openSections={openSections}
+                    toggleSection={toggleSection}
+                    getLingeLabel={getLingeLabel}
+                  />
+                  <InventaireSection 
+                    taille="autres" 
+                    titre="Autres ou hors catégorie (serviettes, oreillers, taies, torchons etc)" 
+                    dataKey="inventaire_autres"
+                    formData={formData}
+                    handleInputChange={handleInputChange}
+                    openSections={openSections}
+                    toggleSection={toggleSection}
+                    getLingeLabel={getLingeLabel}
+                  />
                   </div>
                 </div>
 

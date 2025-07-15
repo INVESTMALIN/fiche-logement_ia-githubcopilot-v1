@@ -55,7 +55,8 @@ const PDFMenageTemplate = ({ formData }) => {
   // 🔧 Helper pour parser les strings JSON malformées + nettoyage URLs
   const parsePhotoValue = (value) => {
     if (Array.isArray(value)) {
-      return value.filter(isImageUrl).map(url => cleanUrl(url))
+      const urls = value.filter(url => isImageUrl(url)).map(url => cleanUrl(url))
+      return urls
     }
     
     if (typeof value === 'string') {
