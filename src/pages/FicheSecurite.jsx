@@ -47,11 +47,8 @@ export default function FicheSecutite() {
   }
 
   const handleFinaliser = async () => {
-    const saveResult = await handleSave()
-    if (saveResult.success) {
-      await finaliserFiche()
-      setShowConfirmModal(true)
-    }
+    await finaliserFiche()
+    setShowConfirmModal(true)
   }
   const equipementsSecurite = [
     'Détecteur de fumée',
@@ -214,9 +211,9 @@ export default function FicheSecutite() {
                       Génération automatique des fiches
                     </p>
                     <div className="text-sm text-blue-700 leading-relaxed space-y-1">
-                      <p>Les deux Fiches (logement + ménage) seront générées simultanément et envoyées sur le Drive.</p>
+                      <p>Les deux Fiches (logement + ménage) seront générées simultanément.</p>
                       <p>Vous pourrez télécharger une copie de la fiche logement.</p>
-                      <p>Ensuite, cliquez sur <span className="font-semibold">"Finaliser la fiche"</span> ci-dessous pour compléter cette fiche.</p>
+                      <p>Ensuite, cliquez sur <span className="font-semibold">"Finaliser la fiche"</span> ci-dessous pour compléter cette fiche et synchroniser les informations avec le Drive.</p>
                     </div>
                   </div>
                 </div>

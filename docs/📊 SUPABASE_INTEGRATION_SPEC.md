@@ -824,7 +824,7 @@ user-{user_id}/
 
 ---
 
-## 📋 **LISTE COMPLÈTE DES 29 CHAMPS MÉDIA**
+## 📋 **LISTE COMPLÈTE DES 39 CHAMPS MÉDIA**
 
 ### **Section Clefs (5 champs)**
 1. `clefs_emplacement_photo` - Photo de l'emplacement de la boîte
@@ -879,7 +879,7 @@ user-{user_id}/
 38. `guide_acces_video_acces` - Vidéo guide d'accès
 39. `securite_photos_equipements` - Photos équipements sécurité
 
-**TOTAL : 29 champs photos/vidéos organisés par section**
+**TOTAL : 39 champs photos/vidéos organisés par section**
 
 ---
 

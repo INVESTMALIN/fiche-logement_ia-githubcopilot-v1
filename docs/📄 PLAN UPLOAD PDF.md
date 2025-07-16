@@ -198,28 +198,58 @@ const generatePDFBlob = async (url) => {
 ├── 📁 5566. Florence TEISSIER - Saint Pons/
 │   ├── 📁 3. INFORMATIONS LOGEMENT/
 │   │   ├── 📁 1. Fiche logement/
-│   │   │   ├── 📄 fiche-logement-5566.pdf    ← AUTO
-│   │   │   └── 📄 fiche-menage-5566.pdf      ← AUTO
+│   │   │   ├── 📄 fiche-logement-5566.pdf
+│   │   │   └── 📄 fiche-menage-5566.pdf
 │   │   ├── 📁 2. Photos Visite Logement/
-│   │   ├── 📁 3. Contrat et Documents/
-│   │   └── 📁 4. Factures et Charges/
+│   │   ├── 📁 3. Accès au logement/
+│   │   ├── 📁 4. Tour générale du logement/
+│   │   ├── 📁 5. Tuto équipements/
+│   │   └── 📁 6. Identifiants Wifi/
 │   ├── 📁 4. GESTION MENAGE/
 │   │   └── 📁 1. Consignes et Procedures/
 │   └── 📁 5. MARKETING ET PHOTOS/
 └── 📁 1280. Autre propriétaire - Autre ville/
 ```
 
-### **Configuration Make.com**
-```json
-{
-  "action": "upload_files",
-  "destination": "3. INFORMATIONS LOGEMENT/1. Fiche logement/",
-  "files": [
-    {"name": "fiche-logement-{{numero_bien}}.pdf", "data": "{{pdf_logement}}"},
-    {"name": "fiche-menage-{{numero_bien}}.pdf", "data": "{{pdf_menage}}"}
-  ]
-}
+## 📁 **MAPPING LOGIQUE PHOTOS → DOSSIERS DRIVE**
+### **Structure finale recommandée**
 ```
+
+📁 3. Accès au logement
+- clefs_emplacement_photo (emplacement boîte à clefs)
+- clefs_interphone_photo  
+- clefs_tempo_gache_photo
+- clefs_digicode_photo
+- clefs_photos (clefs physiques)
+- guide_acces_photos_etapes (photos guide d'accès)
+- guide_acces_video_acces (vidéo guide d'accès)
+📁 4. Tour générale du logement
+- chambres_chambre_1_photos → chambres_chambre_6_photos
+- salle_de_bain_1_photos → salle_de_bain_6_photos  
+- salon_sam_photos
+- cuisine2_photos_tiroirs_placards (vue d'ensemble cuisine)
+- exterieur_photos_espaces
+- communs_photos_espaces
+📁 5. Tuto équipements
+- equipements_poubelle_photos
+- equipements_disjoncteur_photos  
+- equipements_vanne_eau_photos
+- equipements_chauffage_eau_photos
+- cuisine1_cuisiniere_photo
+- cuisine1_plaque_cuisson_photo
+- cuisine1_four_photo
+- cuisine1_micro_ondes_photo
+- cuisine1_lave_vaisselle_photo
+- cuisine1_cafetiere_photo
+- linge_photos_linge
+- linge_emplacement_photos
+- jacuzzi_photos_jacuzzi
+- barbecue_photos
+- bebe_photos_equipements
+- securite_photos_equipements
+```
+
+Total : 7 + 14 + 18 = 39 champs ✅
 
 ---
 
@@ -244,9 +274,9 @@ const generatePDFBlob = async (url) => {
 - ✅ **Gestion erreurs robuste** : Cleanup sécurisé des iframes
 
 ### **🔄 Phase 4 : Intégration Make (À FAIRE)**
-- [ ] **Configuration modules** HTTP GET pour récupération PDFs
-- [ ] **Tests téléchargement** via URLs publiques Supabase
-- [ ] **Upload Google Drive** dans structure dossiers souhaitée
+- ✅ **Configuration modules** HTTP GET pour récupération PDFs
+- ✅ **Tests téléchargement** via URLs publiques Supabase
+- 🔄 **Upload Google Drive** dans structure dossiers souhaitée
 - [ ] **Validation end-to-end** : Frontend → Storage → Make → Drive
 
 ---
@@ -273,12 +303,12 @@ const generatePDFBlob = async (url) => {
 
 ## 🚀 **PROCHAINES ÉTAPES RECOMMANDÉES**
 
-### **Immédiat (1-2h)**
+### **Immédiat (1-2h)** (Terminé)
 1. **Configuration Make** : Modules HTTP GET pour récupération PDFs
 2. **Tests téléchargement** : Valider accessibilité URLs Supabase
 3. **Structure Drive** : Créer dossiers et permissions
 
-### **Court terme (1 semaine)**
+### **Court terme (1 semaine)** (En cours)
 4. **Upload Drive** : Intégration complète Make → Google Drive
 5. **Tests end-to-end** : Workflow complet Frontend → Drive
 6. **Documentation utilisateur** : Guide pour coordinateurs
@@ -331,7 +361,7 @@ const generatePDFBlob = async (url) => {
 
 ---
 
-*📅 Dernière mise à jour : 08 juillet 2025 - 21:00*  
+*📅 Dernière mise à jour : 16 juillet 2025 - 21:00*  
 *👤 Développeurs : Julien + Claude Sonnet 4*  
 *🎯 Statut : ✅ MIGRÉ HTML2PDF - Prêt pour intégration Make*  
 *📈 Version : 5.0 - html2pdf avec pagination intelligente*
