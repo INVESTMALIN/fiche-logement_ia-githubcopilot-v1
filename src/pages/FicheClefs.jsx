@@ -286,7 +286,7 @@ export default function FicheClefs() {
                   fieldPath="section_clefs.tempoGachePhoto"
                   label="Photo du tempo-gâche"
                   multiple={true}
-                  maxFiles={3}
+                  maxFiles={1}
                 />
                 </div>
               </div>

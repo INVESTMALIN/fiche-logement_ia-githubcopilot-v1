@@ -214,6 +214,13 @@ const generatePDFBlob = async (url) => {
 ## 📁 **MAPPING LOGIQUE PHOTOS → DOSSIERS DRIVE**
 ### **Structure finale recommandée**
 ```
+📁 2. Photos Visite Logement
+- chambres_chambre_1_photos → chambres_chambre_6_photos
+- salle_de_bain_1_photos → salle_de_bain_6_photos  
+- salon_sam_photos
+- cuisine2_photos_tiroirs_placards (vue d'ensemble cuisine)
+- exterieur_photos_espaces
+- communs_photos_espaces
 
 📁 3. Accès au logement
 - clefs_emplacement_photo (emplacement boîte à clefs)
@@ -223,13 +230,10 @@ const generatePDFBlob = async (url) => {
 - clefs_photos (clefs physiques)
 - guide_acces_photos_etapes (photos guide d'accès)
 - guide_acces_video_acces (vidéo guide d'accès)
+
 📁 4. Tour générale du logement
-- chambres_chambre_1_photos → chambres_chambre_6_photos
-- salle_de_bain_1_photos → salle_de_bain_6_photos  
-- salon_sam_photos
-- cuisine2_photos_tiroirs_placards (vue d'ensemble cuisine)
-- exterieur_photos_espaces
-- communs_photos_espaces
+- ??
+
 📁 5. Tuto équipements
 - equipements_poubelle_photos
 - equipements_disjoncteur_photos  

@@ -207,13 +207,11 @@ export default function FicheSecutite() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-blue-800 mb-1">
-                      Génération automatique des fiches
-                    </p>
+
                     <div className="text-sm text-blue-700 leading-relaxed space-y-1">
-                      <p>Les deux Fiches (logement + ménage) seront générées simultanément.</p>
-                      <p>Vous pourrez télécharger une copie de la fiche logement.</p>
-                      <p>Ensuite, cliquez sur <span className="font-semibold">"Finaliser la fiche"</span> ci-dessous pour compléter cette fiche et synchroniser les informations avec le Drive.</p>
+                      <p>1. Cliquez sur <span className="font-semibold">"Générer la Fiche logement"</span>.</p>
+                      <p>Les deux Fiches (logement + ménage) seront générées simultanément. Vous pourrez télécharger une copie de la fiche logement.</p>
+                      <p>2. Cliquez ensuite sur <span className="font-semibold">"Finaliser la fiche"</span> ci-dessous pour compléter cette fiche et synchroniser les informations avec le Drive.</p>
                     </div>
                   </div>
                 </div>

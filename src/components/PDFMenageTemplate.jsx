@@ -229,7 +229,6 @@ const PDFMenageTemplate = ({ formData }) => {
     return String(value)
   }
 
-  // 🎯 COMPOSANT: Rendu GRAND des photos pour ménage
 // 🎯 COMPOSANT: Rendu GRAND des photos pour ménage - VERSION CORRIGÉE
 const PhotosDisplayMenage = ({ photos, sectionTitle }) => {
   if (!photos || photos.length === 0) return null

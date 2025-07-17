@@ -158,9 +158,6 @@ export default function Login() {
               <p className="text-xs text-blue-600">
                 📧 coordinateur2@test.com | 🔑 Test1234
               </p>
-              <p className="text-xs text-blue-600">
-                📧 super-admin@test.com | 🔑 Test1234
-              </p>
             </div>
 
             {/* Footer */}

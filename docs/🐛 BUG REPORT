@@ -6,7 +6,7 @@
 
 ## 🚨 **BUG #001 - Affichage Boutons Radio sur iPhone**
 **Date :** 11 juillet 2025  
-**Gravité :** Faible  
+**Gravité :** Low  
 **Statut :** ✅ RÉSOLU  
 
 Les boutons radio ne s'affichent pas correctement sur **iPhone** (testé sur iPhone 12) :
@@ -179,7 +179,7 @@ export default function FicheEquipExterieur() {
 
 ## 🚨 **BUG #004 - Champs conditionnels gardent valeurs fantômes**
 **Date :** 15 juillet 2025  
-**Gravité :** Mineure  
+**Gravité :** High
 **Statut :** ✅ RÉSOLU  
 
 ### **Symptômes**
@@ -245,7 +245,7 @@ Ce pattern peut être appliqué à d'autres sections avec champs conditionnels s
 
 ## 🚨 **BUG #004 - Payload Make ingérable (750 colonnes)**
 **Date :** 16 juillet 2025  
-**Gravité :** Critique  
+**Gravité :** Medium  
 **Statut :** ✅ RÉSOLU  
 
 ### **Symptômes**
@@ -265,12 +265,13 @@ body := to_jsonb(NEW),  -- Envoie les 750+ colonnes en vrac
 ### **Solution finale - Payload optimisé structuré**
 ```sql
 -- ✅ NOUVEAU TRIGGER OPTIMISÉ
+-- 🎯 Payload optimisé avec TOUS les champs essentiels
 CREATE OR REPLACE FUNCTION public.notify_fiche_completed()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $function$
 BEGIN
-  IF NEW.statut = 'Complété' AND (OLD.statut IS NULL OR OLD.statut != 'Complété') THEN
+  IF NEW.statut = 'Complété' THEN
     PERFORM net.http_post(
       url := 'https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj',
       body := jsonb_build_object(
