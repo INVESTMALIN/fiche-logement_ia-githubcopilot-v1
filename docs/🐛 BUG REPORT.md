@@ -243,7 +243,7 @@ Ce pattern peut être appliqué à d'autres sections avec champs conditionnels s
 
 ---
 
-## 🚨 **BUG #004 - Payload Make ingérable (750 colonnes)**
+## 🚨 **BUG #005 - Payload Make ingérable (750 colonnes)**
 **Date :** 16 juillet 2025  
 **Gravité :** Medium  
 **Statut :** ✅ RÉSOLU  

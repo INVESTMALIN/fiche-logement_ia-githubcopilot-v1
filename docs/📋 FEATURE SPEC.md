@@ -1,11 +1,11 @@
 # 📋 FEATURE_SPEC - Fiche Logement Letahost
-*Spécifications fonctionnelles - Mise à jour : 27 Juin 2025*
+*Spécifications fonctionnelles - Mise à jour : 18 Juilet 2025*
 
 ---
 
 ## 🎯 **VISION PRODUIT**
 
-Application web mobile-first remplaçant les formulaires Jotform pour la création de fiches logement Letahost. Interface moderne, navigation fluide, sauvegarde Supabase et **pré-population automatique Monday.com** pour optimiser le workflow terrain des coordinateurs.
+Application web mobile-first remplaçant le formulaire Jotform pour la création de fiches logement Letahost. Interface moderne, navigation fluide, sauvegarde Supabase et **pré-population automatique Monday.com** pour optimiser le workflow sur le terrain des coordinateurs.
 
 ---
 
@@ -97,7 +97,7 @@ nombre_lits → section_logement.nombre_lits
 
 ---
 
-## 📱 **SECTIONS FORMULAIRE IMPLÉMENTÉES (14/22)**
+## 📱 **SECTIONS FORMULAIRE IMPLÉMENTÉES (22/22)**
 
 ### **✅ Sections complètes**
 1. **Propriétaire** - Identité + adresse + pré-population Monday
@@ -114,16 +114,14 @@ nombre_lits → section_logement.nombre_lits
 12. **Visite** - Types pièces + nombre chambres/SDB + vidéo visite
 13. **Chambres** - Accordéons dynamiques + compteurs lits + équipements
 14. **Salle De Bains** - Accordéons dynamiques + équipements + WC séparé + accès
-
-### **🔲 Sections restantes (8/22)**
-15. Cuisine 1
-16. Cuisine 2  
-17. Salon / SAM
-18. Équip. Spé. / Extérieur
-19. Communs
-20. Télétravail
-21. Bébé
-22. Sécurité
+15. **Cuisine 1** -
+16. **Cuisine 2**
+17. **Salon / SAM** -
+18. **Équip. Spé. / Extérieur** -
+19. **Communs** -
+20. **Télétravail** -
+21. **Bébé** -
+22. **Sécurité** -
 
 ---
 
@@ -231,33 +229,5 @@ className="w-full px-4 py-3 bg-teal-600 text-white flex items-center justify-bet
 
 ---
 
-## ⚠️ **LIMITATIONS & PROCHAINES ÉTAPES**
 
-### **Limitations actuelles**
-- **8 sections manquantes** (process établi pour ajout rapide)
-- **Upload photos** : Placeholders présents, composant PhotoUpload à développer
-- **Génération PDF** : À connecter via Make.com + GPT
-
-### **Architecture prête pour**
-- **Upload multimédia** : Structure photos[] dans toutes sections
-- **PDF génération** : Toutes données structurées en base
-- **Sync Monday bidirectionnelle** : Mappings établis
-
----
-
-## 📊 **SUCCÈS MESURÉS**
-
-### **Remplacement Jotform validé**
-- **Workflow Monday** 100% compatible (aucune rupture)
-- **Interface moderne** vs formulaires obsolètes
-- **Navigation fluide** vs pages lentes
-- **Smart naming** vs noms génériques
-- **Dashboard centralisé** vs dispersion
-
-### **Impact business**
-- Coordinateurs terrain utilisent liens Monday existants
-- Gain productivité : formulaires pré-remplis automatiquement  
-- UX moderne mobile-first
-- Administration centralisée équipe
-
-**L'application remplace efficacement Jotform sur les 14 sections implémentées !** 🚀
+**L'application remplace efficacement Jotform sur les 22 sections implémentées !** 🚀

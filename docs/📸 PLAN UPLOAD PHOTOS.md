@@ -1,28 +1,23 @@
 # 📸 PLAN UPLOAD PHOTOS - Architecture Complète OPÉRATIONNELLE
-*Mise à jour : 14 juillet 2025 - 22:00 🎯*
+*Mise à jour : 18 juillet 2025🎯*
 
 ---
 
 ## 🏆 **STATUT ACTUEL - SUCCÈS COMPLET ✅**
 
-### ✅ **Phase 1 : Upload Photos - 100% OPÉRATIONNEL**
+### ✅ **Phase 1 : Upload Photos**
 - **✅ Composant PhotoUpload** intégré dans toutes les sections
 - **✅ Upload Supabase Storage** fonctionnel avec structure organisée
 - **✅ Sauvegarde FormContext** automatique des URLs
 - **✅ Interface utilisateur** intuitive (drag & drop + bouton)
 - **✅ Gestion erreurs** robuste avec messages utilisateur
 
-### ✅ **Phase 2 : Webhook Conditionnel - 100% OPÉRATIONNEL**
-- **✅ Trigger SQL** se déclenche uniquement statut → "Complété"
-- **✅ Payload COMPLET** avec TOUS les champs de la table fiches
-- **✅ Make.com** reçoit données structurées parfaitement
+### ✅ **Phase 2 : Webhook Conditionnel**
+- **✅ Trigger SQL** se déclenche on UPADTE
+- **✅ Payload COMPLET** optimisé avce les champs nécessaires (39 champs fichiers médias)
+- **✅ Make.com** reçoit données structurées
 - **✅ Tests end-to-end** validés avec fiches réelles
 
-### ✅ **Phase 3 : Génération PDF - 100% OPÉRATIONNEL**
-- **✅ PDF Logement + Ménage** générés automatiquement
-- **✅ Upload Storage** automatique lors finalisation
-- **✅ URLs disponibles** dans webhook Make
-- **✅ Téléchargement HTTP** validé dans Make
 
 ---
 
@@ -30,14 +25,13 @@
 
 ### **Workflow Complet : Frontend → Supabase → Make → Drive**
 
-```mermaid
-graph TD
+```
     A[Utilisateur finalise fiche] --> B[Génération 2 PDF automatique]
     B --> C[Upload PDF vers Storage]
-    C --> D[UPDATE statut = 'Complété']
-    D --> E[Trigger SQL conditionnel]
-    E --> F[Webhook Make avec payload COMPLET]
-    F --> G[Make télécharge PDF + organise photos]
+    C --> D[UPDATE statut fiche = 'Complété']
+    D --> E[Trigger filtre statut = 'Complété' dans Make]
+    E --> F[Webhook Make avec payload optimisé]
+    F --> G[Make télécharge + organise photos]
     G --> H[Création arborescence Google Drive]
     H --> I[Upload final organisé par sections]
 ```
@@ -88,136 +82,276 @@ pdf_menage_url TEXT
 
 ## 🔧 **WEBHOOK SUPABASE - TRIGGER OPÉRATIONNEL**
 
-### **Fonction SQL COMPLÈTE - VERSION FINALE ✅**
-```sql
--- Supprimer l'ancien trigger optimisé
-DROP TRIGGER IF EXISTS fiche_completed_webhook ON public.fiches;
-DROP FUNCTION IF EXISTS notify_fiche_completed();
+## 🔗 **Automatisation Make.com**
 
--- Nouvelle fonction qui envoie TOUS les champs de la table
-CREATE OR REPLACE FUNCTION notify_fiche_completed()
-RETURNS trigger AS $$
+### **Webhook Optimisé (BUG #004 résolu)**
+
+**Problème initial :** Payload 750+ colonnes ingérable dans Make
+
+**Solution :** Trigger SQL avec payload structuré optimisé
+
+```sql
+-- Trigger actuel en production : fiche_any_update_webhook
+-- Fonction actuelle : notify_fiche_completed()
+
+CREATE OR REPLACE FUNCTION public.notify_fiche_completed()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
 BEGIN
-  -- Déclenché UNIQUEMENT si statut passe à "Complété"
-  -- ✅ Brouillon → Complété = webhook envoyé avec TOUS les champs
-  -- ❌ Complété → Complété = aucun webhook (évite doublons)
-  IF NEW.statut = 'Complété' AND (OLD.statut IS NULL OR OLD.statut != 'Complété') THEN
-    
-    -- Envoyer TOUTE la ligne NEW (~750 champs de la table fiches)
+  -- ⚠️ AMÉLIORATION RECOMMANDÉE : Ajouter protection doublons
+  -- IF NEW.statut = 'Complété' AND (OLD.statut IS NULL OR OLD.statut != 'Complété') THEN
+  
+  -- Version actuelle : déclenché à chaque fois que statut = "Complété"
+  IF NEW.statut = 'Complété' THEN
     PERFORM net.http_post(
       url := 'https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj',
-      body := row_to_json(NEW),
+      body := jsonb_build_object(
+        -- 📋 MÉTADONNÉES (5 champs)
+        'id', NEW.id,
+        'nom', NEW.nom,
+        'statut', NEW.statut,
+        'created_at', NEW.created_at,
+        'updated_at', NEW.updated_at,
+        
+        -- 👤 PROPRIÉTAIRE (7 champs structurés)
+        'proprietaire', jsonb_build_object(
+          'prenom', NEW.proprietaire_prenom,
+          'nom', NEW.proprietaire_nom,
+          'email', NEW.proprietaire_email,
+          'adresse_rue', NEW.proprietaire_adresse_rue,
+          'adresse_complement', NEW.proprietaire_adresse_complement,
+          'adresse_ville', NEW.proprietaire_adresse_ville,
+          'adresse_code_postal', NEW.proprietaire_adresse_code_postal
+        ),
+        
+        -- 🏠 LOGEMENT (6 champs Monday)
+        'logement', jsonb_build_object(
+          'numero_bien', NEW.logement_numero_bien,
+          'type_propriete', NEW.logement_type_propriete,
+          'typologie', NEW.logement_typologie,
+          'surface', NEW.logement_surface,
+          'nombre_personnes_max', NEW.logement_nombre_personnes_max,
+          'nombre_lits', NEW.logement_nombre_lits
+        ),
+        
+        -- 📄 PDFS (2 URLs)
+        'pdfs', jsonb_build_object(
+          'logement_url', NEW.pdf_logement_url,
+          'menage_url', NEW.pdf_menage_url
+        ),
+        
+        -- 📸 MÉDIAS (39 champs organisés par section) - NOMS RÉELS SUPABASE
+        'media', jsonb_build_object(
+          -- Section Clefs (5 champs)
+          'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
+          'clefs_interphone_photo', NEW.clefs_interphone_photo,
+          'clefs_tempo_gache_photo', NEW.clefs_tempo_gache_photo,
+          'clefs_digicode_photo', NEW.clefs_digicode_photo,
+          'clefs_photos', NEW.clefs_photos,
+          
+          -- Section Équipements (4 champs)
+          'equipements_poubelle_photos', NEW.equipements_poubelle_photos,
+          'equipements_disjoncteur_photos', NEW.equipements_disjoncteur_photos,
+          'equipements_vanne_eau_photos', NEW.equipements_vanne_eau_photos,
+          'equipements_chauffage_eau_photos', NEW.equipements_chauffage_eau_photos,
+          
+          -- Section Gestion Linge (2 champs)
+          'linge_photos_linge', NEW.linge_photos_linge,
+          'linge_emplacement_photos', NEW.linge_emplacement_photos,
+          
+          -- Section Chambres (6 champs)
+          'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos_chambre,
+          'chambres_chambre_2_photos', NEW.chambres_chambre_2_photos_chambre,
+          'chambres_chambre_3_photos', NEW.chambres_chambre_3_photos_chambre,
+          'chambres_chambre_4_photos', NEW.chambres_chambre_4_photos_chambre,
+          'chambres_chambre_5_photos', NEW.chambres_chambre_5_photos_chambre,
+          'chambres_chambre_6_photos', NEW.chambres_chambre_6_photos_chambre,
+          
+          -- Section Salles de Bains (6 champs)
+          'salle_de_bain_1_photos', NEW.salle_de_bains_salle_de_bain_1_photos_salle_de_bain,
+          'salle_de_bain_2_photos', NEW.salle_de_bains_salle_de_bain_2_photos_salle_de_bain,
+          'salle_de_bain_3_photos', NEW.salle_de_bains_salle_de_bain_3_photos_salle_de_bain,
+          'salle_de_bain_4_photos', NEW.salle_de_bains_salle_de_bain_4_photos_salle_de_bain,
+          'salle_de_bain_5_photos', NEW.salle_de_bains_salle_de_bain_5_photos_salle_de_bain,
+          'salle_de_bain_6_photos', NEW.salle_de_bains_salle_de_bain_6_photos_salle_de_bain,
+          
+          -- Section Cuisines (7 champs)
+          'cuisine1_cuisiniere_photo', NEW.cuisine_1_cuisiniere_photo,
+          'cuisine1_plaque_cuisson_photo', NEW.cuisine_1_plaque_cuisson_photo,
+          'cuisine1_four_photo', NEW.cuisine_1_four_photo,
+          'cuisine1_micro_ondes_photo', NEW.cuisine_1_micro_ondes_photo,
+          'cuisine1_lave_vaisselle_photo', NEW.cuisine_1_lave_vaisselle_photo,
+          'cuisine1_cafetiere_photo', NEW.cuisine_1_cafetiere_photo,
+          'cuisine2_photos_tiroirs_placards', NEW.cuisine_2_photos_tiroirs_placards,
+          
+          -- Section Salon/SAM (1 champ)
+          'salon_sam_photos', NEW.salon_sam_photos_salon_sam,
+          
+          -- Section Équipements Spéciaux/Extérieur (3 champs)
+          'exterieur_photos_espaces', NEW.equip_spe_ext_exterieur_photos,
+          'jacuzzi_photos_jacuzzi', NEW.equip_spe_ext_jacuzzi_photos,
+          'barbecue_photos', NEW.equip_spe_ext_barbecue_photos,
+          
+          -- Section Communs (1 champ)
+          'communs_photos_espaces', NEW.communs_photos_espaces_communs,
+          
+          -- Section Bébé (1 champ)
+          'bebe_photos_equipements', NEW.bebe_photos_equipements_bebe,
+          
+          -- Section Guide d'accès (2 champs)
+          'guide_acces_photos_etapes', NEW.guide_acces_photos_etapes,
+          'guide_acces_video_acces', NEW.guide_acces_video_acces,
+          
+          -- Section Sécurité (1 champ)
+          'securite_photos_equipements', NEW.securite_photos_equipements_securite
+        )
+      ),
       headers := '{"Content-Type": "application/json"}'::jsonb
     );
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$function$;
 
--- Recréer le trigger
-CREATE TRIGGER fiche_completed_webhook
+-- Trigger associé
+CREATE TRIGGER fiche_any_update_webhook
   AFTER UPDATE ON public.fiches
   FOR EACH ROW
   EXECUTE FUNCTION notify_fiche_completed();
 ```
 
-**🎯 Avantages de cette version complète :**
-- ✅ **Tous les champs disponibles** : ~750 champs au lieu de 17 optimisés
-- ✅ **Tests facilités** : Accès à n'importe quel champ côté Make  
-- ✅ **Zéro maintenance** : Aucune modification nécessaire pour nouveaux champs
-- ✅ **Flexibilité totale** : Mapping libre côté Make selon besoins
+### **Payload Reçu par Make**
 
-### **Payload Reçu par Make - Structure Complète**
 ```json
 {
   "id": "cc23d9bb-8f62-4a8b-b230-c7496b881606",
-  "user_id": "fb6faa31-a18a-46bf-aec8-46e3bfc7ff17",
-  "nom": "Bien 1137",
+  "nom": "Bien 1137", 
   "statut": "Complété",
   "created_at": "2025-07-10T19:00:00Z",
   "updated_at": "2025-07-10T21:00:00Z",
   
-  // 🏠 SECTION PROPRIÉTAIRE
-  "proprietaire_nom": "ROCHER",
-  "proprietaire_prenom": "Maryse", 
-  "proprietaire_email": "maryse.rocher@email.com",
-  "proprietaire_adresse_rue": "123 Rue Example",
-  "proprietaire_adresse_ville": "Nice",
+  "proprietaire": {
+    "prenom": "Maryse",
+    "nom": "ROCHER", 
+    "email": "maryse.rocher@email.com",
+    "adresse_rue": "123 Rue Example",
+    "adresse_ville": "Nice"
+  },
   
-  // 🏘️ SECTION LOGEMENT
-  "logement_numero_bien": "1137",
-  "logement_type_propriete": "Appartement",
-  "logement_surface": 85,
-  "logement_typologie": "T3",
-  "logement_nombre_personnes_max": "6",
+  "logement": {
+    "numero_bien": "1137",
+    "type_propriete": "Appartement",
+    "surface": 85,
+    "typologie": "T3",
+    "nombre_personnes_max": "6",
+    "nombre_lits": "3"
+  },
   
-  // 📄 PDFS GÉNÉRÉS
-  "pdf_logement_url": "https://xyz.supabase.co/storage/v1/object/public/fiche-pdfs/fiche-logement-1137.pdf",
-  "pdf_menage_url": "https://xyz.supabase.co/storage/v1/object/public/fiche-pdfs/fiche-menage-1137.pdf",
+  "pdfs": {
+    "logement_url": "https://xyz.supabase.co/storage/v1/object/public/fiche-pdfs/fiche-logement-1137.pdf",
+    "menage_url": "https://xyz.supabase.co/storage/v1/object/public/fiche-pdfs/fiche-menage-1137.pdf"
+  },
   
-  // 📸 TOUTES LES PHOTOS (arrays complets)
-  "clefs_photos": ["https://xyz.supabase.co/.../clefs_photo1.png"],
-  "equipements_poubelle_photos": ["https://xyz.supabase.co/.../poubelle.png"],
-  "equipements_disjoncteur_photos": ["https://xyz.supabase.co/.../disjoncteur.png"],
-  "linge_photos_linge": ["https://xyz.supabase.co/.../linge1.png"],
-  "linge_emplacement_photos": ["https://xyz.supabase.co/.../emplacement.jpeg"],
-  "securite_photos_equipements_securite": ["https://xyz.supabase.co/.../securite1.png", "https://xyz.supabase.co/.../securite2.png"],
-  "chambres_photos": ["https://xyz.supabase.co/.../chambre1.png"],
-  "salle_bains_photos": ["https://xyz.supabase.co/.../sdb1.png"],
-  
-  // 🏗️ TOUTES LES AUTRES SECTIONS (750+ champs disponibles)
-  "airbnb_prix_nuit": "120",
-  "booking_commission": "15%",
-  "visite_date_prevue": "2025-07-15",
-  "equipements_lave_vaisselle": true,
-  "cuisine1_nombre_plaques": 4,
-  // ... tous les autres champs de la table
+  "media": {
+    "clefs_photos": ["https://xyz.supabase.co/.../clefs_photo1.png"],
+    "equipements_poubelle_photos": ["https://xyz.supabase.co/.../poubelle.png"],
+    "linge_photos_linge": ["https://xyz.supabase.co/.../linge1.png"],
+    "chambres_chambre_1_photos": ["https://xyz.supabase.co/.../chambre1.png"],
+    "salle_de_bain_1_photos": ["https://xyz.supabase.co/.../sdb1.png"],
+    "cuisine1_cuisiniere_photo": ["https://xyz.supabase.co/.../cuisiniere.png"],
+    "securite_photos_equipements": ["https://xyz.supabase.co/.../securite1.png"],
+    // ... 39 champs photos au total
+  }
 }
 ```
 
 ---
 
-## 🎯 **GOOGLE DRIVE - STRUCTURE CIBLE**
+## 📁 **ORGANISATION GOOGLE DRIVE (À CONFIGURER DANS MAKE)**
 
-### **Arborescence Automatique Souhaitée**
+### **Structure finale recommandée**
 ```
-📁 2. DOSSIERS PROPRIETAIRES/ (Drive Partagé existant)
-├── 📁 1137. Maryse ROCHER - [ville]/
+📁 2. DOSSIERS PROPRIETAIRES/
+├── 📁 5566. Florence TEISSIER - Saint Pons/
+│   ├── 📁 1. PHOTOS COMMERCIAL/
+│   ├── 📁 2. INFORMATIONS PROPRIETAIRE/
 │   ├── 📁 3. INFORMATIONS LOGEMENT/
 │   │   ├── 📁 1. Fiche logement/
-│   │   │   ├── 📄 fiche-logement-1137.pdf
-│   │   │   └── 📄 fiche-menage-1137.pdf
-│   │   └── 📁 2. Photos Visite Logement/
-│   │       ├── 📁 Clefs/
-│   │       │   └── 📷 clefs_screenshot.png
-│   │       ├── 📁 Sécurité/
-│   │       │   ├── 📷 securite_photo1.png
-│   │       │   └── 📷 securite_photo2.png
-│   │       ├── 📁 Équipements/
-│   │       │   ├── 📷 poubelle_photo.png
-│   │       │   └── 📷 disjoncteur_photo.png
-│   │       └── 📁 Linge/
-│   │           ├── 📷 photos_linge.png
-│   │           └── 📷 emplacement.jpeg
-│   ├── 📁 4. GESTION MENAGE/
-│   └── 📁 5. MARKETING ET PHOTOS/
-└── 📁 [autres propriétaires]/
+│   │   ├── 📁 2. Photos Visite Logement/
+│   │   ├── 📁 3. Accès au logement/
+│   │   │   ├── 📁 Photos d'accès/
+│   │   │   └── 📁 Vidéos d'accès/
+│   │   ├── 📁 4. Tour générale du logement/
+│   │   ├── 📁 5. Tuto équipements/
+│   │   └── 📁 6. Identifiants Wifi/
+│   ├── 📁 4. PHOTOS ANNONCE/
+└── 📁 1280. Autre propriétaire - Autre ville/
 ```
+
+## 📁 **MAPPING LOGIQUE PHOTOS → DOSSIERS DRIVE**
+### **Structure finale validée**
+```
+
+📁 1. Fiche logement et ménage
+- Fiche-logement-num de bien.pdf
+- Fiche-ménage-num de bien.pdf
+
+📁 2. Photos Visite Logement
+- chambres_chambre_1_photos → chambres_chambre_6_photos
+- salle_de_bain_1_photos → salle_de_bain_6_photos  
+- salon_sam_photos
+- cuisine2_photos_tiroirs_placards
+- exterieur_photos_espaces
+- communs_photos_espaces
+
+📁 3. Accès au logement
+- guide_acces_photos_etapes (photos guide d'accès)
+- guide_acces_video_acces (vidéo guide d'accès)
+
+📁 4. Tour générale du logement
+-> Vidéo générale du logement (Ajouter champ vidéo dans FicheVisite.jsx)
+
+📁 5. Tuto équipements
+- clefs_emplacement_photo (emplacement boîte à clefs)
+- clefs_interphone_photo  
+- clefs_tempo_gache_photo
+- clefs_digicode_photo
+- clefs_photos (clefs physiques)
+- equipements_poubelle_photos
+- equipements_disjoncteur_photos  
+- equipements_vanne_eau_photos
+- equipements_chauffage_eau_photos
+- cuisine1_cuisiniere_photo
+- cuisine1_plaque_cuisson_photo
+- cuisine1_four_photo
+- cuisine1_micro_ondes_photo
+- cuisine1_lave_vaisselle_photo
+- cuisine1_cafetiere_photo
+- linge_photos_linge
+- linge_emplacement_photos
+- jacuzzi_photos_jacuzzi
+- barbecue_photos
+- bebe_photos_equipements
+- securite_photos_equipements
+```
+
+Total : 39 champs ✅
 
 ---
 
 ## ⚡ **TESTS VALIDÉS - SUCCÈS COMPLET**
 
-### **✅ Test Fiche 1137 - Workflow Complet**
+### **✅ Test Fiche 7755 - Workflow Complet**
 
 **1. Création fiche :**
-- ✅ Nouvelle fiche "Bien 1137" créée
+- ✅ Nouvelle fiche "Bien 7755" créée
 - ✅ Remplissage sections avec photos multiple
 - ✅ Upload photos dans 6 sections différentes
 
 **2. Génération PDF :**
 - ✅ Bouton "Générer PDF automatique"
-- ✅ 2 PDF créés : fiche-logement-1137.pdf + fiche-menage-1137.pdf
+- ✅ 2 PDF créés : fiche-logement-7755.pdf + fiche-menage-7755.pdf
 - ✅ Upload automatique Supabase Storage
 
 **3. Finalisation :**
@@ -226,93 +360,29 @@ CREATE TRIGGER fiche_completed_webhook
 - ✅ Trigger webhook déclenché **une seule fois**
 
 **4. Make.com :**
-- ✅ Payload COMPLET reçu (~750 champs vs 17 optimisés précédemment)
+- ✅ Payload optimisé reçu
 - ✅ URLs photos + PDF accessibles
-- ✅ Module HTTP télécharge PDF (228KB détecté)
-- ✅ Flexibilité totale pour mapping Drive
+- ✅ Module HTTP télécharge fichiers
 
 ---
 
 ## 🔧 **MODULES MAKE CONFIGURÉS**
 
 ### **✅ Modules Opérationnels**
-1. **Webhook** → Réception payload COMPLET ✅
+1. **Webhook** → Réception payload ✅
 2. **HTTP GET PDF** → Téléchargement fiche-logement.pdf ✅
 3. **Filter** → Statut = "Complété" (sécurité) ✅
 
-### **🔄 Modules À Ajouter**
+### **✅ Modules À Ajouter**
 4. **HTTP GET PDF Ménage** → Téléchargement fiche-menage.pdf
 5. **Google Drive Create Folder** → Arborescence automatique
-6. **Iterator Photos** → Boucle sur chaque section photos
+6. **Repeater** → Boucle sur chaque section photos
 7. **HTTP GET Photos** → Téléchargement chaque image
 8. **Google Drive Upload** → Organisation finale Drive
 
 ---
 
-## 🚀 **PROCHAINES ÉTAPES IMMÉDIATES**
-
-### **1. Configuration Drive Make (1-2h)**
-- Module Google Drive "Create folder" avec structure automatique
-- Iterator sur les sections photos du payload
-- Upload organisé par sections selon arborescence cible
-
-### **2. Tests end-to-end complets (1h)**
-- Fiche avec photos dans toutes les sections  
-- Validation organisation Drive finale
-- Performance et gestion erreurs
-
-### **3. Monitoring & optimisation (optionnel)**
-- Supabase Functions pour logs webhook
-- Make monitoring pour alertes erreurs
-- Métriques temps traitement
-
----
-
-## 💡 **OPTIMISATIONS FUTURES**
-
-### **Migration Google Drive API (Phase Future)**
-- **Avantage :** Stockage gratuit illimité vs coût Supabase Storage
-- **Architecture :** Prête pour migration transparente
-- **Trigger :** Aucun changement nécessaire
-
-### **Compression Images**
-- **Client-side :** Réduire taille avant upload
-- **Performance :** Upload plus rapide sur mobile
-- **Coût :** Réduction stockage/bandwidth
-
-### **Payload optimisé conditionnel (optionnel)**
-- **Mode test :** Payload complet (~750 champs)
-- **Mode prod :** Payload optimisé (champs essentiels seulement)
-- **Trigger intelligent :** Basculement selon environnement
-
----
-
-## 🎉 **CONCLUSION - MISSION ACCOMPLIE**
-
-**✅ ARCHITECTURE BATTLE-TESTED** : Le système complet fonctionne parfaitement de bout en bout.
-
-**Impact Technique :**
-- **Webhook complet** : ~750 champs disponibles vs 17 précédemment
-- **Performance** : Déclenchement conditionnel seulement (statut → Complété)
-- **Robustesse** : Gestion d'erreurs et tests validés
-- **Évolutivité** : Architecture prête pour ajouts sections
-
-**Impact Utilisateur :**
-- **UX fluide** : Upload drag & drop intuitif
-- **Feedback temps réel** : États visuels clairs
-- **Workflow automatisé** : PDF + photos + Drive sans intervention
-
-**Impact Business :**
-- **Automatisation complète** : Finalisation → Drive organisé
-- **Tests facilités** : Accès total aux données côté Make
-- **Traçabilité** : Historique complet dans Make
-- **Qualité pro** : Arborescence structurée automatique
-
-**Prochaine étape critique :** Configuration modules Make pour organisation finale Google Drive.
-
----
-
-*📅 Dernière mise à jour : 14 juillet 2025 - 22:00*  
+*📅 Dernière mise à jour : 18 juillet 2025*  
 *👤 Développeurs : Julien + Claude Sonnet 4*  
 *🎯 Statut : ✅ WEBHOOK COMPLET + PHOTOS OPÉRATIONNELS - Prêt pour finalisation Drive*  
 *📈 Version : 7.0 - Payload complet pour tests facilités*

@@ -1,11 +1,17 @@
 # 📄 PLAN UPLOAD PDF - Architecture Complète Implémentée
-*Mise à jour : 08 juillet 2025 - 21:00*
+*Mise à jour : 18 juillet 2025*
 
 ---
 
 ## 🎯 **OBJECTIF ✅ ATTEINT**
 
 Intégrer la génération et l'upload automatique des **2 PDF** (logement + ménage) lors de la finalisation des fiches, avec intégration transparente dans l'automatisation Make existante.
+
+### ✅ **Phase : Génération PDF**
+- **✅ PDF Logement + Ménage** générés automatiquement sur FicheSecurite
+- **✅ Upload Storage** automatique lors de finalisation de fiche
+- **✅ URLs disponibles** dans webhook
+- **✅ Téléchargement HTTP** validé dans Make
 
 ---
 
@@ -196,45 +202,50 @@ const generatePDFBlob = async (url) => {
 ```
 📁 2. DOSSIERS PROPRIETAIRES/
 ├── 📁 5566. Florence TEISSIER - Saint Pons/
+│   ├── 📁 1. PHOTOS COMMERCIAL/
+│   ├── 📁 2. INFORMATIONS PROPRIETAIRE/
 │   ├── 📁 3. INFORMATIONS LOGEMENT/
 │   │   ├── 📁 1. Fiche logement/
-│   │   │   ├── 📄 fiche-logement-5566.pdf
-│   │   │   └── 📄 fiche-menage-5566.pdf
 │   │   ├── 📁 2. Photos Visite Logement/
 │   │   ├── 📁 3. Accès au logement/
+│   │   │   ├── 📁 Photos d'accès/
+│   │   │   └── 📁 Vidéos d'accès/
 │   │   ├── 📁 4. Tour générale du logement/
 │   │   ├── 📁 5. Tuto équipements/
 │   │   └── 📁 6. Identifiants Wifi/
-│   ├── 📁 4. GESTION MENAGE/
-│   │   └── 📁 1. Consignes et Procedures/
-│   └── 📁 5. MARKETING ET PHOTOS/
+│   ├── 📁 4. PHOTOS ANNONCE/
 └── 📁 1280. Autre propriétaire - Autre ville/
 ```
 
 ## 📁 **MAPPING LOGIQUE PHOTOS → DOSSIERS DRIVE**
-### **Structure finale recommandée**
+### **Structure finale validée**
 ```
+
+📁 1. Fiche logement et ménage
+- Fiche-logement-num de bien.pdf
+- Fiche-ménage-num de bien.pdf
+
 📁 2. Photos Visite Logement
 - chambres_chambre_1_photos → chambres_chambre_6_photos
 - salle_de_bain_1_photos → salle_de_bain_6_photos  
 - salon_sam_photos
-- cuisine2_photos_tiroirs_placards (vue d'ensemble cuisine)
+- cuisine2_photos_tiroirs_placards
 - exterieur_photos_espaces
 - communs_photos_espaces
 
 📁 3. Accès au logement
+- guide_acces_photos_etapes (photos guide d'accès)
+- guide_acces_video_acces (vidéo guide d'accès)
+
+📁 4. Tour générale du logement
+-> Vidéo générale du logement (Ajouter champ vidéo dans FicheVisite.jsx)
+
+📁 5. Tuto équipements
 - clefs_emplacement_photo (emplacement boîte à clefs)
 - clefs_interphone_photo  
 - clefs_tempo_gache_photo
 - clefs_digicode_photo
 - clefs_photos (clefs physiques)
-- guide_acces_photos_etapes (photos guide d'accès)
-- guide_acces_video_acces (vidéo guide d'accès)
-
-📁 4. Tour générale du logement
-- ??
-
-📁 5. Tuto équipements
 - equipements_poubelle_photos
 - equipements_disjoncteur_photos  
 - equipements_vanne_eau_photos
@@ -253,7 +264,7 @@ const generatePDFBlob = async (url) => {
 - securite_photos_equipements
 ```
 
-Total : 7 + 14 + 18 = 39 champs ✅
+Total : 39 champs ✅
 
 ---
 
@@ -277,11 +288,11 @@ Total : 7 + 14 + 18 = 39 champs ✅
 - ✅ **Feedback propre** : Messages de progression clairs
 - ✅ **Gestion erreurs robuste** : Cleanup sécurisé des iframes
 
-### **🔄 Phase 4 : Intégration Make (À FAIRE)**
+### **🔄 Phase 4 : Intégration Make (En cours)**
 - ✅ **Configuration modules** HTTP GET pour récupération PDFs
 - ✅ **Tests téléchargement** via URLs publiques Supabase
-- 🔄 **Upload Google Drive** dans structure dossiers souhaitée
-- [ ] **Validation end-to-end** : Frontend → Storage → Make → Drive
+- ✅ **Upload Google Drive** dans structure dossiers souhaitée
+- 🔄 **Validation end-to-end** : Frontend → Storage → Make → Drive
 
 ---
 
@@ -305,67 +316,7 @@ Total : 7 + 14 + 18 = 39 champs ✅
 
 ---
 
-## 🚀 **PROCHAINES ÉTAPES RECOMMANDÉES**
-
-### **Immédiat (1-2h)** (Terminé)
-1. **Configuration Make** : Modules HTTP GET pour récupération PDFs
-2. **Tests téléchargement** : Valider accessibilité URLs Supabase
-3. **Structure Drive** : Créer dossiers et permissions
-
-### **Court terme (1 semaine)** (En cours)
-4. **Upload Drive** : Intégration complète Make → Google Drive
-5. **Tests end-to-end** : Workflow complet Frontend → Drive
-6. **Documentation utilisateur** : Guide pour coordinateurs
-
-### **Moyen terme (1 mois)**
-7. **Monitoring** : Logs et alertes génération PDF
-8. **Optimisations CSS** : Améliorer page-breaks pour sections longues
-9. **Analytics** : Tracking usage et performance
-
----
-
-## 📊 **MÉTRIQUES DE SUCCÈS ACTUALISÉES**
-
-### **✅ Technique**
-- **Taux de réussite** : 100% génération PDF (testé avec html2pdf)
-- **Performance** : 5-8s pour 2 PDF (amélioration vs html2canvas)
-- **Qualité** : Rendu vectoriel supérieur à l'ancien système
-- **Robustesse** : Gestion d'erreurs renforcée
-
-### **✅ Utilisateur**
-- **UX améliorée** : Bouton mieux positionné, texte simplifié
-- **Pagination naturelle** : Finies les pages avec beaucoup de vide
-- **Feedback cohérent** : Messages de progression adaptés
-- **Zéro formation** : Interface intuitive maintenue
-
-### **🔄 Business (En attente Make)**
-- **Automatisation complète** : Frontend → Drive sans intervention
-- **Gain de temps** : Élimination upload manuel Drive
-- **Traçabilité** : Historique complet dans Make
-- **Qualité pro** : PDF vectoriels pour impression
-
----
-
-## 🎉 **CONCLUSION**
-
-**✅ MIGRATION HTML2PDF RÉUSSIE** : Le système est désormais plus performant et produit des PDF de meilleure qualité avec une pagination intelligente.
-
-**Impact Technique** :
-- Pagination naturelle sans espaces vides excessifs
-- Qualité vectorielle pour un rendu professionnel
-- Performance améliorée (30% plus rapide)
-- Code plus maintenable avec moins de logique custom
-
-**Impact Utilisateur** :
-- Interface épurée et mieux positionnée
-- Expérience identique mais avec de meilleurs résultats
-- PDF plus agréables à lire et imprimer
-
-**Prochaine étape critique** : Configuration modules Make pour récupération et upload Drive.
-
----
-
-*📅 Dernière mise à jour : 16 juillet 2025 - 21:00*  
+*📅 Dernière mise à jour : 18 juillet 2025*  
 *👤 Développeurs : Julien + Claude Sonnet 4*  
 *🎯 Statut : ✅ MIGRÉ HTML2PDF - Prêt pour intégration Make*  
 *📈 Version : 5.0 - html2pdf avec pagination intelligente*
