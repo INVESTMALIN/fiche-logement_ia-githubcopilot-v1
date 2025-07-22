@@ -364,10 +364,18 @@ const cleanupOldFiles = async () => {
 **Solution :** Trigger SQL avec payload structuré optimisé
 
 ```sql
--- Trigger déclenché sur UPDATE (filtre Make pour statut = "Complété")
-CREATE OR REPLACE FUNCTION notify_fiche_completed()
-RETURNS trigger AS $function$
+-- Trigger actuel en production : fiche_any_update_webhook
+-- Fonction actuelle : notify_fiche_completed()
+
+CREATE OR REPLACE FUNCTION public.notify_fiche_completed()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
 BEGIN
+  -- ⚠️ AMÉLIORATION RECOMMANDÉE : Ajouter protection doublons
+  -- IF NEW.statut = 'Complété' AND (OLD.statut IS NULL OR OLD.statut != 'Complété') THEN
+  
+  -- Version actuelle : déclenché à chaque fois que statut = "Complété"
   IF NEW.statut = 'Complété' THEN
     PERFORM net.http_post(
       url := 'https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj',
@@ -406,7 +414,7 @@ BEGIN
           'menage_url', NEW.pdf_menage_url
         ),
         
-        -- 📸 MÉDIAS (39 champs organisés par section)
+        -- 📸 MÉDIAS (39 champs organisés par section) - NOMS RÉELS SUPABASE
         'media', jsonb_build_object(
           -- Section Clefs (5 champs)
           'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
@@ -421,6 +429,10 @@ BEGIN
           'equipements_vanne_eau_photos', NEW.equipements_vanne_eau_photos,
           'equipements_chauffage_eau_photos', NEW.equipements_chauffage_eau_photos,
           
+          -- Section Gestion Linge (2 champs)
+          'linge_photos_linge', NEW.linge_photos_linge,
+          'linge_emplacement_photos', NEW.linge_emplacement_photos,
+          
           -- Section Chambres (6 champs)
           'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos_chambre,
           'chambres_chambre_2_photos', NEW.chambres_chambre_2_photos_chambre,
@@ -430,31 +442,41 @@ BEGIN
           'chambres_chambre_6_photos', NEW.chambres_chambre_6_photos_chambre,
           
           -- Section Salles de Bains (6 champs)
-          'salle_de_bain_1_photos', NEW.salle_de_bain_1_photos_salle_de_bain,
-          'salle_de_bain_2_photos', NEW.salle_de_bain_2_photos_salle_de_bain,
-          'salle_de_bain_3_photos', NEW.salle_de_bain_3_photos_salle_de_bain,
-          'salle_de_bain_4_photos', NEW.salle_de_bain_4_photos_salle_de_bain,
-          'salle_de_bain_5_photos', NEW.salle_de_bain_5_photos_salle_de_bain,
-          'salle_de_bain_6_photos', NEW.salle_de_bain_6_photos_salle_de_bain,
+          'salle_de_bain_1_photos', NEW.salle_de_bains_salle_de_bain_1_photos_salle_de_bain,
+          'salle_de_bain_2_photos', NEW.salle_de_bains_salle_de_bain_2_photos_salle_de_bain,
+          'salle_de_bain_3_photos', NEW.salle_de_bains_salle_de_bain_3_photos_salle_de_bain,
+          'salle_de_bain_4_photos', NEW.salle_de_bains_salle_de_bain_4_photos_salle_de_bain,
+          'salle_de_bain_5_photos', NEW.salle_de_bains_salle_de_bain_5_photos_salle_de_bain,
+          'salle_de_bain_6_photos', NEW.salle_de_bains_salle_de_bain_6_photos_salle_de_bain,
           
           -- Section Cuisines (7 champs)
-          'cuisine1_cuisiniere_photo', NEW.cuisine1_cuisiniere_photo,
-          'cuisine1_plaque_cuisson_photo', NEW.cuisine1_plaque_cuisson_photo,
-          'cuisine1_four_photo', NEW.cuisine1_four_photo,
-          'cuisine1_micro_ondes_photo', NEW.cuisine1_micro_ondes_photo,
-          'cuisine1_lave_vaisselle_photo', NEW.cuisine1_lave_vaisselle_photo,
-          'cuisine1_cafetiere_photo', NEW.cuisine1_cafetiere_photo,
-          'cuisine2_photos_tiroirs_placards', NEW.cuisine2_photos_tiroirs_placards,
+          'cuisine1_cuisiniere_photo', NEW.cuisine_1_cuisiniere_photo,
+          'cuisine1_plaque_cuisson_photo', NEW.cuisine_1_plaque_cuisson_photo,
+          'cuisine1_four_photo', NEW.cuisine_1_four_photo,
+          'cuisine1_micro_ondes_photo', NEW.cuisine_1_micro_ondes_photo,
+          'cuisine1_lave_vaisselle_photo', NEW.cuisine_1_lave_vaisselle_photo,
+          'cuisine1_cafetiere_photo', NEW.cuisine_1_cafetiere_photo,
+          'cuisine2_photos_tiroirs_placards', NEW.cuisine_2_photos_tiroirs_placards,
           
-          -- Autres sections (9 champs)
-          'salon_sam_photos', NEW.salon_sam_photos,
-          'exterieur_photos_espaces', NEW.exterieur_photos_espaces,
-          'jacuzzi_photos_jacuzzi', NEW.exterieur_jacuzzi_photos_jacuzzi,
-          'barbecue_photos', NEW.exterieur_barbecue_photos,
+          -- Section Salon/SAM (1 champ)
+          'salon_sam_photos', NEW.salon_sam_photos_salon_sam,
+          
+          -- Section Équipements Spéciaux/Extérieur (3 champs)
+          'exterieur_photos_espaces', NEW.equip_spe_ext_exterieur_photos,
+          'jacuzzi_photos_jacuzzi', NEW.equip_spe_ext_jacuzzi_photos,
+          'barbecue_photos', NEW.equip_spe_ext_barbecue_photos,
+          
+          -- Section Communs (1 champ)
           'communs_photos_espaces', NEW.communs_photos_espaces_communs,
+          
+          -- Section Bébé (1 champ)
           'bebe_photos_equipements', NEW.bebe_photos_equipements_bebe,
+          
+          -- Section Guide d'accès (2 champs)
           'guide_acces_photos_etapes', NEW.guide_acces_photos_etapes,
           'guide_acces_video_acces', NEW.guide_acces_video_acces,
+          
+          -- Section Sécurité (1 champ)
           'securite_photos_equipements', NEW.securite_photos_equipements_securite
         )
       ),
@@ -464,13 +486,64 @@ BEGIN
   RETURN NEW;
 END;
 $function$;
+
+-- Trigger associé
+CREATE TRIGGER fiche_any_update_webhook
+  AFTER UPDATE ON public.fiches
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_fiche_completed();
+```
+
+### **Payload Reçu par Make**
+
+```json
+{
+  "id": "cc23d9bb-8f62-4a8b-b230-c7496b881606",
+  "nom": "Bien 1137", 
+  "statut": "Complété",
+  "created_at": "2025-07-10T19:00:00Z",
+  "updated_at": "2025-07-10T21:00:00Z",
+  
+  "proprietaire": {
+    "prenom": "Maryse",
+    "nom": "ROCHER", 
+    "email": "maryse.rocher@email.com",
+    "adresse_rue": "123 Rue Example",
+    "adresse_ville": "Nice"
+  },
+  
+  "logement": {
+    "numero_bien": "1137",
+    "type_propriete": "Appartement",
+    "surface": 85,
+    "typologie": "T3",
+    "nombre_personnes_max": "6",
+    "nombre_lits": "3"
+  },
+  
+  "pdfs": {
+    "logement_url": "https://xyz.supabase.co/storage/v1/object/public/fiche-pdfs/fiche-logement-1137.pdf",
+    "menage_url": "https://xyz.supabase.co/storage/v1/object/public/fiche-pdfs/fiche-menage-1137.pdf"
+  },
+  
+  "media": {
+    "clefs_photos": ["https://xyz.supabase.co/.../clefs_photo1.png"],
+    "equipements_poubelle_photos": ["https://xyz.supabase.co/.../poubelle.png"],
+    "linge_photos_linge": ["https://xyz.supabase.co/.../linge1.png"],
+    "chambres_chambre_1_photos": ["https://xyz.supabase.co/.../chambre1.png"],
+    "salle_de_bain_1_photos": ["https://xyz.supabase.co/.../sdb1.png"],
+    "cuisine1_cuisiniere_photo": ["https://xyz.supabase.co/.../cuisiniere.png"],
+    "securite_photos_equipements": ["https://xyz.supabase.co/.../securite1.png"],
+    // ... 39 champs photos au total
+  }
+}
 ```
 
 ### **Workflow Make → Google Drive**
 
 ```mermaid
 graph TD
-    A[Webhook reçu] --> B[Filter statut = "Complété"]
+    A[Webhook reçu] --> B[Statut = "Complété" automatique]
     B --> C[HTTP GET PDF Logement + Ménage]
     C --> D[Create Folder Drive structure]
     D --> E[Iterator sur 39 champs photos]
@@ -479,37 +552,13 @@ graph TD
     G --> H[Update Monday.com]
 ```
 
-**Arborescence Drive automatique :**
-```
-📁 2. DOSSIERS PROPRIETAIRES/
-├── 📁 {numero_bien}. {prenom} {nom} - {ville}/
-│   ├── 📁 3. INFORMATIONS LOGEMENT/
-│   │   ├── 📁 1. Fiche logement/
-│   │   │   ├── 📄 fiche-logement-{numero_bien}.pdf
-│   │   │   └── 📄 fiche-menage-{numero_bien}.pdf
-│   │   ├── 📁 2. Photos Visite Logement/
-│   │   │   ├── chambres_chambre_1_photos → chambres_chambre_6_photos
-│   │   │   ├── salle_de_bain_1_photos → salle_de_bain_6_photos
-│   │   │   ├── salon_sam_photos
-│   │   │   └── cuisine2_photos_tiroirs_placards
-│   │   ├── 📁 3. Accès au logement/
-│   │   │   ├── clefs_emplacement_photo
-│   │   │   ├── clefs_interphone_photo
-│   │   │   ├── guide_acces_photos_etapes
-│   │   │   └── guide_acces_video_acces
-│   │   └── 📁 5. Tuto équipements/
-│   │       ├── equipements_poubelle_photos
-│   │       ├── equipements_disjoncteur_photos
-│   │       └── securite_photos_equipements
-```
+### **Avantages du Système Actuel**
 
-### **Avantages du Nouveau Système**
-
-- ✅ **Performance** : 58 champs ciblés vs 750+ colonnes
-- ✅ **Maintenabilité** : Structure logique claire
-- ✅ **Interface Make utilisable** : Mapping simple et intuitif
+- ✅ **Payload optimisé** : 58 champs structurés vs 750+ colonnes plates
+- ✅ **Interface Make utilisable** : Mapping simple et intuitif  
+- ✅ **Structure logique** : metadata → proprietaire → logement → pdfs → media
+- ✅ **Toutes les photos organisées** : 39 champs par section
 - ✅ **Évolutivité** : Ajout facile nouveaux champs sans casser l'existant
-- ✅ **Temps config Make** : 3h → 30min
 
 ---
 
@@ -581,7 +630,7 @@ const AuthProvider = ({ children }) => {
 ### **États des Fiches**
 
 - **Brouillon** : En cours de remplissage (modifiable)
-- **Complété** : Finalisée, webhook déclenché (archivable uniquement)  
+- **Complété** : Finalisée, webhook déclenché (toujours modifiable)  
 - **Archivé** : Masquée des listes (restaurable)
 
 ---

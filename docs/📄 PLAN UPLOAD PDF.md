@@ -3,7 +3,7 @@
 
 ---
 
-## 🎯 **OBJECTIF ✅ ATTEINT**
+## 🎯 **OBJECTIF ATTEINT**
 
 Intégrer la génération et l'upload automatique des **2 PDF** (logement + ménage) lors de la finalisation des fiches, avec intégration transparente dans l'automatisation Make existante.
 

@@ -11,8 +11,8 @@ Ce document définit l'architecture complète pour l'intégration Supabase dans 
 ### 🎯 **Architecture : Google Drive + Supabase URLs**
 
 **Stockage des fichiers :**
-- **Photos/Vidéos** → Google Drive Workspace Letahost (120 To disponibles)
-- **URLs publiques** → Base Supabase (références uniquement)
+- **Photos/Vidéos** → Google Drive Workspace de l'entreprise (120 To disponibles)
+- **URLs publiques** → Storage -> BDD Supabase (références uniquement)
 
 **Avantages :**
 - Coût zéro stockage (vs Supabase Storage payant)
@@ -22,85 +22,45 @@ Ce document définit l'architecture complète pour l'intégration Supabase dans 
 
 ### 📱 **Workflow UX Target**
 
-```mermaid
-graph LR
+```
     A[📷 Clic Photo] --> B[Camera/Galerie]
-    B --> C[📤 Upload Drive]
-    C --> D[🔗 URL Récupérée]
+    B --> C[📤 Upload Storage]
+    C --> D[🔗 URL Récupérée dans BDD]
     D --> E[💾 Sauvegarde Base]
     E --> F[✅ Photo Affichée]
+    F --> E[✅ Sync avec le Drive]
 ```
 
 **Expérience coordinateur :**
 1. Clic bouton "📷 Ajouter photo" dans formulaire
 2. Camera s'ouvre
 3. Photo prise → Upload automatique vers Drive
-4. URL Drive récupérée et sauvegardée en base
+4. URL Storage récupérée et sauvegardée en base
 5. Photo s'affiche immédiatement dans l'interface
+6. Automatisation Make déclenchée en fin de fiche, synchronise les fichiers médias sur Drive/Monday
 
-### 🔧 **Implémentation Technique**
-
-#### Structure Données
-```javascript
-// Dans les sections JSONB Supabase
-{
-  "section_clefs": {
-    "interphonePhoto": {
-      "drive_url": "https://drive.google.com/file/d/ABC123/view",
-      "drive_file_id": "ABC123",
-      "file_name": "interphone_logement_45.jpg"
-    },
-    "clefs": {
-      "photos": [
-        {
-          "drive_url": "https://drive.google.com/file/d/DEF456/view",
-          "drive_file_id": "DEF456", 
-          "file_name": "clefs_entree.jpg"
-        },
-        {
-          "drive_url": "https://drive.google.com/file/d/GHI789/view",
-          "drive_file_id": "GHI789",
-          "file_name": "clefs_boite.jpg"
-        }
-      ]
-    }
-  }
-}
-```
-
-#### Google Drive API Setup
-```javascript
-// Configuration Google Drive API
-const DRIVE_CONFIG = {
-  folder_id: 'FOLDER_ID_FICHES_LOGEMENT',  // Dossier dédié Drive
-  permissions: 'anyone_with_link',          // URLs publiques
-  organization: 'letahost_workspace'        // Workspace Letahost
-}
-
-// Helper upload vers Drive
-const uploadToDrive = async (file, section, ficheId) => {
-  // 1. Upload fichier vers Drive API
-  // 2. Définir permissions publiques  
-  // 3. Récupérer URL partageable
-  // 4. Retourner { drive_file_id, drive_url, file_name }
-}
-```
 
 ### 📁 **Organisation Drive**
 
 **Structure dossiers proposée :**
 ```
-📁 Fiches Logement Letahost/
-├── 📁 2025/
-│   ├── 📁 Juin/
-│   │   ├── 📁 Fiche_001_Appartement_Paris/
-│   │   │   ├── 🖼️ proprietaire_documents.pdf
-│   │   │   ├── 🖼️ clefs_entree.jpg
-│   │   │   ├── 🖼️ cuisine_equipements.jpg
-│   │   │   └── 🎥 visite_globale.mp4
-│   │   └── 📁 Fiche_002_Maison_Lyon/
-│   └── 📁 Juillet/
-└── 📁 Archives/
+📁 2. DOSSIERS PROPRIETAIRES/
+├── 📁 5566. Florence TEISSIER - Saint Pons/
+│   ├── 📁 3. INFORMATIONS LOGEMENT/
+│   │   ├── 📁 1. Fiche logement/
+│   │   │   ├── 📄 fiche-logement-5566.pdf
+│   │   │   └── 📄 fiche-menage-5566.pdf
+│   │   ├── 📁 2. Photos Visite Logement/
+│   │   │   ├── 📄 fiche-logement-5566.pdf
+│   │   │   └── 📄 fiche-menage-5566.pdf
+│   │   ├── 📁 3. Accès au logement/
+│   │   ├── 📁 4. Tour générale du logement/
+│   │   ├── 📁 5. Tuto équipements/
+│   │   └── 📁 6. Identifiants Wifi/
+│   ├── 📁 4. GESTION MENAGE/
+│   │   └── 📁 1. Consignes et Procedures/
+│   └── 📁 5. MARKETING ET PHOTOS/
+└── 📁 1280. Autre propriétaire - Autre ville/
 ```
 
 ### ⚙️ **Configuration Requise**

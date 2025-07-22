@@ -84,7 +84,7 @@ pdf_menage_url TEXT
 
 ## 🔗 **Automatisation Make.com**
 
-### **Webhook Optimisé (BUG #004 résolu)**
+### **Webhook Optimisé**
 
 **Problème initial :** Payload 750+ colonnes ingérable dans Make
 
@@ -99,8 +99,6 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $function$
 BEGIN
-  -- ⚠️ AMÉLIORATION RECOMMANDÉE : Ajouter protection doublons
-  -- IF NEW.statut = 'Complété' AND (OLD.statut IS NULL OR OLD.statut != 'Complété') THEN
   
   -- Version actuelle : déclenché à chaque fois que statut = "Complété"
   IF NEW.statut = 'Complété' THEN
