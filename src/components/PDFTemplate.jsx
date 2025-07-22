@@ -360,6 +360,25 @@ maxHeight: photos.length === 1 ? '120px' :
     )
   }
 
+    // 🎯 Fonction pour générer le nom du dossier photos
+    const generatePhotosFolder = () => {
+      const numeroBien = formData.section_logement?.numero_bien || 'XXX'
+      const prenom = formData.section_proprietaire?.prenom || ''
+      const nom = formData.section_proprietaire?.nom || ''
+      const ville = formData.section_proprietaire?.adresse?.ville || ''
+      
+      const prenomNom = [prenom, nom].filter(Boolean).join(' ')
+      const parts = [numeroBien, prenomNom, ville].filter(Boolean)
+      
+      if (parts.length === 3) {
+        return `${parts[0]}. ${parts[1]} - ${parts[2]}`
+      } else if (parts.length === 2) {
+        return `${parts[0]}. ${parts[1]}`
+      } else {
+        return parts[0] || 'Dossier non défini'
+      }
+    }
+
   // 🎯 GÉNÉRATION DES SECTIONS COMPLÈTES
   const generateSections = () => {
     const sections = []
@@ -416,18 +435,46 @@ maxHeight: photos.length === 1 ? '120px' :
         textAlign: 'center',
         marginBottom: '30px',
         paddingBottom: '20px',
-        borderBottom: '2px solid #3182ce',
+        borderBottom: '2px solid #dbae61',
         pageBreakInside: 'avoid'
       }}>
-        <h1 style={{
-          margin: '0 0 8px 0',
-          fontSize: '22pt',
+      <h1 style={{
+        margin: '0 0 20px 0',
+        textAlign: 'center',
+        background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%)',
+        color: '#dbae61',
+        padding: '10px',
+        borderRadius: '8px',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+        border: '2px solid #dbae61',
+        display: 'block',
+        minHeight: '80px',
+        letterSpacing: '1px'
+      }}>
+        <img 
+          src="/src/assets/letahost-transparent.png"
+          alt="Letahost"
+          style={{
+            height: '100px',
+            width: 'auto',  
+            maxWidth: '400px',        
+            maxWidth: '300px',
+            objectFit: 'contain',
+            margin: '0 auto',
+            display: 'block'
+          }}
+        />
+      </h1>
+        <h2 style={{
+          margin: '10px 0 0 0',
+          fontSize: '18pt',
           fontWeight: 'bold',
-          color: '#1a365d'
+          color: '#000000',
+          textAlign: 'center'
         }}>
-          🏠 Fiche Logement • {formData.nom || 'Sans nom'} • Letahost
-        </h1>
-        
+          Fiche Logement • {formData.nom || 'Sans nom'}
+        </h2>
+        {/*Généré le*/}
         <div style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
@@ -449,6 +496,8 @@ maxHeight: photos.length === 1 ? '120px' :
             </div>
           </div>
           
+
+          {/*Dossier photos*/}
           <div style={{
             padding: '8px',
             border: '1px solid #e2e8f0',
@@ -456,12 +505,14 @@ maxHeight: photos.length === 1 ? '120px' :
             pageBreakInside: 'avoid'
           }}>
             <div style={{ fontWeight: '600', color: '#4a5568', marginBottom: '4px' }}>
-              Type de propriété
+              Dossier photos
             </div>
-            <div style={{ color: '#1a202c' }}>
-              {formData.section_logement?.type_propriete || 'Non spécifié'}
+            <div style={{ color: '#2563eb', fontFamily: 'monospace', fontSize: '9pt' }}>
+              {generatePhotosFolder()}
             </div>
-          </div>
+          </div>          
+
+
         </div>
       </div>
 
@@ -487,7 +538,7 @@ maxHeight: photos.length === 1 ? '120px' :
               fontWeight: 'bold',
               color: '#2d3748',
               marginBottom: '16px',
-              borderLeft: '4px solid #3182ce',
+              borderLeft: '4px solid #dbae61',
               paddingLeft: '12px'
             }}>
               {section.label}

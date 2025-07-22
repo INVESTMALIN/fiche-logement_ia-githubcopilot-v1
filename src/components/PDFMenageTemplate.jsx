@@ -276,7 +276,7 @@ const PhotosDisplayMenage = ({ photos, sectionTitle }) => {
               style={{ 
                 display: 'block', 
                 textDecoration: 'none',
-                border: '3px solid #3182ce',
+                border: '3px solid #dbae61',
                 borderRadius: '8px',
                 overflow: 'hidden',
                 backgroundColor: '#ffffff',
@@ -417,15 +417,43 @@ maxHeight: photos.length === 1 ? '250px' :
         borderBottom: '2px solid #16a085',
         pageBreakInside: 'avoid'
       }}>
-        <h1 style={{
-          margin: '0 0 8px 0',
-          fontSize: '22pt',
+      <h1 style={{
+        margin: '0 0 20px 0',
+        textAlign: 'center',
+        background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%)',
+        color: '#dbae61',
+        padding: '10px',
+        borderRadius: '8px',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+        border: '2px solid #dbae61',
+        display: 'block',
+        minHeight: '80px',
+        letterSpacing: '1px'
+      }}>
+        <img 
+          src="/src/assets/letahost-transparent.png"
+          alt="Letahost"
+          style={{
+            height: '100px',
+            width: 'auto',  
+            maxWidth: '400px',        
+            maxWidth: '300px',
+            objectFit: 'contain',
+            margin: '0 auto',
+            display: 'block'
+          }}
+        />
+      </h1>
+        <h2 style={{
+          margin: '10px 0 0 0',
+          fontSize: '18pt',
           fontWeight: 'bold',
-          color: '#1a365d'
+          color: '#000000',
+          textAlign: 'center'
         }}>
-          🧹 Fiche Ménage • {formData.nom || 'Sans nom'} • Letahost
-        </h1>
-        
+          Fiche Ménage • {formData.nom || 'Sans nom'}
+        </h2>
+        {/*Généré le*/}
         <div style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
@@ -446,7 +474,8 @@ maxHeight: photos.length === 1 ? '250px' :
               {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
-          
+
+          {/*Type de propriété*/}
           <div style={{
             padding: '8px',
             border: '1px solid #e2e8f0',
@@ -454,12 +483,15 @@ maxHeight: photos.length === 1 ? '250px' :
             pageBreakInside: 'avoid'
           }}>
             <div style={{ fontWeight: '600', color: '#4a5568', marginBottom: '4px' }}>
-              Dossier photos
+              Type de propriété
             </div>
-            <div style={{ color: '#2563eb', fontFamily: 'monospace', fontSize: '9pt' }}>
-              {generatePhotosFolder()}
+            <div style={{ color: '#1a202c' }}>
+              {formData.section_logement?.type_propriete || 'Non spécifié'}
             </div>
-          </div>
+          </div>          
+          
+
+
         </div>
       </div>
 
@@ -488,7 +520,7 @@ maxHeight: photos.length === 1 ? '250px' :
               fontWeight: 'bold',
               color: '#2d3748',
               marginBottom: '16px',
-              borderLeft: '4px solid #16a085',
+              borderLeft: '4px solid #dbae61',
               paddingLeft: '12px'
             }}>
               {section.label}
