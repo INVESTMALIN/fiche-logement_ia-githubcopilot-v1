@@ -436,8 +436,7 @@ maxHeight: photos.length === 1 ? '250px' :
           style={{
             height: '100px',
             width: 'auto',  
-            maxWidth: '400px',        
-            maxWidth: '300px',
+            maxWidth: '400px',
             objectFit: 'contain',
             margin: '0 auto',
             display: 'block'
@@ -489,9 +488,7 @@ maxHeight: photos.length === 1 ? '250px' :
               {formData.section_logement?.type_propriete || 'Non spécifié'}
             </div>
           </div>          
-          
-
-
+        
         </div>
       </div>
 

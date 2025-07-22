@@ -457,8 +457,7 @@ maxHeight: photos.length === 1 ? '120px' :
           style={{
             height: '100px',
             width: 'auto',  
-            maxWidth: '400px',        
-            maxWidth: '300px',
+            maxWidth: '400px',
             objectFit: 'contain',
             margin: '0 auto',
             display: 'block'
