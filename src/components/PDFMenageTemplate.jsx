@@ -159,6 +159,22 @@ const PDFMenageTemplate = ({ formData }) => {
     return false
   }
 
+  // 🔒 Helper pour masquer les codes confidentiels dans le PDF ménage
+const maskSecretCodes = (value, fieldKey) => {
+  // 🔒 TTLock : masquer masterpinConciergerie et codeProprietaire
+  if (fieldKey.includes('masterpinConciergerie') || fieldKey.includes('codeProprietaire')) {
+    return '*****'
+  }
+
+  // 🔒 Igloohome : masquer codeVoyageur aussi
+  if (fieldKey.includes('codeVoyageur')) {
+    return '*****'
+  }
+
+  // ✅ Garder visible : codeMenage et masterlock.code
+  return value
+}
+
   // 🔄 Helper pour formater les valeurs (booléens, arrays, etc.)
   const formatValue = (value, fieldKey = '') => {
     if (isEmpty(value)) return null
@@ -210,7 +226,7 @@ const PDFMenageTemplate = ({ formData }) => {
       if (nonPhotoEntries.length === 0) return null
       
       const validEntries = nonPhotoEntries.map(([key, val]) => {
-        let formattedVal = val
+        let formattedVal = maskSecretCodes(val, key)
         if (val === true) formattedVal = 'Oui'
         else if (val === false) formattedVal = 'Non'
         
@@ -225,7 +241,11 @@ const PDFMenageTemplate = ({ formData }) => {
         items: validEntries
       }
     }
-    
+    // 🔒 MASQUAGE CODES CONFIDENTIELS pour PDF ménage
+    const maskedValue = maskSecretCodes(value, fieldKey)
+    if (maskedValue !== value) {
+      return maskedValue
+    }
     return String(value)
   }
 

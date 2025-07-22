@@ -172,6 +172,7 @@ const PDFTemplate = ({ formData }) => {
     }
     return false
   }
+  
 
   // 🔄 Helper pour formater les valeurs (booléens, arrays, etc.)
   const formatValue = (value, fieldKey = '') => {
