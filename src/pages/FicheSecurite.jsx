@@ -211,7 +211,7 @@ export default function FicheSecutite() {
                     <div className="text-sm text-blue-700 leading-relaxed space-y-1">
                       <p>1. Cliquez sur <span className="font-semibold">"Générer la Fiche logement"</span>.</p>
                       <p>Les deux Fiches (logement + ménage) seront générées simultanément. Vous pourrez télécharger une copie de la fiche logement.</p>
-                      <p>2. Cliquez ensuite sur <span className="font-semibold">"Finaliser la fiche"</span> ci-dessous pour compléter cette fiche et synchroniser les informations avec le Drive.</p>
+                      <p>2. Cliquez ensuite sur <span className="font-semibold">"Finaliser la fiche"</span> ci-dessous pour compléter cette fiche et synchroniser les informations avec le Drive. <strong>⚠️ Attention, cette action est définitive</strong>.</p>
                     </div>
                   </div>
                 </div>
@@ -264,6 +264,7 @@ export default function FicheSecutite() {
                   {saveStatus.saving ? 'Finalisation...' : 'Finaliser la fiche'}
                 </Button>
               </div>
+              
             ) : (
               /* Pages normales : boutons standards */
               <div className="flex gap-3">
@@ -283,11 +284,11 @@ export default function FicheSecutite() {
                 </Button>
               </div>
             )}
+            
           </div>          
         </div>
       </div>
 
-        {/* MODAL DE CONFIRMATION AMÉLIORÉ - Remplace tout le bloc modal existant */}
       {/* MODAL DE CONFIRMATION */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
