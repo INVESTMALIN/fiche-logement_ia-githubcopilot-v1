@@ -599,7 +599,7 @@ LANGUAGE plpgsql
 AS $function$
 BEGIN
   -- Seulement si statut passe à "Complété"
-  IF NEW.statut = 'Complété' AND (OLD.statut IS NULL OR OLD.statut != 'Complété') THEN
+  IF NEW.statut = 'Complété' AND OLD.statut IS DISTINCT FROM 'Complété' THEN
     PERFORM net.http_post(
       url := 'https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj',
       body := jsonb_build_object(
@@ -637,7 +637,7 @@ BEGIN
           'menage_url', NEW.pdf_menage_url
         ),
         
-        -- Photos et vidéos (29 champs)
+        -- Photos et vidéos (39 champs)
         'media', jsonb_build_object(
           -- Section Clefs (5 champs)
           'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
@@ -772,15 +772,15 @@ user-{user_id}/
 ### **2. Finalisation fiche**
 1. Bouton "Finaliser la fiche" → `UPDATE statut = 'Complété'`
 2. Trigger SQL déclenché → Webhook Make avec payload optimisé
-3. Make reçoit 29 champs photos + métadonnées structurées
+3. Make reçoit 39 champs structurés: photos + PDF + métadonnées
 4. Organisation automatique Google Drive par sections
 
 ### **3. Avantages du nouveau système**
-- ✅ **Performance** : 29 champs ciblés vs 750 colonnes
+- ✅ **Performance** : 39 champs ciblés vs 750 colonnes
 - ✅ **Maintenabilité** : Structure claire et documentée
 - ✅ **Évolutivité** : Ajout facile de nouveaux champs photos
 - ✅ **Make.com** : Interface utilisable et workflow configurable
-- ✅ **Documentation** : Mapping complet des 29 champs média
+- ✅ **Documentation** : Mapping complet des 39 champs média
 
 ---
 
@@ -859,7 +859,7 @@ user-{user_id}/
 
 ### **Tests de validation**
 - ✅ Payload structure conforme au JSON schema
-- ✅ Tous les 29 champs présents dans webhook Make
+- ✅ Tous les 39 champs présents dans webhook Make
 - ✅ URLs photos accessibles et valides
 - ✅ Trigger se déclenche uniquement sur statut → "Complété"
 

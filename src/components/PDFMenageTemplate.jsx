@@ -451,8 +451,7 @@ maxHeight: photos.length === 1 ? '250px' :
         letterSpacing: '1px'
       }}>
         <img 
-          src="/src/assets/letahost-transparent.png"
-          alt="Letahost"
+          src="/letahost-transparent.png"
           style={{
             height: '100px',
             width: 'auto',  
