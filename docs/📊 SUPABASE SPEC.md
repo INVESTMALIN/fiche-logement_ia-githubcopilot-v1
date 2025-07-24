@@ -603,14 +603,14 @@ BEGIN
     PERFORM net.http_post(
       url := 'https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj',
       body := jsonb_build_object(
-        -- Métadonnées
+        -- Métadonnées (5 champs)
         'id', NEW.id,
         'nom', NEW.nom,
         'statut', NEW.statut,
         'created_at', NEW.created_at,
         'updated_at', NEW.updated_at,
         
-        -- Propriétaire
+        -- Propriétaire (7 champs)
         'proprietaire', jsonb_build_object(
           'prenom', NEW.proprietaire_prenom,
           'nom', NEW.proprietaire_nom,
@@ -621,7 +621,7 @@ BEGIN
           'adresse_code_postal', NEW.proprietaire_adresse_code_postal
         ),
         
-        -- Logement
+        -- Logement (6 champs)
         'logement', jsonb_build_object(
           'numero_bien', NEW.logement_numero_bien,
           'type_propriete', NEW.logement_type_propriete,
@@ -631,13 +631,13 @@ BEGIN
           'nombre_lits', NEW.logement_nombre_lits
         ),
         
-        -- PDF
+        -- PDF (2 champs)
         'pdfs', jsonb_build_object(
           'logement_url', NEW.pdf_logement_url,
           'menage_url', NEW.pdf_menage_url
         ),
         
-        -- Photos et vidéos (39 champs)
+        -- Photos et vidéos (40 champs)
         'media', jsonb_build_object(
           -- Section Clefs (5 champs)
           'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
@@ -656,6 +656,9 @@ BEGIN
           'linge_photos_linge', NEW.linge_photos_linge,
           'linge_emplacement_photos', NEW.linge_emplacement_photos,
           
+          -- Section Visite (1 champ)
+          'visite_video_visite', NEW.visite_video_visite,
+
           -- Section Chambres (6 champs)
           'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos_chambre,
           'chambres_chambre_2_photos', NEW.chambres_chambre_2_photos_chambre,

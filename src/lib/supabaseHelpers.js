@@ -342,7 +342,7 @@ export const mapFormDataToSupabase = (formData) => {
     visite_pieces_autre_details: formData.section_visite?.pieces_autre_details || null,
     visite_nombre_chambres: formData.section_visite?.nombre_chambres || null,
     visite_nombre_salles_bains: formData.section_visite?.nombre_salles_bains || null,
-    visite_video_visite: formData.section_visite?.video_visite ?? null,
+    visite_video_visite: formData.section_visite?.video_visite ?? [],
 
     // Section Chambres (162 champs)
     // CHAMBRE 1
@@ -1347,7 +1347,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       pieces_autre_details: supabaseData.visite_pieces_autre_details || "",
       nombre_chambres: supabaseData.visite_nombre_chambres || "",
       nombre_salles_bains: supabaseData.visite_nombre_salles_bains || "",
-      video_visite: supabaseData.visite_video_visite ?? null
+      video_visite: supabaseData.visite_video_visite ?? []
     },
 
     section_chambres: {

@@ -225,7 +225,7 @@ clefs_interphone_photo TEXT[]
 clefs_photos TEXT[]
 equipements_poubelle_photos TEXT[]
 chambres_chambre_1_photos_chambre TEXT[]
--- ... 39 champs multimédia au total
+-- ... 40 champs multimédia au total
 
 -- URLs PDF pour Make
 pdf_logement_url TEXT
@@ -414,7 +414,7 @@ BEGIN
           'menage_url', NEW.pdf_menage_url
         ),
         
-        -- 📸 MÉDIAS (39 champs organisés par section) - NOMS RÉELS SUPABASE
+        -- 📸 MÉDIAS (40 champs organisés par section) - NOMS RÉELS SUPABASE
         'media', jsonb_build_object(
           -- Section Clefs (5 champs)
           'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
@@ -432,6 +432,9 @@ BEGIN
           -- Section Gestion Linge (2 champs)
           'linge_photos_linge', NEW.linge_photos_linge,
           'linge_emplacement_photos', NEW.linge_emplacement_photos,
+
+          -- Section Visite (1 champ)
+          'visite_video_visite', NEW.visite_video_visite,
           
           -- Section Chambres (6 champs)
           'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos_chambre,
@@ -534,7 +537,7 @@ CREATE TRIGGER fiche_any_update_webhook
     "salle_de_bain_1_photos": ["https://xyz.supabase.co/.../sdb1.png"],
     "cuisine1_cuisiniere_photo": ["https://xyz.supabase.co/.../cuisiniere.png"],
     "securite_photos_equipements": ["https://xyz.supabase.co/.../securite1.png"],
-    // ... 39 champs photos au total
+    // ... 40 champs médias au total
   }
 }
 ```
@@ -546,7 +549,7 @@ graph TD
     A[Webhook reçu] --> B[Statut = "Complété" automatique]
     B --> C[HTTP GET PDF Logement + Ménage]
     C --> D[Create Folder Drive structure]
-    D --> E[Iterator sur 39 champs photos]
+    D --> E[Iterator sur 40 champs photos]
     E --> F[HTTP GET chaque photo]
     F --> G[Upload organisé par sections]
     G --> H[Update Monday.com]
@@ -554,10 +557,10 @@ graph TD
 
 ### **Avantages du Système Actuel**
 
-- ✅ **Payload optimisé** : 58 champs structurés vs 750+ colonnes plates
+- ✅ **Payload optimisé** : 60 champs structurés vs 750+ colonnes plates
 - ✅ **Interface Make utilisable** : Mapping simple et intuitif  
 - ✅ **Structure logique** : metadata → proprietaire → logement → pdfs → media
-- ✅ **Toutes les photos organisées** : 39 champs par section
+- ✅ **Toutes les photos organisées** : 40 champs par section
 - ✅ **Évolutivité** : Ajout facile nouveaux champs sans casser l'existant
 
 ---
@@ -656,7 +659,7 @@ COMPRESSION_QUALITY=0.95
 
 - **22 sections** complètes avec logique conditionnelle
 - **750+ colonnes** Supabase avec mapping automatique
-- **39 champs multimédia** organisés pour Make
+- **40 champs multimédia** organisés pour Make
 - **2 PDF simultanés** avec pagination intelligente
 - **Webhook optimisé** 58 champs vs 750+ (95% de réduction)
 - **Temps config Make** réduit de 83% (3h → 30min)

@@ -418,7 +418,7 @@ const initialFormData = {
     nombre_salles_bains: "",        // "1", "2", "3", "4", "5", "6"
     
     // Vidéo visite
-    video_visite: null          // true = Fait, false = À faire
+    video_visite: [],
   },
   section_chambres: {
     chambre_1: {

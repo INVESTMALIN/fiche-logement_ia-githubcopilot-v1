@@ -3,6 +3,7 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
 
 export default function FicheVisite() {
   const { next, back, currentStep, totalSteps, getField, updateField, handleSave, saveStatus } = useForm()
@@ -171,34 +172,25 @@ export default function FicheVisite() {
               </div>
             )}
 
-            {/* Vidéo de visite */}
+            {/* Upload Vidéo de visite */}
             <div>
-              <label className="block font-semibold mb-3">
-                Vidéo de Visite : Pensez à commenter !
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="radio"
-                    name="video_visite"
-                    value="true"
-                    checked={formDataVisite.video_visite === true}
-                    onChange={(e) => handleRadioChange('section_visite.video_visite', e.target.value)}
-                    className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Fait</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="radio"
-                    name="video_visite"
-                    value="false"
-                    checked={formDataVisite.video_visite === false}
-                    onChange={(e) => handleRadioChange('section_visite.video_visite', e.target.value)}
-                    className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">À faire</span>
-                </label>
+              <PhotoUpload 
+                fieldPath="section_visite.video_visite"
+                label="Vidéo de Visite : Pensez à commenter !"
+                multiple={true}
+                maxFiles={1}
+                acceptVideo={true}
+              />
+              <div className="mt-3 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+                <h4 className="font-semibold text-blue-800 mb-2">📹 Instructions pour la vidéo :</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• <strong>Parlez clairement</strong> et articulez bien</li>
+                  <li>• <strong>Commentez chaque pièce</strong> visitée et ses équipements</li>
+                  <li>• <strong>Attention au bruit ambiant</strong> (évitez la musique, circulation...)</li>
+                  <li>• <strong>Filmez en mode paysage</strong> pour une meilleure qualité</li>
+                  <li>• <strong>Éclairage suffisant</strong> : allumez les lumières si nécessaire</li>
+                  <li>• <strong>Mouvements lents</strong> pour éviter le flou</li>
+                </ul>
               </div>
             </div>
 
