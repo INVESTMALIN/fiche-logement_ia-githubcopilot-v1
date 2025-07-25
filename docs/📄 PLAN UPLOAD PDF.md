@@ -238,7 +238,7 @@ const generatePDFBlob = async (url) => {
 - guide_acces_video_acces (vidéo guide d'accès)
 
 📁 4. Tour générale du logement
--> Vidéo générale du logement (Ajouter champ vidéo dans FicheVisite.jsx)
+- visite_video_visite
 
 📁 5. Tuto équipements
 - clefs_emplacement_photo (emplacement boîte à clefs)
@@ -264,7 +264,7 @@ const generatePDFBlob = async (url) => {
 - securite_photos_equipements
 ```
 
-Total : 39 champs ✅
+Total : 40 champs ✅
 
 ---
 
@@ -316,7 +316,7 @@ Total : 39 champs ✅
 
 ---
 
-*📅 Dernière mise à jour : 18 juillet 2025*  
+*📅 Dernière mise à jour : 25 juillet 2025*  
 *👤 Développeurs : Julien + Claude Sonnet 4*  
 *🎯 Statut : ✅ MIGRÉ HTML2PDF - Prêt pour intégration Make*  
 *📈 Version : 5.0 - html2pdf avec pagination intelligente*

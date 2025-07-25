@@ -1,5 +1,5 @@
 # 📸 PLAN UPLOAD PHOTOS - Architecture Complète OPÉRATIONNELLE
-*Mise à jour : 18 juillet 2025🎯*
+*Mise à jour : 25 juillet 2025🎯*
 
 ---
 
@@ -334,7 +334,7 @@ CREATE TRIGGER fiche_any_update_webhook
 - securite_photos_equipements
 ```
 
-Total : 39 champs ✅
+Total : 40champs ✅
 
 ---
 
@@ -380,7 +380,7 @@ Total : 39 champs ✅
 
 ---
 
-*📅 Dernière mise à jour : 18 juillet 2025*  
+*📅 Dernière mise à jour : 25 juillet 2025*  
 *👤 Développeurs : Julien + Claude Sonnet 4*  
 *🎯 Statut : ✅ WEBHOOK COMPLET + PHOTOS OPÉRATIONNELS - Prêt pour finalisation Drive*  
 *📈 Version : 7.0 - Payload complet pour tests facilités*

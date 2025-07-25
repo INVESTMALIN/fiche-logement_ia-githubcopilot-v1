@@ -1,5 +1,5 @@
 # 📋 FEATURE_SPEC - Fiche Logement Letahost
-*Spécifications fonctionnelles - Mise à jour : 18 Juilet 2025*
+*Spécifications fonctionnelles - Mise à jour : 25 Juilet 2025*
 
 ---
 

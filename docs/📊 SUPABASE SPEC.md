@@ -775,11 +775,11 @@ user-{user_id}/
 ### **2. Finalisation fiche**
 1. Bouton "Finaliser la fiche" → `UPDATE statut = 'Complété'`
 2. Trigger SQL déclenché → Webhook Make avec payload optimisé
-3. Make reçoit 39 champs structurés: photos + PDF + métadonnées
+3. Make reçoit 40 champs structurés: photos + PDF + métadonnées
 4. Organisation automatique Google Drive par sections
 
 ### **3. Avantages du nouveau système**
-- ✅ **Performance** : 39 champs ciblés vs 750 colonnes
+- ✅ **Performance** : 40 champs ciblés vs 750 colonnes
 - ✅ **Maintenabilité** : Structure claire et documentée
 - ✅ **Évolutivité** : Ajout facile de nouveaux champs photos
 - ✅ **Make.com** : Interface utilisable et workflow configurable
@@ -787,7 +787,7 @@ user-{user_id}/
 
 ---
 
-## 📋 **LISTE COMPLÈTE DES 39 CHAMPS MÉDIA**
+## 📋 **LISTE COMPLÈTE DES CHAMPS MÉDIA**
 
 ### **Section Clefs (5 champs)**
 1. `clefs_emplacement_photo` - Photo de l'emplacement de la boîte
@@ -831,7 +831,7 @@ user-{user_id}/
 29. `cuisine1_cafetiere_photo` - Photo cafetière
 30. `cuisine2_photos_tiroirs_placards` - Photos tiroirs et placards
 
-### **Autres sections (7 champs)**
+### **Autres sections (9 champs)**
 31. `salon_sam_photos` - Photos salon/salle à manger
 32. `exterieur_photos_espaces` - Photos de l'extérieur
 33. `jacuzzi_photos_jacuzzi` - Photos du jacuzzi  
@@ -842,7 +842,10 @@ user-{user_id}/
 38. `guide_acces_video_acces` - Vidéo guide d'accès
 39. `securite_photos_equipements` - Photos équipements sécurité
 
-**TOTAL : 39 champs photos/vidéos organisés par section**
+### **Visite logement (1 champ)**
+31. `visite_video_visite` - Tour générale du logement
+
+**TOTAL : 40 champs photos/vidéos organisés par section**
 
 ---
 
@@ -862,10 +865,10 @@ user-{user_id}/
 
 ### **Tests de validation**
 - ✅ Payload structure conforme au JSON schema
-- ✅ Tous les 39 champs présents dans webhook Make
+- ✅ Tous les 40 champs présents dans webhook Make
 - ✅ URLs photos accessibles et valides
 - ✅ Trigger se déclenche uniquement sur statut → "Complété"
 
 ---
 
-*📝 Document maintenu à jour - Dernière modification : 16 juillet 2025*
+*📝 Document maintenu à jour - Dernière modification : 25 juillet 2025*

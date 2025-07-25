@@ -668,4 +668,4 @@ COMPRESSION_QUALITY=0.95
 
 ---
 
-*📝 Architecture validée en production - Dernière mise à jour : 18 juillet 2025*
+*📝 Architecture validée en production - Dernière mise à jour : 25 juillet 2025*
