@@ -106,7 +106,7 @@ export default function FicheSecutite() {
       <div className="flex-1 flex flex-col">
         <ProgressBar />
         
-        <div className="flex-1 p-6 bg-gray-100">
+        <div className="flex-1 p-6 bg-gray-100 pb-24">
           <h1 className="text-2xl font-bold mb-6">Équipements de Sécurité</h1>
           
 

@@ -350,7 +350,7 @@ export default function Dashboard() {
       </div>
 
       {/* Contenu principal */}
-      <div className="max-w-screen-lg mx-auto p-6">
+      <div className="max-w-screen-lg mx-auto p-6 pb-24">
         {/* Onglets de filtrage, recherche ET toggle vue */}
         <div className="mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

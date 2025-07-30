@@ -340,6 +340,7 @@ export default function FicheSalleDeBains() {
           </div>
           
         </div>
+        <div className="h-20"></div>
       </div>
     </div>
   )

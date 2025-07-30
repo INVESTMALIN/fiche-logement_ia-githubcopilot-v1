@@ -494,6 +494,7 @@ export default function FicheEquipements() {
             </div>
 
         </div>
+        <div className="h-20"></div>
       </div>
     </div>
   )
