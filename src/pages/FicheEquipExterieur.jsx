@@ -680,27 +680,13 @@ export default function FicheEquipExterieur() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-3">Vidéo de la piscine</label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={formData.piscine_video === true}
-                        onChange={() => handleRadioChange('section_equip_spe_exterieur.piscine_video', 'true')}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        checked={formData.piscine_video === false}
-                        onChange={() => handleRadioChange('section_equip_spe_exterieur.piscine_video', 'false')}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_equip_spe_exterieur.piscine_video"
+                    label="Vidéo de la piscine"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
               </div>
             )}

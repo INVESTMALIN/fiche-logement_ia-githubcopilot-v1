@@ -97,31 +97,13 @@ export default function FicheEquipements() {
               
               {/* Vidéo accès local poubelle */}
               <div className="mb-4">
-                <label className="block font-semibold mb-2">
-                  Faire une vidéo de l'accès au local poubelle
-                </label>
-                <div className="flex gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="video_acces_poubelle"
-                      checked={formData.video_acces_poubelle === true}
-                      onChange={() => handleInputChange('section_equipements.video_acces_poubelle', true)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <span>Fait</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="video_acces_poubelle"
-                      checked={formData.video_acces_poubelle === false}
-                      onChange={() => handleInputChange('section_equipements.video_acces_poubelle', false)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <span>À faire</span>
-                  </label>
-                </div>
+                <PhotoUpload 
+                  fieldPath="section_equipements.video_acces_poubelle"
+                  label="Faire une vidéo de l'accès au local poubelle"
+                  multiple={false}
+                  maxFiles={1}
+                  acceptVideo={true}
+                />
               </div>
 
               {/* Local Poubelle - Emplacement */}
@@ -272,31 +254,13 @@ export default function FicheEquipements() {
 
               {/* Vidéo système chauffage */}
               <div className="mb-4">
-                <label className="block font-semibold mb-2">
-                  Faire une vidéo du système de chauffage
-                </label>
-                <div className="flex gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="video_systeme_chauffage"
-                      checked={formData.video_systeme_chauffage === true}
-                      onChange={() => handleInputChange('section_equipements.video_systeme_chauffage', true)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <span>Fait</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="video_systeme_chauffage"
-                      checked={formData.video_systeme_chauffage === false}
-                      onChange={() => handleInputChange('section_equipements.video_systeme_chauffage', false)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <span>À faire</span>
-                  </label>
-                </div>
+                <PhotoUpload 
+                  fieldPath="section_equipements.video_systeme_chauffage"
+                  label="Faire une vidéo du système de chauffage"
+                  multiple={false}
+                  maxFiles={1}
+                  acceptVideo={true}
+                />
               </div>
             </div>
 

@@ -650,15 +650,15 @@ export const mapFormDataToSupabase = (formData) => {
     // RÉFRIGÉRATEUR - Champs conditionnels
     cuisine_1_refrigerateur_marque: formData.section_cuisine_1?.refrigerateur_marque || null,
     cuisine_1_refrigerateur_instructions: formData.section_cuisine_1?.refrigerateur_instructions || null,
-    cuisine_1_refrigerateur_video: formData.section_cuisine_1?.refrigerateur_video ?? null,
+    cuisine_1_refrigerateur_video: formData.section_cuisine_1?.refrigerateur_video ?? [],
 
     // CONGÉLATEUR - Champs conditionnels
     cuisine_1_congelateur_instructions: formData.section_cuisine_1?.congelateur_instructions || null,
-    cuisine_1_congelateur_video: formData.section_cuisine_1?.congelateur_video ?? null,
+    cuisine_1_congelateur_video: formData.section_cuisine_1?.congelateur_video ?? [],
 
     // MINI RÉFRIGÉRATEUR - Champs conditionnels
     cuisine_1_mini_refrigerateur_instructions: formData.section_cuisine_1?.mini_refrigerateur_instructions || null,
-    cuisine_1_mini_refrigerateur_video: formData.section_cuisine_1?.mini_refrigerateur_video ?? null,
+    cuisine_1_mini_refrigerateur_video: formData.section_cuisine_1?.mini_refrigerateur_video ?? [],
 
     // CUISINIÈRE - Champs conditionnels
     cuisine_1_cuisiniere_marque: formData.section_cuisine_1?.cuisiniere_marque || null,
@@ -666,7 +666,7 @@ export const mapFormDataToSupabase = (formData) => {
     cuisine_1_cuisiniere_nombre_feux: formData.section_cuisine_1?.cuisiniere_nombre_feux ? parseInt(formData.section_cuisine_1.cuisiniere_nombre_feux) : null,
     cuisine_1_cuisiniere_instructions: formData.section_cuisine_1?.cuisiniere_instructions || null,
     cuisine_1_cuisiniere_photo: formData.section_cuisine_1?.cuisiniere_photo || [],
-    cuisine_1_cuisiniere_video: formData.section_cuisine_1?.cuisiniere_video ?? null,
+    cuisine_1_cuisiniere_video: formData.section_cuisine_1?.cuisiniere_video ?? [],
 
     // PLAQUE DE CUISSON - Champs conditionnels
     cuisine_1_plaque_cuisson_marque: formData.section_cuisine_1?.plaque_cuisson_marque || null,
@@ -674,24 +674,24 @@ export const mapFormDataToSupabase = (formData) => {
     cuisine_1_plaque_cuisson_nombre_feux: formData.section_cuisine_1?.plaque_cuisson_nombre_feux ? parseInt(formData.section_cuisine_1.plaque_cuisson_nombre_feux) : null,
     cuisine_1_plaque_cuisson_instructions: formData.section_cuisine_1?.plaque_cuisson_instructions || null,
     cuisine_1_plaque_cuisson_photo: formData.section_cuisine_1?.plaque_cuisson_photo || [],
-    cuisine_1_plaque_cuisson_video: formData.section_cuisine_1?.plaque_cuisson_video ?? null,
+    cuisine_1_plaque_cuisson_video: formData.section_cuisine_1?.plaque_cuisson_video ?? [],
 
     // FOUR - Champs conditionnels
     cuisine_1_four_marque: formData.section_cuisine_1?.four_marque || null,
     cuisine_1_four_type: formData.section_cuisine_1?.four_type || null,
     cuisine_1_four_instructions: formData.section_cuisine_1?.four_instructions || null,
     cuisine_1_four_photo: formData.section_cuisine_1?.four_photo || [],
-    cuisine_1_four_video: formData.section_cuisine_1?.four_video ?? null,
+    cuisine_1_four_video: formData.section_cuisine_1?.four_video ?? [],
 
     // FOUR À MICRO-ONDES - Champs conditionnels
     cuisine_1_micro_ondes_instructions: formData.section_cuisine_1?.micro_ondes_instructions || null,
     cuisine_1_micro_ondes_photo: formData.section_cuisine_1?.micro_ondes_photo || [],
-    cuisine_1_micro_ondes_video: formData.section_cuisine_1?.micro_ondes_video ?? null,
+    cuisine_1_micro_ondes_video: formData.section_cuisine_1?.micro_ondes_video ?? [],
 
     // LAVE-VAISSELLE - Champs conditionnels
     cuisine_1_lave_vaisselle_instructions: formData.section_cuisine_1?.lave_vaisselle_instructions || null,
     cuisine_1_lave_vaisselle_photo: formData.section_cuisine_1?.lave_vaisselle_photo || [],
-    cuisine_1_lave_vaisselle_video: formData.section_cuisine_1?.lave_vaisselle_video ?? null,
+    cuisine_1_lave_vaisselle_video: formData.section_cuisine_1?.lave_vaisselle_video ?? [],
 
     // CAFETIÈRE - Champs conditionnels
     cuisine_1_cafetiere_marque: formData.section_cuisine_1?.cafetiere_marque || null,
@@ -705,29 +705,29 @@ export const mapFormDataToSupabase = (formData) => {
     cuisine_1_cafetiere_type_bar_moulu: formData.section_cuisine_1?.cafetiere_type_bar_moulu ?? null,
     cuisine_1_cafetiere_instructions: formData.section_cuisine_1?.cafetiere_instructions || null,
     cuisine_1_cafetiere_photo: formData.section_cuisine_1?.cafetiere_photo || [],
-    cuisine_1_cafetiere_video: formData.section_cuisine_1?.cafetiere_video ?? null,
+    cuisine_1_cafetiere_video: formData.section_cuisine_1?.cafetiere_video ?? [],
     cuisine_1_cafetiere_cafe_fourni: formData.section_cuisine_1?.cafetiere_cafe_fourni || null,
     cuisine_1_cafetiere_marque_cafe: formData.section_cuisine_1?.cafetiere_marque_cafe || null,
 
     // BOUILLOIRE ÉLECTRIQUE - Champs conditionnels
     cuisine_1_bouilloire_instructions: formData.section_cuisine_1?.bouilloire_instructions || null,
-    cuisine_1_bouilloire_video: formData.section_cuisine_1?.bouilloire_video ?? null,
+    cuisine_1_bouilloire_video: formData.section_cuisine_1?.bouilloire_video ?? [],
 
     // GRILLE-PAIN - Champs conditionnels
     cuisine_1_grille_pain_instructions: formData.section_cuisine_1?.grille_pain_instructions || null,
-    cuisine_1_grille_pain_video: formData.section_cuisine_1?.grille_pain_video ?? null,
+    cuisine_1_grille_pain_video: formData.section_cuisine_1?.grille_pain_video ?? [],
 
     // BLENDER - Champs conditionnels
     cuisine_1_blender_instructions: formData.section_cuisine_1?.blender_instructions || null,
-    cuisine_1_blender_video: formData.section_cuisine_1?.blender_video ?? null,
+    cuisine_1_blender_video: formData.section_cuisine_1?.blender_video ?? [],
 
     // CUISEUR À RIZ - Champs conditionnels
     cuisine_1_cuiseur_riz_instructions: formData.section_cuisine_1?.cuiseur_riz_instructions || null,
-    cuisine_1_cuiseur_riz_video: formData.section_cuisine_1?.cuiseur_riz_video ?? null,
+    cuisine_1_cuiseur_riz_video: formData.section_cuisine_1?.cuiseur_riz_video ?? [],
 
     // MACHINE À PAIN - Champs conditionnels
     cuisine_1_machine_pain_instructions: formData.section_cuisine_1?.machine_pain_instructions || null,
-    cuisine_1_machine_pain_video: formData.section_cuisine_1?.machine_pain_video ?? null,
+    cuisine_1_machine_pain_video: formData.section_cuisine_1?.machine_pain_video ?? [],
 
     // Section Cuisine 2 - Ustensiles
     // VAISSELLE (4 compteurs)
@@ -1669,15 +1669,15 @@ export const mapSupabaseToFormData = (supabaseData) => {
       // RÉFRIGÉRATEUR - Champs conditionnels
       refrigerateur_marque: supabaseData.cuisine_1_refrigerateur_marque || "",
       refrigerateur_instructions: supabaseData.cuisine_1_refrigerateur_instructions || "",
-      refrigerateur_video: supabaseData.cuisine_1_refrigerateur_video ?? null,
+      refrigerateur_video: supabaseData.cuisine_1_refrigerateur_video ?? [],
     
       // CONGÉLATEUR - Champs conditionnels
       congelateur_instructions: supabaseData.cuisine_1_congelateur_instructions || "",
-      congelateur_video: supabaseData.cuisine_1_congelateur_video ?? null,
+      congelateur_video: supabaseData.cuisine_1_congelateur_video ?? [],
     
       // MINI RÉFRIGÉRATEUR - Champs conditionnels
       mini_refrigerateur_instructions: supabaseData.cuisine_1_mini_refrigerateur_instructions || "",
-      mini_refrigerateur_video: supabaseData.cuisine_1_mini_refrigerateur_video ?? null,
+      mini_refrigerateur_video: supabaseData.cuisine_1_mini_refrigerateur_video ?? [],
     
       // CUISINIÈRE - Champs conditionnels
       cuisiniere_marque: supabaseData.cuisine_1_cuisiniere_marque || "",
@@ -1685,7 +1685,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       cuisiniere_nombre_feux: supabaseData.cuisine_1_cuisiniere_nombre_feux?.toString() || "",
       cuisiniere_instructions: supabaseData.cuisine_1_cuisiniere_instructions || "",
       cuisiniere_photo: supabaseData.cuisine_1_cuisiniere_photo || [],
-      cuisiniere_video: supabaseData.cuisine_1_cuisiniere_video ?? null,
+      cuisiniere_video: supabaseData.cuisine_1_cuisiniere_video ?? [],
     
       // PLAQUE DE CUISSON - Champs conditionnels
       plaque_cuisson_marque: supabaseData.cuisine_1_plaque_cuisson_marque || "",
@@ -1693,24 +1693,24 @@ export const mapSupabaseToFormData = (supabaseData) => {
       plaque_cuisson_nombre_feux: supabaseData.cuisine_1_plaque_cuisson_nombre_feux?.toString() || "",
       plaque_cuisson_instructions: supabaseData.cuisine_1_plaque_cuisson_instructions || "",
       plaque_cuisson_photo: supabaseData.cuisine_1_plaque_cuisson_photo || [],
-      plaque_cuisson_video: supabaseData.cuisine_1_plaque_cuisson_video ?? null,
+      plaque_cuisson_video: supabaseData.cuisine_1_plaque_cuisson_video ?? [],
     
       // FOUR - Champs conditionnels
       four_marque: supabaseData.cuisine_1_four_marque || "",
       four_type: supabaseData.cuisine_1_four_type || "",
       four_instructions: supabaseData.cuisine_1_four_instructions || "",
       four_photo: supabaseData.cuisine_1_four_photo || [],
-      four_video: supabaseData.cuisine_1_four_video ?? null,
+      four_video: supabaseData.cuisine_1_four_video ?? [],
     
       // FOUR À MICRO-ONDES - Champs conditionnels
       micro_ondes_instructions: supabaseData.cuisine_1_micro_ondes_instructions || "",
       micro_ondes_photo: supabaseData.cuisine_1_micro_ondes_photo || [],
-      micro_ondes_video: supabaseData.cuisine_1_micro_ondes_video ?? null,
+      micro_ondes_video: supabaseData.cuisine_1_micro_ondes_video ?? [],
     
       // LAVE-VAISSELLE - Champs conditionnels
       lave_vaisselle_instructions: supabaseData.cuisine_1_lave_vaisselle_instructions || "",
       lave_vaisselle_photo: supabaseData.cuisine_1_lave_vaisselle_photo || [],
-      lave_vaisselle_video: supabaseData.cuisine_1_lave_vaisselle_video ?? null,
+      lave_vaisselle_video: supabaseData.cuisine_1_lave_vaisselle_video ?? [],
     
       // CAFETIÈRE - Champs conditionnels
       cafetiere_marque: supabaseData.cuisine_1_cafetiere_marque || "",
@@ -1724,29 +1724,29 @@ export const mapSupabaseToFormData = (supabaseData) => {
       cafetiere_type_bar_moulu: supabaseData.cuisine_1_cafetiere_type_bar_moulu ?? null,
       cafetiere_instructions: supabaseData.cuisine_1_cafetiere_instructions || "",
       cafetiere_photo: supabaseData.cuisine_1_cafetiere_photo || [],
-      cafetiere_video: supabaseData.cuisine_1_cafetiere_video ?? null,
+      cafetiere_video: supabaseData.cuisine_1_cafetiere_video ?? [],
       cafetiere_cafe_fourni: supabaseData.cuisine_1_cafetiere_cafe_fourni || "",
       cafetiere_marque_cafe: supabaseData.cuisine_1_cafetiere_marque_cafe || "",
     
       // BOUILLOIRE ÉLECTRIQUE - Champs conditionnels
       bouilloire_instructions: supabaseData.cuisine_1_bouilloire_instructions || "",
-      bouilloire_video: supabaseData.cuisine_1_bouilloire_video ?? null,
+      bouilloire_video: supabaseData.cuisine_1_bouilloire_video ?? [],
     
       // GRILLE-PAIN - Champs conditionnels
       grille_pain_instructions: supabaseData.cuisine_1_grille_pain_instructions || "",
-      grille_pain_video: supabaseData.cuisine_1_grille_pain_video ?? null,
+      grille_pain_video: supabaseData.cuisine_1_grille_pain_video ?? [],
     
       // BLENDER - Champs conditionnels
       blender_instructions: supabaseData.cuisine_1_blender_instructions || "",
-      blender_video: supabaseData.cuisine_1_blender_video ?? null,
+      blender_video: supabaseData.cuisine_1_blender_video ?? [],
     
       // CUISEUR À RIZ - Champs conditionnels
       cuiseur_riz_instructions: supabaseData.cuisine_1_cuiseur_riz_instructions || "",
-      cuiseur_riz_video: supabaseData.cuisine_1_cuiseur_riz_video ?? null,
+      cuiseur_riz_video: supabaseData.cuisine_1_cuiseur_riz_video ?? [],
     
       // MACHINE À PAIN - Champs conditionnels
       machine_pain_instructions: supabaseData.cuisine_1_machine_pain_instructions || "",
-      machine_pain_video: supabaseData.cuisine_1_machine_pain_video ?? null
+      machine_pain_video: supabaseData.cuisine_1_machine_pain_video ?? []
     },
 
     section_cuisine_2: {

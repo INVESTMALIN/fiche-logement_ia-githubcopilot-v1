@@ -147,34 +147,15 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Réfrigérateur - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="refrigerateur_video"
-                        value="true"
-                        checked={formData.refrigerateur_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.refrigerateur_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="refrigerateur_video"
-                        value="false"
-                        checked={formData.refrigerateur_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.refrigerateur_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.refrigerateur_video"
+                    label="Réfrigérateur - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
+
               </div>
             )}
 
@@ -196,34 +177,15 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Congélateur - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="congelateur_video"
-                        value="true"
-                        checked={formData.congelateur_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.congelateur_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="congelateur_video"
-                        value="false"
-                        checked={formData.congelateur_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.congelateur_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.congelateur_video"
+                    label="Congélateur - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
+
               </div>
             )}
 
@@ -245,34 +207,15 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Mini réfrigérateur - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="mini_refrigerateur_video"
-                        value="true"
-                        checked={formData.mini_refrigerateur_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.mini_refrigerateur_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="mini_refrigerateur_video"
-                        value="false"
-                        checked={formData.mini_refrigerateur_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.mini_refrigerateur_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.mini_refrigerateur_video"
+                    label="Mini réfrigérateur - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
+
               </div>
             )}
 
@@ -346,34 +289,15 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Cuisinière - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="cuisiniere_video"
-                        value="true"
-                        checked={formData.cuisiniere_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.cuisiniere_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="cuisiniere_video"
-                        value="false"
-                        checked={formData.cuisiniere_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.cuisiniere_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.cuisiniere_video"
+                    label="Cuisinière - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
+
               </div>
             )}
 
@@ -446,33 +370,13 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Plaque de cuisson - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="plaque_cuisson_video"
-                        value="true"
-                        checked={formData.plaque_cuisson_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.plaque_cuisson_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="plaque_cuisson_video"
-                        value="false"
-                        checked={formData.plaque_cuisson_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.plaque_cuisson_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.plaque_cuisson_video"
+                    label="Plaque de cuisson - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
               </div>
             )}
@@ -532,33 +436,13 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Four - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="four_video"
-                        value="true"
-                        checked={formData.four_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.four_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="four_video"
-                        value="false"
-                        checked={formData.four_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.four_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.four_video"
+                    label="Four - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
               </div>
             )}
@@ -590,33 +474,13 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Four à micro-ondes - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="micro_ondes_video"
-                        value="true"
-                        checked={formData.micro_ondes_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.micro_ondes_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="micro_ondes_video"
-                        value="false"
-                        checked={formData.micro_ondes_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.micro_ondes_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.micro_ondes_video"
+                    label="Four à micro-ondes - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
               </div>
             )}
@@ -648,33 +512,13 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Lave-vaisselle - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="lave_vaisselle_video"
-                        value="true"
-                        checked={formData.lave_vaisselle_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.lave_vaisselle_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="lave_vaisselle_video"
-                        value="false"
-                        checked={formData.lave_vaisselle_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.lave_vaisselle_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.lave_vaisselle_video"
+                    label="Lave-vaisselle - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
               </div>
             )}
@@ -738,33 +582,13 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Cafetière - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="cafetiere_video"
-                        value="true"
-                        checked={formData.cafetiere_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.cafetiere_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="cafetiere_video"
-                        value="false"
-                        checked={formData.cafetiere_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.cafetiere_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.cafetiere_video"
+                    label="Cafetière - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
 
                 <div>
@@ -844,33 +668,13 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Bouilloire électrique - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="bouilloire_video"
-                        value="true"
-                        checked={formData.bouilloire_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.bouilloire_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="bouilloire_video"
-                        value="false"
-                        checked={formData.bouilloire_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.bouilloire_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.bouilloire_video"
+                    label="Bouilloire électrique - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
               </div>
             )}
@@ -893,33 +697,13 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Grille-pain - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="grille_pain_video"
-                        value="true"
-                        checked={formData.grille_pain_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.grille_pain_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="grille_pain_video"
-                        value="false"
-                        checked={formData.grille_pain_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.grille_pain_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.grille_pain_video"
+                    label="Grille-pain - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
               </div>
             )}
@@ -942,33 +726,13 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Blender - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="blender_video"
-                        value="true"
-                        checked={formData.blender_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.blender_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="blender_video"
-                        value="false"
-                        checked={formData.blender_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.blender_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.blender_video"
+                    label="Blender - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
               </div>
             )}
@@ -991,33 +755,13 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Cuiseur à riz - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="cuiseur_riz_video"
-                        value="true"
-                        checked={formData.cuiseur_riz_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.cuiseur_riz_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="cuiseur_riz_video"
-                        value="false"
-                        checked={formData.cuiseur_riz_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.cuiseur_riz_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.cuiseur_riz_video"
+                    label="Cuiseur à riz - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
               </div>
             )}
@@ -1040,33 +784,13 @@ export default function FicheCuisine1() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-2">
-                    Machine à pain - Vidéo
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="machine_pain_video"
-                        value="true"
-                        checked={formData.machine_pain_video === true}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.machine_pain_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>Fait</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="machine_pain_video"
-                        value="false"
-                        checked={formData.machine_pain_video === false}
-                        onChange={(e) => handleRadioChange('section_cuisine_1.machine_pain_video', e.target.value)}
-                        className="w-4 h-4"
-                      />
-                      <span>À faire</span>
-                    </label>
-                  </div>
+                  <PhotoUpload 
+                    fieldPath="section_cuisine_1.machine_pain_video"
+                    label="Machine à pain - Vidéo d'utilisation"
+                    multiple={false}
+                    maxFiles={1}
+                    acceptVideo={true}
+                  />
                 </div>
               </div>
             )}
@@ -1116,6 +840,7 @@ export default function FicheCuisine1() {
               </div>
             </div>
         </div>
+        <div className="h-20"></div>
       </div>
     </div>
   )

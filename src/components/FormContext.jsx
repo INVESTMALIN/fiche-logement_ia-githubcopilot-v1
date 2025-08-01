@@ -331,7 +331,7 @@ const initialFormData = {
   },
   section_equipements: {
     // Équipements techniques essentiels
-    video_acces_poubelle: null,
+    video_acces_poubelle: [],
     poubelle_emplacement: "",
     poubelle_ramassage: "",
     poubelle_photos: [],
@@ -342,7 +342,7 @@ const initialFormData = {
     systeme_chauffage_eau: "",
     chauffage_eau_emplacement: "",
     chauffage_eau_photos: [],
-    video_systeme_chauffage: null,
+    video_systeme_chauffage: [],
     
     // Équipements et Commodités - Checklist
     wifi: null,
@@ -753,15 +753,15 @@ const initialFormData = {
     // RÉFRIGÉRATEUR - Champs conditionnels
     refrigerateur_marque: "",                    // OBLIGATOIRE *
     refrigerateur_instructions: "",
-    refrigerateur_video: null,                   // true=Fait, false=À faire
+    refrigerateur_video: [],
   
     // CONGÉLATEUR - Champs conditionnels
     congelateur_instructions: "",
-    congelateur_video: null,
+    congelateur_video: [],
   
     // MINI RÉFRIGÉRATEUR - Champs conditionnels
     mini_refrigerateur_instructions: "",
-    mini_refrigerateur_video: null,
+    mini_refrigerateur_video: [],
   
     // CUISINIÈRE - Champs conditionnels
     cuisiniere_marque: "",                      // OBLIGATOIRE *
@@ -769,7 +769,7 @@ const initialFormData = {
     cuisiniere_nombre_feux: "",                 // Number input
     cuisiniere_instructions: "",
     cuisiniere_photo: [],                       // Array photos
-    cuisiniere_video: null,
+    cuisiniere_video: [],
   
     // PLAQUE DE CUISSON - Champs conditionnels
     plaque_cuisson_marque: "",                  // OBLIGATOIRE *
@@ -777,24 +777,24 @@ const initialFormData = {
     plaque_cuisson_nombre_feux: "",             // Number input
     plaque_cuisson_instructions: "",
     plaque_cuisson_photo: [],                   // Array photos
-    plaque_cuisson_video: null,
+    plaque_cuisson_video: [],
   
     // FOUR - Champs conditionnels
     four_marque: "",                            // OBLIGATOIRE *
     four_type: "",                              // Select: Simple/Double
     four_instructions: "",
     four_photo: [],                             // Array photos
-    four_video: null,
+    four_video: [],
   
     // FOUR À MICRO-ONDES - Champs conditionnels
     micro_ondes_instructions: "",
     micro_ondes_photo: [],                      // Array photos
-    micro_ondes_video: null,
+    micro_ondes_video: [],
   
     // LAVE-VAISSELLE - Champs conditionnels
     lave_vaisselle_instructions: "",
     lave_vaisselle_photo: [],                   // Array photos
-    lave_vaisselle_video: null,
+    lave_vaisselle_video: [],
   
     // CAFETIÈRE - Champs conditionnels
     cafetiere_marque: "",                       // OBLIGATOIRE *
@@ -809,29 +809,29 @@ const initialFormData = {
     cafetiere_type_bar_moulu: null,
     cafetiere_instructions: "",
     cafetiere_photo: [],                        // Array photos
-    cafetiere_video: null,
+    cafetiere_video: [],
     cafetiere_cafe_fourni: "",                  // Radio: Non/Oui par le propriétaire/Oui par la fée du logis
     cafetiere_marque_cafe: "",
   
     // BOUILLOIRE ÉLECTRIQUE - Champs conditionnels
     bouilloire_instructions: "",
-    bouilloire_video: null,
+    bouilloire_video: [],
   
     // GRILLE-PAIN - Champs conditionnels
     grille_pain_instructions: "",
-    grille_pain_video: null,
+    grille_pain_video: [],
   
     // BLENDER - Champs conditionnels
     blender_instructions: "",
-    blender_video: null,
+    blender_video: [],
   
     // CUISEUR À RIZ - Champs conditionnels
     cuiseur_riz_instructions: "",
-    cuiseur_riz_video: null,
+    cuiseur_riz_video: [],
   
     // MACHINE À PAIN - Champs conditionnels
     machine_pain_instructions: "",
-    machine_pain_video: null
+    machine_pain_video: []
   },
 
   
@@ -992,7 +992,7 @@ section_equip_spe_exterieur: {
   piscine_entretien_type_prestation: "",     // Text (conditionnel)
   piscine_entretien_qui: "",                 // Text (conditionnel)
   piscine_regles_utilisation: "",            // Textarea
-  piscine_video: null,                       // Radio: true/false/null (Fait/À faire)
+  piscine_video: [],                         // Array vidéos
   
   // BRANCHE JACUZZI (si dispose_jacuzzi = true)
   jacuzzi_acces: "",                         // Radio: Intérieur/Extérieur

@@ -217,54 +217,21 @@ const generatePDFBlob = async (url) => {
 └── 📁 1280. Autre propriétaire - Autre ville/
 ```
 
-## 📁 **MAPPING LOGIQUE PHOTOS → DOSSIERS DRIVE**
+## 📁 **MAPPING LOGIQUE PDF → DOSSIERS DRIVE**
 ### **Structure finale validée**
-```
 
+```
 📁 1. Fiche logement et ménage
 - Fiche-logement-num de bien.pdf
 - Fiche-ménage-num de bien.pdf
 
 📁 2. Photos Visite Logement
-- chambres_chambre_1_photos → chambres_chambre_6_photos
-- salle_de_bain_1_photos → salle_de_bain_6_photos  
-- salon_sam_photos
-- cuisine2_photos_tiroirs_placards
-- exterieur_photos_espaces
-- communs_photos_espaces
-
 📁 3. Accès au logement
-- guide_acces_photos_etapes (photos guide d'accès)
-- guide_acces_video_acces (vidéo guide d'accès)
-
 📁 4. Tour générale du logement
-- visite_video_visite
-
 📁 5. Tuto équipements
-- clefs_emplacement_photo (emplacement boîte à clefs)
-- clefs_interphone_photo  
-- clefs_tempo_gache_photo
-- clefs_digicode_photo
-- clefs_photos (clefs physiques)
-- equipements_poubelle_photos
-- equipements_disjoncteur_photos  
-- equipements_vanne_eau_photos
-- equipements_chauffage_eau_photos
-- cuisine1_cuisiniere_photo
-- cuisine1_plaque_cuisson_photo
-- cuisine1_four_photo
-- cuisine1_micro_ondes_photo
-- cuisine1_lave_vaisselle_photo
-- cuisine1_cafetiere_photo
-- linge_photos_linge
-- linge_emplacement_photos
-- jacuzzi_photos_jacuzzi
-- barbecue_photos
-- bebe_photos_equipements
-- securite_photos_equipements
 ```
 
-Total : 40 champs ✅
+Total : 2 champs PDF ✅
 
 ---
 

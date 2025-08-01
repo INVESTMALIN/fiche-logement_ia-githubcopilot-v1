@@ -241,7 +241,7 @@ graph LR
 
 **Automatiques :**
 - Nouvelle fiche → `Brouillon` (immédiat)
-- Bouton "Finaliser la fiche" (page 22/22) → `Complété`
+- Bouton "Finaliser la fiche" (page 23/23) → `Complété`
 - Modification d'une fiche `Complété` → Reste `Complété`
 
 **Manuelles :**
@@ -282,36 +282,33 @@ graph LR
 - Évolutif (ajout possible phase 2)
 
 **Gestion conflits simplifiée :**
-- 1 coordinateur = 1 fiche (pas de partage)
+- 1 coordinateur = 1 fiche (pas de partage - le coordinateur peut partager la version PDFPrint finie)
 - Super admins : modification exceptionnelle
 
 ---
 
 ## 🔧 Implémentation Technique
 
-### 📁 **Fichiers à Modifier/Créer**
+### 📁 **Fichiers**
 
 ```
 src/
 ├── lib/
 │   ├── supabaseClient.js          # Configuration Supabase
-│   ├── supabaseHelpers.js         # CRUD helpers (existant à étendre)
-│   ├── authHelpers.js             # Gestion auth + rôles (nouveau)
-│   ├── googleDriveClient.js       # Configuration Google Drive API (nouveau)
-│   └── fileUploadHelpers.js       # Upload Drive + URLs (nouveau)
+│   ├── supabaseHelpers.js         # CRUD helpers
 ├── components/
-│   ├── FormContext.jsx            # Intégrer sauvegarde Supabase (existant)
-│   ├── ProtectedRoute.jsx         # Routes protégées par rôle (nouveau)
-│   ├── PhotoUpload.jsx            # Composant upload photos (nouveau)
-│   └── FichePreviewModal.jsx      # Affichage photos/vidéos (nouveau)
+│   ├── FormContext.jsx            # Intégrer sauvegarde Supabase
+│   ├── ProtectedRoute.jsx         # Routes protégées par rôle
+│   ├── PhotoUpload.jsx            # Composant upload photos
+│   └── FichePreviewModal.jsx      # Affichage photos/vidéos
 ├── pages/
-│   ├── Dashboard.jsx              # Liste fiches + statuts (existant à modifier)
-│   ├── Login.jsx                  # Auth Supabase (existant)
-│   └── AdminConsole.jsx             # Gestion utilisateurs (nouveau)
+│   ├── Dashboard.jsx              # Liste fiches + statuts
+│   ├── Login.jsx                  # Auth Supabase 
+│   └── AdminConsole.jsx           # Gestion utilisateurs 
 └── hooks/
-    ├── useAuth.js                 # Hook auth + rôles (nouveau)
-    ├── useFiches.js               # Hook CRUD fiches (nouveau)
-    └── useFileUpload.js           # Hook upload Drive (nouveau)
+    ├── useAuth.js                 # Hook auth + rôles
+    ├── useFiches.js               # Hook CRUD fiches 
+    └── useFileUpload.js           # Hook upload Drive
 ```
 
 ### 🔗 **API FormContext Extended**
@@ -378,7 +375,7 @@ const getAllFiches = (includeArchived = false) => {
 
 ### 📝 **Phase 2 : Dashboard + Workflow**
 1. ✅ Dashboard avec liste fiches + statuts
-2. ✅ Bouton "Finaliser" page 22
+2. ✅ Bouton "Finaliser la fiche" page 23
 3. ✅ Actions Archiver/Désarchiver
 4. ✅ Filtres par statut
 5. ✅ Composants PhotoUpload intégrés formulaires
@@ -442,12 +439,9 @@ const getAllFiches = (includeArchived = false) => {
 - [ ] Gestion erreurs réseau gracieuse
 - [ ] Pas de fuite mémoire navigation longue
 - [ ] Backup/restore base données
-- [ ] Google Drive API rate limits respectées
 - [ ] Permissions Drive correctement configurées
 - [ ] Sécurité upload (types fichiers, taille max)
 - [ ] Cleanup fichiers Drive orphelins
-
----
 
 ---
 
@@ -500,211 +494,198 @@ chambres_chambre_1_photos_chambre TEXT[]
 
 #### **Structure du payload**
 ```json
-{
-  "id": "uuid",
-  "nom": "Bien 7755", 
-  "statut": "Complété",
-  "created_at": "timestamp",
-  "updated_at": "timestamp",
-  
-  "proprietaire": {
-    "prenom": "string",
-    "nom": "string", 
-    "email": "string",
-    "adresse_rue": "string",
-    "adresse_complement": "string",
-    "adresse_ville": "string",
-    "adresse_code_postal": "string"
-  },
-  
-  "logement": {
-    "numero_bien": "string",
-    "type_propriete": "string",
-    "typologie": "string", 
-    "surface": "integer",
-    "nombre_personnes_max": "string",
-    "nombre_lits": "string"
-  },
-  
-  "pdfs": {
-    "logement_url": "https://supabase.co/.../fiche-logement-7755.pdf",
-    "menage_url": "https://supabase.co/.../fiche-menage-7755.pdf"
-  },
-  
-  "media": {
-    "clefs_emplacement_photo": ["url1", "url2"],
-    "clefs_interphone_photo": ["url"],
-    "clefs_tempo_gache_photo": ["url"],
-    "clefs_digicode_photo": ["url"],
-    "clefs_photos": ["url1", "url2"],
-    
-    "equipements_poubelle_photos": ["url1", "url2"],
-    "equipements_disjoncteur_photos": ["url"],
-    "equipements_vanne_eau_photos": [],
-    "equipements_chauffage_eau_photos": ["url"],
-    
-    "linge_photos_linge": ["url1", "url2"],
-    "linge_emplacement_photos": ["url"],
-    
-    "chambres_chambre_1_photos": ["url1", "url2"],
-    "chambres_chambre_2_photos": [],
-    "chambres_chambre_3_photos": [],
-    "chambres_chambre_4_photos": [],
-    "chambres_chambre_5_photos": [],
-    "chambres_chambre_6_photos": [],
-    
-    "salle_de_bain_1_photos": ["url1", "url2"],
-    "salle_de_bain_2_photos": [],
-    "salle_de_bain_3_photos": [],
-    "salle_de_bain_4_photos": [],
-    "salle_de_bain_5_photos": [],
-    "salle_de_bain_6_photos": [],
-    
-    "cuisine1_cuisiniere_photo": [],
-    "cuisine1_plaque_cuisson_photo": ["url1", "url2"],
-    "cuisine1_four_photo": ["url1", "url2"],
-    "cuisine1_micro_ondes_photo": [],
-    "cuisine1_lave_vaisselle_photo": [],
-    "cuisine1_cafetiere_photo": [],
-    "cuisine2_photos_tiroirs_placards": ["url1", "url2"],
-    
-    "salon_sam_photos": ["url1", "url2"],
-    
-    "exterieur_photos_espaces": ["url1", "url2"],
-    "jacuzzi_photos_jacuzzi": [],
-    "barbecue_photos": [],
-    
-    "communs_photos_espaces": ["url1", "url2"],
-    
-    "bebe_photos_equipements": ["url1", "url2"],
-    
-    "guide_acces_photos_etapes": ["url1", "url2", "url3"],
-    "guide_acces_video_acces": ["url"],
-    
-    "securite_photos_equipements": ["url1", "url2"]
-  }
-}
+    {
+        "id": "6ce4732b-1062-4f43-bc4d-e91aff9f32c9",
+        "nom": "Bien 7755",
+        "pdfs": {
+            "menage_url": "",
+            "logement_url": ""
+        },
+        "media": {
+            "clefs_photos": [],
+            "piscine_video": [],
+            "barbecue_photos": [],
+            "salon_sam_photos": [],
+            "linge_photos_linge": [],
+            "cuisine1_four_photo": [],
+            "cuisine1_four_video": [],
+            "visite_video_visite": [],
+            "clefs_digicode_photo": [],
+            "clefs_interphone_photo": [],
+            "communs_photos_espaces": [],
+            "cuisine1_blender_video": [],
+            "jacuzzi_photos_jacuzzi": [],
+            "salle_de_bain_1_photos": [],
+            "salle_de_bain_2_photos": [],
+            "salle_de_bain_3_photos": [],
+            "salle_de_bain_4_photos": [],
+            "salle_de_bain_5_photos": [],
+            "salle_de_bain_6_photos": [],
+            "bebe_photos_equipements": [],
+            "clefs_emplacement_photo": [],
+            "clefs_tempo_gache_photo": [],
+            "guide_acces_video_acces": [],
+            "cuisine1_cafetiere_photo": [],
+            "cuisine1_cafetiere_video": [],
+            "exterieur_photos_espaces": [],
+            "linge_emplacement_photos": [],
+            "chambres_chambre_1_photos": [],
+            "chambres_chambre_2_photos": [],
+            "chambres_chambre_3_photos": [],
+            "chambres_chambre_4_photos": [],
+            "chambres_chambre_5_photos": [],
+            "chambres_chambre_6_photos": [],
+            "cuisine1_bouilloire_video": [],
+            "cuisine1_cuisiniere_photo": [],
+            "cuisine1_cuisiniere_video": [],
+            "guide_acces_photos_etapes": [],
+            "cuisine1_congelateur_video": [],
+            "cuisine1_cuiseur_riz_video": [],
+            "cuisine1_grille_pain_video": [],
+            "cuisine1_micro_ondes_photo": [],
+            "cuisine1_micro_ondes_video": [],
+            "cuisine1_machine_pain_video": [],
+            "equipements_poubelle_photos": [],
+            "securite_photos_equipements": [],
+            "cuisine1_refrigerateur_video": [],
+            "equipements_vanne_eau_photos": [],
+            "cuisine1_lave_vaisselle_photo": [],
+            "cuisine1_lave_vaisselle_video": [],
+            "cuisine1_plaque_cuisson_photo": [],
+            "cuisine1_plaque_cuisson_video": [],
+            "equipements_disjoncteur_photos": [],
+            "cuisine2_photos_tiroirs_placards": [],
+            "equipements_chauffage_eau_photos": [],
+            "equipements_video_acces_poubelle": [],
+            "cuisine1_mini_refrigerateur_video": [],
+            "equipements_video_systeme_chauffage": []
+        },
+        "statut": "Complété",
+        "logement": {
+            "numero_bien": "7755"
+        },
+        "created_at": "2025-07-15T00:11:54.7894",
+        "updated_at": "2025-07-31T04:41:26.159",
+        "proprietaire": {
+            "nom": "Jacky MARTIN",
+            "email": "martin35000@icloud.com",
+            "prenom": null
+        }
+    }
 ```
+11 métadonnées + 58 médias = 69 champs
 
 #### **Code SQL du trigger**
 ```sql
--- Supprimer l'ancien trigger
-DROP TRIGGER IF EXISTS fiche_completed_webhook ON public.fiches;
-DROP FUNCTION IF EXISTS notify_fiche_completed();
 
--- Créer la fonction optimisée
+-- VERSION FINALE PRODUCTION - URL Make normale
 CREATE OR REPLACE FUNCTION public.notify_fiche_completed()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $function$
+DECLARE
+  media_part1 jsonb;
+  media_part2 jsonb;
+  media_part3 jsonb;
+  media_final jsonb;
 BEGIN
-  -- Seulement si statut passe à "Complété"
+  -- DÉCLENCHEMENT UNIQUEMENT LORS DU PASSAGE À "Complété"
   IF NEW.statut = 'Complété' AND OLD.statut IS DISTINCT FROM 'Complété' THEN
+    
+    -- PARTIE 1 : Clefs + Equipements + Linge + Chambres (20 champs)
+    media_part1 := jsonb_build_object(
+      'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
+      'clefs_interphone_photo', NEW.clefs_interphone_photo,
+      'clefs_tempo_gache_photo', NEW.clefs_tempo_gache_photo,
+      'clefs_digicode_photo', NEW.clefs_digicode_photo,
+      'clefs_photos', NEW.clefs_photos,
+      'equipements_poubelle_photos', NEW.equipements_poubelle_photos,
+      'equipements_disjoncteur_photos', NEW.equipements_disjoncteur_photos,
+      'equipements_vanne_eau_photos', NEW.equipements_vanne_eau_photos,
+      'equipements_chauffage_eau_photos', NEW.equipements_chauffage_eau_photos,
+      'equipements_video_acces_poubelle', NEW.equipements_video_acces_poubelle,
+      'equipements_video_systeme_chauffage', NEW.equipements_video_systeme_chauffage,
+      'linge_photos_linge', NEW.linge_photos_linge,
+      'linge_emplacement_photos', NEW.linge_emplacement_photos,
+      'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos_chambre,
+      'chambres_chambre_2_photos', NEW.chambres_chambre_2_photos_chambre,
+      'chambres_chambre_3_photos', NEW.chambres_chambre_3_photos_chambre,
+      'chambres_chambre_4_photos', NEW.chambres_chambre_4_photos_chambre,
+      'chambres_chambre_5_photos', NEW.chambres_chambre_5_photos_chambre,
+      'chambres_chambre_6_photos', NEW.chambres_chambre_6_photos_chambre,
+      'salle_de_bain_1_photos', NEW.salle_de_bains_salle_de_bain_1_photos_salle_de_bain
+    );
+    
+    -- PARTIE 2 : Salles de bains + Cuisine 1 vidéos (19 champs)
+    media_part2 := jsonb_build_object(
+      'salle_de_bain_2_photos', NEW.salle_de_bains_salle_de_bain_2_photos_salle_de_bain,
+      'salle_de_bain_3_photos', NEW.salle_de_bains_salle_de_bain_3_photos_salle_de_bain,
+      'salle_de_bain_4_photos', NEW.salle_de_bains_salle_de_bain_4_photos_salle_de_bain,
+      'salle_de_bain_5_photos', NEW.salle_de_bains_salle_de_bain_5_photos_salle_de_bain,
+      'salle_de_bain_6_photos', NEW.salle_de_bains_salle_de_bain_6_photos_salle_de_bain,
+      'cuisine1_refrigerateur_video', NEW.cuisine_1_refrigerateur_video,
+      'cuisine1_congelateur_video', NEW.cuisine_1_congelateur_video,
+      'cuisine1_mini_refrigerateur_video', NEW.cuisine_1_mini_refrigerateur_video,
+      'cuisine1_cuisiniere_video', NEW.cuisine_1_cuisiniere_video,
+      'cuisine1_plaque_cuisson_video', NEW.cuisine_1_plaque_cuisson_video,
+      'cuisine1_four_video', NEW.cuisine_1_four_video,
+      'cuisine1_micro_ondes_video', NEW.cuisine_1_micro_ondes_video,
+      'cuisine1_lave_vaisselle_video', NEW.cuisine_1_lave_vaisselle_video,
+      'cuisine1_cafetiere_video', NEW.cuisine_1_cafetiere_video,
+      'cuisine1_bouilloire_video', NEW.cuisine_1_bouilloire_video,
+      'cuisine1_grille_pain_video', NEW.cuisine_1_grille_pain_video,
+      'cuisine1_blender_video', NEW.cuisine_1_blender_video,
+      'cuisine1_cuiseur_riz_video', NEW.cuisine_1_cuiseur_riz_video,
+      'cuisine1_machine_pain_video', NEW.cuisine_1_machine_pain_video
+    );
+    
+    -- PARTIE 3 : Cuisine photos + Autres sections (19 champs)
+    media_part3 := jsonb_build_object(
+      'cuisine1_cuisiniere_photo', NEW.cuisine_1_cuisiniere_photo,
+      'cuisine1_plaque_cuisson_photo', NEW.cuisine_1_plaque_cuisson_photo,
+      'cuisine1_four_photo', NEW.cuisine_1_four_photo,
+      'cuisine1_micro_ondes_photo', NEW.cuisine_1_micro_ondes_photo,
+      'cuisine1_lave_vaisselle_photo', NEW.cuisine_1_lave_vaisselle_photo,
+      'cuisine1_cafetiere_photo', NEW.cuisine_1_cafetiere_photo,
+      'cuisine2_photos_tiroirs_placards', NEW.cuisine_2_photos_tiroirs_placards,
+      'salon_sam_photos', NEW.salon_sam_photos_salon_sam,
+      'exterieur_photos_espaces', NEW.equip_spe_ext_exterieur_photos,
+      'jacuzzi_photos_jacuzzi', NEW.equip_spe_ext_jacuzzi_photos,
+      'barbecue_photos', NEW.equip_spe_ext_barbecue_photos,
+      'piscine_video', NEW.equip_spe_ext_piscine_video,
+      'communs_photos_espaces', NEW.communs_photos_espaces_communs,
+      'bebe_photos_equipements', NEW.bebe_photos_equipements_bebe,
+      'visite_video_visite', NEW.visite_video_visite,
+      'guide_acces_photos_etapes', NEW.guide_acces_photos_etapes,
+      'guide_acces_video_acces', NEW.guide_acces_video_acces,
+      'securite_photos_equipements', NEW.securite_photos_equipements_securite
+    );
+    
+    -- FUSION DES 3 PARTIES (58 champs total)
+    media_final := media_part1 || media_part2 || media_part3;
+    
+    -- ENVOI VERS MAKE.COM PRODUCTION
     PERFORM net.http_post(
       url := 'https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj',
       body := jsonb_build_object(
-        -- Métadonnées (5 champs)
         'id', NEW.id,
         'nom', NEW.nom,
         'statut', NEW.statut,
         'created_at', NEW.created_at,
         'updated_at', NEW.updated_at,
-        
-        -- Propriétaire (7 champs)
         'proprietaire', jsonb_build_object(
           'prenom', NEW.proprietaire_prenom,
           'nom', NEW.proprietaire_nom,
-          'email', NEW.proprietaire_email,
-          'adresse_rue', NEW.proprietaire_adresse_rue,
-          'adresse_complement', NEW.proprietaire_adresse_complement,
-          'adresse_ville', NEW.proprietaire_adresse_ville,
-          'adresse_code_postal', NEW.proprietaire_adresse_code_postal
+          'email', NEW.proprietaire_email
         ),
-        
-        -- Logement (6 champs)
         'logement', jsonb_build_object(
-          'numero_bien', NEW.logement_numero_bien,
-          'type_propriete', NEW.logement_type_propriete,
-          'typologie', NEW.logement_typologie,
-          'surface', NEW.logement_surface,
-          'nombre_personnes_max', NEW.logement_nombre_personnes_max,
-          'nombre_lits', NEW.logement_nombre_lits
+          'numero_bien', NEW.logement_numero_bien
         ),
-        
-        -- PDF (2 champs)
         'pdfs', jsonb_build_object(
           'logement_url', NEW.pdf_logement_url,
           'menage_url', NEW.pdf_menage_url
         ),
-        
-        -- Photos et vidéos (40 champs)
-        'media', jsonb_build_object(
-          -- Section Clefs (5 champs)
-          'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
-          'clefs_interphone_photo', NEW.clefs_interphone_photo,
-          'clefs_tempo_gache_photo', NEW.clefs_tempo_gache_photo,
-          'clefs_digicode_photo', NEW.clefs_digicode_photo,
-          'clefs_photos', NEW.clefs_photos,
-          
-          -- Section Equipements (4 champs)
-          'equipements_poubelle_photos', NEW.equipements_poubelle_photos,
-          'equipements_disjoncteur_photos', NEW.equipements_disjoncteur_photos,
-          'equipements_vanne_eau_photos', NEW.equipements_vanne_eau_photos,
-          'equipements_chauffage_eau_photos', NEW.equipements_chauffage_eau_photos,
-          
-          -- Section Gestion Linge (2 champs)
-          'linge_photos_linge', NEW.linge_photos_linge,
-          'linge_emplacement_photos', NEW.linge_emplacement_photos,
-          
-          -- Section Visite (1 champ)
-          'visite_video_visite', NEW.visite_video_visite,
-
-          -- Section Chambres (6 champs)
-          'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos_chambre,
-          'chambres_chambre_2_photos', NEW.chambres_chambre_2_photos_chambre,
-          'chambres_chambre_3_photos', NEW.chambres_chambre_3_photos_chambre,
-          'chambres_chambre_4_photos', NEW.chambres_chambre_4_photos_chambre,
-          'chambres_chambre_5_photos', NEW.chambres_chambre_5_photos_chambre,
-          'chambres_chambre_6_photos', NEW.chambres_chambre_6_photos_chambre,
-          
-          -- Section Salles de Bains (6 champs)
-          'salle_de_bain_1_photos', NEW.salle_de_bains_salle_de_bain_1_photos_salle_de_bain,
-          'salle_de_bain_2_photos', NEW.salle_de_bains_salle_de_bain_2_photos_salle_de_bain,
-          'salle_de_bain_3_photos', NEW.salle_de_bains_salle_de_bain_3_photos_salle_de_bain,
-          'salle_de_bain_4_photos', NEW.salle_de_bains_salle_de_bain_4_photos_salle_de_bain,
-          'salle_de_bain_5_photos', NEW.salle_de_bains_salle_de_bain_5_photos_salle_de_bain,
-          'salle_de_bain_6_photos', NEW.salle_de_bains_salle_de_bain_6_photos_salle_de_bain,
-          
-          -- Section Cuisines (7 champs)
-          'cuisine1_cuisiniere_photo', NEW.cuisine_1_cuisiniere_photo,
-          'cuisine1_plaque_cuisson_photo', NEW.cuisine_1_plaque_cuisson_photo,
-          'cuisine1_four_photo', NEW.cuisine_1_four_photo,
-          'cuisine1_micro_ondes_photo', NEW.cuisine_1_micro_ondes_photo,
-          'cuisine1_lave_vaisselle_photo', NEW.cuisine_1_lave_vaisselle_photo,
-          'cuisine1_cafetiere_photo', NEW.cuisine_1_cafetiere_photo,
-          'cuisine2_photos_tiroirs_placards', NEW.cuisine_2_photos_tiroirs_placards,
-          
-          -- Section Salon/SAM (1 champ)
-          'salon_sam_photos', NEW.salon_sam_photos_salon_sam,
-          
-          -- Section Équipements Spéciaux/Extérieur (3 champs)
-          'exterieur_photos_espaces', NEW.equip_spe_ext_exterieur_photos,
-          'jacuzzi_photos_jacuzzi', NEW.equip_spe_ext_jacuzzi_photos,
-          'barbecue_photos', NEW.equip_spe_ext_barbecue_photos,
-          
-          -- Section Communs (1 champ)
-          'communs_photos_espaces', NEW.communs_photos_espaces_communs,
-          
-          -- Section Bébé (1 champ)
-          'bebe_photos_equipements', NEW.bebe_photos_equipements_bebe,
-          
-          -- Section Guide d'accès (2 champs)
-          'guide_acces_photos_etapes', NEW.guide_acces_photos_etapes,
-          'guide_acces_video_acces', NEW.guide_acces_video_acces,
-          
-          -- Section Sécurité (1 champ)
-          'securite_photos_equipements', NEW.securite_photos_equipements_securite
-        )
+        'media', media_final
       ),
       headers := '{"Content-Type": "application/json"}'::jsonb
     );
@@ -713,8 +694,9 @@ BEGIN
 END;
 $function$;
 
+
 -- Recréer le trigger
-CREATE TRIGGER fiche_completed_webhook
+CREATE TRIGGER fiche_any_update_webhook
   AFTER UPDATE ON public.fiches
   FOR EACH ROW
   EXECUTE FUNCTION notify_fiche_completed();
@@ -766,20 +748,20 @@ user-{user_id}/
 ## 🔄 **WORKFLOW COMPLET**
 
 ### **1. Création/Modification fiche**
-1. Utilisateur remplit formulaire (22 sections)
+1. Utilisateur remplit formulaire (23 sections)
 2. Upload photos via `PhotoUpload` → Supabase Storage
 3. URLs photos sauvegardées dans colonnes `TEXT[]`
 4. Génération PDF automatique → Storage
-5. URLs PDF sauvegardées dans `pdf_logement_url` et `pdf_menage_url`
+5. URLs PDF sauvegardées dans `pdf_logement_url` et `pdf_menage_url` de la table 'fiches'
 
 ### **2. Finalisation fiche**
 1. Bouton "Finaliser la fiche" → `UPDATE statut = 'Complété'`
 2. Trigger SQL déclenché → Webhook Make avec payload optimisé
-3. Make reçoit 40 champs structurés: photos + PDF + métadonnées
+3. Make reçoit paylod structuré: photos/PDF (58 champs) + métadonnées (11 champs)
 4. Organisation automatique Google Drive par sections
 
 ### **3. Avantages du nouveau système**
-- ✅ **Performance** : 40 champs ciblés vs 750 colonnes
+- ✅ **Performance** : 59 champs médias (+ 11 métadonnées) vs 750 colonnes
 - ✅ **Maintenabilité** : Structure claire et documentée
 - ✅ **Évolutivité** : Ajout facile de nouveaux champs photos
 - ✅ **Make.com** : Interface utilisable et workflow configurable
@@ -787,65 +769,112 @@ user-{user_id}/
 
 ---
 
+Voici la version complète et bien organisée en Markdown, basée sur ton dernier classement (59 champs médias) :
+
+---
+
 ## 📋 **LISTE COMPLÈTE DES CHAMPS MÉDIA**
 
 ### **Section Clefs (5 champs)**
-1. `clefs_emplacement_photo` - Photo de l'emplacement de la boîte
-2. `clefs_interphone_photo` - Photo de l'interphone  
-3. `clefs_tempo_gache_photo` - Photo du tempo-gâche
-4. `clefs_digicode_photo` - Photo du digicode
-5. `clefs_photos` - Photos/Vidéos des clefs physiques
+1. `clefs_emplacement_photo` – Photo de l’emplacement de la boîte à clefs
+2. `clefs_interphone_photo` – Photo de l’interphone
+3. `clefs_tempo_gache_photo` – Photo du tempo-gâche
+4. `clefs_digicode_photo` – Photo du digicode
+5. `clefs_photos` – Photos/Vidéos des clefs physiques
 
 ### **Section Équipements (4 champs)**
-6. `equipements_poubelle_photos` - Photos du local poubelle
-7. `equipements_disjoncteur_photos` - Photos du disjoncteur
-8. `equipements_vanne_eau_photos` - Photos de la vanne d'arrêt d'eau
-9. `equipements_chauffage_eau_photos` - Photos du système de chauffage d'eau
+6. `equipements_poubelle_photos` – Photos du local poubelle
+7. `equipements_disjoncteur_photos` – Photos du disjoncteur
+8. `equipements_vanne_eau_photos` – Photos de la vanne d’arrêt d’eau
+9. `equipements_chauffage_eau_photos` – Photos du chauffe-eau ou chaudière
 
-### **Section Gestion Linge (2 champs)**
-10. `linge_photos_linge` - Photos du linge
-11. `linge_emplacement_photos` - Photos de l'emplacement du stock
+### **Section Linge (2 champs)**
+10. `linge_photos_linge` – Photos du linge fourni
+11. `linge_emplacement_photos` – Photos de l’emplacement du linge
 
 ### **Section Chambres (6 champs)**
-12. `chambres_chambre_1_photos` - Photos chambre 1
-13. `chambres_chambre_2_photos` - Photos chambre 2
-14. `chambres_chambre_3_photos` - Photos chambre 3
-15. `chambres_chambre_4_photos` - Photos chambre 4
-16. `chambres_chambre_5_photos` - Photos chambre 5
-17. `chambres_chambre_6_photos` - Photos chambre 6
+12. `chambres_chambre_1_photos`
+13. `chambres_chambre_2_photos`
+14. `chambres_chambre_3_photos`
+15. `chambres_chambre_4_photos`
+16. `chambres_chambre_5_photos`
+17. `chambres_chambre_6_photos`
 
-### **Section Salles de Bains (6 champs)**
-18. `salle_de_bain_1_photos` - Photos salle de bain 1
-19. `salle_de_bain_2_photos` - Photos salle de bain 2
-20. `salle_de_bain_3_photos` - Photos salle de bain 3
-21. `salle_de_bain_4_photos` - Photos salle de bain 4
-22. `salle_de_bain_5_photos` - Photos salle de bain 5
-23. `salle_de_bain_6_photos` - Photos salle de bain 6
+### **Section Salles de bains (6 champs)**
+18. `salle_de_bain_1_photos`
+19. `salle_de_bain_2_photos`
+20. `salle_de_bain_3_photos`
+21. `salle_de_bain_4_photos`
+22. `salle_de_bain_5_photos`
+23. `salle_de_bain_6_photos`
 
-### **Section Cuisines (7 champs)**
-24. `cuisine1_cuisiniere_photo` - Photo cuisinière
-25. `cuisine1_plaque_cuisson_photo` - Photo plaque de cuisson  
-26. `cuisine1_four_photo` - Photo four
-27. `cuisine1_micro_ondes_photo` - Photo micro-ondes
-28. `cuisine1_lave_vaisselle_photo` - Photo lave-vaisselle
-29. `cuisine1_cafetiere_photo` - Photo cafetière
-30. `cuisine2_photos_tiroirs_placards` - Photos tiroirs et placards
+### **Section Cuisine 1 – Vidéos Tutos (14 champs)**
+24. `cuisine1_refrigerateur_video`
+25. `cuisine1_congelateur_video`
+26. `cuisine1_mini_refrigerateur_video`
+27. `cuisine1_cuisiniere_video`
+28. `cuisine1_plaque_cuisson_video`
+29. `cuisine1_four_video`
+30. `cuisine1_micro_ondes_video`
+31. `cuisine1_lave_vaisselle_video`
+32. `cuisine1_cafetiere_video`
+33. `cuisine1_bouilloire_video`
+34. `cuisine1_grille_pain_video`
+35. `cuisine1_blender_video`
+36. `cuisine1_cuiseur_riz_video`
+37. `cuisine1_machine_pain_video`
 
-### **Autres sections (9 champs)**
-31. `salon_sam_photos` - Photos salon/salle à manger
-32. `exterieur_photos_espaces` - Photos de l'extérieur
-33. `jacuzzi_photos_jacuzzi` - Photos du jacuzzi  
-34. `barbecue_photos` - Photos du barbecue
-35. `communs_photos_espaces` - Photos des espaces communs
-36. `bebe_photos_equipements` - Photos équipements bébé
-37. `guide_acces_photos_etapes` - Photos étapes guide d'accès
-38. `guide_acces_video_acces` - Vidéo guide d'accès
-39. `securite_photos_equipements` - Photos équipements sécurité
+### **Section Cuisine 1 – Photos (6 champs)**
+38. `cuisine1_cuisiniere_photo`
+39. `cuisine1_plaque_cuisson_photo`
+40. `cuisine1_four_photo`
+41. `cuisine1_micro_ondes_photo`
+42. `cuisine1_lave_vaisselle_photo`
+43. `cuisine1_cafetiere_photo`
 
-### **Visite logement (1 champ)**
-31. `visite_video_visite` - Tour générale du logement
+### **Section Cuisine 2 (1 champ)**
+44. `cuisine2_photos_tiroirs_placards` – Photos des tiroirs et placards
 
-**TOTAL : 40 champs photos/vidéos organisés par section**
+### **Section Salon (1 champ)**
+45. `salon_sam_photos` – Photos du salon / salle à manger
+
+### **Section Extérieur / Équipements Spéciaux (3 champs)**
+46. `exterieur_photos_espaces`
+47. `jacuzzi_photos_jacuzzi`
+48. `barbecue_photos`
+
+### **Section Piscine (1 champ)**
+49. `piscine_video` – Vidéo de fonctionnement de la piscine
+
+### **Section Espaces Communs (1 champ)**
+50. `communs_photos_espaces` – Photos des espaces communs
+
+
+### **Section Bébé (1 champ)**
+51. `bebe_photos_equipements` – Photos des équipements bébé
+
+### **Section Sécurité (1 champ)**
+52. `securite_photos_equipements` – Photos des détecteurs / équipements de sécurité
+
+
+### **Section Accès au logement (2 champs)**
+53. `guide_acces_photos_etapes` – Photos étape par étape
+54. `guide_acces_video_acces` – Vidéo d’accès
+
+### **Section Vidéo Visite Logement (1 champ)**
+55. `visite_video_visite` – Vidéo de visite générale
+
+
+### **Section Vidéos Tutoriels Divers (2 champs)**
+56. `equipements_video_acces_poubelle` – Vidéo tuto accès local poubelle
+57. `equipements_video_systeme_chauffage` – Vidéo tuto chauffage
+
+### **Section PDF générés (2 champs)**
+⚠️ *Ils ne sont pas dans `media`, mais transmis à part, dans `pdfs`*
+58. `pdf_logement_url` – Fiche logement (PDF)
+59. `pdf_menage_url` – Fiche ménage (PDF)
+
+**TOTAL : 59 champs photos/vidéos (+ PDF) organisés par section**
 
 ---
 
@@ -854,14 +883,16 @@ user-{user_id}/
 ### **Maintenance du trigger**
 - ❌ **Ne jamais** utiliser `to_jsonb(NEW)` qui envoie tout
 - ✅ **Toujours** utiliser `jsonb_build_object()` pour un payload structuré
-- 🔄 **Ajouter nouveaux champs** dans l'objet `media` si nécessaire
+- ✅ **Ajouter nouveaux champs** dans l'objet `media` si nécessaire
 
-### **Ajout de nouvelles sections avec photos**
+### **Ajout de nouveaux champs avec photos**
 1. Créer colonnes Supabase avec pattern `{section}_{champ}_photos TEXT[]`
 2. Ajouter champ dans `FormContext.jsx` 
-3. Intégrer `PhotoUpload` dans le composant section
+3. Mettre à jour le mappage bidirectionel dans `supbasbaseHelpers.jsx`
+4. Intégrer le composant `PhotoUpload.jsx` dans la section
 4. **Mettre à jour le trigger** avec le nouveau champ dans `media`
-5. Documenter dans cette spécification
+5. Tester l'envoi du payload dans Make
+6. Documenter dans cette spécification
 
 ### **Tests de validation**
 - ✅ Payload structure conforme au JSON schema
@@ -871,4 +902,4 @@ user-{user_id}/
 
 ---
 
-*📝 Document maintenu à jour - Dernière modification : 25 juillet 2025*
+*📝 Document maintenu à jour - Dernière modification : 01 août 2025*

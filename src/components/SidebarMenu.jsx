@@ -71,7 +71,7 @@ export default function SidebarMenu() {
                     onClick={() => handleClick("Mes fiches", -1)}
                   >
                     <LayoutDashboard className="w-4 h-4" />
-                    Mes fiches
+                    TABLEAU DE BORD
                   </div>
                 </div>
 
@@ -121,7 +121,7 @@ export default function SidebarMenu() {
             onClick={() => handleClick("Mes fiches", -1)}
           >
             <LayoutDashboard className="w-4 h-4" />
-            Mes fiches
+            TABLEAU DE BORD
           </div>
 
           <h2 className="font-semibold mb-4 text-white">Sections</h2>

@@ -352,12 +352,11 @@ export default function FicheClefs() {
                 <div>
                 <PhotoUpload 
                   fieldPath="section_clefs.clefs.photos"
-                  label="Photos/Vidéos des clefs"
+                  label="Photos des clefs"
                   multiple={true}
-                  maxFiles={5}
-                  acceptVideo={true}
+                  maxFiles={3}
+                  acceptVideo={false}
                 />
-                  <p className="text-xs text-gray-500 mt-1">Photos et vidéos acceptées - Plusieurs fichiers possibles</p>
                 </div>
 
                 <div>
