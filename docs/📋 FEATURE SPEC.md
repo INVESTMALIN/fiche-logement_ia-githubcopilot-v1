@@ -115,7 +115,7 @@ nombre_lits → section_logement.nombre_lits
 13. **Chambres** - Accordéons dynamiques + compteurs lits + équipements
 14. **Salle De Bains** - Accordéons dynamiques + équipements + WC séparé + accès
 15. **Cuisine 1** -
-16. **Cuisine 2**
+16. **Cuisine 2** -
 17. **Salon / SAM** -
 18. **Équip. Spé. / Extérieur** -
 19. **Communs** -

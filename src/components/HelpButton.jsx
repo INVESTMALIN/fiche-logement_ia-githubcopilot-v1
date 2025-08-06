@@ -5,15 +5,13 @@ export default function HelpButton() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('navigation')
 
+  // ✅ ONGLETS OPTIMISÉS : 8 → 6 onglets
   const tabs = [
     { id: 'navigation', label: 'Navigation' },
-    { id: 'statuts', label: 'Statuts des fiches' },
-    { id: 'menu', label: 'Menu contextuel' },
     { id: 'photos', label: 'Upload photos' },
     { id: 'pdf', label: 'Génération PDF' },
     { id: 'conseils', label: 'Conseils' },
-    { id: 'faq', label: 'FAQ' },
-    { id: 'contact', label: 'Contact' }
+    { id: 'support', label: 'Support' } // Merger FAQ + Contact
   ]
 
   const toggleModal = () => {
@@ -29,8 +27,14 @@ export default function HelpButton() {
       case 'navigation':
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900">Comment naviguer dans l'application</h3>
+            <h3 className="text-xl font-semibold text-gray-900">Navigation et gestion des fiches</h3>
+            
+            {/* Navigation de base */}
             <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <span className="text-blue-600">🧭</span>
+                Comment naviguer dans l'application
+              </h4>
               <p className="text-gray-700 mb-4">
                 L'application est organisée en 23 sections que vous devez remplir pour compléter une fiche logement :
               </p>
@@ -42,37 +46,242 @@ export default function HelpButton() {
                 <li>Sur mobile, utilisez le <strong>menu hamburger</strong> pour naviguer entre les sections</li>
               </ul>
             </div>
+
+            {/* Statuts des fiches (ex-onglet "statuts") */}
+            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="text-orange-600">📊</span>
+                Statuts des fiches
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
+                    <span className="font-semibold text-orange-900">Brouillon</span>
+                  </div>
+                  <p className="text-orange-800 text-sm mb-2">Fiche en cours de remplissage</p>
+                  <p className="text-orange-700 text-xs">• Modifiable à tout moment<br/>• Visible uniquement par vous</p>
+                </div>
+                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="font-semibold text-green-900">Complété</span>
+                  </div>
+                  <p className="text-green-800 text-sm mb-2">Fiche finalisée et transmise</p>
+                  <p className="text-green-700 text-xs">• PDF générés automatiquement<br/>• Envoyées sur le Drive d'équipe</p>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                    <span className="font-semibold text-gray-900">Archivé</span>
+                  </div>
+                  <p className="text-gray-800 text-sm mb-2">Fiche archivée</p>
+                  <p className="text-gray-700 text-xs">• Masquée de la liste principale<br/>• Restaurable si nécessaire</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu contextuel des fiches (ex-onglet "menu") */}
+            <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+              <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="text-blue-600">⚙️</span>
+                Menu contextuel des fiches
+              </h4>
+              <p className="text-gray-700 mb-4">
+                Sur chaque fiche du dashboard, cliquez sur les <strong>3 petits points</strong> pour accéder aux actions :
+              </p>
+              
+              <div className="space-y-4">
+                {/* Modifier */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-semibold text-sm">✏️</span>
+                    </div>
+                    <h5 className="font-semibold text-gray-900">Modifier</h5>
+                  </div>
+                  <p className="text-gray-600 text-sm">
+                    Ouvre la fiche pour continuer le remplissage ou corriger des informations.
+                  </p>
+                </div>
+
+                {/* Réaffecter */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <span className="text-purple-600 font-semibold text-sm">👥</span>
+                    </div>
+                    <h5 className="font-semibold text-gray-900">Réaffecter</h5>
+                  </div>
+                  <p className="text-gray-600 text-sm">
+                    Transférer la fiche à un autre coordinateur. Utile pour répartir le travail ou en cas d'absence.
+                  </p>
+                </div>
+
+                {/* Archiver */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-gray-600 font-semibold text-sm">📦</span>
+                    </div>
+                    <h5 className="font-semibold text-gray-900">Archiver</h5>
+                  </div>
+                  <p className="text-gray-600 text-sm">
+                    Masque la fiche de votre liste principale. Elle reste accessible dans l'onglet "Archivé".
+                  </p>
+                </div>
+
+                {/* Partager */}
+                <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 font-semibold text-sm">📤</span>
+                    </div>
+                    <h5 className="font-semibold text-gray-900">Partager</h5>
+                    <span className="bg-green-200 text-green-800 text-xs px-2 py-1 rounded-full">Fiches complétées uniquement</span>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">
+                    Envoie un récapitulatif de la fiche à quelqu'un pour consultation.
+                  </p>
+                  <div className="bg-white p-3 rounded border">
+                    <p className="text-gray-600 text-xs mb-2"><strong>Options de partage :</strong></p>
+                    <ul className="text-gray-600 text-xs space-y-1">
+                      <li>• <strong>Lien</strong> : Copie un lien à partager pour consultation</li>
+                      <li>• <strong>WhatsApp</strong> : Envoi direct sur WhatsApp</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )
       
-      case 'statuts':
+      case 'photos':
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900">Statuts des fiches</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
-                  <span className="font-semibold text-orange-900">Brouillon</span>
-                </div>
-                <p className="text-orange-800 text-sm mb-2">Fiche en cours de remplissage</p>
-                <p className="text-orange-700 text-xs">• Modifiable à tout moment<br/>• Visible uniquement par vous</p>
+            <h3 className="text-xl font-semibold text-gray-900">Upload de photos et vidéos</h3>
+            
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p className="text-blue-900 font-medium mb-3">
+                📱 L'application est optimisée pour la prise de photos directe sur mobile
+              </p>
+              <p className="text-blue-800 text-sm">
+                Utilisez votre smartphone ou tablette pour des résultats optimaux.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Prise de photos */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-blue-600">📸</span>
+                  Comment prendre des photos
+                </h4>
+                <ul className="text-gray-600 text-sm space-y-2">
+                  <li>• Cliquez sur <strong>"Prendre une photo"</strong> pour accéder à l'appareil photo</li>
+                  <li>• Ou choisissez <strong>"Sélectionner"</strong> pour accéder à votre galerie</li>
+                  <li>• Vous pouvez ajouter <strong>plusieurs photos</strong> dans chaque section</li>
+                  <li>• Les photos sont <strong>automatiquement compressées</strong> pour optimiser l'upload</li>
+                </ul>
               </div>
-              <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="font-semibold text-green-900">Complété</span>
-                </div>
-                <p className="text-green-800 text-sm mb-2">Fiche finalisée et transmise</p>
-                <p className="text-green-700 text-xs">• PDF générés automatiquement<br/>• Envoyées sur le Drive d'équipe</p>
+
+              {/* Upload vidéos */}
+              <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-purple-600">🎥</span>
+                  Vidéos (sections spécifiques)
+                </h4>
+                <p className="text-gray-600 text-sm mb-3">
+                  Les vidéos sont disponibles dans certaines sections uniquement :
+                </p>
+                <ul className="text-gray-600 text-sm space-y-1">
+                  <li>• <strong>Guide d'accès</strong> : pour expliquer l'accès au logement</li>
+                  <li>• <strong>Équipements</strong> : pour montrer l'utilisation d'appareils complexes</li>
+                  <li>• <strong>Cuisine</strong> : pour les modes d'emploi des électroménagers</li>
+                </ul>
               </div>
-              <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                  <span className="font-semibold text-gray-900">Archivé</span>
-                </div>
-                <p className="text-gray-800 text-sm mb-2">Fiche archivée</p>
-                <p className="text-gray-700 text-xs">• Masquée de la liste principale<br/>• Restaurable si nécessaire</p>
+
+              {/* Finalisation de la fiche */}
+              <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-red-600">🏁</span>
+                  Finalisation de la fiche
+                </h4>
+                <p className="text-gray-600 text-sm mb-2">
+                  Sur la dernière section (Sécurité), le bouton <strong>"Finaliser la fiche"</strong> :
+                </p>
+                <ul className="text-gray-600 text-sm space-y-1">
+                  <li>• <strong>Synchronise</strong> toutes vos photos et vidéos sur Google Drive</li>
+                  <li>• <strong>Change le statut</strong> en "Complété"</li>
+                  <li>• ⚠️ <strong>Action définitive</strong> : une seule finalisation possible par fiche</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )
+      
+      case 'pdf':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-gray-900">Génération de PDF</h3>
+            
+            <div className="bg-green-50 p-4 rounded-lg">
+              <p className="text-green-900 font-medium mb-2">
+                📄 Deux types de PDF sont générés automatiquement
+              </p>
+              <p className="text-green-800 text-sm">
+                Lors de la finalisation de votre fiche, l'application génère 2 PDF distincts selon les besoins.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* PDF Logement */}
+              <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-blue-600">🏠</span>
+                  PDF Logement (Complet)
+                </h4>
+                <p className="text-gray-600 text-sm mb-3">
+                  Contient toutes les informations de la fiche pour le propriétaire et l'équipe :
+                </p>
+                <ul className="text-gray-600 text-sm space-y-1">
+                  <li>• Informations propriétaire et logement</li>
+                  <li>• Détails accès, clefs, équipements</li>
+                  <li>• Photos et instructions d'utilisation</li>
+                  <li>• Informations réglementaires</li>
+                </ul>
+              </div>
+
+              {/* PDF Ménage */}
+              <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-purple-600">🧹</span>
+                  PDF Ménage (Filtré)
+                </h4>
+                <p className="text-gray-600 text-sm mb-3">
+                  Version allégée spécialement conçue pour l'équipe de ménage :
+                </p>
+                <ul className="text-gray-600 text-sm space-y-1">
+                  <li>• Accès et localisation des clefs</li>
+                  <li>• Plan et équipements de chaque pièce</li>
+                  <li>• Gestion linge et consommables</li>
+                  <li>• Équipements ménage (poubelle, parkings)</li>
+                </ul>
+              </div>
+
+              {/* Processus génération */}
+              <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-orange-600">⚙️</span>
+                  Processus de génération
+                </h4>
+                <ol className="text-gray-600 text-sm space-y-2 list-decimal list-inside">
+                  <li>Remplissez votre fiche complètement</li>
+                  <li>Sur la section Sécurité, cliquez <strong>"Générer la Fiche logement"</strong></li>
+                  <li>Les 2 PDF sont créés simultanément</li>
+                  <li>Vous pouvez télécharger le PDF logement pour vérification</li>
+                  <li>Cliquez <strong>"Finaliser la fiche"</strong> pour transmettre à l'équipe</li>
+                </ol>
               </div>
             </div>
           </div>
@@ -81,125 +290,118 @@ export default function HelpButton() {
       case 'conseils':
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900">Conseils pour bien remplir les fiches</h3>
-
-            {/* Photos de qualité */}
-            <div className="border border-green-200 rounded-lg p-4 bg-green-50">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-green-600">📸</span>
-                Photos de qualité
-              </h4>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• Prenez des photos <strong>nettes et bien éclairées</strong></li>
-                <li>• Vérifiez que tous les <strong>équipements sont visibles</strong></li>
-                <li>• Évitez les photos floues ou trop sombres</li>
-                <li>• Pour les vidéos : <strong>2-3 minutes maximum</strong> recommandées</li>
-              </ul>
-            </div>
-
-            {/* Navigation efficace */}
-            <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-blue-600">🧭</span>
-                Navigation efficace
-              </h4>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• Utilisez la <strong>barre latérale</strong> pour passer d'une section à l'autre</li>
-                <li>• Vous pouvez <strong>revenir en arrière</strong> à tout moment</li>
-                <li>• Les sections se remplissent <strong>dans l'ordre</strong> mais pas obligatoire</li>
-                <li>• Cliquez sur <strong>"Enregistrer"</strong> régulièrement</li>
-              </ul>
-            </div>
-
-            {/* Données importantes */}
-            <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-purple-600">📋</span>
-                Données importantes
-              </h4>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• <strong>Numéro de bien</strong> : Indispensable pour enregistrer</li>
-                <li>• <strong>Surface et capacité</strong> : Données essentielles pour les annonces</li>
-                <li>• <strong>Équipements</strong> : Soyez précis, ça impacte l'expérience client</li>
-              </ul>
-            </div>
-
-            {/* Finalisation */}
-            <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-orange-600">🏁</span>
-                Avant de finaliser
-              </h4>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• <strong>Relisez</strong> les informations importantes</li>
-                <li>• <strong>Vérifiez</strong> que toutes les photos sont présentes</li>
-                <li>• <strong>Générez</strong> le PDF AVANT finalisation</li>
-                <li>• Une fois finalisé, <strong>impossible de revenir en arrière</strong></li>
-              </ul>
-            </div>
-          </div>
-        )
-      
-      case 'faq':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900">Questions fréquentes</h3>
-
-            {/* Erreurs upload */}
-            <div className="border border-red-200 rounded-lg p-4">
-              <h4 className="font-semibold text-red-900 mb-2">❌ "Erreur lors de l'upload de photos"</h4>
-              <p className="text-gray-600 text-sm mb-2"><strong>Causes possibles :</strong></p>
-              <ul className="text-gray-600 text-sm space-y-1 mb-3">
-                <li>• Fichier trop volumineux (>20MB pour photos, >200MB pour vidéos)</li>
-                <li>• Format non supporté</li>
-                <li>• Connexion internet instable</li>
-              </ul>
-              <p className="text-green-700 text-sm"><strong>Solution :</strong> Réduisez la taille ou changez de réseau</p>
-            </div>
-
-            {/* Photos perdues */}
-            <div className="border border-red-200 rounded-lg p-4">
-              <h4 className="font-semibold text-red-900 mb-2">❌ "Mes photos ont disparu"</h4>
-              <p className="text-gray-600 text-sm mb-2"><strong>Cause :</strong></p>
-              <p className="text-gray-600 text-sm mb-3">Vous avez quitté l'application sans cliquer sur "Enregistrer"</p>
-              <p className="text-green-700 text-sm"><strong>Solution :</strong> Toujours sauvegarder avant de fermer</p>
-            </div>
-
-            {/* PDF ne se génère pas */}
-            <div className="border border-red-200 rounded-lg p-4">
-              <h4 className="font-semibold text-red-900 mb-2">❌ "Le PDF ne se génère pas"</h4>
-              <p className="text-gray-600 text-sm mb-2"><strong>Causes possibles :</strong></p>
-              <ul className="text-gray-600 text-sm space-y-1 mb-3">
-                <li>• Données manquantes dans la fiche</li>
-                <li>• Problème de connexion</li>
-                <li>• Trop de photos (génération lente)</li>
-              </ul>
-              <p className="text-green-700 text-sm"><strong>Solution :</strong> Patientez 10-15 secondes, rechargez si nécessaire</p>
-            </div>
-
-            {/* Impossible de finaliser */}
-            <div className="border border-red-200 rounded-lg p-4">
-              <h4 className="font-semibold text-red-900 mb-2">❌ "Impossible de finaliser la fiche"</h4>
-              <p className="text-gray-600 text-sm mb-2"><strong>Cause :</strong></p>
-              <p className="text-gray-600 text-sm mb-3">Données obligatoires manquantes (numéro de bien, surface, etc.)</p>
-              <p className="text-green-700 text-sm"><strong>Solution :</strong> Vérifiez les champs marqués en rouge</p>
-            </div>
-
-            {/* Page ne répond plus */}
-            <div className="border border-red-200 rounded-lg p-4">
-              <h4 className="font-semibold text-red-900 mb-2">❌ "La page ne répond plus"</h4>
-              <p className="text-gray-600 text-sm mb-3">Surtout sur mobile avec beaucoup de photos</p>
-              <p className="text-green-700 text-sm"><strong>Solution :</strong> Rechargez la page, vos données sauvegardées seront récupérées</p>
-            </div>
-          </div>
-        )
-      
-      case 'contact':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900">Contact et support</h3>
+            <h3 className="text-xl font-semibold text-gray-900">Conseils d'utilisation</h3>
             
-            {/* Auto-dépannage d'abord */}
+            <div className="space-y-4">
+              {/* Performance */}
+              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-green-600">⚡</span>
+                  Optimiser les performances
+                </h4>
+                <ul className="text-gray-600 text-sm space-y-2">
+                  <li>• <strong>Sauvegardez régulièrement</strong> votre progression avec le bouton "Enregistrer"</li>
+                  <li>• <strong>Évitez d'ouvrir plusieurs onglets</strong> de l'application simultanément</li>
+                  <li>• <strong>Fermez les autres applications</strong> sur mobile pour libérer de la mémoire</li>
+                  <li>• <strong>Utilisez une connexion WiFi stable</strong> pour l'upload des photos</li>
+                </ul>
+              </div>
+
+              {/* Qualité photos */}
+              <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-blue-600">📸</span>
+                  Qualité des photos
+                </h4>
+                <ul className="text-gray-600 text-sm space-y-2">
+                  <li>• <strong>Éclairage naturel</strong> : privilégiez la lumière du jour</li>
+                  <li>• <strong>Netteté</strong> : assurez-vous que les photos ne sont pas floues</li>
+                  <li>• <strong>Cadrage</strong> : montrez bien l'équipement ou la pièce dans son ensemble</li>
+                  <li>• <strong>Angles multiples</strong> : n'hésitez pas à prendre plusieurs photos du même élément</li>
+                </ul>
+              </div>
+
+              {/* Remplissage efficace */}
+              <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-purple-600">📝</span>
+                  Remplissage efficace
+                </h4>
+                <ul className="text-gray-600 text-sm space-y-2">
+                  <li>• <strong>Préparez votre visite</strong> : ayez le matériel nécessaire (mètre, bloc-notes)</li>
+                  <li>• <strong>Suivez l'ordre logique</strong> : commencez par l'accès, puis pièce par pièce</li>
+                  <li>• <strong>Soyez précis</strong> : détaillez les marques et modèles des équipements</li>
+                  <li>• <strong>Anticipez le ménage</strong> : notez les spécificités importantes pour l'équipe</li>
+                </ul>
+              </div>
+
+              {/* Erreurs fréquentes */}
+              <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-red-600">⚠️</span>
+                  Erreurs à éviter
+                </h4>
+                <ul className="text-gray-600 text-sm space-y-2">
+                  <li>• <strong>Ne pas sauvegarder</strong> avant de changer de section</li>
+                  <li>• <strong>Photos trop lourdes</strong> : l'app compresse automatiquement, mais évitez les vidéos longues</li>
+                  <li>• <strong>Informations incomplètes</strong> : les champs vides ralentissent le traitement</li>
+                  <li>• <strong>Finaliser trop tôt</strong> : vérifiez que tout est correct avant de finaliser</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )
+      
+      case 'support':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-gray-900">Support et dépannage</h3>
+            
+            {/* FAQ Section */}
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="text-blue-600">❓</span>
+                Questions fréquentes
+              </h4>
+              
+              <div className="space-y-4">
+                {/* Sauvegarde automatique */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <h5 className="font-semibold text-gray-900 mb-2">💾 "Mes données sont-elles sauvegardées automatiquement ?"</h5>
+                  <p className="text-gray-600 text-sm mb-3">
+                    Vos données sont sauvegardées en mémoire pendant que vous remplissez la fiche, mais pour une sauvegarde définitive en base de données, vous devez cliquer sur <strong>"Enregistrer"</strong>.
+                  </p>
+                  <p className="text-green-700 text-sm"><strong>Conseil :</strong> Sauvegardez après chaque section importante</p>
+                </div>
+
+                {/* Photos lourdes */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <h5 className="font-semibold text-gray-900 mb-2">📱 "L'upload de photos est lent"</h5>
+                  <p className="text-gray-600 text-sm mb-3">
+                    Normal avec une connexion mobile. Les photos sont compressées automatiquement, mais privilégiez le WiFi pour un upload plus rapide.
+                  </p>
+                  <p className="text-green-700 text-sm"><strong>Solution :</strong> Connectez-vous en WiFi si possible</p>
+                </div>
+
+                {/* Champs obligatoires */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                  <h5 className="font-semibold text-gray-900 mb-2">⚠️ "Je ne peux pas finaliser ma fiche"</h5>
+                  <p className="text-gray-600 text-sm mb-3">
+                    Certains champs sont obligatoires pour finaliser. Vérifiez les sections qui affichent des messages d'erreur en rouge.
+                  </p>
+                  <p className="text-green-700 text-sm"><strong>Solution :</strong> Vérifiez les champs marqués en rouge</p>
+                </div>
+
+                {/* Page ne répond plus */}
+                <div className="border border-red-200 rounded-lg p-4 bg-white">
+                  <h5 className="font-semibold text-red-900 mb-2">❌ "La page ne répond plus"</h5>
+                  <p className="text-gray-600 text-sm mb-3">Surtout sur mobile avec beaucoup de photos</p>
+                  <p className="text-green-700 text-sm"><strong>Solution :</strong> Rechargez la page, vos données sauvegardées seront récupérées</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Auto-dépannage */}
             <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
               <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <span className="text-orange-600">🔧</span>
@@ -220,7 +422,7 @@ export default function HelpButton() {
             <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
               <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <span className="text-blue-600">📧</span>
-                Si le problème persiste
+                Contact si le problème persiste
               </h4>
               <div className="bg-white p-4 rounded border border-blue-200">
                 <p className="text-blue-900 font-medium mb-3">
@@ -243,268 +445,28 @@ export default function HelpButton() {
                   <div className="bg-gray-50 p-3 rounded">
                     <p className="font-medium text-gray-900 text-sm mb-1">🔍 Description du problème</p>
                     <ul className="text-gray-600 text-xs space-y-1">
-                      <li>• <strong>Quand</strong> le problème se produit (quelle section fu formulaire)</li>
+                      <li>• <strong>Quand</strong> le problème se produit (quelle section du formulaire)</li>
                       <li>• <strong>Ce que</strong> vous essayiez de faire exactement</li>
-                      <li>• <strong>Message d'erreur</strong> affiché (copie exacte)</li>
-                      <li>• <strong>Comportement observé</strong> vs comportement attendu</li>
+                      <li>• <strong>Message d'erreur</strong> affiché (copie d'écran bienvenue)</li>
+                      <li>• <strong>Étapes</strong> de dépannage déjà tentées</li>
                     </ul>
                   </div>
                   
                   <div className="bg-gray-50 p-3 rounded">
-                    <p className="font-medium text-gray-900 text-sm mb-1">📸 Preuves visuelles</p>
+                    <p className="font-medium text-gray-900 text-sm mb-1">⏰ Contexte</p>
                     <ul className="text-gray-600 text-xs space-y-1">
-                      <li>• <strong>Captures d'écran</strong> du problème</li>
-                      <li>• <strong>Vidéo courte</strong> si le problème est difficile à expliquer</li>
-                      <li>• <strong>Console d'erreur</strong> (F12 > Console sur ordinateur)</li>
-                    </ul>
-                  </div>
-                  
-                  <div className="bg-gray-50 p-3 rounded">
-                    <p className="font-medium text-gray-900 text-sm mb-1">⚙️ Context technique</p>
-                    <ul className="text-gray-600 text-xs space-y-1">
-                      <li>• <strong>Connexion internet</strong> (WiFi/4G, débit si connu)</li>
-                      <li>• <strong>Heure</strong> du problème (pour vérifier les logs)</li>
-                      <li>• <strong>Étapes de dépannage</strong> déjà tentées</li>
-                      <li>• <strong>Fréquence</strong> (problème ponctuel ou récurrent)</li>
+                      <li>• <strong>Urgence</strong> : Normale / Urgente / Critique</li>
+                      <li>• <strong>Fréquence</strong> : Premier incident / Récurrent</li>
+                      <li>• <strong>Impact</strong> : Vous bloque / Ralentit / Mineur</li>
                     </ul>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Temps de réponse */}
-            <div className="border border-green-200 rounded-lg p-4 bg-green-50">
-              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                <span className="text-green-600">⏱️</span>
-                Délai de réponse
-              </h4>
-              <p className="text-gray-600 text-sm">
-                Réponse sous 24-48h ouvrées. Précisez <strong>Assistance: Fiche Logement</strong> dans l'objet de l'e-mail.
-              </p>
-            </div>
-          </div>
-        )
-      
-      case 'pdf':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900">Génération des PDF</h3>
-
-            {/* Où générer les PDF */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-blue-600">📄</span>
-                Où générer les PDF
-              </h4>
-              <p className="text-gray-600 text-sm">
-                Sur la dernière section <strong>(Sécurité)</strong>, utilisez le bouton <strong>Générer la fiche logement</strong> pour générer les 2 documents PDF.
-              </p>
-            </div>
-
-            {/* Types de PDF */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
-                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <span className="text-green-600">📋</span>
-                  Fiche Logement
-                </h4>
-                <ul className="text-gray-600 text-sm space-y-1">
-                  <li>• Document complet</li>
-                  <li>• <strong>Téléchargeable</strong> depuis l'app</li>
-                  <li>• Pour consultation et vérification</li>
-                </ul>
-              </div>
-              
-              <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
-                <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <span className="text-purple-600">🧹</span>
-                  Fiche Ménage
-                </h4>
-                <ul className="text-gray-600 text-sm space-y-1">
-                  <li>• Version spécialisée</li>
-                  <li>• <strong>Non téléchargeable</strong></li>
-                  <li>• Générée automatiquement</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Regénération possible */}
-            <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-blue-600">🔄</span>
-                Modifications et regénération
-              </h4>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• Si vous modifiez la fiche, vous pouvez <strong>regénérer les PDF</strong></li>
-                <li>• La génération crée <strong>toujours les 2 PDF</strong> en même temps</li>
-                <li>• Aucune limite avant la finalisation</li>
-              </ul>
-            </div>
-
-            {/* Finalisation - Action définitive */}
-            <div className="border border-red-200 rounded-lg p-4 bg-red-50">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-red-600">⚠️</span>
-                Finalisation - Action définitive
-              </h4>
-              <p className="text-gray-600 text-sm mb-2">
-                Une fois que vous cliquez sur <strong>"Finaliser la fiche"</strong> :
-              </p>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• Les 2 PDF sont <strong>envoyés vers Google Drive</strong></li>
-                <li>• Les données <strong>remontent dans Monday.com</strong></li>
-                <li>• ⚠️ <strong>Action irréversible</strong></li>
-              </ul>
-            </div>
-          </div>
-        )
-      
-      case 'photos':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900">Upload de photos et vidéos</h3>
-
-            {/* Comment ajouter des photos */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-blue-600">📷</span>
-                Comment ajouter des photos
-              </h4>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• Cliquez sur le bouton <strong>"Ajouter des photos"</strong> ou faites glisser vos fichiers</li>
-                <li>• Sur mobile : accès à l'<strong>appareil photo</strong> ou à la <strong>galerie</strong> selon les autorisations de votre téléphone</li>
-                <li>• Plusieurs photos acceptées selon la section (généralement 10 max)</li>
-              </ul>
-            </div>
-
-            {/* Formats acceptés */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-green-600">📁</span>
-                Formats acceptés
-              </h4>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• <strong>Photos</strong> : JPG, PNG, WEBP</li>
-                <li>• <strong>Vidéos</strong> : MP4, MOV (uniquement dans certaines sections)</li>
-              </ul>
-            </div>
-
-            {/* Limites de taille */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-orange-600">⚖️</span>
-                Limites de taille
-              </h4>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• <strong>Photos</strong> : 20 MB maximum par fichier</li>
-                <li>• <strong>Vidéos</strong> : 200 MB maximum par fichier</li>
-                <li>• <strong>Compression automatique</strong> des photos si elles sont trop lourdes</li>
-                <li>• <strong>Ne pas charger de photos en doublon,</strong> contentez-vous des photos utiles</li>
-              </ul>
-            </div>
-
-            {/* Où sont stockées vos photos */}
-            <div className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-yellow-600">💾</span>
-                Où sont stockées vos photos
-              </h4>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• <strong>Pendant la session</strong> : Sauvegardées temporairement dans l'application</li>
-                <li>• ⚠️ <strong>Important</strong> : Cliquez sur <strong>"Enregistrer"</strong> avant de quitter, sinon les photos seront perdues</li>
-                <li>• <strong>Sauvegarde possible</strong> : Vous pouvez cliquer sur "Enregistrer" à tout moment</li>
-                <li>• <strong>Après finalisation</strong> : Transférées automatiquement sur Google Drive</li>
-                <li>• <strong>Conservation</strong> : 30 jours dans l'application, puis disponibles uniquement sur Drive</li>
-              </ul>
-            </div>
-
-            {/* Finalisation de la fiche */}
-            <div className="border border-red-200 rounded-lg p-4 bg-red-50">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span className="text-red-600">🏁</span>
-                Finalisation de la fiche
-              </h4>
-              <p className="text-gray-600 text-sm mb-2">
-                Sur la dernière section (Sécurité), le bouton <strong>"Finaliser la fiche"</strong> :
-              </p>
-              <ul className="text-gray-600 text-sm space-y-1">
-                <li>• <strong>Synchronise</strong> toutes vos photos et vidéos sur Google Drive</li>
-                <li>• <strong>Change le statut</strong> en "Complété"</li>
-                <li>• ⚠️ <strong>Action définitive</strong> : une seule finalisation possible par fiche</li>
-              </ul>
-            </div>
-          </div>
-        )
-      
-      case 'menu':
-        return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-900">Menu contextuel des fiches</h3>
-            
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-gray-700 mb-4">
-                Sur chaque fiche du dashboard, cliquez sur les <strong>3 petits points</strong> pour accéder aux actions :
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {/* Modifier */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-semibold text-sm">✏️</span>
-                  </div>
-                  <h4 className="font-semibold text-gray-900">Modifier</h4>
-                </div>
-                <p className="text-gray-600 text-sm">
-                  Ouvre la fiche pour continuer le remplissage ou corriger des informations.
-                </p>
-              </div>
-
-              {/* Réaffecter */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <span className="text-purple-600 font-semibold text-sm">👥</span>
-                  </div>
-                  <h4 className="font-semibold text-gray-900">Réaffecter</h4>
-                </div>
-                <p className="text-gray-600 text-sm">
-                  Transférer la fiche à un autre coordinateur. Utile pour répartir le travail ou en cas d'absence.
-                </p>
-              </div>
-
-              {/* Archiver */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                    <span className="text-gray-600 font-semibold text-sm">📦</span>
-                  </div>
-                  <h4 className="font-semibold text-gray-900">Archiver</h4>
-                </div>
-                <p className="text-gray-600 text-sm">
-                  Masque la fiche de votre liste principale. Elle reste accessible dans l'onglet "Archivé".
-                </p>
-              </div>
-
-              {/* Partager */}
-              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-green-600 font-semibold text-sm">📤</span>
-                  </div>
-                  <h4 className="font-semibold text-gray-900">Partager</h4>
-                  <span className="bg-green-200 text-green-800 text-xs px-2 py-1 rounded-full">Fiches complétées uniquement</span>
-                </div>
-                <p className="text-gray-600 text-sm mb-3">
-                  Envoie un récapitulatif de la fiche à quelqu'un pour consultation.
-                </p>
-                <div className="bg-white p-3 rounded border">
-                  <p className="text-gray-600 text-xs mb-2"><strong>Options de partage :</strong></p>
-                  <ul className="text-gray-600 text-xs space-y-1">
-                    <li>• <strong>Lien</strong> : Copie un lien à partager pour consultation</li>
-                    <li>• <strong>WhatsApp</strong> : Envoi direct sur WhatsApp</li>
-                  </ul>
+                
+                <div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
+                  <p className="text-green-800 text-sm font-medium mb-1">✅ Réponse sous 24h garantie</p>
+                  <p className="text-green-700 text-xs">
+                    Pour les urgences, précisez "URGENT" dans l'objet du mail
+                  </p>
                 </div>
               </div>
             </div>
