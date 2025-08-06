@@ -683,7 +683,7 @@ export default function FicheEquipExterieur() {
                   <PhotoUpload 
                     fieldPath="section_equip_spe_exterieur.piscine_video"
                     label="Vidéo de la piscine"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />

@@ -343,17 +343,32 @@ const handleDeletePhoto = async (photoUrl, index) => {
         )}
       </div>
 
-      {/* Galerie photos existantes */}
-      {currentPhotos.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {currentPhotos.map((photoUrl, index) => (
+    {/* Galerie photos existantes */}
+    {currentPhotos.length > 0 && (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        {currentPhotos.map((photoUrl, index) => {
+          // Détecter si c'est une vidéo par l'extension
+          const isVideo = /\.(mp4|webm|ogg|mov|avi)$/i.test(photoUrl)
+          
+          return (
             <div key={index} className="relative group">
-              <img
-                src={photoUrl}
-                alt={`Photo ${index + 1}`}
-                className="w-full h-24 object-cover rounded-lg border shadow-sm"
-                loading="lazy"
-              />
+              {isVideo ? (
+                // Affichage icône vidéo
+                <div className="w-full h-24 bg-gray-800 rounded-lg border shadow-sm flex flex-col items-center justify-center text-white">
+                  <svg className="w-8 h-8 mb-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                  </svg>
+                  <span className="text-xs">Vidéo</span>
+                </div>
+              ) : (
+                // Affichage image normal
+                <img
+                  src={photoUrl}
+                  alt={`Photo ${index + 1}`}
+                  className="w-full h-24 object-cover rounded-lg border shadow-sm"
+                  loading="lazy"
+                />
+              )}
               
               {/* Bouton suppression */}
               <button
@@ -364,9 +379,11 @@ const handleDeletePhoto = async (photoUrl, index) => {
                 ×
               </button>
             </div>
-          ))}
-        </div>
-      )}
+          )
+        })}
+      </div>
+    )}
+
     </div>
   )
 }

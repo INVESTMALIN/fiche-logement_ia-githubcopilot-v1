@@ -150,7 +150,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.refrigerateur_video"
                     label="Réfrigérateur - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -180,7 +180,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.congelateur_video"
                     label="Congélateur - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -210,7 +210,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.mini_refrigerateur_video"
                     label="Mini réfrigérateur - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -292,7 +292,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.cuisiniere_video"
                     label="Cuisinière - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -373,7 +373,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.plaque_cuisson_video"
                     label="Plaque de cuisson - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -439,7 +439,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.four_video"
                     label="Four - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -477,7 +477,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.micro_ondes_video"
                     label="Four à micro-ondes - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -515,7 +515,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.lave_vaisselle_video"
                     label="Lave-vaisselle - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -585,7 +585,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.cafetiere_video"
                     label="Cafetière - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -671,7 +671,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.bouilloire_video"
                     label="Bouilloire électrique - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -700,7 +700,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.grille_pain_video"
                     label="Grille-pain - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -729,7 +729,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.blender_video"
                     label="Blender - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -758,7 +758,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.cuiseur_riz_video"
                     label="Cuiseur à riz - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />
@@ -787,7 +787,7 @@ export default function FicheCuisine1() {
                   <PhotoUpload 
                     fieldPath="section_cuisine_1.machine_pain_video"
                     label="Machine à pain - Vidéo d'utilisation"
-                    multiple={false}
+                    multiple={true}
                     maxFiles={1}
                     acceptVideo={true}
                   />

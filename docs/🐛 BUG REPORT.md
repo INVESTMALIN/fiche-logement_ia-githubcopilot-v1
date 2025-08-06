@@ -6,7 +6,7 @@
 
 ## 🚨 **BUG #001 - Affichage Boutons Radio sur iPhone**
 **Date :** 11 juillet 2025  
-**Gravité :** Low  
+**Gravité :** Faible  
 **Statut :** ✅ RÉSOLU  
 
 Les boutons radio ne s'affichent pas correctement sur **iPhone** (testé sur iPhone 12) :
@@ -179,7 +179,7 @@ export default function FicheEquipExterieur() {
 
 ## 🚨 **BUG #004 - Champs conditionnels gardent valeurs fantômes**
 **Date :** 15 juillet 2025  
-**Gravité :** High
+**Gravité :** Majeure
 **Statut :** ✅ RÉSOLU  
 
 ### **Symptômes**
@@ -245,7 +245,7 @@ Ce pattern peut être appliqué à d'autres sections avec champs conditionnels s
 
 ## 🚨 **BUG #005 - Payload Make ingérable (750 colonnes)**
 **Date :** 16 juillet 2025  
-**Gravité :** Medium  
+**Gravité :** Moyen  
 **Statut :** ✅ RÉSOLU  
 
 ### **Symptômes**
@@ -399,6 +399,40 @@ $function$;
 
 ---
 
+## 🚨 **BUG #006 - Erreur sauvegarde champs vidéo**
+**Date :** 06/08/2025  
+**Gravité :** Critique  
+**Statut :** ✅ RÉSOLU  
+
+### **Symptômes**
+- Erreur de sauvegarde lors d'upload de vidéos dans FicheCuisine1
+- Message PostgreSQL : `malformed array literal: "https://qwjgkqxemnpvlhwx..."`
+- Code erreur : `22P02` - "Array value must start with \"{\" or dimension information"
+- Sauvegarde fonctionne quand les champs vidéo sont vides
+
+### **Cause racine**
+PhotoUpload avec `multiple={false}` retourne une **string URL** au lieu d'un **array**, mais Supabase attend un type `TEXT[]` pour les champs vidéo.
+
+### **Solution finale**
+```javascript
+// ❌ AVANT - Causait l'erreur
+<PhotoUpload 
+  fieldPath="section_cuisine_1.refrigerateur_video"
+  multiple={false}  // ← Retourne string
+  maxFiles={1}
+  acceptVideo={true}
+/>
+
+// ✅ APRÈS - Fix appliqué
+<PhotoUpload 
+  fieldPath="section_cuisine_1.refrigerateur_video"
+  multiple={true}   // ← Force array même avec 1 fichier
+  maxFiles={1}
+  acceptVideo={true}
+/>
+```
+
+---
 ## 🔧 **Template pour nouveaux bugs**
 
 ```markdown

@@ -100,7 +100,7 @@ export default function FicheEquipements() {
                 <PhotoUpload 
                   fieldPath="section_equipements.video_acces_poubelle"
                   label="Faire une vidéo de l'accès au local poubelle"
-                  multiple={false}
+                  multiple={true}
                   maxFiles={1}
                   acceptVideo={true}
                 />
@@ -257,7 +257,7 @@ export default function FicheEquipements() {
                 <PhotoUpload 
                   fieldPath="section_equipements.video_systeme_chauffage"
                   label="Faire une vidéo du système de chauffage"
-                  multiple={false}
+                  multiple={true}
                   maxFiles={1}
                   acceptVideo={true}
                 />
