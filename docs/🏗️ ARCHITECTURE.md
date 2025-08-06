@@ -563,17 +563,15 @@ const USER_ROLES = {
 }
 
 // RLS Supabase
-CREATE POLICY "Coordinateur voir ses fiches" ON fiches 
-  FOR SELECT USING (user_id = auth.uid())
+-- Utilise la table profiles + fonction get_user_role()
+CREATE POLICY "super_admin_all_fiches" ON fiches
+  FOR ALL USING (get_user_role() = 'super_admin');
 
-CREATE POLICY "Super admin voir toutes fiches" ON fiches 
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM auth.users 
-      WHERE id = auth.uid() 
-      AND raw_user_meta_data->>'role' = 'super_admin'
-    )
-  )
+CREATE POLICY "coordinateur_own_fiches" ON fiches  
+  FOR ALL USING (
+    auth.uid() = user_id AND 
+    get_user_role() = 'coordinateur'
+  );
 ```
 
 ### **AuthContext**

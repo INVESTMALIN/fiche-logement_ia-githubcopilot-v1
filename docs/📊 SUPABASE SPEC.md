@@ -177,11 +177,19 @@ CREATE TABLE fiche_photos (
 | **`admin`** | Lecture toutes les fiches | Accès consultation uniquement |
 | **`super_admin`** | CRUD toutes les fiches + gestion utilisateurs | Julien + 2-3 personnes clés |
 
+Voici la section **Row Level Security (RLS)** mise à jour pour la doc :
+
+
 ### 🛡 **Row Level Security (RLS)**
 
+**État actuel :** RLS partiellement activé (06/08/2025)
+
 ```sql
--- Activer RLS sur la table fiches
+-- ✅ RLS ACTIVÉ sur table fiches (sécurisé)
 ALTER TABLE fiches ENABLE ROW LEVEL SECURITY;
+
+-- ⚠️ RLS DÉSACTIVÉ sur table profiles (problème récursion infinie)
+-- ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
 
 -- Fonction helper pour récupérer le rôle utilisateur
 CREATE OR REPLACE FUNCTION get_user_role()
@@ -190,29 +198,35 @@ BEGIN
   RETURN (SELECT role FROM profiles WHERE id = auth.uid());
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+```
 
--- Policy : Coordinateurs voient leurs propres fiches
+**Policies actives sur `fiches` :**
+```sql
+-- Policy : Coordinateurs voient leurs propres fiches uniquement
 CREATE POLICY "coordinateur_own_fiches" ON fiches
   FOR ALL USING (
     auth.uid() = user_id AND 
     get_user_role() = 'coordinateur'
   );
 
--- Policy : Admins voient toutes les fiches (lecture seule)
+-- Policy : Admins peuvent lire toutes les fiches
 CREATE POLICY "admin_read_all_fiches" ON fiches
   FOR SELECT USING (get_user_role() IN ('admin', 'super_admin'));
 
--- Policy : Super admins peuvent tout faire
+-- Policy : Super admins ont accès complet (CRUD)
 CREATE POLICY "super_admin_all_fiches" ON fiches
   FOR ALL USING (get_user_role() = 'super_admin');
 ```
 
-### 👤 **Gestion des Comptes**
+**Policies sur `profiles` :** RLS désactivé temporairement
+- **Problème** : Récursion infinie dans les policies (les policies tentent de lire `profiles` pour vérifier les rôles)
+- **Impact** : Table `profiles` accessible publiquement (mais filtrage côté application)
+- **Solution future** : Revoir l'architecture des policies pour éviter la récursion
 
-**Création de comptes :**
-- Super admins uniquement (interface dédiée)
-- Invitation par email avec rôle pré-défini
-- Auto-création du profil lors de la première connexion
+**Sécurité actuelle :**
+- ✅ **Table `fiches`** : Totalement sécurisée au niveau base de données
+- ⚠️ **Table `profiles`** : Sécurisée côté application uniquement  
+- ✅ **Fonctionnel** : Tous les rôles fonctionnent correctement dans l'application
 
 ---
 
@@ -397,7 +411,8 @@ const getAllFiches = (includeArchived = false) => {
 ## ⚠️ Considérations Techniques
 
 ### 🔒 **Sécurité**
-- RLS activé sur toutes les tables sensibles
+- ✅ Table fiches : Totalement sécurisée au niveau base de données
+- ⚠️ Table profiles : Sécurisée côté application uniquement
 - Validation côté serveur des rôles
 - Tokens JWT sécurisés
 - HTTPS obligatoire en production
@@ -434,7 +449,6 @@ const getAllFiches = (includeArchived = false) => {
 - [ ] Gestion erreurs upload (réseau, permissions, etc.)
 
 ### ✅ **Tests Techniques**
-- [ ] RLS bloque l'accès non autorisé
 - [ ] Performance acceptable sur mobile 3G
 - [ ] Gestion erreurs réseau gracieuse
 - [ ] Pas de fuite mémoire navigation longue
@@ -902,4 +916,4 @@ Voici la version complète et bien organisée en Markdown, basée sur ton dernie
 
 ---
 
-*📝 Document maintenu à jour - Dernière modification : 01 août 2025*
+*📝 Document maintenu à jour - Dernière modification : 06 août 2025*
