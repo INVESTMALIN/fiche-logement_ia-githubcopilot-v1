@@ -332,6 +332,7 @@ CREATE TRIGGER fiche_any_update_webhook
 - barbecue_photos
 - bebe_photos_equipements
 - securite_photos_equipements
+
 - refrigerateur_video
 - congelateur_video
 - mini_refrigerateur_video
@@ -346,6 +347,7 @@ CREATE TRIGGER fiche_any_update_webhook
 - blender_video
 - cuiseur_riz_video
 - machine_pain_video
+
 - video_acces_poubelle
 - video_systeme_chauffage
 - piscine_video

@@ -59,7 +59,7 @@ export default function HelpButton() {
                     <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
                     <span className="font-semibold text-orange-900">Brouillon</span>
                   </div>
-                  <p className="text-orange-800 text-sm mb-2">Fiche en cours de remplissage</p>
+                  <p className="text-orange-800 text-sm mb-2">Fiche non finalisée</p>
                   <p className="text-orange-700 text-xs">• Modifiable à tout moment<br/>• Visible uniquement par vous</p>
                 </div>
                 <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
@@ -68,14 +68,14 @@ export default function HelpButton() {
                     <span className="font-semibold text-green-900">Complété</span>
                   </div>
                   <p className="text-green-800 text-sm mb-2">Fiche finalisée et transmise</p>
-                  <p className="text-green-700 text-xs">• PDF générés automatiquement<br/>• Envoyées sur le Drive d'équipe</p>
+                  <p className="text-green-700 text-xs">• Photos enovyées sur le Drive<br/>• Consultable et partageable</p>
                 </div>
                 <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
                     <span className="font-semibold text-gray-900">Archivé</span>
                   </div>
-                  <p className="text-gray-800 text-sm mb-2">Fiche archivée</p>
+                  <p className="text-gray-800 text-sm mb-2">Fiche masquée</p>
                   <p className="text-gray-700 text-xs">• Masquée de la liste principale<br/>• Restaurable si nécessaire</p>
                 </div>
               </div>
@@ -178,10 +178,12 @@ export default function HelpButton() {
                   Comment prendre des photos
                 </h4>
                 <ul className="text-gray-600 text-sm space-y-2">
-                  <li>• Cliquez sur <strong>"Prendre une photo"</strong> pour accéder à l'appareil photo</li>
+                  <li>• Cliquez sur <strong>"Ajouter des photos"</strong> pour accéder à l'appareil photo</li>
                   <li>• Ou choisissez <strong>"Sélectionner"</strong> pour accéder à votre galerie</li>
                   <li>• Vous pouvez ajouter <strong>plusieurs photos</strong> dans chaque section</li>
                   <li>• Les photos sont <strong>automatiquement compressées</strong> pour optimiser l'upload</li>
+                  <li>• Assurez-vous d'avoir <strong>autorisé votre navigateur</strong> à prendre des photos</li>
+                  <li>• Le fonctionnement de cette fonctionnalité diffère selon les modèles de téléphone et le navigateur</li>
                 </ul>
               </div>
 
@@ -198,6 +200,7 @@ export default function HelpButton() {
                   <li>• <strong>Guide d'accès</strong> : pour expliquer l'accès au logement</li>
                   <li>• <strong>Équipements</strong> : pour montrer l'utilisation d'appareils complexes</li>
                   <li>• <strong>Cuisine</strong> : pour les modes d'emploi des électroménagers</li>
+                  <li>• <strong>Équipements spé.</strong> : pour montrer les équipements extérieurs</li>
                 </ul>
               </div>
 
@@ -213,7 +216,7 @@ export default function HelpButton() {
                 <ul className="text-gray-600 text-sm space-y-1">
                   <li>• <strong>Synchronise</strong> toutes vos photos et vidéos sur Google Drive</li>
                   <li>• <strong>Change le statut</strong> en "Complété"</li>
-                  <li>• ⚠️ <strong>Action définitive</strong> : une seule finalisation possible par fiche</li>
+                  <li>• <strong>Action définitive</strong> ⚠️  : une seule finalisation possible par fiche</li>
                 </ul>
               </div>
             </div>
@@ -227,10 +230,10 @@ export default function HelpButton() {
             
             <div className="bg-green-50 p-4 rounded-lg">
               <p className="text-green-900 font-medium mb-2">
-                📄 Deux types de PDF sont générés automatiquement
+                📄 Deux types de PDF sont générés simultanément
               </p>
               <p className="text-green-800 text-sm">
-                Lors de la finalisation de votre fiche, l'application génère 2 PDF distincts selon les besoins.
+                Lorsque vous avez fini de remplir votre fiche, cliquez sur <strong>Générer la Fiche logement (PDF)</strong>. Les deux Fiches (logement + ménage) seront générées simultanément et synchronisées sur le Drive et Monday. Vous pourrez télécharger une copie de la Fiche logement. La Fiche ménage ne sera pas disponible au téléchargement, mais sera bien envoyée sur le Drive, et remontera dans Monday.
               </p>
             </div>
 
@@ -247,7 +250,7 @@ export default function HelpButton() {
                 <ul className="text-gray-600 text-sm space-y-1">
                   <li>• Informations propriétaire et logement</li>
                   <li>• Détails accès, clefs, équipements</li>
-                  <li>• Photos et instructions d'utilisation</li>
+                  <li>• Aperçu cliquables des photos et instructions d'utilisation</li>
                   <li>• Informations réglementaires</li>
                 </ul>
               </div>
@@ -279,8 +282,8 @@ export default function HelpButton() {
                   <li>Remplissez votre fiche complètement</li>
                   <li>Sur la section Sécurité, cliquez <strong>"Générer la Fiche logement"</strong></li>
                   <li>Les 2 PDF sont créés simultanément</li>
-                  <li>Vous pouvez télécharger le PDF logement pour vérification</li>
-                  <li>Cliquez <strong>"Finaliser la fiche"</strong> pour transmettre à l'équipe</li>
+                  <li>Vous pouvez télécharger la Fiche logement pour vérification (optionnel)</li>
+                  <li>Cliquez <strong>"Finaliser la fiche"</strong> pour envoyer sur le Drive et Monday</li>
                 </ol>
               </div>
             </div>
@@ -457,15 +460,15 @@ export default function HelpButton() {
                     <ul className="text-gray-600 text-xs space-y-1">
                       <li>• <strong>Urgence</strong> : Normale / Urgente / Critique</li>
                       <li>• <strong>Fréquence</strong> : Premier incident / Récurrent</li>
-                      <li>• <strong>Impact</strong> : Vous bloque / Ralentit / Mineur</li>
+                      <li>• <strong>Impact</strong> : Esthétique / Ralentissement / Bloquant</li>
                     </ul>
                   </div>
                 </div>
                 
                 <div className="mt-4 p-3 bg-green-50 rounded border border-green-200">
-                  <p className="text-green-800 text-sm font-medium mb-1">✅ Réponse sous 24h garantie</p>
+                  <p className="text-green-800 text-sm font-medium mb-1">✅ Réponse sous 24-48h</p>
                   <p className="text-green-700 text-xs">
-                    Pour les urgences, précisez "URGENT" dans l'objet du mail
+                    Pour les urgences, précisez <strong>URGENT</strong> dans l'objet du mail
                   </p>
                 </div>
               </div>
