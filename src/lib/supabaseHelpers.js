@@ -383,6 +383,8 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_1_equipements_autre: formData.section_chambres?.chambre_1?.equipements_autre ?? null,
     chambres_chambre_1_equipements_autre_details: formData.section_chambres?.chambre_1?.equipements_autre_details || null,
     chambres_chambre_1_photos_chambre: formData.section_chambres?.chambre_1?.photos_chambre || [],
+    chambres_chambre_1_elements_abimes: formData.section_chambres?.chambre_1?.elements_abimes ?? null,
+    chambres_chambre_1_elements_abimes_photos: formData.section_chambres?.chambre_1?.elements_abimes_photos || [],
 
     // CHAMBRE 2
     chambres_chambre_2_nom_description: formData.section_chambres?.chambre_2?.nom_description || null,
@@ -412,6 +414,8 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_2_equipements_autre: formData.section_chambres?.chambre_2?.equipements_autre ?? null,
     chambres_chambre_2_equipements_autre_details: formData.section_chambres?.chambre_2?.equipements_autre_details || null,
     chambres_chambre_2_photos_chambre: formData.section_chambres?.chambre_2?.photos_chambre || [],
+    chambres_chambre_2_elements_abimes: formData.section_chambres?.chambre_2?.elements_abimes ?? null,
+    chambres_chambre_2_elements_abimes_photos: formData.section_chambres?.chambre_2?.elements_abimes_photos || [],
 
     // CHAMBRE 3
     chambres_chambre_3_nom_description: formData.section_chambres?.chambre_3?.nom_description || null,
@@ -441,6 +445,8 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_3_equipements_autre: formData.section_chambres?.chambre_3?.equipements_autre ?? null,
     chambres_chambre_3_equipements_autre_details: formData.section_chambres?.chambre_3?.equipements_autre_details || null,
     chambres_chambre_3_photos_chambre: formData.section_chambres?.chambre_3?.photos_chambre || [],
+    chambres_chambre_3_elements_abimes: formData.section_chambres?.chambre_3?.elements_abimes ?? null,
+    chambres_chambre_3_elements_abimes_photos: formData.section_chambres?.chambre_3?.elements_abimes_photos || [],
 
     // CHAMBRE 4
     chambres_chambre_4_nom_description: formData.section_chambres?.chambre_4?.nom_description || null,
@@ -470,6 +476,8 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_4_equipements_autre: formData.section_chambres?.chambre_4?.equipements_autre ?? null,
     chambres_chambre_4_equipements_autre_details: formData.section_chambres?.chambre_4?.equipements_autre_details || null,
     chambres_chambre_4_photos_chambre: formData.section_chambres?.chambre_4?.photos_chambre || [],
+    chambres_chambre_4_elements_abimes: formData.section_chambres?.chambre_4?.elements_abimes ?? null,
+    chambres_chambre_4_elements_abimes_photos: formData.section_chambres?.chambre_4?.elements_abimes_photos || [],
 
     // CHAMBRE 5
     chambres_chambre_5_nom_description: formData.section_chambres?.chambre_5?.nom_description || null,
@@ -499,6 +507,8 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_5_equipements_autre: formData.section_chambres?.chambre_5?.equipements_autre ?? null,
     chambres_chambre_5_equipements_autre_details: formData.section_chambres?.chambre_5?.equipements_autre_details || null,
     chambres_chambre_5_photos_chambre: formData.section_chambres?.chambre_5?.photos_chambre || [],
+    chambres_chambre_5_elements_abimes: formData.section_chambres?.chambre_5?.elements_abimes ?? null,
+    chambres_chambre_5_elements_abimes_photos: formData.section_chambres?.chambre_5?.elements_abimes_photos || [],
 
     // CHAMBRE 6
     chambres_chambre_6_nom_description: formData.section_chambres?.chambre_6?.nom_description || null,
@@ -528,8 +538,10 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_6_equipements_autre: formData.section_chambres?.chambre_6?.equipements_autre ?? null,
     chambres_chambre_6_equipements_autre_details: formData.section_chambres?.chambre_6?.equipements_autre_details || null,
     chambres_chambre_6_photos_chambre: formData.section_chambres?.chambre_6?.photos_chambre || [],
+    chambres_chambre_6_elements_abimes: formData.section_chambres?.chambre_6?.elements_abimes ?? null,
+    chambres_chambre_6_elements_abimes_photos: formData.section_chambres?.chambre_6?.elements_abimes_photos || [],
 
-// Section Salle de Bains (96 champs)
+    // Section Salle de Bains (96 champs)
     // SALLE DE BAIN 1
     salle_de_bains_salle_de_bain_1_nom_description: formData.section_salle_de_bains?.salle_de_bain_1?.nom_description || null,
     salle_de_bains_salle_de_bain_1_equipements_douche: formData.section_salle_de_bains?.salle_de_bain_1?.equipements_douche ?? null,
@@ -547,6 +559,8 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_1_wc_separe: formData.section_salle_de_bains?.salle_de_bain_1?.wc_separe ?? null,
     salle_de_bains_salle_de_bain_1_acces: formData.section_salle_de_bains?.salle_de_bain_1?.acces || null,
     salle_de_bains_salle_de_bain_1_photos_salle_de_bain: formData.section_salle_de_bains?.salle_de_bain_1?.photos_salle_de_bain || [],
+    salle_de_bains_salle_de_bain_1_elements_abimes: formData.section_salle_de_bains?.salle_de_bain_1?.elements_abimes ?? null,
+    salle_de_bains_salle_de_bain_1_elements_abimes_photos: formData.section_salle_de_bains?.salle_de_bain_1?.elements_abimes_photos || [],
 
     // SALLE DE BAIN 2
     salle_de_bains_salle_de_bain_2_nom_description: formData.section_salle_de_bains?.salle_de_bain_2?.nom_description || null,
@@ -565,6 +579,8 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_2_wc_separe: formData.section_salle_de_bains?.salle_de_bain_2?.wc_separe ?? null,
     salle_de_bains_salle_de_bain_2_acces: formData.section_salle_de_bains?.salle_de_bain_2?.acces || null,
     salle_de_bains_salle_de_bain_2_photos_salle_de_bain: formData.section_salle_de_bains?.salle_de_bain_2?.photos_salle_de_bain || [],
+    salle_de_bains_salle_de_bain_2_elements_abimes: formData.section_salle_de_bains?.salle_de_bain_2?.elements_abimes ?? null,
+    salle_de_bains_salle_de_bain_2_elements_abimes_photos: formData.section_salle_de_bains?.salle_de_bain_2?.elements_abimes_photos || [],
 
     // SALLE DE BAIN 3
     salle_de_bains_salle_de_bain_3_nom_description: formData.section_salle_de_bains?.salle_de_bain_3?.nom_description || null,
@@ -583,6 +599,8 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_3_wc_separe: formData.section_salle_de_bains?.salle_de_bain_3?.wc_separe ?? null,
     salle_de_bains_salle_de_bain_3_acces: formData.section_salle_de_bains?.salle_de_bain_3?.acces || null,
     salle_de_bains_salle_de_bain_3_photos_salle_de_bain: formData.section_salle_de_bains?.salle_de_bain_3?.photos_salle_de_bain || [],
+    salle_de_bains_salle_de_bain_3_elements_abimes: formData.section_salle_de_bains?.salle_de_bain_3?.elements_abimes ?? null,
+    salle_de_bains_salle_de_bain_3_elements_abimes_photos: formData.section_salle_de_bains?.salle_de_bain_3?.elements_abimes_photos || [],
 
     // SALLE DE BAIN 4
     salle_de_bains_salle_de_bain_4_nom_description: formData.section_salle_de_bains?.salle_de_bain_4?.nom_description || null,
@@ -601,6 +619,8 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_4_wc_separe: formData.section_salle_de_bains?.salle_de_bain_4?.wc_separe ?? null,
     salle_de_bains_salle_de_bain_4_acces: formData.section_salle_de_bains?.salle_de_bain_4?.acces || null,
     salle_de_bains_salle_de_bain_4_photos_salle_de_bain: formData.section_salle_de_bains?.salle_de_bain_4?.photos_salle_de_bain || [],
+    salle_de_bains_salle_de_bain_4_elements_abimes: formData.section_salle_de_bains?.salle_de_bain_4?.elements_abimes ?? null,
+    salle_de_bains_salle_de_bain_4_elements_abimes_photos: formData.section_salle_de_bains?.salle_de_bain_4?.elements_abimes_photos || [],
 
     // SALLE DE BAIN 5
     salle_de_bains_salle_de_bain_5_nom_description: formData.section_salle_de_bains?.salle_de_bain_5?.nom_description || null,
@@ -619,6 +639,8 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_5_wc_separe: formData.section_salle_de_bains?.salle_de_bain_5?.wc_separe ?? null,
     salle_de_bains_salle_de_bain_5_acces: formData.section_salle_de_bains?.salle_de_bain_5?.acces || null,
     salle_de_bains_salle_de_bain_5_photos_salle_de_bain: formData.section_salle_de_bains?.salle_de_bain_5?.photos_salle_de_bain || [],
+    salle_de_bains_salle_de_bain_5_elements_abimes: formData.section_salle_de_bains?.salle_de_bain_5?.elements_abimes ?? null,
+    salle_de_bains_salle_de_bain_5_elements_abimes_photos: formData.section_salle_de_bains?.salle_de_bain_5?.elements_abimes_photos || [],
 
     // SALLE DE BAIN 6
     salle_de_bains_salle_de_bain_6_nom_description: formData.section_salle_de_bains?.salle_de_bain_6?.nom_description || null,
@@ -637,6 +659,8 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_6_wc_separe: formData.section_salle_de_bains?.salle_de_bain_6?.wc_separe ?? null,
     salle_de_bains_salle_de_bain_6_acces: formData.section_salle_de_bains?.salle_de_bain_6?.acces || null,
     salle_de_bains_salle_de_bain_6_photos_salle_de_bain: formData.section_salle_de_bains?.salle_de_bain_6?.photos_salle_de_bain || [],
+    salle_de_bains_salle_de_bain_6_elements_abimes: formData.section_salle_de_bains?.salle_de_bain_6?.elements_abimes ?? null,
+    salle_de_bains_salle_de_bain_6_elements_abimes_photos: formData.section_salle_de_bains?.salle_de_bain_6?.elements_abimes_photos || [],
 
     // Section Cuisine 1
     cuisine_1_equipements_refrigerateur: formData.section_cuisine_1?.equipements_refrigerateur ?? null,
@@ -738,6 +762,10 @@ export const mapFormDataToSupabase = (formData) => {
     // MACHINE À PAIN - Champs conditionnels
     cuisine_1_machine_pain_instructions: formData.section_cuisine_1?.machine_pain_instructions || null,
     cuisine_1_machine_pain_video: formData.section_cuisine_1?.machine_pain_video ?? [],
+   
+    // 🍳 CUISINE 1 - Éléments abîmés (2 champs)
+    cuisine_1_elements_abimes: formData.section_cuisine_1?.elements_abimes ?? null,
+    cuisine_1_elements_abimes_photos: formData.section_cuisine_1?.elements_abimes_photos || [],
 
     // Section Cuisine 2 - Ustensiles
     // VAISSELLE (4 compteurs)
@@ -840,6 +868,14 @@ export const mapFormDataToSupabase = (formData) => {
     // Nombre places table (obligatoire)
     salon_sam_nombre_places_table: formData.section_salon_sam?.nombre_places_table ? parseInt(formData.section_salon_sam.nombre_places_table) : null,
 
+    // 🛋️ SALON - Éléments abîmés (2 champs)
+    salon_sam_salon_elements_abimes: formData.section_salon_sam?.salon_elements_abimes ?? null,
+    salon_sam_salon_elements_abimes_photos: formData.section_salon_sam?.salon_elements_abimes_photos || [],
+    
+    // 🍽️ SALLE À MANGER - Éléments abîmés (2 champs)
+    salon_sam_salle_manger_elements_abimes: formData.section_salon_sam?.salle_manger_elements_abimes ?? null,
+    salon_sam_salle_manger_elements_abimes_photos: formData.section_salon_sam?.salle_manger_elements_abimes_photos || [],
+    
     // Section Équipements Spécifiques et Extérieurs
     // CHAMPS RACINES
     equip_spe_ext_dispose_exterieur: formData.section_equip_spe_exterieur?.dispose_exterieur ?? null,
@@ -906,6 +942,15 @@ export const mapFormDataToSupabase = (formData) => {
     equip_spe_ext_cuisine_ext_superficie: formData.section_equip_spe_exterieur?.cuisine_ext_superficie || null,
     equip_spe_ext_cuisine_ext_type: formData.section_equip_spe_exterieur?.cuisine_ext_type || null,
     equip_spe_ext_cuisine_ext_caracteristiques: formData.section_equip_spe_exterieur?.cuisine_ext_caracteristiques || [],
+
+    equip_spe_ext_garage_elements_abimes: formData.section_equip_spe_exterieur?.garage_elements_abimes ?? null,
+    equip_spe_ext_garage_elements_abimes_photos: formData.section_equip_spe_exterieur?.garage_elements_abimes_photos || [],
+    
+    equip_spe_ext_buanderie_elements_abimes: formData.section_equip_spe_exterieur?.buanderie_elements_abimes ?? null,
+    equip_spe_ext_buanderie_elements_abimes_photos: formData.section_equip_spe_exterieur?.buanderie_elements_abimes_photos || [],
+    
+    equip_spe_ext_autres_pieces_elements_abimes: formData.section_equip_spe_exterieur?.autres_pieces_elements_abimes ?? null,
+    equip_spe_ext_autres_pieces_elements_abimes_photos: formData.section_equip_spe_exterieur?.autres_pieces_elements_abimes_photos || [],
 
     // Section Communs
     communs_dispose_espaces_communs: formData.section_communs?.dispose_espaces_communs ?? null,
@@ -1396,7 +1441,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_1_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_1_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_1_equipements_autre_details || "",
-        photos_chambre: supabaseData.chambres_chambre_1_photos_chambre || []
+        photos_chambre: supabaseData.chambres_chambre_1_photos_chambre || [],
+        elements_abimes: supabaseData.chambres_chambre_1_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.chambres_chambre_1_elements_abimes_photos || []
       },
       
       chambre_2: {
@@ -1426,7 +1473,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_2_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_2_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_2_equipements_autre_details || "",
-        photos_chambre: supabaseData.chambres_chambre_2_photos_chambre || []
+        photos_chambre: supabaseData.chambres_chambre_2_photos_chambre || [],
+        elements_abimes: supabaseData.chambres_chambre_2_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.chambres_chambre_2_elements_abimes_photos || []
       },
       
       chambre_3: {
@@ -1456,7 +1505,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_3_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_3_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_3_equipements_autre_details || "",
-        photos_chambre: supabaseData.chambres_chambre_3_photos_chambre || []
+        photos_chambre: supabaseData.chambres_chambre_3_photos_chambre || [],
+        elements_abimes: supabaseData.chambres_chambre_3_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.chambres_chambre_3_elements_abimes_photos || []
       },
       
       chambre_4: {
@@ -1486,7 +1537,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_4_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_4_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_4_equipements_autre_details || "",
-        photos_chambre: supabaseData.chambres_chambre_4_photos_chambre || []
+        photos_chambre: supabaseData.chambres_chambre_4_photos_chambre || [],
+        elements_abimes: supabaseData.chambres_chambre_4_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.chambres_chambre_4_elements_abimes_photos || []
       },
       
       chambre_5: {
@@ -1516,7 +1569,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_5_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_5_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_5_equipements_autre_details || "",
-        photos_chambre: supabaseData.chambres_chambre_5_photos_chambre || []
+        photos_chambre: supabaseData.chambres_chambre_5_photos_chambre || [],
+        elements_abimes: supabaseData.chambres_chambre_5_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.chambres_chambre_5_elements_abimes_photos || []
       },
       
       chambre_6: {
@@ -1546,7 +1601,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_6_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_6_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_6_equipements_autre_details || "",
-        photos_chambre: supabaseData.chambres_chambre_6_photos_chambre || []
+        photos_chambre: supabaseData.chambres_chambre_6_photos_chambre || [],
+        elements_abimes: supabaseData.chambres_chambre_6_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.chambres_chambre_6_elements_abimes_photos || []
       }
     },
     section_salle_de_bains: {
@@ -1566,7 +1623,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_1_equipements_autre_details || "",
         wc_separe: supabaseData.salle_de_bains_salle_de_bain_1_wc_separe ?? null,
         acces: supabaseData.salle_de_bains_salle_de_bain_1_acces || "",
-        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_1_photos_salle_de_bain || []
+        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_1_photos_salle_de_bain || [],
+        elements_abimes: supabaseData.salle_de_bains_salle_de_bain_1_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_1_elements_abimes_photos || []
       },
       
       salle_de_bain_2: {
@@ -1585,7 +1644,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_2_equipements_autre_details || "",
         wc_separe: supabaseData.salle_de_bains_salle_de_bain_2_wc_separe ?? null,
         acces: supabaseData.salle_de_bains_salle_de_bain_2_acces || "",
-        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_2_photos_salle_de_bain || []
+        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_2_photos_salle_de_bain || [],
+        elements_abimes: supabaseData.salle_de_bains_salle_de_bain_2_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_2_elements_abimes_photos || []
       },
       
       salle_de_bain_3: {
@@ -1604,7 +1665,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_3_equipements_autre_details || "",
         wc_separe: supabaseData.salle_de_bains_salle_de_bain_3_wc_separe ?? null,
         acces: supabaseData.salle_de_bains_salle_de_bain_3_acces || "",
-        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_3_photos_salle_de_bain || []
+        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_3_photos_salle_de_bain || [],
+        elements_abimes: supabaseData.salle_de_bains_salle_de_bain_3_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_3_elements_abimes_photos || []
       },
       
       salle_de_bain_4: {
@@ -1623,7 +1686,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_4_equipements_autre_details || "",
         wc_separe: supabaseData.salle_de_bains_salle_de_bain_4_wc_separe ?? null,
         acces: supabaseData.salle_de_bains_salle_de_bain_4_acces || "",
-        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_4_photos_salle_de_bain || []
+        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_4_photos_salle_de_bain || [],
+        elements_abimes: supabaseData.salle_de_bains_salle_de_bain_4_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_4_elements_abimes_photos || []
       },
       
       salle_de_bain_5: {
@@ -1642,7 +1707,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_5_equipements_autre_details || "",
         wc_separe: supabaseData.salle_de_bains_salle_de_bain_5_wc_separe ?? null,
         acces: supabaseData.salle_de_bains_salle_de_bain_5_acces || "",
-        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_5_photos_salle_de_bain || []
+        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_5_photos_salle_de_bain || [],
+        elements_abimes: supabaseData.salle_de_bains_salle_de_bain_5_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_5_elements_abimes_photos || []
       },
       
       salle_de_bain_6: {
@@ -1661,7 +1728,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_6_equipements_autre_details || "",
         wc_separe: supabaseData.salle_de_bains_salle_de_bain_6_wc_separe ?? null,
         acces: supabaseData.salle_de_bains_salle_de_bain_6_acces || "",
-        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_6_photos_salle_de_bain || []
+        photos_salle_de_bain: supabaseData.salle_de_bains_salle_de_bain_6_photos_salle_de_bain || [],
+        elements_abimes: supabaseData.salle_de_bains_salle_de_bain_6_elements_abimes ?? null,
+        elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_6_elements_abimes_photos || []
       }
     },
     section_cuisine_1: {
@@ -1764,7 +1833,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
     
       // MACHINE À PAIN - Champs conditionnels
       machine_pain_instructions: supabaseData.cuisine_1_machine_pain_instructions || "",
-      machine_pain_video: supabaseData.cuisine_1_machine_pain_video ?? []
+      machine_pain_video: supabaseData.cuisine_1_machine_pain_video ?? [],
+
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: supabaseData.cuisine_1_elements_abimes ?? null,
+      elements_abimes_photos: supabaseData.cuisine_1_elements_abimes_photos || []      
     },
 
     section_cuisine_2: {
@@ -1867,7 +1940,15 @@ export const mapSupabaseToFormData = (supabaseData) => {
       photos_salon_sam: supabaseData.salon_sam_photos_salon_sam || [],
       
       // Nombre places table (obligatoire)
-      nombre_places_table: supabaseData.salon_sam_nombre_places_table?.toString() || ""
+      nombre_places_table: supabaseData.salon_sam_nombre_places_table?.toString() || "",
+
+       // 🆕 ÉLÉMENTS ABÎMÉS - SALON
+       salon_elements_abimes: supabaseData.salon_sam_salon_elements_abimes ?? null,
+       salon_elements_abimes_photos: supabaseData.salon_sam_salon_elements_abimes_photos || [],
+       
+       // 🆕 ÉLÉMENTS ABÎMÉS - SALLE À MANGER  
+       salle_manger_elements_abimes: supabaseData.salon_sam_salle_manger_elements_abimes ?? null,
+       salle_manger_elements_abimes_photos: supabaseData.salon_sam_salle_manger_elements_abimes_photos || []     
     },
 
     section_equip_spe_exterieur: {
@@ -1935,7 +2016,13 @@ export const mapSupabaseToFormData = (supabaseData) => {
       cuisine_ext_entretien_qui: supabaseData.equip_spe_ext_cuisine_ext_entretien_qui || "",
       cuisine_ext_superficie: supabaseData.equip_spe_ext_cuisine_ext_superficie || "",
       cuisine_ext_type: supabaseData.equip_spe_ext_cuisine_ext_type || "",
-      cuisine_ext_caracteristiques: supabaseData.equip_spe_ext_cuisine_ext_caracteristiques || []
+      cuisine_ext_caracteristiques: supabaseData.equip_spe_ext_cuisine_ext_caracteristiques || [],
+      garage_elements_abimes: supabaseData.equip_spe_ext_garage_elements_abimes ?? null,
+      garage_elements_abimes_photos: supabaseData.equip_spe_ext_garage_elements_abimes_photos || [],
+      buanderie_elements_abimes: supabaseData.equip_spe_ext_buanderie_elements_abimes ?? null,
+      buanderie_elements_abimes_photos: supabaseData.equip_spe_ext_buanderie_elements_abimes_photos || [],
+      autres_pieces_elements_abimes: supabaseData.equip_spe_ext_autres_pieces_elements_abimes ?? null,
+      autres_pieces_elements_abimes_photos: supabaseData.equip_spe_ext_autres_pieces_elements_abimes_photos || []
     },
 
 

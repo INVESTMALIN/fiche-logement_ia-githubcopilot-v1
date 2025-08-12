@@ -796,6 +796,62 @@ export default function FicheCuisine1() {
             )}
 
           </div>
+            {/* 🆕 ÉLÉMENTS ABÎMÉS - À ajouter tout en bas avant les boutons navigation */}
+            <div className="bg-white rounded-xl p-6 shadow mb-6">
+              <h2 className="text-base font-semibold mb-4">Éléments abîmés dans la cuisine</h2>
+              
+              <div className="mb-6">
+                <label className="block font-semibold mb-3">
+                  Photos de tous les éléments abîmés, cassés ou détériorés dans la cuisine
+                </label>
+                <p className="text-sm text-gray-600 mb-4">
+                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+                  tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, 
+                  traces dans électroménagers, traces dans les poêles/casseroles, etc.
+                </p>
+                
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="cuisine_elements_abimes"
+                      value="true"
+                      checked={formData.elements_abimes === true}
+                      onChange={() => handleInputChange('section_cuisine_1.elements_abimes', true)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="cuisine_elements_abimes"
+                      value="false"
+                      checked={formData.elements_abimes === false}
+                      onChange={() => handleInputChange('section_cuisine_1.elements_abimes', false)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+                
+                {/* Upload conditionnel avec fond bleu clair */}
+                {formData.elements_abimes === true && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <PhotoUpload 
+                      fieldPath="section_cuisine_1.elements_abimes_photos"
+                      label="Photos des éléments abîmés"
+                      multiple={true}
+                      maxFiles={10}
+                      capture={true}
+                      acceptVideo={false}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            
           {/* Indicateur de sauvegarde */}
           {saveStatus.saving && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">

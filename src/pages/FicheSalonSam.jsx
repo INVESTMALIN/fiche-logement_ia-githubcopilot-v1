@@ -73,14 +73,14 @@ export default function FicheSalonSam() {
         <ProgressBar />
         
         <div className="flex-1 p-6 bg-gray-100">
-          <h1 className="text-2xl font-bold mb-6">Salon et Salle à Manger</h1>
+          <h1 className="text-2xl font-bold mb-6">Salon et salle à manger</h1>
           
           <div className="bg-white p-6 rounded-lg shadow space-y-6">
             
             {/* 1. Description générale */}
             <div>
               <label className="block font-semibold mb-2">
-                Description générale du Salon et de la Salle à Manger <span className="text-red-500">*</span>
+                Description générale du salon et de la salle à manger <span className="text-red-500">*</span>
               </label>
               <textarea
                 placeholder="Décrivez ces espaces, leur agencement, leur décoration, l'ambiance, les éléments notables, etc."
@@ -93,7 +93,7 @@ export default function FicheSalonSam() {
             {/* 2. Équipements disponibles */}
             <div>
               <label className="block font-semibold mb-3">
-                Équipements disponibles dans le Salon et la Salle à Manger <span className="text-red-500">*</span>
+                Équipements disponibles dans le salon et la salle à manger <span className="text-red-500">*</span>
               </label>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -154,7 +154,7 @@ export default function FicheSalonSam() {
                 Autres équipements ou détails <span className="text-red-500">*</span>
               </label>
               <textarea
-                placeholder="Indiquez tout autre équipement ou détail pertinent concernant le Salon et la Salle à Manger."
+                placeholder="Indiquez tout autre équipement ou détail pertinent concernant le salon et la salle à manger."
                 value={formData.autres_equipements_details || ""}
                 onChange={(e) => handleInputChange('section_salon_sam.autres_equipements_details', e.target.value)}
                 className="w-full p-3 border rounded-lg h-24"
@@ -187,6 +187,124 @@ export default function FicheSalonSam() {
             </div>
 
           </div>
+
+{/* 🆕 ÉLÉMENTS ABÎMÉS SALON - À ajouter dans la section salon */}
+<div className="bg-white rounded-xl p-6 shadow mb-6">
+              <h2 className="text-base font-semibold mb-4">Éléments abîmés dans le salon</h2>
+              
+              <div className="mb-6">
+                <label className="block font-semibold mb-3">
+                  Photos de tous les éléments abîmés, cassés ou détériorés dans le salon
+                </label>
+                <p className="text-sm text-gray-600 mb-4">
+                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+                  tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
+                </p>
+                
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="salon_elements_abimes"
+                      value="true"
+                      checked={formData.salon_elements_abimes === true}
+                      onChange={() => handleInputChange('section_salon_sam.salon_elements_abimes', true)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="salon_elements_abimes"
+                      value="false"
+                      checked={formData.salon_elements_abimes === false}
+                      onChange={() => {
+                        handleInputChange('section_salon_sam.salon_elements_abimes', false)
+                        handleInputChange('section_salon_sam.salon_elements_abimes_photos', [])
+                      }}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+                
+                {/* Upload conditionnel avec fond bleu clair */}
+                {formData.salon_elements_abimes === true && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <PhotoUpload 
+                      fieldPath="section_salon_sam.salon_elements_abimes_photos"
+                      label="Photos des éléments abîmés du salon"
+                      multiple={true}
+                      maxFiles={10}
+                      capture={true}
+                      acceptVideo={false}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 🆕 ÉLÉMENTS ABÎMÉS SALLE À MANGER - À ajouter dans la section salle à manger */}
+            <div className="bg-white rounded-xl p-6 shadow mb-6">
+              <h2 className="text-base font-semibold mb-4">Éléments abîmés dans la salle à manger</h2>
+              
+              <div className="mb-6">
+                <label className="block font-semibold mb-3">
+                  Photos de tous les éléments abîmés, cassés ou détériorés dans la salle à manger
+                </label>
+                <p className="text-sm text-gray-600 mb-4">
+                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+                  tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
+                </p>
+                
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="salle_manger_elements_abimes"
+                      value="true"
+                      checked={formData.salle_manger_elements_abimes === true}
+                      onChange={() => handleInputChange('section_salon_sam.salle_manger_elements_abimes', true)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="salle_manger_elements_abimes"
+                      value="false"
+                      checked={formData.salle_manger_elements_abimes === false}
+                      onChange={() => {
+                        handleInputChange('section_salon_sam.salle_manger_elements_abimes', false)
+                        handleInputChange('section_salon_sam.salle_manger_elements_abimes_photos', [])
+                      }}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+                
+                {/* Upload conditionnel avec fond bleu clair */}
+                {formData.salle_manger_elements_abimes === true && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <PhotoUpload 
+                      fieldPath="section_salon_sam.salle_manger_elements_abimes_photos"
+                      label="Photos des éléments abîmés de la salle à manger"
+                      multiple={true}
+                      maxFiles={10}
+                      capture={true}
+                      acceptVideo={false}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+
           {/* Indicateur de sauvegarde */}
           {saveStatus.saving && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">

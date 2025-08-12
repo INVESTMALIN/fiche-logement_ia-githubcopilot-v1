@@ -842,6 +842,179 @@ export default function FicheEquipExterieur() {
                 </div>
               </div>
             )}
+{/* 🆕 ÉLÉMENTS ABÎMÉS GARAGE - À ajouter à la fin de la section */}
+<div className="bg-white rounded-xl p-6 shadow mb-6">
+              <h2 className="text-base font-semibold mb-4">Éléments abîmés dans le garage</h2>
+              
+              <div className="mb-6">
+                <label className="block font-semibold mb-3">
+                  Photos de tous les éléments abîmés, cassés ou détériorés dans le garage
+                </label>
+                <p className="text-sm text-gray-600 mb-4">
+                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+                  tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
+                </p>
+                
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="garage_elements_abimes"
+                      value="true"
+                      checked={getField('section_equip_spe_exterieur.garage_elements_abimes') === true}
+                      onChange={() => handleInputChange('section_equip_spe_exterieur.garage_elements_abimes', true)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="garage_elements_abimes"
+                      value="false"
+                      checked={getField('section_equip_spe_exterieur.garage_elements_abimes') === false}
+                      onChange={() => {
+                        handleInputChange('section_equip_spe_exterieur.garage_elements_abimes', false)
+                        handleInputChange('section_equip_spe_exterieur.garage_elements_abimes_photos', [])
+                      }}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+                
+                {/* Upload conditionnel avec fond bleu clair */}
+                {getField('section_equip_spe_exterieur.garage_elements_abimes') === true && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <PhotoUpload 
+                      fieldPath="section_equip_spe_exterieur.garage_elements_abimes_photos"
+                      label="Photos des éléments abîmés du garage"
+                      multiple={true}
+                      maxFiles={10}
+                      capture={true}
+                      acceptVideo={false}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 🆕 ÉLÉMENTS ABÎMÉS BUANDERIE - À ajouter à la fin de la section */}
+            <div className="bg-white rounded-xl p-6 shadow mb-6">
+              <h2 className="text-base font-semibold mb-4">Éléments abîmés dans la buanderie</h2>
+              
+              <div className="mb-6">
+                <label className="block font-semibold mb-3">
+                  Photos de tous les éléments abîmés, cassés ou détériorés dans la buanderie
+                </label>
+                <p className="text-sm text-gray-600 mb-4">
+                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+                  tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
+                </p>
+                
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="buanderie_elements_abimes"
+                      value="true"
+                      checked={getField('section_equip_spe_exterieur.buanderie_elements_abimes') === true}
+                      onChange={() => handleInputChange('section_equip_spe_exterieur.buanderie_elements_abimes', true)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="buanderie_elements_abimes"
+                      value="false"
+                      checked={getField('section_equip_spe_exterieur.buanderie_elements_abimes') === false}
+                      onChange={() => {
+                        handleInputChange('section_equip_spe_exterieur.buanderie_elements_abimes', false)
+                        handleInputChange('section_equip_spe_exterieur.buanderie_elements_abimes_photos', [])
+                      }}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+                
+                {/* Upload conditionnel avec fond bleu clair */}
+                {getField('section_equip_spe_exterieur.buanderie_elements_abimes') === true && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <PhotoUpload 
+                      fieldPath="section_equip_spe_exterieur.buanderie_elements_abimes_photos"
+                      label="Photos des éléments abîmés de la buanderie"
+                      multiple={true}
+                      maxFiles={10}
+                      capture={true}
+                      acceptVideo={false}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 🆕 ÉLÉMENTS ABÎMÉS AUTRES PIÈCES - À ajouter à la fin de la section */}
+            <div className="bg-white rounded-xl p-6 shadow mb-6">
+              <h2 className="text-base font-semibold mb-4">Éléments abîmés dans autres pièces</h2>
+              
+              <div className="mb-6">
+                <label className="block font-semibold mb-3">
+                  Photos de tous les éléments abîmés, cassés ou détériorés dans autres pièces (palier, bureau, couloir, escalier etc)
+                </label>
+                <p className="text-sm text-gray-600 mb-4">
+                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+                  tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
+                </p>
+                
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="autres_pieces_elements_abimes"
+                      value="true"
+                      checked={getField('section_equip_spe_exterieur.autres_pieces_elements_abimes') === true}
+                      onChange={() => handleInputChange('section_equip_spe_exterieur.autres_pieces_elements_abimes', true)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="autres_pieces_elements_abimes"
+                      value="false"
+                      checked={getField('section_equip_spe_exterieur.autres_pieces_elements_abimes') === false}
+                      onChange={() => {
+                        handleInputChange('section_equip_spe_exterieur.autres_pieces_elements_abimes', false)
+                        handleInputChange('section_equip_spe_exterieur.autres_pieces_elements_abimes_photos', [])
+                      }}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+                
+                {/* Upload conditionnel avec fond bleu clair */}
+                {getField('section_equip_spe_exterieur.autres_pieces_elements_abimes') === true && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <PhotoUpload 
+                      fieldPath="section_equip_spe_exterieur.autres_pieces_elements_abimes_photos"
+                      label="Photos des éléments abîmés des autres pièces"
+                      multiple={true}
+                      maxFiles={10}
+                      capture={true}
+                      acceptVideo={false}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
             
           </div>
           {/* Indicateur de sauvegarde */}

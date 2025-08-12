@@ -167,6 +167,60 @@ const AccordeonSalleDeBain = ({
             />
           </div>
 
+          {/* 🆕 ÉLÉMENTS ABÎMÉS - À ajouter APRÈS la section Photos salle de bain */}
+          <div>
+            <label className="block font-semibold mb-3">
+              Photos de tous les éléments abîmés, cassés ou détériorés dans la salle de bain et WC {numeroAffiche}
+            </label>
+            <p className="text-sm text-gray-600 mb-4">
+              Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+              tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
+            </p>
+            
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`salle_de_bain_${numeroAffiche}_elements_abimes`}
+                  value="true"
+                  checked={salleData.elements_abimes === true}
+                  onChange={() => handleInputChange(salleKey, 'elements_abimes', true)}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <span>Oui</span>
+              </label>
+              
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`salle_de_bain_${numeroAffiche}_elements_abimes`}
+                  value="false"
+                  checked={salleData.elements_abimes === false}
+                  onChange={() => {
+                    handleInputChange(salleKey, 'elements_abimes', false)
+                    handleInputChange(salleKey, 'elements_abimes_photos', [])
+                  }}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <span>Non</span>
+              </label>
+            </div>
+            
+            {/* Upload conditionnel avec fond bleu clair */}
+            {salleData.elements_abimes === true && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <PhotoUpload 
+                  fieldPath={`section_salle_de_bains.${salleKey}.elements_abimes_photos`}
+                  label={`Photos des éléments abîmés de la salle de bain ${numeroAffiche}`}
+                  multiple={true}
+                  maxFiles={10}
+                  capture={true}
+                  acceptVideo={false}
+                />
+              </div>
+            )}
+          </div>
+
         </div>
       )}
     </div>

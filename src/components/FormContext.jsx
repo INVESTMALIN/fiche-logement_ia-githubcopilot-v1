@@ -460,9 +460,11 @@ const initialFormData = {
       equipements_systeme_audio: null,
       equipements_coffre_fort: null,
       equipements_autre: null,
-      equipements_autre_details: "",
-      
-      photos_chambre: []
+      equipements_autre_details: "",    
+      photos_chambre: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     },
     
     chambre_2: {
@@ -492,7 +494,10 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
-      photos_chambre: []
+      photos_chambre: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     },
     
     chambre_3: {
@@ -522,7 +527,10 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
-      photos_chambre: []
+      photos_chambre: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     },
     
     chambre_4: {
@@ -552,7 +560,10 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
-      photos_chambre: []
+      photos_chambre: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     },
     
     chambre_5: {
@@ -582,7 +593,10 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
-      photos_chambre: []
+      photos_chambre: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     },
     
     chambre_6: {
@@ -612,7 +626,10 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
-      photos_chambre: []
+      photos_chambre: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     }
   },
 
@@ -633,14 +650,14 @@ const initialFormData = {
       equipements_seche_cheveux: null,
       equipements_autre: null,
       equipements_autre_details: "",
-      
       // WC séparé (conditionnel si equipements_wc = true)
-      wc_separe: null,
-      
+      wc_separe: null,      
       // Accès (obligatoire)
-      acces: "",
-      
-      photos_salle_de_bain: []
+      acces: "",      
+      photos_salle_de_bain: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     },
     
     salle_de_bain_2: {
@@ -659,7 +676,10 @@ const initialFormData = {
       equipements_autre_details: "",
       wc_separe: null,
       acces: "",
-      photos_salle_de_bain: []
+      photos_salle_de_bain: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     },
     
     salle_de_bain_3: {
@@ -678,7 +698,10 @@ const initialFormData = {
       equipements_autre_details: "",
       wc_separe: null,
       acces: "",
-      photos_salle_de_bain: []
+      photos_salle_de_bain: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     },
     
     salle_de_bain_4: {
@@ -697,7 +720,10 @@ const initialFormData = {
       equipements_autre_details: "",
       wc_separe: null,
       acces: "",
-      photos_salle_de_bain: []
+      photos_salle_de_bain: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     },
     
     salle_de_bain_5: {
@@ -716,7 +742,10 @@ const initialFormData = {
       equipements_autre_details: "",
       wc_separe: null,
       acces: "",
-      photos_salle_de_bain: []
+      photos_salle_de_bain: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     },
     
     salle_de_bain_6: {
@@ -735,7 +764,10 @@ const initialFormData = {
       equipements_autre_details: "",
       wc_separe: null,
       acces: "",
-      photos_salle_de_bain: []
+      photos_salle_de_bain: [],
+      // 🆕 ÉLÉMENTS ABÎMÉS
+      elements_abimes: null,            // Boolean: true/false/null
+      elements_abimes_photos: []        // Array: URLs photos
     }
   },
   section_cuisine_1: {
@@ -839,7 +871,11 @@ const initialFormData = {
   
     // MACHINE À PAIN - Champs conditionnels
     machine_pain_instructions: "",
-    machine_pain_video: []
+    machine_pain_video: [],
+
+    // 🆕 ÉLÉMENTS ABÎMÉS
+    elements_abimes: null,              // Boolean: true/false/null
+    elements_abimes_photos: []          // Array: URLs photos 
   },
 
   
@@ -949,7 +985,14 @@ section_salon_sam: {
   photos_salon_sam: [],
   
   // Nombre places table (obligatoire)
-  nombre_places_table: ""               // Number input
+  nombre_places_table: "",               // Number input
+  // 🆕 ÉLÉMENTS ABÎMÉS - SALON
+  salon_elements_abimes: null,        // Boolean: true/false/null
+  salon_elements_abimes_photos: [],   // Array: URLs photos
+  
+  // 🆕 ÉLÉMENTS ABÎMÉS - SALLE À MANGER
+  salle_manger_elements_abimes: null,        // Boolean: true/false/null  
+  salle_manger_elements_abimes_photos: []    // Array: URLs photos
 },
 
   // 🏗️ ÉTAPE 3 - Mise à jour FormContext.jsx
@@ -1020,7 +1063,19 @@ section_equip_spe_exterieur: {
   cuisine_ext_entretien_qui: "",             // Text (conditionnel)
   cuisine_ext_superficie: "",               // Text
   cuisine_ext_type: "",                     // Radio: Privée/Publique
-  cuisine_ext_caracteristiques: []          // Array checkboxes: ["Four", "Évier"]
+  cuisine_ext_caracteristiques: [],         // Array checkboxes: ["Four", "Évier"]
+  
+  // 🆕 ÉLÉMENTS ABÎMÉS - GARAGE
+  garage_elements_abimes: null,       // Boolean: true/false/null
+  garage_elements_abimes_photos: [],  // Array: URLs photos
+  
+  // 🆕 ÉLÉMENTS ABÎMÉS - BUANDERIE
+  buanderie_elements_abimes: null,       // Boolean: true/false/null
+  buanderie_elements_abimes_photos: [],  // Array: URLs photos
+  
+  // 🆕 ÉLÉMENTS ABÎMÉS - AUTRES PIÈCES
+  autres_pieces_elements_abimes: null,       // Boolean: true/false/null
+  autres_pieces_elements_abimes_photos: []  // Array: URLs photos
 },
 
 section_communs: {
