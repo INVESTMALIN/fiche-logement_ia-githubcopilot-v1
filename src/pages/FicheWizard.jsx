@@ -79,12 +79,12 @@ export default function FicheWizard() {
   const steps = [
     <FicheForm key="proprietaire" />,
     <FicheLogement key="logement" />,
+    <FicheAvis key="avis" />,
     <FicheClefs key="clefs" />,
     <FicheAirbnb key="airbnb" />,
     <FicheBooking key="booking" />,
     <FicheReglementation key="reglementation" />,
     <FicheExigences key="exigences" />,
-    <FicheAvis key="avis" />,
     <FicheGestionLinge key="linge" />,
     <FicheEquipements key="equipements" />,
     <FicheConsommables key="consommables" />,

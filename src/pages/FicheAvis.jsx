@@ -109,13 +109,12 @@ export default function FicheAvis() {
         </p>
         </div>
           <div className="bg-white rounded-xl p-6 shadow mb-6">
-            <h2 className="text-base font-semibold mb-4">Évaluation de l'environnement et du logement</h2>
-            
+          <div className="mb-4">
+            <h2 className="text-base font-semibold mb-1">Évaluation de l'environnement et du logement</h2>
+            <h3 className="text-sm font-medium text-gray-700">Vidéo globale à l'arrivée dans le logement (vidéo du quartier, de l'immeuble, du logement)</h3>
+          </div>            
             {/* Question vidéo globale */}
             <div className="mb-4">
-              <label className="block font-semibold mb-3">
-                Vidéo globale à l'arrivée dans le logement (vidéo du quartier, de l'immeuble, du logement)
-              </label>
               
               <div className="flex gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">

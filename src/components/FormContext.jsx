@@ -1079,8 +1079,8 @@ export function FormProvider({ children }) {
   const [duplicateAlert, setDuplicateAlert] = useState(null)
 
   const sections = [
-    "Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", "Réglementation",
-    "Exigences", "Avis", "Gestion linge", "Équipements", "Consommables", "Visite",
+    "Propriétaire", "Logement", "Avis", "Clefs", "Airbnb", "Booking", "Réglementation",
+    "Exigences", "Gestion linge", "Équipements", "Consommables", "Visite",
     "Chambres", "Salle de bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. spé. / Extérieur",
     "Communs", "Télétravail", "Bébé", "Guide d'accès", "Sécurité"
   ]
