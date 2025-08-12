@@ -156,19 +156,33 @@ const initialFormData = {
     precisions_exigences: ""
   },
 
-  section_avis: {
-    description_emplacement: {
-      tres_bien_situe: null,
-      quartier_calme: null,
-      environnement_rural: null,
-      bord_mer: null,
-      montagne: null,
-      autres_emplacement: null
-    },
-    description_emplacement_autre: "",
-    precisions_emplacement: "",
-    
-    // GARDE SEULEMENT CELLE-CI (la complète) :
+  section_avis: {    
+      // 🎬 1. ÉVALUATION ENVIRONNEMENT
+  video_globale_validation: null,              // Radio: true/false/null
+  
+  // 🏘️ 2. ÉVALUATION QUARTIER  
+  quartier_types: [],                          // Array checkboxes (choix multiples)
+  quartier_securite: null,                     // Radio: "Sécurisé"/"Quartier modéré"/"Zone à risques"/null
+  quartier_perturbations: null,                // Radio: "Pas d'élément"/"Élément perturbateur"/null
+  quartier_perturbations_details: "",          // Textarea conditionnel (si perturbations = "Élément perturbateur")
+  
+  // 🏢 3. ÉVALUATION IMMEUBLE
+  immeuble_etat_general: null,                 // Radio: "Bon état"/"État correct"/"Mauvais état"/null
+  immeuble_proprete: null,                     // Radio: "Propre"/"Sale"/null
+  immeuble_accessibilite: null,                // Radio: "Très accessible"/"Modérément accessible"/"Inaccessible"/null
+  immeuble_niveau_sonore: null,                // Radio: "Très calme"/"Relativement calme"/"Très bruyant"/null
+  
+  // 🏠 4. ÉVALUATION LOGEMENT
+  logement_etat_general: null,                 // Radio: "Excellent"/"Bon"/"Moyen"/"Dégradé"/"Très mauvais"/null
+  logement_etat_details: "",                   // Textarea conditionnel (si état = "Dégradé" ou "Très mauvais")
+  logement_proprete: null,                     // Radio: "Propre"/"Correct"/"Sale"/null
+  logement_proprete_details: "",               // Textarea conditionnel (si propreté = "Sale")
+  logement_ambiance: [],                       // Array checkboxes (choix multiples)
+  logement_absence_decoration_details: "",     // Textarea conditionnel (si ambiance contient "Absence de décoration")
+  logement_decoration_personnalisee_details: "", // Textarea conditionnel (si ambiance contient "Décoration très personnalisée")
+  logement_vis_a_vis: null,                    // Radio: "Vue dégagée"/"Vis-à-vis partielle"/"Vis-à-vis direct"/null
+  logement_vis_a_vis_photos: [],               // Array photos
+
     atouts_logement: {
       lumineux: null,
       central: null,
@@ -223,12 +237,6 @@ const initialFormData = {
     },
     types_voyageurs_autre: "",
     explication_adaptation: "",
-    notation: {
-      emplacement: null,
-      confort: null,
-      vetuste: null,
-      equipements: null
-    }
   },
   
   section_gestion_linge: {

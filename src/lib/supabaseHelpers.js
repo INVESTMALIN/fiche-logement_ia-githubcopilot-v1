@@ -107,15 +107,32 @@ export const mapFormDataToSupabase = (formData) => {
     exigences_precisions_exigences: formData.section_exigences?.precisions_exigences || null,
     
     // Section Avis
-    avis_description_tres_bien_situe: formData.section_avis?.description_emplacement?.tres_bien_situe ?? null,
-    avis_description_quartier_calme: formData.section_avis?.description_emplacement?.quartier_calme ?? null,
-    avis_description_environnement_rural: formData.section_avis?.description_emplacement?.environnement_rural ?? null,
-    avis_description_bord_mer: formData.section_avis?.description_emplacement?.bord_mer ?? null,
-    avis_description_montagne: formData.section_avis?.description_emplacement?.montagne ?? null,
-    avis_description_autres_emplacement: formData.section_avis?.description_emplacement?.autres_emplacement ?? null,
-    avis_description_emplacement_autre: formData.section_avis?.description_emplacement_autre || null,
+    // 🎬 Évaluation environnement
+    avis_video_globale_validation: formData.section_avis?.video_globale_validation ?? null,
 
-    avis_precisions_emplacement: formData.section_avis?.precisions_emplacement || null,
+    // 🏘️ Évaluation quartier  
+    avis_quartier_types: formData.section_avis?.quartier_types || [],
+    avis_quartier_securite: formData.section_avis?.quartier_securite || null,
+    avis_quartier_perturbations: formData.section_avis?.quartier_perturbations || null,
+    avis_quartier_perturbations_details: formData.section_avis?.quartier_perturbations_details || null,
+
+    // 🏢 Évaluation immeuble
+    avis_immeuble_etat_general: formData.section_avis?.immeuble_etat_general || null,
+    avis_immeuble_proprete: formData.section_avis?.immeuble_proprete || null,
+    avis_immeuble_accessibilite: formData.section_avis?.immeuble_accessibilite || null,
+    avis_immeuble_niveau_sonore: formData.section_avis?.immeuble_niveau_sonore || null,
+
+    // 🏠 Évaluation logement
+    avis_logement_etat_general: formData.section_avis?.logement_etat_general || null,
+    avis_logement_etat_details: formData.section_avis?.logement_etat_details || null,
+    avis_logement_proprete: formData.section_avis?.logement_proprete || null,
+    avis_logement_proprete_details: formData.section_avis?.logement_proprete_details || null,
+    avis_logement_ambiance: formData.section_avis?.logement_ambiance || [],
+    avis_logement_absence_decoration_details: formData.section_avis?.logement_absence_decoration_details || null,
+    avis_logement_decoration_personnalisee_details: formData.section_avis?.logement_decoration_personnalisee_details || null,
+    avis_logement_vis_a_vis: formData.section_avis?.logement_vis_a_vis || null,
+    avis_logement_vis_a_vis_photos: formData.section_avis?.logement_vis_a_vis_photos || [],
+
 
     avis_atouts_lumineux: formData.section_avis?.atouts_logement?.lumineux ?? null,
     avis_atouts_central: formData.section_avis?.atouts_logement?.central ?? null,
@@ -167,11 +184,6 @@ export const mapFormDataToSupabase = (formData) => {
     avis_voyageurs_autre: formData.section_avis?.types_voyageurs_autre || null,
 
     avis_explication_adaptation: formData.section_avis?.explication_adaptation || null,
-
-    avis_notation_emplacement: formData.section_avis?.notation?.emplacement || null,
-    avis_notation_confort: formData.section_avis?.notation?.confort || null,
-    avis_notation_vetuste: formData.section_avis?.notation?.vetuste || null,
-    avis_notation_equipements: formData.section_avis?.notation?.equipements || null,
 
     // Section Gestion Linge
     linge_dispose_de_linge: formData.section_gestion_linge?.dispose_de_linge ?? null,
@@ -319,8 +331,6 @@ export const mapFormDataToSupabase = (formData) => {
     consommables_cafe_grain: formData.section_consommables?.cafe_grain ?? null,
     consommables_cafe_autre: formData.section_consommables?.cafe_autre ?? null,
     consommables_cafe_autre_details: formData.section_consommables?.cafe_autre_details || null,
-
-    // À AJOUTER dans mapFormDataToSupabase() après la section Consommables :
 
     // Section Visite
     // Types de pièces (14 checkboxes)
@@ -1080,19 +1090,34 @@ export const mapSupabaseToFormData = (supabaseData) => {
       precisions_exigences: supabaseData.exigences_precisions_exigences || ""
     },
 
-    section_avis: {
-      description_emplacement: {
-        tres_bien_situe: supabaseData.avis_description_tres_bien_situe ?? null,
-        quartier_calme: supabaseData.avis_description_quartier_calme ?? null,
-        environnement_rural: supabaseData.avis_description_environnement_rural ?? null,
-        bord_mer: supabaseData.avis_description_bord_mer ?? null,
-        montagne: supabaseData.avis_description_montagne ?? null,
-        autres_emplacement: supabaseData.avis_description_autres_emplacement ?? null
-      },
-      description_emplacement_autre: supabaseData.avis_description_emplacement_autre || "",
-      precisions_emplacement: supabaseData.avis_precisions_emplacement || "",
-      
-      // ✅ ATOUTS COMPLETS - TOUS LES NOUVEAUX ATOUTS AJOUTÉS
+    section_avis: {     
+
+      // 🎬 Évaluation environnement
+      video_globale_validation: supabaseData.avis_video_globale_validation ?? null,
+
+      // 🏘️ Évaluation quartier
+      quartier_types: supabaseData.avis_quartier_types || [],
+      quartier_securite: supabaseData.avis_quartier_securite || null,
+      quartier_perturbations: supabaseData.avis_quartier_perturbations || null,
+      quartier_perturbations_details: supabaseData.avis_quartier_perturbations_details || "",
+
+      // 🏢 Évaluation immeuble  
+      immeuble_etat_general: supabaseData.avis_immeuble_etat_general || null,
+      immeuble_proprete: supabaseData.avis_immeuble_proprete || null,
+      immeuble_accessibilite: supabaseData.avis_immeuble_accessibilite || null,
+      immeuble_niveau_sonore: supabaseData.avis_immeuble_niveau_sonore || null,
+
+      // 🏠 Évaluation logement
+      logement_etat_general: supabaseData.avis_logement_etat_general || null,
+      logement_etat_details: supabaseData.avis_logement_etat_details || "",
+      logement_proprete: supabaseData.avis_logement_proprete || null,
+      logement_proprete_details: supabaseData.avis_logement_proprete_details || "",
+      logement_ambiance: supabaseData.avis_logement_ambiance || [],
+      logement_absence_decoration_details: supabaseData.avis_logement_absence_decoration_details || "",
+      logement_decoration_personnalisee_details: supabaseData.avis_logement_decoration_personnalisee_details || "",
+      logement_vis_a_vis: supabaseData.avis_logement_vis_a_vis || null,
+      logement_vis_a_vis_photos: supabaseData.avis_logement_vis_a_vis_photos || [],
+
       atouts_logement: {
         // Anciens atouts (déjà mappés)
         lumineux: supabaseData.avis_atouts_lumineux ?? null,
@@ -1150,13 +1175,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
       },
       types_voyageurs_autre: supabaseData.avis_voyageurs_autre || "",
       explication_adaptation: supabaseData.avis_explication_adaptation || "",
-      
-      notation: {
-        emplacement: supabaseData.avis_notation_emplacement || null,
-        confort: supabaseData.avis_notation_confort || null,
-        vetuste: supabaseData.avis_notation_vetuste || null,
-        equipements: supabaseData.avis_notation_equipements || null
-      }
     },
 
     section_gestion_linge: {
