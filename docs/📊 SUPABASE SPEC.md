@@ -917,3 +917,117 @@ Voici la version complète et bien organisée en Markdown, basée sur ton dernie
 ---
 
 *📝 Document maintenu à jour - Dernière modification : 06 août 2025*
+
+## 🔗 **WEBHOOK PDF SÉPARÉ - Nouveau Système**
+
+### **Trigger PDF Indépendant ✅**
+
+#### **Objectif**
+Permettre la synchronisation des PDF vers Drive/Monday à chaque modification de fiche, indépendamment du workflow principal de finalisation.
+
+#### **Déclenchement**
+- **Condition 1** : URLs PDF changent (première génération)
+- **Condition 2** : PDF existent ET `updated_at` change (regénération après modif)
+- **Fréquence** : À chaque génération/regénération de PDF
+- **URL** : `https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q`
+
+#### **Trigger SQL**
+```sql
+CREATE OR REPLACE FUNCTION public.notify_pdf_update()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+  -- Déclenche si PDF existent ET que updated_at change (regénération)
+  IF (OLD.pdf_logement_url IS DISTINCT FROM NEW.pdf_logement_url) 
+     OR (OLD.pdf_menage_url IS DISTINCT FROM NEW.pdf_menage_url)
+     OR (NEW.pdf_logement_url IS NOT NULL AND NEW.pdf_menage_url IS NOT NULL AND OLD.updated_at IS DISTINCT FROM NEW.updated_at) THEN
+    
+    PERFORM net.http_post(
+      url := 'https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q',
+      body := jsonb_build_object(
+        'id', NEW.id,
+        'nom', NEW.nom,
+        'statut', NEW.statut,
+        'updated_at', NEW.updated_at,
+        'proprietaire', jsonb_build_object(
+          'prenom', NEW.proprietaire_prenom,
+          'nom', NEW.proprietaire_nom,
+          'email', NEW.proprietaire_email
+        ),
+        'logement', jsonb_build_object(
+          'numero_bien', NEW.logement_numero_bien
+        ),
+        'pdfs', jsonb_build_object(
+          'logement_url', NEW.pdf_logement_url,
+          'menage_url', NEW.pdf_menage_url
+        ),
+        'trigger_type', 'pdf_update'
+      ),
+      headers := '{"Content-Type": "application/json"}'::jsonb
+    );
+    
+  END IF;
+  
+  RETURN NEW;
+END;
+$function$;
+
+CREATE TRIGGER fiche_pdf_update_webhook
+  AFTER UPDATE ON public.fiches
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_pdf_update();
+```
+
+#### **Payload PDF Reçu par Make**
+```json
+{
+  "id": "6ce4732b-1062-4f43-bc4d-e91aff9f32c9",
+  "nom": "Bien 7755",
+  "statut": "Complété",
+  "updated_at": "2025-08-13T02:40:07.782",
+  "proprietaire": {
+    "nom": "Jacky MARTIN",
+    "email": "martin35000@icloud.com",
+    "prenom": null
+  },
+  "logement": {
+    "numero_bien": "7755"
+  },
+  "pdfs": {
+    "logement_url": "https://qwjgkqxemnpvlhwxexht.supabase.co/storage/v1/object/public/fiche-pdfs/fiche-logement-7755.pdf",
+    "menage_url": "https://qwjgkqxemnpvlhwxexht.supabase.co/storage/v1/object/public/fiche-pdfs/fiche-menage-7755.pdf"
+  },
+  "trigger_type": "pdf_update"
+}
+```
+
+### **Workflow PDF Indépendant**
+
+1. **Génération PDF** : Bouton "📄 Générer et Synchroniser les PDF"
+2. **Upload Storage** : PDF vers bucket `fiche-pdfs`
+3. **UPDATE Database** : Nouvelles URLs PDF + `updated_at`
+4. **Trigger déclenché** : Webhook PDF automatique
+5. **Make.com** : Téléchargement et organisation Drive
+6. **Résultat** : PDF à jour sur Drive/Monday
+
+### **Avantages du Système Dissocié**
+
+- ✅ **Modification post-finalisation** : PDF peuvent être régénérés après finalisation
+- ✅ **Workflow indépendant** : Pas d'interférence avec le trigger principal
+- ✅ **UX simplifiée** : Un seul bouton pour génération + synchronisation
+- ✅ **Make séparé** : Automatisation PDF dédiée et configurable
+- ✅ **Payload minimal** : Seulement PDF + métadonnées (pas de photos)
+
+### **Tests Validés**
+
+- ✅ **Première génération** : Webhook déclenché correctement
+- ✅ **Regénération** : Même URLs → webhook déclenché via `updated_at`
+- ✅ **Make reception** : Payload structure conforme
+- ✅ **Isolation** : Aucune interférence avec trigger principal
+- ✅ **URLs accessibles** : PDF téléchargeables depuis Make
+
+---
+
+*📝 Section ajoutée : 13 août 2025*  
+*🎯 Dissociation PDF opérationnelle*
