@@ -2,8 +2,10 @@
 import React, { useState } from 'react'
 import html2pdf from 'html2pdf.js'
 import { supabase } from '../lib/supabaseClient'
+import { useForm } from '../components/FormContext'
 
 const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
+  const { triggerPdfWebhook } = useForm()
   const [generating, setGenerating] = useState(false)
   const [pdfUrl, setPdfUrl] = useState(null)
   const [error, setError] = useState(null)
@@ -97,13 +99,23 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
       console.log('✅ PDF logement:', finalUrl)
       console.log('✅ PDF ménage:', finalUrlMenage)
       
+      // 🆕 NOUVEAU : Déclencher webhook PDF
+      console.log('🔄 Déclenchement webhook PDF...')
+      const webhookResult = await triggerPdfWebhook(finalUrl, finalUrlMenage)
+      
+      if (webhookResult.success) {
+        console.log('✅ PDF synchronisés vers Drive/Monday!')
+      } else {
+        console.error('❌ Erreur sync PDF:', webhookResult.error)
+      }
+      
       setPdfUrl(finalUrl)
       
       if (onPDFGenerated) {
         onPDFGenerated(finalUrl)
       }
       
-      console.log('🎉 Génération complète des 2 PDF terminée!')
+      console.log('🎉 Génération et synchronisation PDF terminées!')
       
     } catch (err) {
       console.error('❌ Erreur génération PDF:', err)
@@ -302,7 +314,7 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
 
       {generating && (
         <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-700">
-          <p className="font-semibold">⏳ Génération de la fiche logement et de la fiche ménage en cours...</p>
+          <p className="font-semibold">⏳ Génération et synchronisation cours...</p>
           <p className="text-sm">
             Veuillez patienter un instant.
           </p>

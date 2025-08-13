@@ -1566,6 +1566,49 @@ export function FormProvider({ children }) {
   const finaliserFiche = () => updateStatut('Complété');
   const archiverFiche = () => updateStatut('Archivé');
 
+  const triggerPdfWebhook = async (pdfLogementUrl, pdfMenageUrl) => {
+    if (!formData.id) {
+      console.error('❌ Impossible de déclencher webhook PDF : pas d\'ID fiche')
+      return { success: false, error: 'Pas d\'ID fiche disponible' }
+    }
+  
+    try {
+      console.log('🔄 Déclenchement webhook PDF...', {
+        fiche: formData.id,
+        logementUrl: pdfLogementUrl,
+        menageUrl: pdfMenageUrl
+      })
+  
+      // UPDATE des colonnes PDF en base → déclenche automatiquement le trigger
+      const { data, error } = await supabase
+        .from('fiches')
+        .update({
+          pdf_logement_url: pdfLogementUrl,
+          pdf_menage_url: pdfMenageUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', formData.id)
+        .select()
+  
+      if (error) {
+        console.error('❌ Erreur UPDATE PDF:', error)
+        return { success: false, error: error.message }
+      }
+  
+      if (!data || data.length === 0) {
+        console.error('❌ Aucune fiche mise à jour')
+        return { success: false, error: 'Fiche non trouvée' }
+      }
+  
+      console.log('✅ Webhook PDF déclenché avec succès!')
+      return { success: true, data: data[0] }
+  
+    } catch (error) {
+      console.error('❌ Erreur triggerPdfWebhook:', error)
+      return { success: false, error: error.message || 'Erreur inconnue' }
+    }
+  }  
+
   const getFormDataPreview = () => {
     return {
       currentSection: getCurrentSection(),
@@ -1666,6 +1709,7 @@ export function FormProvider({ children }) {
       updateStatut,
       finaliserFiche,
       archiverFiche,
+      triggerPdfWebhook,
       
       getFormDataPreview,
       getMondayDebugInfo,

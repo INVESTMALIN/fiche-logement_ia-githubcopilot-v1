@@ -210,8 +210,8 @@ export default function FicheSecutite() {
 
                     <div className="text-sm text-blue-700 leading-relaxed space-y-1">
                       <p>1. Cliquez sur <span className="font-semibold">"Générer la Fiche logement"</span>.</p>
-                      <p>Les deux Fiches (logement + ménage) seront générées simultanément. Vous pourrez télécharger une copie de la fiche logement.</p>
-                      <p>2. Cliquez ensuite sur <span className="font-semibold">"Finaliser la fiche"</span> ci-dessous pour compléter cette fiche et synchroniser les informations avec le Drive. <strong>⚠️ Attention, cette action est définitive</strong>.</p>
+                      <p>Les deux Fiches (logement + ménage) seront générées et syncrhonisées automatiquement avec le Drive et dans Monday <i>autant de fois que nécessaire</i>.</p>
+                      <p>2. Cliquez ensuite sur <span className="font-semibold">"Finaliser la fiche"</span> ci-dessous pour compléter cette fiche et synchroniser les photos/vidéos avec le Drive. <strong>⚠️ Attention, cette action est définitive</strong>.</p>
                     </div>
                   </div>
                 </div>
