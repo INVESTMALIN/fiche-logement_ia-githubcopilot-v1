@@ -16,12 +16,12 @@ const PDFTemplate = ({ formData }) => {
   const sectionsConfig = [
     { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
     { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
+    { key: 'section_avis', label: '⭐ Avis', emoji: '⭐' },
     { key: 'section_clefs', label: '🔑 Clefs', emoji: '🔑' },
     { key: 'section_airbnb', label: '🏠 Airbnb', emoji: '🏠' },
     { key: 'section_booking', label: '📅 Booking', emoji: '📅' },
     { key: 'section_reglementation', label: '📋 Réglementation', emoji: '📋' },
     { key: 'section_exigences', label: '⚠️ Exigences', emoji: '⚠️' },
-    { key: 'section_avis', label: '⭐ Avis', emoji: '⭐' },
     { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
     { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
     { key: 'section_consommables', label: '🧴 Consommables', emoji: '🧴' },
@@ -37,6 +37,84 @@ const PDFTemplate = ({ formData }) => {
     { key: 'section_bebe', label: '👶 Bébé', emoji: '👶' },
     { key: 'section_securite', label: '🔒 Sécurité', emoji: '🔒' }
   ]
+
+  // 🎯 DICTIONNAIRE DE TRADUCTION valeurs techniques → humaines
+  const translateValue = (value) => {
+    const translations = {
+      // 🎬 ÉVALUATION ENVIRONNEMENT
+      'true': 'Oui',
+      'false': 'Non',
+      
+      // 🏘️ ÉVALUATION QUARTIER - Types
+      'quartier_neuf': 'Quartier neuf (récemment développé, moderne)',
+      'quartier_ancien': 'Quartier ancien (historique, caractère authentique)',
+      'quartier_populaire': 'Quartier populaire (vivant, mais parfois moins soigné)',
+      'quartier_residentiel': 'Quartier résidentiel (principalement des logements)',
+      'quartier_excentre': 'Quartier excentré (loin des points d\'intérêt principaux)',
+      'quartier_central': 'Quartier central (proche du centre-ville, bien desservi)',
+      'quartier_chic': 'Quartier chic (haut de gamme, commerçants et services de luxe)',
+      'quartier_intermediaire': 'Quartier intermédiaire (familial, moyen de gamme)',
+      'quartier_defavorise': 'Quartier défavorisé (secteur avec des conditions de vie moins favorables)',
+      
+      // 🏘️ ÉVALUATION QUARTIER - Sécurité
+      'securise': 'Sécurisé (quartier calme)',
+      'modere': 'Quartier modéré (risques modérés de délinquance)',
+      'zone_risques': 'Zone à risques (pas de sentiment de sécurité, délinquance)',
+      
+      // 🏘️ ÉVALUATION QUARTIER - Perturbations
+      'aucune': 'Pas d\'élément perturbateur',
+      'element_perturbateur': 'Élément perturbateur à proximité',
+      
+      // 🏢 ÉVALUATION IMMEUBLE - État général
+      'bon_etat': 'Bon état (entretien régulier, bâtiment bien conservé)',
+      'etat_correct': 'État correct (bien entretenu, améliorations mineures nécessaires)',
+      'mauvais_etat': 'Mauvais état (bâtiment vétuste, rénovations nécessaires)',
+      
+      // 🏢 ÉVALUATION IMMEUBLE - Propreté
+      'propre': 'Propre (espaces communs bien entretenus)',
+      'sale': 'Sale (espaces communs mal nettoyés, débris visibles)',
+      
+      // 🏢 ÉVALUATION IMMEUBLE - Accessibilité
+      'tres_accessible': 'Très accessible (ascenseur fonctionnel, rampes)',
+      'moderement_accessible': 'Modérément accessible (accès possible avec limitations)',
+      'inaccessible': 'Inaccessible (pas d\'ascenseur, escalier raide)',
+      
+      // 🏢 ÉVALUATION IMMEUBLE - Niveau sonore
+      'tres_calme': 'Très calme (absence de bruit, excellente isolation)',
+      'relativement_calme': 'Relativement calme (bruit modéré)',
+      'tres_bruyant': 'Très bruyant (nuisances sonores importantes)',
+      
+      // 🏠 ÉVALUATION LOGEMENT - État général
+      'excellent_etat': 'Excellent état (récent ou rénové, tout fonctionnel)',
+      'etat_moyen': 'État moyen (éléments nécessitant réparations mineures)',
+      'etat_degrade': 'État dégradé (meubles détériorés, travaux nécessaires)',
+      'tres_mauvais_etat': 'Très mauvais état (vétusté générale)',
+      
+      // 🏠 ÉVALUATION LOGEMENT - Propreté
+      'correct': 'Correct (légères traces d\'usure, entretien basique)',
+      
+      // 🏠 ÉVALUATION LOGEMENT - Ambiance (choix multiples)
+      'logement_epure': 'Logement épuré (décor minimaliste)',
+      'logement_charge': 'Logement chargé (beaucoup de décorations)',
+      'decoration_moderne': 'Décoration moderne (meubles récents)',
+      'decoration_traditionnelle': 'Décoration traditionnelle (meubles anciens)',
+      'decoration_specifique': 'Décoration spécifique (logement à thème)',
+      'absence_decoration': 'Absence de décoration',
+      'decoration_personnalisee': 'Décoration très personnalisée (éléments familiaux)',
+      
+      // 🏠 ÉVALUATION LOGEMENT - Vis-à-vis
+      'vue_degagee': 'Vue dégagée sur pièce principale et jardin',
+      'vis_a_vis_partielle': 'Vis-à-vis partielle (arbres, clôture)',
+      'vis_a_vis_direct': 'Vis-à-vis direct sur pièce principale et jardin',
+      
+      // 📶 ÉQUIPEMENTS - WiFi
+      'oui': 'Oui',
+      'en_cours': 'En cours d\'installation',
+      'non': 'Non'
+    }
+    
+    return translations[value] || value
+  }
 
   // Helper pour vérifier si c'est une URL d'image valide
   const isImageUrl = (url) => {
@@ -212,7 +290,7 @@ const PDFTemplate = ({ formData }) => {
       return nonPhotoValues.map(v => {
         if (v === true) return 'Oui'
         if (v === false) return 'Non'
-        return v
+        return translateValue(v)
       }).join(', ')
     }
     
@@ -246,7 +324,7 @@ const PDFTemplate = ({ formData }) => {
       }
     }
     
-    return String(value)
+    return translateValue(String(value))
   }
 
   // 🎯 COMPOSANT: Rendu moderne des photos
