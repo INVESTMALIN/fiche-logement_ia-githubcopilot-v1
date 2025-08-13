@@ -109,6 +109,7 @@ export const mapFormDataToSupabase = (formData) => {
     // Section Avis
     // 🎬 Évaluation environnement
     avis_video_globale_validation: formData.section_avis?.video_globale_validation ?? null,
+    avis_video_globale_videos: formData.section_avis?.video_globale_videos || [],
 
     // 🏘️ Évaluation quartier  
     avis_quartier_types: formData.section_avis?.quartier_types || [],
@@ -306,6 +307,9 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_animaux_acceptes: formData.section_equipements?.animaux_acceptes ?? null,
     equipements_fetes_autorisees: formData.section_equipements?.fetes_autorisees ?? null,
     equipements_fumeurs_acceptes: formData.section_equipements?.fumeurs_acceptes ?? null,
+
+    equipements_wifi_statut: formData.section_equipements?.wifi_statut || null,
+    equipements_wifi_details: formData.section_equipements?.wifi_details || null,
 
     // Parking
     equipements_parking_type: formData.section_equipements?.parking_type || null,
@@ -1139,6 +1143,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
 
       // 🎬 Évaluation environnement
       video_globale_validation: supabaseData.avis_video_globale_validation ?? null,
+      video_globale_videos: supabaseData.avis_video_globale_videos || [],
 
       // 🏘️ Évaluation quartier
       quartier_types: supabaseData.avis_quartier_types || [],
@@ -1356,6 +1361,10 @@ export const mapSupabaseToFormData = (supabaseData) => {
       animaux_acceptes: supabaseData.equipements_animaux_acceptes ?? null,
       fetes_autorisees: supabaseData.equipements_fetes_autorisees ?? null,
       fumeurs_acceptes: supabaseData.equipements_fumeurs_acceptes ?? null,
+
+      wifi: supabaseData.equipements_wifi ?? null,
+      wifi_statut: supabaseData.equipements_wifi_statut || null,
+      wifi_details: supabaseData.equipements_wifi_details || "",
       
       // Parking
       parking_type: supabaseData.equipements_parking_type || "",

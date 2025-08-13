@@ -139,11 +139,22 @@ export default function FicheAvis() {
                     className="w-4 h-4 cursor-pointer"
                   />
                   <span>Non</span>
-                </label>
+                </label>               
               </div>
-
-            </div>
+              {formData.video_globale_validation === true && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <PhotoUpload 
+                    fieldPath="section_avis.video_globale_videos"
+                    label="Vidéos globales du quartier, immeuble et logement"
+                    multiple={true}
+                    maxFiles={5}
+                    acceptVideo={true}
+                  />
+                </div>
+              )}
+            </div>           
           </div>
+          
 
           <div className="bg-white rounded-xl p-6 shadow mb-6">
             <h2 className="text-base font-semibold mb-4">Évaluation du quartier</h2>

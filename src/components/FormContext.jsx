@@ -159,6 +159,7 @@ const initialFormData = {
   section_avis: {    
       // 🎬 1. ÉVALUATION ENVIRONNEMENT
   video_globale_validation: null,              // Radio: true/false/null
+  video_globale_videos: [],                    // Array pour les vidéos uploadées
   
   // 🏘️ 2. ÉVALUATION QUARTIER  
   quartier_types: [],                          // Array checkboxes (choix multiples)
@@ -372,6 +373,9 @@ const initialFormData = {
     animaux_acceptes: null,
     fetes_autorisees: null,
     fumeurs_acceptes: null,
+
+    wifi_statut: null,        // "oui", "en_cours", "non"
+    wifi_details: "",         // Détails si "en_cours"
     
     // Parking principal et champs conditionnels
     parking_type: "",

@@ -93,7 +93,7 @@ export default function FicheEquipements() {
             
             {/* SECTION 1: Équipements techniques essentiels */}
             <div>
-              <h2 className="text-lg font-semibold mb-4">Équipements Techniques Essentiels</h2>
+              <h2 className="text-lg font-semibold mb-4">Équipements techniques essentiels</h2>
               
               {/* Vidéo accès local poubelle */}
               <div className="mb-4">
@@ -109,7 +109,7 @@ export default function FicheEquipements() {
               {/* Local Poubelle - Emplacement */}
               <div className="mb-4">
                 <label className="block font-semibold mb-2">
-                  Emplacement du local Poubelle *
+                  Emplacement du local poubelle *
                 </label>
                 <textarea 
                   className="w-full p-3 border rounded h-24"
@@ -264,9 +264,9 @@ export default function FicheEquipements() {
               </div>
             </div>
 
-            {/* SECTION 2: Équipements et Commodités */}
+            {/* SECTION 2: Équipements et C=commodités */}
             <div>
-              <h2 className="text-lg font-semibold mb-4">Équipements et Commodités</h2>
+              <h2 className="text-lg font-semibold mb-4">Équipements et commodités</h2>
               
               {/* Checklist équipements en 2 colonnes */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
@@ -282,6 +282,67 @@ export default function FicheEquipements() {
                   </label>
                 ))}
               </div>
+
+              {/* SECTION CONDITIONNELLE: WiFi (si coché) */}
+              {formData.wifi === true && (
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">📶 Configuration WiFi</h3>
+                  
+                  <div className="mb-4">
+                    <label className="block font-semibold mb-3">Statut du WiFi</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="radio"
+                          name="wifi_statut"
+                          value="oui"
+                          checked={formData.wifi_statut === 'oui'}
+                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
+                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span>Oui (WiFi disponible et fonctionnel)</span>
+                      </label>
+                      
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="radio"
+                          name="wifi_statut"
+                          value="en_cours"
+                          checked={formData.wifi_statut === 'en_cours'}
+                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
+                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span>En cours d'installation</span>
+                      </label>
+                      
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="radio"
+                          name="wifi_statut"
+                          value="non"
+                          checked={formData.wifi_statut === 'non'}
+                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
+                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-red-600 font-medium">Non (pas de WiFi disponible) ❌</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Champ conditionnel pour "En cours" */}
+                  {formData.wifi_statut === 'en_cours' && (
+                    <div className="mt-4">
+                      <label className="block font-semibold mb-2">Détails sur l'installation</label>
+                      <textarea 
+                        className="w-full p-3 border rounded h-24"
+                        placeholder="Décrivez la date d'installation du Wi-Fi, comment et par qui..."
+                        value={formData.wifi_details || ""}
+                        onChange={(e) => handleInputChange('section_equipements.wifi_details', e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Parking principal */}
               <div className="mb-4">
