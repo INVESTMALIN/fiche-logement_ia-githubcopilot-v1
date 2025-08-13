@@ -1,143 +1,92 @@
-# 📋 SUIVI - Nouveaux champs Section Avis
+# 📋 SUIVI - Développement Fiche Logement
 
-*Mise à jour : 12 août 2025*
-
----
-
-## 🆕 **NOUVEAUX CHAMPS AJOUTÉS (18 total)**
-
-### **🎬 1. Évaluation Environnement (1 champ)**
-| Champ FormContext | Colonne Supabase | Type | Alerte Auto |
-|---|---|---|---|
-| `video_globale_validation` | `avis_video_globale_validation` | Boolean | ✅ **OUI/NON → Notification** |
-
-### **🏘️ 2. Évaluation Quartier (4 champs)**
-| Champ FormContext | Colonne Supabase | Type | Alerte Auto |
-|---|---|---|---|
-| `quartier_types` | `avis_quartier_types` | Array | ✅ **"Quartier défavorisé" → Notification** |
-| `quartier_securite` | `avis_quartier_securite` | Text | ✅ **"Zone à risques" → Notification (Refus ?)** |
-| `quartier_perturbations` | `avis_quartier_perturbations` | Text | ❌ Pas d'alerte |
-| `quartier_perturbations_details` | `avis_quartier_perturbations_details` | Text | ❌ Pas d'alerte |
-
-### **🏢 3. Évaluation Immeuble (4 champs)**
-| Champ FormContext | Colonne Supabase | Type | Alerte Auto |
-|---|---|---|---|
-| `immeuble_etat_general` | `avis_immeuble_etat_general` | Text | ✅ **"Mauvais état" → Notification** |
-| `immeuble_proprete` | `avis_immeuble_proprete` | Text | ✅ **"Sale" → Notification** |
-| `immeuble_accessibilite` | `avis_immeuble_accessibilite` | Text | ❌ Pas d'alerte |
-| `immeuble_niveau_sonore` | `avis_immeuble_niveau_sonore` | Text | ❌ Pas d'alerte |
-
-### **🏠 4. Évaluation Logement (9 champs)**
-| Champ FormContext | Colonne Supabase | Type | Alerte Auto |
-|---|---|---|---|
-| `logement_etat_general` | `avis_logement_etat_general` | Text | ✅ **"Dégradé" → Pause travaux/Refus** |
-| | | | ✅ **"Très mauvais" → Refus logement** |
-| `logement_etat_details` | `avis_logement_etat_details` | Text | ❌ Pas d'alerte |
-| `logement_proprete` | `avis_logement_proprete` | Text | ✅ **"Sale" → Remise en état/Refus/Travaux** |
-| `logement_proprete_details` | `avis_logement_proprete_details` | Text | ❌ Pas d'alerte |
-| `logement_ambiance` | `avis_logement_ambiance` | Array | ✅ **"Absence décoration" → Notification** |
-| | | | ✅ **"Décoration personnalisée" → Notification** |
-| `logement_absence_decoration_details` | `avis_logement_absence_decoration_details` | Text | ❌ Pas d'alerte |
-| `logement_decoration_personnalisee_details` | `avis_logement_decoration_personnalisee_details` | Text | ❌ Pas d'alerte |
-| `logement_vis_a_vis` | `avis_logement_vis_a_vis` | Text | ✅ **"Vis-à-vis direct" → Notification** |
-| `logement_vis_a_vis_photos` | `avis_logement_vis_a_vis_photos` | Array | 📸 **PHOTOS → Drive** |
+*Mise à jour : 13 août 2025*
 
 ---
 
-## **📊 Implémentation complète**
+## 🎯 **STATUT GLOBAL DU PROJET**
 
-**36 colonnes Supabase créées :**
-- ✅ **cuisine_1_elements_abimes** + photos
-- ✅ **salon_sam_salon_elements_abimes** + photos  
-- ✅ **salon_sam_salle_manger_elements_abimes** + photos
-- ✅ **chambres_chambre_1-6_elements_abimes** + photos (12 colonnes)
-- ✅ **salle_de_bains_salle_de_bain_1-6_elements_abimes** + photos (12 colonnes)
-- ✅ **equip_spe_ext_garage_elements_abimes** + photos
-- ✅ **equip_spe_ext_buanderie_elements_abimes** + photos
-- ✅ **equip_spe_ext_autres_pieces_elements_abimes** + photos
+### **✅ TERMINÉ RÉCEMMENT**
+- ✅ **Section Avis** : Toutes les évaluations (quartier, immeuble, logement) + upload photos
+- ✅ **Éléments abîmés** : Questions + upload photos dans 7 sections
+- ✅ **Vidéos globales** : Upload conditionnel dans section Avis
+- ✅ **Question Wi-Fi** : Configuration complète dans section Équipements
+- ✅ **Déplacement section Avis** : Position 8 → 3 dans FicheWizard et FormContext
 
-**Mapping bidirectionnel complet :**
-- ✅ **FormContext.jsx** : 36 champs ajoutés
-- ✅ **supabaseHelpers.js** : Mapping FormContext ↔ DB complet
-- ✅ **Pattern cohérent** : `{section}_elements_abimes` + `{section}_elements_abimes_photos`
+### **🔄 EN COURS**
+- 🔄 **Système d'alertes automatiques** (webhook + notifications)
+- 🔄 **Mise à jour trigger Make.com** (nouveaux champs photos)
 
-**Interface utilisateur :**
-- ✅ **7 sections modifiées** avec questions uniformes
-- ✅ **Pattern OUI/NON** + upload conditionnel PhotoUpload
-- ✅ **Suppression automatique** des photos si passage de OUI → NON
-- ✅ **Accordéons dynamiques** pour Chambres/SDB (questions individuelles)
-- ✅ **Mobile-responsive** avec style bleu clair conditionnel
-
-### **🧪 Tests validés**
-- ✅ **Sauvegarde/rechargement** fonctionne sur toutes les sections
-- ✅ **Upload photos** : Storage Supabase + URLs en base
-- ✅ **Suppression photos** : Nettoyage Storage + FormContext
-- ✅ **Navigation** : Boutons restent sélectionnés après sauvegarde
-- ✅ **Accordéons dynamiques** : Chambres/SDB individuelles fonctionnelles
-
-### **📝 Sections impactées**
-1. **FicheCuisine1.jsx** - 1 question cuisine
-2. **FicheSalonSam.jsx** - 2 questions (salon + salle à manger)
-3. **FicheChambre.jsx** - 6 questions (1 par chambre dans accordéons)
-4. **FicheSalleDeBains.jsx** - 6 questions (1 par SDB dans accordéons)
-5. **FicheEquipExterieur.jsx** - 3 questions (garage + buanderie + autres pièces)
+### **⏳ À VENIR**
+- ⏳ Tests utilisateurs complets
+- ⏳ Documentation utilisateur finale
 
 ---
-## 🎯 **PROCHAINES MISSIONS**
 
-### **🔧 1. Question WiFi** (priorité moyenne)
-**Objectif :** Ajouter question WiFi dans section Équipements
+## 🆕 **NOUVEAUX CHAMPS AJOUTÉS (Session 13 août)**
 
-**Specs Victoria :**
-- **OUI** / **EN COURS** (+ détails) / **NON**
-- **Si NON** → Notification automatique Mélissa + David
-- **Automation Monday** → Colonne "WIFI" (OUI/NON)
+### **🎬 1. Section Avis - Vidéos Globales (1 nouveau champ)**
+| Champ FormContext | Colonne Supabase | Type | Interface |
+|---|---|---|---|
+| `video_globale_videos` | `avis_video_globale_videos` | TEXT[] | PhotoUpload conditionnel si `video_globale_validation = true` |
 
-**Implémentation requise :**
-- 2 colonnes Supabase : `equipements_wifi_statut`, `equipements_wifi_details`
-- Mapping FormContext ↔ DB
-- Interface FicheEquipements.jsx
-- Webhook pour notifications automatiques
+**Implémentation :**
+- ✅ Colonne Supabase créée
+- ✅ Mapping FormContext ↔ DB 
+- ✅ Interface conditionnelle dans FicheAvis.jsx
+- ✅ Tests réussis (upload, sauvegarde, rechargement)
 
-## 🚨 **CHAMPS DÉCLENCHEURS D'ALERTES (11 champs)**
+### **📶 2. Section Équipements - WiFi (2 nouveaux champs)**
+| Champ FormContext | Colonne Supabase | Type | Interface |
+|---|---|---|---|
+| `wifi_statut` | `equipements_wifi_statut` | TEXT | Radio: "oui", "en_cours", "non" |
+| `wifi_details` | `equipements_wifi_details` | TEXT | Textarea conditionnel si "en_cours" |
+
+**Implémentation :**
+- ✅ Colonnes Supabase créées
+- ✅ Mapping FormContext ↔ DB
+- ✅ Interface conditionnelle dans FicheEquipements.jsx
+- ✅ Bloc affiché seulement si checkbox "Wi-Fi" cochée
+- ✅ Tests réussis (sauvegarde/rechargement)
+
+---
+
+## 📊 **CHAMPS D'ALERTES AUTOMATIQUES**
 
 ### **🔴 Alertes Critiques (Refus/Travaux)**
 1. `avis_quartier_securite` = "zone_risques" → **Refus logement ?**
 2. `avis_logement_etat_general` = "etat_degrade" → **Pause travaux/Refus**
 3. `avis_logement_etat_general` = "tres_mauvais_etat" → **Refus logement**
 4. `avis_logement_proprete` = "sale" → **Remise en état/Refus/Travaux**
+5. **🆕 `equipements_wifi_statut` = "non" → Notification automatique Mélissa + David**
 
 ### **🟡 Alertes Modérées (Notifications)**
-5. `avis_video_globale_validation` = true/false → **Notification**
-6. `avis_quartier_types` contient "quartier_defavorise" → **Notification**
-7. `avis_immeuble_etat_general` = "mauvais_etat" → **Notification**
-8. `avis_immeuble_proprete` = "sale" → **Notification**
-9. `avis_logement_ambiance` contient "absence_decoration" → **Notification**
-10. `avis_logement_ambiance` contient "decoration_personnalisee" → **Notification**
-11. `avis_logement_vis_a_vis` = "vis_a_vis_direct" → **Notification**
+6. `avis_video_globale_validation` = true/false → **Notification**
+7. `avis_quartier_types` contient "quartier_defavorise" → **Notification**
+8. `avis_immeuble_etat_general` = "mauvais_etat" → **Notification**
+9. `avis_immeuble_proprete` = "sale" → **Notification**
+10. `avis_logement_ambiance` contient "absence_decoration" → **Notification**
+11. `avis_logement_ambiance` contient "decoration_personnalisee" → **Notification**
+12. `avis_logement_vis_a_vis` = "vis_a_vis_direct" → **Notification**
 
 ---
 
-## 📸 **CHAMPS PHOTOS À AJOUTER AU DRIVE**
-*À ajouter dans l'automatisation Make.com pour le Drive*
+## 📸 **CHAMPS PHOTOS À AJOUTER AU DRIVE (21 champs)**
 
-| Champ | Colonne Supabase | Section Drive | Priorité |
-|---|---|---|---|
-| `logement_vis_a_vis_photos` | `avis_logement_vis_a_vis_photos` | `/section_avis/vis_a_vis/` | Moyenne |
+### **🆕 Nouveaux champs session 13 août (1 champ)**
+20. `avis_video_globale_videos`
 
-## 📊 **nouveaux champs photos créés**
+### **Avis (1 champ existant)**
+1. `avis_logement_vis_a_vis_photos`
 
-### **Avis (1 champs)**
-1. `logement_vis_a_vis_photos`
-
-### **Cuisine (1 champs)**
+### **Cuisine (1 champ)**
 2. `cuisine_1_elements_abimes_photos`
 
 ### **Salon/Salle à manger (2 champs)**
 3. `salon_sam_salon_elements_abimes_photos`
 4. `salon_sam_salle_manger_elements_abimes_photos`
 
-### **hambres (6 champs)**
+### **Chambres (6 champs)**
 5. `chambres_chambre_1_elements_abimes_photos`
 6. `chambres_chambre_2_elements_abimes_photos`
 7. `chambres_chambre_3_elements_abimes_photos`
@@ -158,62 +107,126 @@
 18. `equip_spe_ext_buanderie_elements_abimes_photos`
 19. `equip_spe_ext_autres_pieces_elements_abimes_photos`
 
----
-
-**Action requise** : Ajouter ce champ au payload webhook + trigger Make.com
+**Action requise :** Mettre à jour le trigger Make.com avec tous ces nouveaux champs sans détruire le mappage déjà en place côté Make (+300 modules)
 
 ---
 
-## 🔄 **ACTIONS FUTURES À PROGRAMMER**
+## 🔄 **ACTIONS PRIORITAIRES À PROGRAMMER**
 
-### **🚨 1. Système d'Alertes Automatiques**
-- **Webhook personnalisé** pour traiter les alertes
-- **Format notification** : Email ? Monday ? Slack ?
-- **Destinataires** : Mélissa + David (confirmé)
-- **Template messages** selon type d'alerte
+### **🚨 1. Système d'Alertes Automatiques** (Priorité HAUTE)
+**Objectif :** Notifications automatiques Mélissa + David selon critères (en attente du mode de notification)
 
-### **📸 2. Mise à jour Automatisation Drive**
-- Ajouter `avis_logement_vis_a_vis_photos` au trigger SQL
-- Mettre à jour payload webhook avec nouveau champ
-- Configurer arborescence Drive `/section_avis/vis_a_vis/`
+**Specs techniques :**
+- **Webhook personnalisé** pour traiter les alertes (séparé du webhook principal)
+- **Destinataires confirmés** : Mélissa + David (e-mails?)
+- **12 champs déclencheurs** (voir section alertes ci-dessus)
+- **Format notification** : Email via Make.com ? (Recommandé)
+- **Template messages** selon type d'alerte (critique vs modérée)
 
-### **📍 3. Déplacement Section Avis**
-- Passer de position 8 → position 3
-- Modifier FormWizard.jsx + FormContext.jsx
-- Tester navigation complète
+**Implémentation requise :**
+- Nouveau trigger Supabase pour détecter les valeurs critiques
+- Webhook séparé pour les alertes
+- Modules Make.com pour notifications
+- Tests des 12 scénarios d'alerte
 
-### **🔧 4. Éléments Abîmés**
-- Ajouter questions "Photos éléments abîmés" dans chaque section :
-  - Cuisine (existante)
-  - Salon (existante) 
-  - Salle à manger (existante)
-  - Salle de bain (existante)
-  - Chambres (existante)
-  - Garage/Buanderie (Équip. Extérieur)
-  - Autres pièces (nouvelle section ?)
+### **📸 2. Mise à jour Automatisation Drive** (Priorité HAUTE)
+**Objectif :** Ajouter tous les nouveaux champs photos au trigger Make
 
-### **📶 5. Question WiFi**
-- Ajouter dans section Équipements existante
-- 3 options : Oui / En cours (+ détails) / Non
-- Alerte si "Non" + colonne Monday
+**Action immédiate :**
+- Ajouter les **21 nouveaux champs photos** au trigger SQL existant
+- Mettre à jour payload webhook avec nouveaux champs
+- Tester automatisation complète end-to-end
+
+### **📊 3. Automation Monday.com** (Priorité MOYENNE)
+**Objectif :** Colonne "WIFI" automatique selon statut
+
+**Specs :**
+- Si `equipements_wifi_statut` = "oui" → Monday colonne "WIFI" = "OUI"
+- Si `equipements_wifi_statut` = "en_cours" → Monday colonne "WIFI" = "EN COURS"
+- Si `equipements_wifi_statut` = "non" → Monday colonne "WIFI" = "NON"
 
 ---
 
 ## 📊 **IMPACT SUR L'ARCHITECTURE**
 
-### **✅ Terminé**
-- ✅ 18 nouvelles colonnes Supabase
-- ✅ Mapping FormContext ↔ DB
-- ✅ Interface utilisateur complète
-- ✅ Sauvegarde/chargement opérationnel
-- ✅ Upload photos fonctionnel
+### **✅ Réalisé (Session 13 août)**
+- ✅ **3 nouvelles colonnes Supabase** : `avis_video_globale_videos`, `equipements_wifi_statut`, `equipements_wifi_details`
+- ✅ **Mapping FormContext ↔ DB** : Bidirectionnel complet pour nouveaux champs
+- ✅ **Interface utilisateur** : 2 nouvelles sections conditionnelles
+- ✅ **Tests complets** : Upload, sauvegarde, rechargement validés
+- ✅ **Architecture cohérente** : Patterns respectés (nommage, types, mapping)
 
-### **⏳ En attente**
-- ⏳ Webhook alertes automatiques
-- ⏳ Mise à jour automatisation Photo -> Drive
-- ⏳ Tests utilisateurs complets
-- ⏳ Documentation utilisateur
+### **✅ Terminé précédemment**
+- ✅ **20 nouveaux champs évaluation** (section Avis)
+- ✅ **36 champs éléments abîmés** (questions + photos dans 7 sections)
+- ✅ **Mapping bidirectionnel complet** FormContext ↔ DB
+- ✅ **Interface mobile-responsive** avec accordéons dynamiques
+- ✅ **Upload photos fonctionnel** (Storage Supabase + nettoyage)
+- ✅ **Navigation section Avis** déplacée en position 3
+
+### **🔄 En cours d'optimisation**
+- 🔄 **Système notifications** : Architecture technique définie, implémentation en cours
+- 🔄 **Trigger Make.com** : Mise à jour pour 21 nouveaux champs photos
+- 🔄 **Documentation utilisateur** : Finalisation guides d'utilisation
 
 ---
 
-*📝 Document à maintenir à jour lors des prochaines étapes*
+## 📝 **SECTIONS IMPACTÉES (Total: 9 sections)**
+
+### **Sections modifiées session 13 août :**
+1. **FicheAvis.jsx** - Ajout upload vidéos globales conditionnel
+2. **FicheEquipements.jsx** - Ajout configuration WiFi conditionnelle
+
+### **Sections modifiées précédemment :**
+3. **FicheCuisine1.jsx** - 1 question éléments abîmés + photos
+4. **FicheSalonSam.jsx** - 2 questions (salon + salle à manger) + photos
+5. **FicheChambre.jsx** - 6 questions (1 par chambre, accordéons) + photos
+6. **FicheSalleDeBains.jsx** - 6 questions (1 par SDB, accordéons) + photos
+7. **FicheEquipExterieur.jsx** - 3 questions (garage + buanderie + autres pièces) + photos
+8. **FormWizard.jsx** - Réorganisation ordre sections (Avis position 3)
+9. **FormContext.jsx** - Ajout de tous les nouveaux champs avec structure cohérente
+
+---
+
+## 🧪 **TESTS VALIDÉS**
+
+### **✅ Tests session 13 août**
+- ✅ **Vidéos globales** : Upload conditionnel, sauvegarde BDD, rechargement page
+- ✅ **Configuration WiFi** : Interface conditionnelle, 3 options radio, textarea détails
+- ✅ **Gestion photos fantômes** : Nettoyage Storage, debugging mapping
+
+### **✅ Tests précédents**
+- ✅ **Sauvegarde/rechargement** : Toutes sections, tous types de champs
+- ✅ **Upload multimédia** : Photos + vidéos → Storage Supabase → URLs BDD
+- ✅ **Suppression photos** : Nettoyage Storage + FormContext synchronisé
+- ✅ **Navigation fluide** : Boutons état conservé après sauvegarde
+- ✅ **Mobile responsive** : Interface adaptée, accordéons fonctionnels
+- ✅ **Mapping bidirectionnel** : FormContext ↔ Supabase sans perte données
+
+---
+
+## 🎯 **PROCHAINES SESSIONS DE DÉVELOPPEMENT**
+
+### **Session 1 : Alertes automatiques**
+- Conception architecture webhook alertes
+- Implémentation trigger Supabase
+- Configuration modules Make.com notifications
+- Tests 12 scénarios d'alerte
+
+### **Session 2 : Finalisation automatisations**
+- Mise à jour trigger Make.com (21 champs photos)
+- Configuration automation Monday WiFi
+- Tests automatisations end-to-end
+- Optimisation performances
+
+### **Session 3 : Documentation et tests utilisateurs**
+- Finalisation documentation utilisateur
+- Tests complets avec coordinateurs terrain
+- Corrections bugs éventuels
+- Mise en production finale
+
+---
+
+*📝 Document maintenu à jour à chaque session de développement*  
+*👤 Équipe : Julien Gaichet + Claude Sonnet 4*  
+*📅 Dernière session : 13 août 2025*
