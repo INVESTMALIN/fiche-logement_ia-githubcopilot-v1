@@ -3,7 +3,7 @@
 
 ---
 
-## 🏆 **STATUT ACTUEL - SUCCÈS COMPLET ✅**
+## 🏆 **STATUT ACTUEL ✅**
 
 ### ✅ **Phase 1 : Upload Photos**
 - **✅ Composant PhotoUpload** intégré dans toutes les sections
@@ -13,11 +13,10 @@
 - **✅ Gestion erreurs** robuste avec messages utilisateur
 
 ### ✅ **Phase 2 : Webhook Conditionnel**
-- **✅ Trigger SQL** se déclenche on UPADTE
-- **✅ Payload COMPLET** optimisé avce les champs nécessaires (59 champs fichiers médias)
+- **✅ Trigger SQL** se déclenche status "Brouillon" -> "Complété"
+- **✅ Payload** optimisé avce les champs nécessaires (58 champs)
 - **✅ Make.com** reçoit données structurées
 - **✅ Tests end-to-end** validés avec fiches réelles
-
 
 ---
 
@@ -33,7 +32,6 @@
     E --> F[Webhook Make avec payload optimisé]
     F --> G[Make télécharge + organise photos]
     G --> H[Création arborescence Google Drive]
-    H --> I[Upload final organisé par sections]
 ```
 
 ---
@@ -59,10 +57,6 @@
 │   └── fiche-{autre}/
 └── user-{autre}/
 
-📁 Bucket "fiche-pdfs" (PUBLIC)
-├── fiche-logement-1137.pdf
-├── fiche-menage-1137.pdf
-└── ...
 ```
 
 ### **Base de Données - Colonnes Photos**
@@ -86,7 +80,7 @@ pdf_menage_url TEXT
 
 ### **Webhook Optimisé**
 
-**Problème initial :** Payload 750+ colonnes ingérable dans Make
+**Problème initial :** Payload 800+ colonnes ingérable dans Make
 
 **Solution :** Trigger SQL avec payload structuré optimisé
 
@@ -258,7 +252,7 @@ CREATE TRIGGER fiche_any_update_webhook
     "salle_de_bain_1_photos": ["https://xyz.supabase.co/.../sdb1.png"],
     "cuisine1_cuisiniere_photo": ["https://xyz.supabase.co/.../cuisiniere.png"],
     "securite_photos_equipements": ["https://xyz.supabase.co/.../securite1.png"],
-    // ... 70 champs au total (59 médias + 11 métadonnées)
+    // ... 70 champs au total (58 médias + 11 métadonnées)
   }
 }
 ```
@@ -353,7 +347,7 @@ CREATE TRIGGER fiche_any_update_webhook
 - piscine_video
 ```
 
-Total : 59 champs médias ✅
+Total : 58 champs médias ✅
 
 ---
 

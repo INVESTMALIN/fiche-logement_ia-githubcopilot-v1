@@ -28,7 +28,7 @@ Ce document définit l'architecture complète pour l'intégration Supabase dans 
     C --> D[🔗 URL Récupérée dans BDD]
     D --> E[💾 Sauvegarde Base]
     E --> F[✅ Photo Affichée]
-    F --> E[✅ Sync avec le Drive]
+    F --> E[✅ Sync avec le Drive via Make]
 ```
 
 **Expérience coordinateur :**
@@ -51,8 +51,8 @@ Ce document définit l'architecture complète pour l'intégration Supabase dans 
 │   │   │   ├── 📄 fiche-logement-5566.pdf
 │   │   │   └── 📄 fiche-menage-5566.pdf
 │   │   ├── 📁 2. Photos Visite Logement/
-│   │   │   ├── 📄 fiche-logement-5566.pdf
-│   │   │   └── 📄 fiche-menage-5566.pdf
+│   │   │   ├── 📄 photo-1.png
+│   │   │   └── 📄 photo-2.png
 │   │   ├── 📁 3. Accès au logement/
 │   │   ├── 📁 4. Tour générale du logement/
 │   │   ├── 📁 5. Tuto équipements/
@@ -62,30 +62,7 @@ Ce document définit l'architecture complète pour l'intégration Supabase dans 
 │   └── 📁 5. MARKETING ET PHOTOS/
 └── 📁 1280. Autre propriétaire - Autre ville/
 ```
-
-### ⚙️ **Configuration Requise**
-
-#### Google Cloud Console
-- [ ] Projet Google Cloud créé
-- [ ] Drive API activée
-- [ ] Credentials OAuth2 configurés
-- [ ] Service Account avec permissions Drive
-
-#### Permissions Google Workspace
-- [ ] Accès admin Google Workspace Letahost
-- [ ] Dossier "Fiches Logement" créé avec permissions
-- [ ] API autorisée au niveau organisation
-
-#### Variables Environnement
-```env
-# Google Drive Configuration
-GOOGLE_DRIVE_CLIENT_ID=xxx.apps.googleusercontent.com
-GOOGLE_DRIVE_CLIENT_SECRET=xxx
-GOOGLE_DRIVE_FOLDER_ID=1ABC_def_folder_id
-GOOGLE_DRIVE_SERVICE_ACCOUNT_KEY=path/to/service-account.json
-```
-
----
+----
 
 ## 🗃 Architecture Database
 
@@ -375,87 +352,6 @@ const getAllFiches = (includeArchived = false) => {
   return query.order('updated_at', { ascending: false })
 }
 ```
-
----
-
-## 🚀 Plan de Déploiement
-
-### 📝 **Phase 1 : Setup Base**
-1. ✅ Créer tables Supabase + RLS
-2. ✅ Configurer authentification
-3. ✅ Adapter FormContext pour Supabase
-4. ✅ Setup Google Drive API + credentials
-5. ✅ Tester CRUD basique + upload photos
-
-### 📝 **Phase 2 : Dashboard + Workflow**
-1. ✅ Dashboard avec liste fiches + statuts
-2. ✅ Bouton "Finaliser la fiche" page 23
-3. ✅ Actions Archiver/Désarchiver
-4. ✅ Filtres par statut
-5. ✅ Composants PhotoUpload intégrés formulaires
-
-### 📝 **Phase 3 : Permissions + Admin**
-1. ✅ Panel admin pour gestion utilisateurs
-2. ✅ Routes protégées par rôles
-3. ✅ Gestion permissions Drive par utilisateur
-4. ✅ Tests complets workflow permissions
-
-### 📝 **Phase 4 : Polish + Tests**
-1. ✅ Gestion erreurs réseau + upload
-2. ✅ Tests mobile complets (camera + galerie)
-3. ✅ Performance optimizations (compression images)
-4. ✅ Documentation utilisateur
-
----
-
-## ⚠️ Considérations Techniques
-
-### 🔒 **Sécurité**
-- ✅ Table fiches : Totalement sécurisée au niveau base de données
-- ⚠️ Table profiles : Sécurisée côté application uniquement
-- Validation côté serveur des rôles
-- Tokens JWT sécurisés
-- HTTPS obligatoire en production
-
-### 📱 **Performance Mobile**
-- Requêtes optimisées (SELECT uniquement les colonnes nécessaires)
-- Pagination sur les listes de fiches
-- Cache local pour navigation offline
-- Compression automatique des images avant upload Drive
-- Retry automatique en cas d'échec upload
-- Indicateurs de progression upload
-
-### 🌐 **Déploiement**
-- Variables d'environnement pour Supabase
-- Migrations DB versionnées
-- Tests automatisés sur les permissions
-- Monitoring erreurs production
-
----
-
-## 📋 Checklist de Validation
-
-### ✅ **Tests Fonctionnels**
-- [ ] Coordinateur peut créer/modifier ses fiches uniquement
-- [ ] Admin peut voir toutes les fiches (lecture seule)
-- [ ] Super admin peut tout gérer + créer comptes
-- [ ] Workflow statuts fonctionne (Brouillon → Complété → Archivé)
-- [ ] Sauvegarde/chargement fiches sans perte données
-- [ ] Dashboard affiche correctement par rôle
-- [ ] Upload photos/vidéos vers Drive fonctionnel
-- [ ] URLs Drive accessibles et sécurisées
-- [ ] Mobile : camera + galerie + upload seamless
-- [ ] Compression images automatique
-- [ ] Gestion erreurs upload (réseau, permissions, etc.)
-
-### ✅ **Tests Techniques**
-- [ ] Performance acceptable sur mobile 3G
-- [ ] Gestion erreurs réseau gracieuse
-- [ ] Pas de fuite mémoire navigation longue
-- [ ] Backup/restore base données
-- [ ] Permissions Drive correctement configurées
-- [ ] Sécurité upload (types fichiers, taille max)
-- [ ] Cleanup fichiers Drive orphelins
 
 ---
 
@@ -775,15 +671,11 @@ user-{user_id}/
 4. Organisation automatique Google Drive par sections
 
 ### **3. Avantages du nouveau système**
-- ✅ **Performance** : 59 champs médias (+ 11 métadonnées) vs 750 colonnes
+- ✅ **Performance** : 8 champs médias (+ 11 métadonnées) vs 750 colonnes
 - ✅ **Maintenabilité** : Structure claire et documentée
 - ✅ **Évolutivité** : Ajout facile de nouveaux champs photos
 - ✅ **Make.com** : Interface utilisable et workflow configurable
 - ✅ **Documentation** : Mapping complet des 39 champs média
-
----
-
-Voici la version complète et bien organisée en Markdown, basée sur ton dernier classement (59 champs médias) :
 
 ---
 
@@ -1031,3 +923,228 @@ CREATE TRIGGER fiche_pdf_update_webhook
 
 *📝 Section ajoutée : 13 août 2025*  
 *🎯 Dissociation PDF opérationnelle*
+
+
+## 🚨 **WEBHOOK ALERTES - Système de Notifications Automatiques**
+
+### **Trigger Alertes Intelligent ✅**
+
+#### **Objectif**
+Envoyer des notifications automatiques à Mélissa + David quand des critères critiques ou modérés sont détectés lors de l'évaluation des logements (section Avis).
+
+#### **Déclenchement**
+- **Condition 1** : Fiche passe à "Complété" pour la première fois (finalisation avec alertes)
+- **Condition 2** : Fiche déjà "Complété" + modification d'un des 12 champs critiques
+- **Fréquence** : Immédiate dès détection changement
+- **URL** : `https://hook.eu2.make.com/b935os296umo923k889s254wb88wjxn4`
+
+#### **Trigger SQL**
+```sql
+-- 🗑️ SUPPRIMER L'ANCIEN TRIGGER D'ABORD
+DROP TRIGGER IF EXISTS fiche_alertes_webhook ON public.fiches;
+DROP FUNCTION IF EXISTS notify_fiche_alerts();
+
+-- 🆕 CRÉER LE NOUVEAU TRIGGER OPTIMISÉ
+CREATE OR REPLACE FUNCTION public.notify_fiche_alerts()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+  -- DÉCLENCHEMENT SI :
+  -- 1. Fiche passe à "Complété" pour la première fois (finalisation)
+  -- 2. OU fiche déjà "Complété" + un champ d'alerte change (modification post-finalisation)
+  IF (NEW.statut = 'Complété' AND OLD.statut IS DISTINCT FROM 'Complété') OR
+     (NEW.statut = 'Complété' AND (
+       -- 🔴 ALERTES CRITIQUES (5 champs)
+       OLD.avis_quartier_securite IS DISTINCT FROM NEW.avis_quartier_securite OR
+       OLD.avis_logement_etat_general IS DISTINCT FROM NEW.avis_logement_etat_general OR
+       OLD.avis_logement_proprete IS DISTINCT FROM NEW.avis_logement_proprete OR
+       OLD.equipements_wifi_statut IS DISTINCT FROM NEW.equipements_wifi_statut OR
+       
+       -- 🟡 ALERTES MODÉRÉES (7 champs)
+       OLD.avis_video_globale_validation IS DISTINCT FROM NEW.avis_video_globale_validation OR
+       OLD.avis_quartier_types IS DISTINCT FROM NEW.avis_quartier_types OR
+       OLD.avis_immeuble_etat_general IS DISTINCT FROM NEW.avis_immeuble_etat_general OR
+       OLD.avis_immeuble_proprete IS DISTINCT FROM NEW.avis_immeuble_proprete OR
+       OLD.avis_logement_ambiance IS DISTINCT FROM NEW.avis_logement_ambiance OR
+       OLD.avis_logement_vis_a_vis IS DISTINCT FROM NEW.avis_logement_vis_a_vis
+     )) THEN
+    
+    -- ENVOI VERS WEBHOOK MAKE ALERTES
+    PERFORM net.http_post(
+      url := 'https://hook.eu2.make.com/b935os296umo923k889s254wb88wjxn4',
+      body := jsonb_build_object(
+        -- 📋 MÉTADONNÉES DE LA FICHE
+        'id', NEW.id,
+        'nom', NEW.nom,
+        'statut', NEW.statut,
+        'created_at', NEW.created_at,
+        'updated_at', NEW.updated_at,
+        
+        -- 👤 PROPRIÉTAIRE (pour contexte notification)
+        'proprietaire', jsonb_build_object(
+          'prenom', NEW.proprietaire_prenom,
+          'nom', NEW.proprietaire_nom,
+          'email', NEW.proprietaire_email
+        ),
+        
+        -- 🏠 LOGEMENT (pour contexte notification)  
+        'logement', jsonb_build_object(
+          'numero_bien', NEW.logement_numero_bien,
+          'type_propriete', NEW.logement_type_propriete,
+          'surface', NEW.logement_surface
+        ),
+        
+        -- 🚨 CHAMPS D'ALERTES (12 champs critiques)
+        'alertes', jsonb_build_object(
+          -- 🔴 ALERTES CRITIQUES (5 champs)
+          'quartier_securite', NEW.avis_quartier_securite,
+          'logement_etat_general', NEW.avis_logement_etat_general,
+          'logement_proprete', NEW.avis_logement_proprete,
+          'wifi_statut', NEW.equipements_wifi_statut,
+          
+          -- 🟡 ALERTES MODÉRÉES (7 champs)
+          'video_globale_validation', NEW.avis_video_globale_validation,
+          'quartier_types', NEW.avis_quartier_types,
+          'immeuble_etat_general', NEW.avis_immeuble_etat_general,
+          'immeuble_proprete', NEW.avis_immeuble_proprete,
+          'logement_ambiance', NEW.avis_logement_ambiance,
+          'logement_vis_a_vis', NEW.avis_logement_vis_a_vis
+        ),
+        
+        -- 📌 CONTEXTE TECHNIQUE
+        'trigger_type', 'alertes_automatiques',
+        'timestamp', NOW()
+      ),
+      headers := '{"Content-Type": "application/json"}'::jsonb
+    );
+    
+  END IF;
+  
+  RETURN NEW;
+END;
+$function$;
+
+-- Créer le trigger associé
+CREATE TRIGGER fiche_alertes_webhook
+  AFTER UPDATE ON public.fiches
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_fiche_alerts();
+```
+
+#### **Payload Alertes Reçu par Make**
+```json
+{
+  "id": "6ce4732b-1062-4f43-bc4d-e91aff9f32c9",
+  "nom": "Bien 7755",
+  "statut": "Complété",
+  "created_at": "2025-07-15T00:11:54.7894",
+  "updated_at": "2025-08-14T06:43:27.697",
+  "proprietaire": {
+    "nom": "Jacky MARTIN",
+    "email": "martin35000@icloud.com",
+    "prenom": null
+  },
+  "logement": {
+    "surface": 50,
+    "numero_bien": "7755",
+    "type_propriete": "Maison"
+  },
+  "alertes": {
+    "wifi_statut": "non",
+    "quartier_types": ["quartier_residentiel", "quartier_ancien"],
+    "immeuble_proprete": "propre",
+    "logement_ambiance": ["logement_epure", "decoration_traditionnelle", "decoration_personnalisee"],
+    "logement_proprete": "correct",
+    "quartier_securite": "zone_risques",
+    "logement_vis_a_vis": "vis_a_vis_direct",
+    "immeuble_etat_general": "bon_etat",
+    "logement_etat_general": "etat_degrade",
+    "video_globale_validation": true
+  },
+  "trigger_type": "alertes_automatiques",
+  "timestamp": "2025-08-14T06:43:29.547187+00:00"
+}
+```
+
+### **Workflow Alertes Intelligent**
+
+1. **Évaluation logement** : Coordinateur remplit section Avis + WiFi
+2. **Finalisation** : Brouillon → Complété = Trigger si alertes détectées
+3. **Modification** : Changement champ critique = Trigger immédiat
+4. **Make.com** : Filtrage par gravité + routing notifications
+5. **Notifications** : Emails Mélissa + David selon templates
+6. **Résultat** : Alerte temps réel sur logements problématiques
+
+### **Critères d'Alertes (12 champs surveillés)**
+
+#### **🔴 Critiques - Action Immédiate**
+- `quartier_securite` = "zone_risques" → **Refus logement**
+- `logement_etat_general` = "etat_degrade" → **Pause travaux**
+- `logement_etat_general` = "tres_mauvais_etat" → **Refus logement**
+- `logement_proprete` = "sale" → **Remise en état**
+- `wifi_statut` = "non" → **Installation urgente**
+
+#### **🟡 Modérées - Surveillance**
+- `video_globale_validation` = true/false → **Validation requise**
+- `quartier_types` contient "quartier_defavorise" → **Information**
+- `immeuble_etat_general` = "mauvais_etat" → **Surveillance**
+- `immeuble_proprete` = "sale" → **Amélioration**
+- `logement_ambiance` contient "absence_decoration" → **Décoration**
+- `logement_ambiance` contient "decoration_personnalisee" → **Dépersonnalisation**
+- `logement_vis_a_vis` = "vis_a_vis_direct" → **Information voyageurs**
+
+### **Avantages du Système Intelligent**
+
+- ✅ **Réactivité immédiate** : Alerte dès finalisation ou modification critique
+- ✅ **Pas de spam** : Seulement si champs critiques changent
+- ✅ **Workflow séparé** : Indépendant du trigger principal Drive/Monday
+- ✅ **Payload optimisé** : 12 champs + métadonnées (vs 750+ colonnes)
+- ✅ **Granularité** : Distinction critiques vs modérées pour routing Make
+- ✅ **Post-finalisation** : Détecte modifications après mise en production
+
+### **Tests Validés**
+
+- ✅ **Finalisation avec alertes** : Webhook déclenché avec payload complet
+- ✅ **Modification post-finalisation** : Changement WiFi → alerte immédiate
+- ✅ **Sauvegarde normale** : Aucun déclenchement si pas de champ critique
+- ✅ **Fiche brouillon** : Modifications ne déclenchent pas d'alertes
+- ✅ **Payload structure** : JSON conforme avec 12 champs surveillés
+- ✅ **Isolation trigger** : Aucune interférence avec webhooks principal/PDF
+
+---
+
+✅ **ÉTAT ACTUEL DES TRIGGERS**
+
+1. **Trigger Principal - Drive/Monday**  
+   - **Nom** : `fiche_any_update_webhook`  
+   - **Fonction** : `notify_fiche_completed()`  
+   - **URL** : https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj  
+   - **Déclenchement** : Brouillon → Complété (une seule fois)  
+   - **Payload** : 58 champs média + métadonnées  
+
+2. **Trigger Alertes - Notifications**  
+   - **Nom** : `fiche_alertes_webhook`  
+   - **Fonction** : `notify_fiche_alerts()`  
+   - **URL** : https://hook.eu2.make.com/b935os296umo923k889s254wb88wjxn4  
+   - **Déclenchement** : Finalisation + modification champs critiques  
+   - **Payload** : 12 champs alertes + métadonnées  
+
+3. **Trigger PDF - Synchronisation**  
+   - **Nom** : `fiche_pdf_update_webhook`  
+   - **Fonction** : `notify_pdf_update()`  
+   - **URL** : https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q  
+   - **Déclenchement** : URLs PDF changent ou régénération  
+   - **Payload** : PDF URLs + métadonnées  
+
+---
+
+🎯 **ARCHITECTURE COMPLÈTE**  
+Les 3 triggers fonctionnent en parallèle et sont indépendants :  
+- Pas d’interférence entre eux  
+- Chacun a son webhook Make dédié  
+- Logiques de déclenchement distinctes  
+
+
+*📝 Section ajoutée : 14 août 2025*  
+*🎯 Système d'alertes opérationnel - Prêt pour configuration Make*

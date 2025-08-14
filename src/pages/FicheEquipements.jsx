@@ -38,10 +38,27 @@ export default function FicheEquipements() {
     }
   }
 
+  // 🧹 Handler spécialisé pour le type de parking avec nettoyage des sous-options
+  const handleParkingTypeChange = (field, value) => {
+    updateField(field, value)
+    
+    // Nettoyer les champs des autres types non sélectionnés    
+    if (value !== 'rue') {
+      updateField('section_equipements.parking_rue_details', '')
+    }
+    if (value !== 'sur_place') {
+      updateField('section_equipements.parking_sur_place_types', [])
+      updateField('section_equipements.parking_sur_place_details', '')
+    }
+    if (value !== 'payant') {
+      updateField('section_equipements.parking_payant_type', '')
+      updateField('section_equipements.parking_payant_details', '')
+    }
+  }
+
   // Liste des équipements pour la checklist
   const equipements = [
     // Colonne 1
-    { key: 'wifi', label: 'Wi-Fi' },
     { key: 'climatisation', label: 'Climatisation' },
     { key: 'lave_linge', label: 'Lave-linge' },
     { key: 'seche_linge', label: 'Sèche-linge' },
@@ -283,14 +300,13 @@ export default function FicheEquipements() {
                 ))}
               </div>
 
-              {/* SECTION CONDITIONNELLE: WiFi (si coché) */}
-              {formData.wifi === true && (
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-4 text-blue-800">📶 Configuration WiFi</h3>
+              {/* SECTION Configuration Wi-Fi */}
+              <div className="mt-6 mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">📶 Configuration Wi-Fi</h3>
                   
                   <div className="mb-4">
                     <label className="block font-semibold mb-3">Statut du WiFi</label>
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input 
                           type="radio"
@@ -342,18 +358,17 @@ export default function FicheEquipements() {
                     </div>
                   )}
                 </div>
-              )}
 
               {/* Parking principal */}
               <div className="mb-4">
                 <label className="block font-semibold mb-3">Parking *</label>
-                <div className="space-y-3 max-w-lg">
+                <div className="space-y-1 max-w-lg">
                   <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
                     <input 
                       type="radio" 
                       name="parking_type"
                       checked={formData.parking_type === 'rue'}
-                      onChange={() => handleInputChange('section_equipements.parking_type', 'rue')}
+                      onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'rue')}
                       className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                     />
                     <span className="text-sm">Parking gratuit dans la rue</span>
@@ -363,7 +378,7 @@ export default function FicheEquipements() {
                       type="radio" 
                       name="parking_type"
                       checked={formData.parking_type === 'sur_place'}
-                      onChange={() => handleInputChange('section_equipements.parking_type', 'sur_place')}
+                      onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'sur_place')}
                       className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                     />
                     <span className="text-sm">Parking gratuit sur place</span>
@@ -373,7 +388,7 @@ export default function FicheEquipements() {
                       type="radio" 
                       name="parking_type"
                       checked={formData.parking_type === 'payant'}
-                      onChange={() => handleInputChange('section_equipements.parking_type', 'payant')}
+                      onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'payant')}
                       className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                     />
                     <span className="text-sm">Stationnement payant à l'extérieur de la propriété</span>
@@ -436,8 +451,6 @@ export default function FicheEquipements() {
                 </div>
               </>
             )}
-
-
 
               {formData.parking_type === 'payant' && (
                 <>

@@ -379,6 +379,7 @@ const handleArrayCheckboxChange = (field, option, checked) => {
               </div>
             </div>
         </div>
+        <div className="h-20"></div>           
       </div>
     </div>
   )

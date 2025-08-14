@@ -206,32 +206,16 @@ const generatePDFBlob = async (url) => {
 │   ├── 📁 2. INFORMATIONS PROPRIETAIRE/
 │   ├── 📁 3. INFORMATIONS LOGEMENT/
 │   │   ├── 📁 1. Fiche logement/
+│   │   ├── ── Fiche-logement-num de bien.pdf
+│   │   ├── ── Fiche-ménage-num de bien.pdf
 │   │   ├── 📁 2. Photos Visite Logement/
 │   │   ├── 📁 3. Accès au logement/
-│   │   │   ├── 📁 Photos d'accès/
-│   │   │   └── 📁 Vidéos d'accès/
 │   │   ├── 📁 4. Tour générale du logement/
 │   │   ├── 📁 5. Tuto équipements/
 │   │   └── 📁 6. Identifiants Wifi/
 │   ├── 📁 4. PHOTOS ANNONCE/
 └── 📁 1280. Autre propriétaire - Autre ville/
 ```
-
-## 📁 **MAPPING LOGIQUE PDF → DOSSIERS DRIVE**
-### **Structure finale validée**
-
-```
-📁 1. Fiche logement et ménage
-- Fiche-logement-num de bien.pdf
-- Fiche-ménage-num de bien.pdf
-
-📁 2. Photos Visite Logement
-📁 3. Accès au logement
-📁 4. Tour générale du logement
-📁 5. Tuto équipements
-```
-
-Total : 2 champs PDF ✅
 
 ---
 
@@ -255,11 +239,11 @@ Total : 2 champs PDF ✅
 - ✅ **Feedback propre** : Messages de progression clairs
 - ✅ **Gestion erreurs robuste** : Cleanup sécurisé des iframes
 
-### **🔄 Phase 4 : Intégration Make (En cours)**
+### **✅ Phase 4 : Intégration Make**
 - ✅ **Configuration modules** HTTP GET pour récupération PDFs
 - ✅ **Tests téléchargement** via URLs publiques Supabase
 - ✅ **Upload Google Drive** dans structure dossiers souhaitée
-- 🔄 **Validation end-to-end** : Frontend → Storage → Make → Drive
+- ✅ **Validation end-to-end** : Frontend → Storage → Make → Drive
 
 ---
 
