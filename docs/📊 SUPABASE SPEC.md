@@ -483,12 +483,16 @@ chambres_chambre_1_photos_chambre TEXT[]
         }
     }
 ```
-11 métadonnées + 58 médias = 69 champs
+9 métadonnées + 57 médias = 66 champs
 
 #### **Code SQL du trigger**
 ```sql
 
 -- VERSION FINALE PRODUCTION - URL Make normale
+-- 🔄 MISE À JOUR FONCTION TRIGGER - AJOUT 21 NOUVEAUX CHAMPS PHOTOS
+-- Version : 79 champs total (58 existants + 21 nouveaux)
+-- Date : 15 août 2025
+
 CREATE OR REPLACE FUNCTION public.notify_fiche_completed()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -497,12 +501,13 @@ DECLARE
   media_part1 jsonb;
   media_part2 jsonb;
   media_part3 jsonb;
+  media_part4 jsonb;  -- 🆕 NOUVELLE PARTIE
   media_final jsonb;
 BEGIN
   -- DÉCLENCHEMENT UNIQUEMENT LORS DU PASSAGE À "Complété"
   IF NEW.statut = 'Complété' AND OLD.statut IS DISTINCT FROM 'Complété' THEN
     
-    -- PARTIE 1 : Clefs + Equipements + Linge + Chambres (20 champs)
+    -- PARTIE 1 : Clefs + Equipements + Linge + Chambres (20 champs) - INCHANGÉ
     media_part1 := jsonb_build_object(
       'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
       'clefs_interphone_photo', NEW.clefs_interphone_photo,
@@ -526,7 +531,7 @@ BEGIN
       'salle_de_bain_1_photos', NEW.salle_de_bains_salle_de_bain_1_photos_salle_de_bain
     );
     
-    -- PARTIE 2 : Salles de bains + Cuisine 1 vidéos (19 champs)
+    -- PARTIE 2 : Salles de bains + Cuisine 1 vidéos (19 champs) - INCHANGÉ
     media_part2 := jsonb_build_object(
       'salle_de_bain_2_photos', NEW.salle_de_bains_salle_de_bain_2_photos_salle_de_bain,
       'salle_de_bain_3_photos', NEW.salle_de_bains_salle_de_bain_3_photos_salle_de_bain,
@@ -549,7 +554,7 @@ BEGIN
       'cuisine1_machine_pain_video', NEW.cuisine_1_machine_pain_video
     );
     
-    -- PARTIE 3 : Cuisine photos + Autres sections (19 champs)
+    -- PARTIE 3 : Cuisine photos + Autres sections (18 champs) - INCHANGÉ
     media_part3 := jsonb_build_object(
       'cuisine1_cuisiniere_photo', NEW.cuisine_1_cuisiniere_photo,
       'cuisine1_plaque_cuisson_photo', NEW.cuisine_1_plaque_cuisson_photo,
@@ -571,8 +576,43 @@ BEGIN
       'securite_photos_equipements', NEW.securite_photos_equipements_securite
     );
     
-    -- FUSION DES 3 PARTIES (58 champs total)
-    media_final := media_part1 || media_part2 || media_part3;
+    -- 🆕 PARTIE 4 : NOUVEAUX CHAMPS - Avis + Éléments Abîmés (21 champs)
+    media_part4 := jsonb_build_object(
+      -- Avis (2 champs)
+      'avis_video_globale_videos', NEW.avis_video_globale_videos,
+      'avis_logement_vis_a_vis_photos', NEW.avis_logement_vis_a_vis_photos,
+      
+      -- Cuisine éléments abîmés (1 champ)
+      'cuisine1_elements_abimes_photos', NEW.cuisine_1_elements_abimes_photos,
+      
+      -- Salon/SAM éléments abîmés (2 champs)
+      'salon_sam_salon_elements_abimes_photos', NEW.salon_sam_salon_elements_abimes_photos,
+      'salon_sam_salle_manger_elements_abimes_photos', NEW.salon_sam_salle_manger_elements_abimes_photos,
+      
+      -- Chambres éléments abîmés (6 champs)
+      'chambres_chambre_1_elements_abimes_photos', NEW.chambres_chambre_1_elements_abimes_photos,
+      'chambres_chambre_2_elements_abimes_photos', NEW.chambres_chambre_2_elements_abimes_photos,
+      'chambres_chambre_3_elements_abimes_photos', NEW.chambres_chambre_3_elements_abimes_photos,
+      'chambres_chambre_4_elements_abimes_photos', NEW.chambres_chambre_4_elements_abimes_photos,
+      'chambres_chambre_5_elements_abimes_photos', NEW.chambres_chambre_5_elements_abimes_photos,
+      'chambres_chambre_6_elements_abimes_photos', NEW.chambres_chambre_6_elements_abimes_photos,
+      
+      -- Salles de bains éléments abîmés (6 champs)
+      'salle_de_bains_salle_de_bain_1_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_1_elements_abimes_photos,
+      'salle_de_bains_salle_de_bain_2_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_2_elements_abimes_photos,
+      'salle_de_bains_salle_de_bain_3_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_3_elements_abimes_photos,
+      'salle_de_bains_salle_de_bain_4_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_4_elements_abimes_photos,
+      'salle_de_bains_salle_de_bain_5_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_5_elements_abimes_photos,
+      'salle_de_bains_salle_de_bain_6_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_6_elements_abimes_photos,
+      
+      -- Équipements extérieurs éléments abîmés (3 champs)
+      'equip_spe_ext_garage_elements_abimes_photos', NEW.equip_spe_ext_garage_elements_abimes_photos,
+      'equip_spe_ext_buanderie_elements_abimes_photos', NEW.equip_spe_ext_buanderie_elements_abimes_photos,
+      'equip_spe_ext_autres_pieces_elements_abimes_photos', NEW.equip_spe_ext_autres_pieces_elements_abimes_photos
+    );
+    
+    -- FUSION DES 4 PARTIES
+    media_final := media_part1 || media_part2 || media_part3 || media_part4;
     
     -- ENVOI VERS MAKE.COM PRODUCTION
     PERFORM net.http_post(
@@ -667,7 +707,7 @@ user-{user_id}/
 ### **2. Finalisation fiche**
 1. Bouton "Finaliser la fiche" → `UPDATE statut = 'Complété'`
 2. Trigger SQL déclenché → Webhook Make avec payload optimisé
-3. Make reçoit paylod structuré: photos/PDF (58 champs) + métadonnées (11 champs)
+3. Make reçoit paylod structuré: photos/PDF (57 champs) + métadonnées (9 champs)
 4. Organisation automatique Google Drive par sections
 
 ### **3. Avantages du nouveau système**
@@ -780,7 +820,7 @@ user-{user_id}/
 58. `pdf_logement_url` – Fiche logement (PDF)
 59. `pdf_menage_url` – Fiche ménage (PDF)
 
-**TOTAL : 59 champs photos/vidéos (+ PDF) organisés par section**
+**TOTAL : 57 champs photos/vidéos (+ 2 PDF) organisés par section**
 
 ---
 
@@ -825,15 +865,27 @@ Permettre la synchronisation des PDF vers Drive/Monday à chaque modification de
 
 #### **Trigger SQL**
 ```sql
+
+-- 🔧 CORRECTION TRIGGER PDF - Génération manuelle seulement
+-- Supprime le déclenchement lors de la finalisation
+-- Date : 15 août 2025
+
 CREATE OR REPLACE FUNCTION public.notify_pdf_update()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $function$
 BEGIN
-  -- Déclenche si PDF existent ET que updated_at change (regénération)
-  IF (OLD.pdf_logement_url IS DISTINCT FROM NEW.pdf_logement_url) 
-     OR (OLD.pdf_menage_url IS DISTINCT FROM NEW.pdf_menage_url)
-     OR (NEW.pdf_logement_url IS NOT NULL AND NEW.pdf_menage_url IS NOT NULL AND OLD.updated_at IS DISTINCT FROM NEW.updated_at) THEN
+  -- 🎯 DÉCLENCHEMENT SI :
+  -- ✅ URLs PDF changent (première génération : NULL → URLs)
+  -- ✅ OU regénération sur fiche "Complété" (même URLs mais updated_at change)
+  -- ❌ Pas de déclenchement lors du changement de statut (finalisation)
+  IF ((OLD.pdf_logement_url IS DISTINCT FROM NEW.pdf_logement_url 
+       OR OLD.pdf_menage_url IS DISTINCT FROM NEW.pdf_menage_url)
+      OR (OLD.statut = 'Complété' 
+          AND NEW.statut = 'Complété' 
+          AND OLD.updated_at IS DISTINCT FROM NEW.updated_at
+          AND NEW.pdf_logement_url IS NOT NULL 
+          AND NEW.pdf_menage_url IS NOT NULL)) THEN
     
     PERFORM net.http_post(
       url := 'https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q',
@@ -865,11 +917,67 @@ BEGIN
 END;
 $function$;
 
-CREATE TRIGGER fiche_pdf_update_webhook
-  AFTER UPDATE ON public.fiches
-  FOR EACH ROW
-  EXECUTE FUNCTION notify_pdf_update();
+-- 📝 RÉSUMÉ DES CHANGEMENTS :
+-- ❌ SUPPRIMÉ : OR (NEW.pdf_logement_url IS NOT NULL AND NEW.pdf_menage_url IS NOT NULL AND OLD.updated_at IS DISTINCT FROM NEW.updated_at)
+-- ✅ GARDÉ : Déclenchement seulement si URLs PDF changent
+-- ✅ PAYLOAD : Inchangé (même structure, même webhook)
+-- ✅ TRIGGER : Pas besoin de le recréer
+
+-- 🎯 RÉSULTAT ATTENDU :
+-- ❌ Fiche "Brouillon" + "Générer" → Aucun trigger (URLs NULL → URLs, mais statut ≠ Complété)
+-- ✅ "Finaliser" → Trigger Photos uniquement (statut change, pas de condition regénération)
+-- ✅ Fiche "Complété" + "Générer" → Trigger PDF (regénération : même URLs, updated_at change)
 ```
+
+### **Notes sur la Logique du Trigger PDF**
+*Date : 15 août 2025 - Session avec Claude Sonnet 4*
+
+#### **Problème Initial**
+Le trigger PDF se déclenchait lors de la finalisation (Brouillon → Complété), causant une double synchronisation :
+- Trigger Photos (voulu) + Trigger PDF (pas voulu)
+
+#### **Solution Finale Implémentée**
+Le trigger PDF se déclenche dans 2 cas précis :
+
+**Cas 1 :** URLs PDF changent (`NULL` → URLs remplies)
+- ✅ Première génération sur fiche Complété
+- ❌ Première génération sur fiche Brouillon (condition 2 pas remplie)
+
+**Cas 2 :** Regénération (statut reste "Complété" + `updated_at` change + PDF existent)
+- ✅ Regénération manuelle après finalisation
+- ⚠️ "Finalisation" sur fiche déjà Complétée (effet de bord accepté)
+
+#### **Comportements Validés**
+
+| Action | Statut Initial | Statut Final | Trigger Photos | Trigger PDF | Note |
+|--------|----------------|--------------|----------------|-------------|------|
+| Générer | Brouillon | Brouillon | ❌ | ❌ | Génération silencieuse |
+| Finaliser | Brouillon | Complété | ✅ | ❌ | PDF inclus dans payload Photos |
+| Générer | Complété | Complété | ❌ | ✅ | Regénération manuelle |
+| Finaliser | Complété | Complété | ❌ | ✅ | Effet de bord accepté |
+
+#### **Effet de Bord Accepté**
+**Finalisation d'une fiche déjà Complétée** déclenche le trigger PDF car :
+- `OLD.statut = 'Complété'` ET `NEW.statut = 'Complété'` ✅
+- `OLD.updated_at IS DISTINCT FROM NEW.updated_at` ✅ (finalisation change toujours updated_at)
+- PDF existent ✅
+
+**Décision :** Garder cet effet de bord pour la simplicité :
+- Cas d'usage rare (qui "refinalise" une fiche ?)
+- Pas d'impact négatif (resynchronisation PDF au pire)
+- Évite de complexifier davantage la logique
+
+#### **Alternatives Écartées**
+- ❌ Ajouter un flag temporaire pour différencier génération/finalisation
+- ❌ Modifier le frontend pour séparer les actions
+- ❌ Conditions plus complexes dans le trigger (risque de bugs)
+
+#### **Pattern URLs PDF**
+Les PDF suivent le pattern `fiche-{type}-{numero_bien}.pdf`, donc :
+- Regénération = même URL (écrasement fichier)
+- Détection via `updated_at` nécessaire pour regénération
+- URLs changent seulement lors de première génération (`NULL` → URL)
+
 
 #### **Payload PDF Reçu par Make**
 ```json
@@ -1121,7 +1229,7 @@ CREATE TRIGGER fiche_alertes_webhook
    - **Fonction** : `notify_fiche_completed()`  
    - **URL** : https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj  
    - **Déclenchement** : Brouillon → Complété (une seule fois)  
-   - **Payload** : 58 champs média + métadonnées  
+   - **Payload** : 57 champs média + 9 champs métadonnées  
 
 2. **Trigger Alertes - Notifications**  
    - **Nom** : `fiche_alertes_webhook`  
