@@ -855,37 +855,23 @@ user-{user_id}/
 ### **Trigger PDF Indépendant ✅**
 
 #### **Objectif**
-Permettre la synchronisation des PDF vers Drive/Monday à chaque modification de fiche, indépendamment du workflow principal de finalisation.
+Permettre la synchronisation des PDF vers Drive/Monday à chaque génération de PDF, avec isolation complète des autres triggers.
 
 #### **Déclenchement**
 - **Condition 1** : URLs PDF changent (première génération)
-- **Condition 2** : PDF existent ET `updated_at` change (regénération après modif)
-- **Fréquence** : À chaque génération/regénération de PDF
+- **Condition 2** : PDF existent ET `pdf_last_generated_at` change (regénération après modif)
+- **Fréquence** : À chaque génération/regénération de PDF uniquement
 - **URL** : `https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q`
 
 #### **Trigger SQL**
 ```sql
-
--- 🔧 CORRECTION TRIGGER PDF - Génération manuelle seulement
--- Supprime le déclenchement lors de la finalisation
--- Date : 15 août 2025
-
 CREATE OR REPLACE FUNCTION public.notify_pdf_update()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $function$
 BEGIN
-  -- 🎯 DÉCLENCHEMENT SI :
-  -- ✅ URLs PDF changent (première génération : NULL → URLs)
-  -- ✅ OU regénération sur fiche "Complété" (même URLs mais updated_at change)
-  -- ❌ Pas de déclenchement lors du changement de statut (finalisation)
-  IF ((OLD.pdf_logement_url IS DISTINCT FROM NEW.pdf_logement_url 
-       OR OLD.pdf_menage_url IS DISTINCT FROM NEW.pdf_menage_url)
-      OR (OLD.statut = 'Complété' 
-          AND NEW.statut = 'Complété' 
-          AND OLD.updated_at IS DISTINCT FROM NEW.updated_at
-          AND NEW.pdf_logement_url IS NOT NULL 
-          AND NEW.pdf_menage_url IS NOT NULL)) THEN
+  -- 🎯 DÉCLENCHEMENT SI : pdf_last_generated_at change (génération ou regénération)
+  IF OLD.pdf_last_generated_at IS DISTINCT FROM NEW.pdf_last_generated_at THEN
     
     PERFORM net.http_post(
       url := 'https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q',
@@ -917,67 +903,38 @@ BEGIN
 END;
 $function$;
 
--- 📝 RÉSUMÉ DES CHANGEMENTS :
--- ❌ SUPPRIMÉ : OR (NEW.pdf_logement_url IS NOT NULL AND NEW.pdf_menage_url IS NOT NULL AND OLD.updated_at IS DISTINCT FROM NEW.updated_at)
--- ✅ GARDÉ : Déclenchement seulement si URLs PDF changent
--- ✅ PAYLOAD : Inchangé (même structure, même webhook)
--- ✅ TRIGGER : Pas besoin de le recréer
-
--- 🎯 RÉSULTAT ATTENDU :
--- ❌ Fiche "Brouillon" + "Générer" → Aucun trigger (URLs NULL → URLs, mais statut ≠ Complété)
--- ✅ "Finaliser" → Trigger Photos uniquement (statut change, pas de condition regénération)
--- ✅ Fiche "Complété" + "Générer" → Trigger PDF (regénération : même URLs, updated_at change)
 ```
+#### **🔧 SOLUTION FINALE - Champ Dédié PDF**
+*Date : 18 août 2025 - Session avec Claude Sonnet 4*
 
-### **Notes sur la Logique du Trigger PDF**
-*Date : 15 août 2025 - Session avec Claude Sonnet 4*
+**Problème résolu :** Trigger PDF se déclenchait lors des modifications d'alertes car surveillait `updated_at` qui change systématiquement.
 
-#### **Problème Initial**
-Le trigger PDF se déclenchait lors de la finalisation (Brouillon → Complété), causant une double synchronisation :
-- Trigger Photos (voulu) + Trigger PDF (pas voulu)
+**Solution définitive :** Champ dédié `pdf_last_generated_at` mis à jour uniquement lors de génération PDF.
 
-#### **Solution Finale Implémentée**
-Le trigger PDF se déclenche dans 2 cas précis :
+**Changements appliqués :**
+- ✅ **Base** : Ajout colonne `pdf_last_generated_at TIMESTAMP`
+- ✅ **Trigger** : `OLD.updated_at` → `OLD.pdf_last_generated_at`  
+- ✅ **Frontend** : Ajout `pdf_last_generated_at` dans `triggerPdfWebhook`
+- ✅ **Mapping** : Ajout dans `supabaseHelpers.js`
 
-**Cas 1 :** URLs PDF changent (`NULL` → URLs remplies)
-- ✅ Première génération sur fiche Complété
-- ❌ Première génération sur fiche Brouillon (condition 2 pas remplie)
+**Logique simplifiée :**
+```sql
+-- Trigger se déclenche SI ET SEULEMENT SI pdf_last_generated_at change
+IF OLD.pdf_last_generated_at IS DISTINCT FROM NEW.pdf_last_generated_at THEN
+Comportements finaux :
+ActionTrigger PhotosTrigger PDFTrigger AlertesGénération PDF❌✅❌Modification alertes❌❌✅Finalisation✅❌❌ (sauf si alertes)
+Avantages :
 
-**Cas 2 :** Regénération (statut reste "Complété" + `updated_at` change + PDF existent)
-- ✅ Regénération manuelle après finalisation
-- ⚠️ "Finalisation" sur fiche déjà Complétée (effet de bord accepté)
+✅ Isolation complète des 3 triggers
+✅ Aucun effet de bord ni cas particulier
+✅ Dissociation totale PDF vs Photos
+✅ Solution définitive et maintenable
 
-#### **Comportements Validés**
+Tests validés :
 
-| Action | Statut Initial | Statut Final | Trigger Photos | Trigger PDF | Note |
-|--------|----------------|--------------|----------------|-------------|------|
-| Générer | Brouillon | Brouillon | ❌ | ❌ | Génération silencieuse |
-| Finaliser | Brouillon | Complété | ✅ | ❌ | PDF inclus dans payload Photos |
-| Générer | Complété | Complété | ❌ | ✅ | Regénération manuelle |
-| Finaliser | Complété | Complété | ❌ | ✅ | Effet de bord accepté |
-
-#### **Effet de Bord Accepté**
-**Finalisation d'une fiche déjà Complétée** déclenche le trigger PDF car :
-- `OLD.statut = 'Complété'` ET `NEW.statut = 'Complété'` ✅
-- `OLD.updated_at IS DISTINCT FROM NEW.updated_at` ✅ (finalisation change toujours updated_at)
-- PDF existent ✅
-
-**Décision :** Garder cet effet de bord pour la simplicité :
-- Cas d'usage rare (qui "refinalise" une fiche ?)
-- Pas d'impact négatif (resynchronisation PDF au pire)
-- Évite de complexifier davantage la logique
-
-#### **Alternatives Écartées**
-- ❌ Ajouter un flag temporaire pour différencier génération/finalisation
-- ❌ Modifier le frontend pour séparer les actions
-- ❌ Conditions plus complexes dans le trigger (risque de bugs)
-
-#### **Pattern URLs PDF**
-Les PDF suivent le pattern `fiche-{type}-{numero_bien}.pdf`, donc :
-- Regénération = même URL (écrasement fichier)
-- Détection via `updated_at` nécessaire pour regénération
-- URLs changent seulement lors de première génération (`NULL` → URL)
-
+✅ Génération PDF → Trigger PDF uniquement
+✅ Modification alertes → Trigger alertes uniquement
+✅ Finalisation → Trigger photos uniquement
 
 #### **Payload PDF Reçu par Make**
 ```json
@@ -1004,9 +961,9 @@ Les PDF suivent le pattern `fiche-{type}-{numero_bien}.pdf`, donc :
 
 ### **Workflow PDF Indépendant**
 
-1. **Génération PDF** : Bouton "📄 Générer et Synchroniser les PDF"
+1. **Génération PDF** : Bouton "📄 Générer les PDF"
 2. **Upload Storage** : PDF vers bucket `fiche-pdfs`
-3. **UPDATE Database** : Nouvelles URLs PDF + `updated_at`
+3. **UPDATE Database** : Nouvelles URLs PDF + `pdf_last_generated_at`
 4. **Trigger déclenché** : Webhook PDF automatique
 5. **Make.com** : Téléchargement et organisation Drive
 6. **Résultat** : PDF à jour sur Drive/Monday
@@ -1022,7 +979,7 @@ Les PDF suivent le pattern `fiche-{type}-{numero_bien}.pdf`, donc :
 ### **Tests Validés**
 
 - ✅ **Première génération** : Webhook déclenché correctement
-- ✅ **Regénération** : Même URLs → webhook déclenché via `updated_at`
+- ✅ **Regénération** : Même URLs → webhook déclenché via `pdf_last_generated_at`
 - ✅ **Make reception** : Payload structure conforme
 - ✅ **Isolation** : Aucune interférence avec trigger principal
 - ✅ **URLs accessibles** : PDF téléchargeables depuis Make
