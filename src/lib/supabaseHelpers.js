@@ -992,6 +992,7 @@ export const mapFormDataToSupabase = (formData) => {
     // PDF URLs - AJOUT POUR MAKE
     pdf_logement_url: formData.pdf_logement_url || null,
     pdf_menage_url: formData.pdf_menage_url || null,
+    pdf_last_generated_at: formData.pdf_last_generated_at || null,
 
     updated_at: new Date().toISOString()
 
@@ -2075,7 +2076,8 @@ export const mapSupabaseToFormData = (supabaseData) => {
     },
 
     pdf_logement_url: supabaseData.pdf_logement_url || null,
-    pdf_menage_url: supabaseData.pdf_menage_url || null
+    pdf_menage_url: supabaseData.pdf_menage_url || null,
+    pdf_last_generated_at: supabaseData.pdf_last_generated_at
   }
 }
 

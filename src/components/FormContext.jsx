@@ -1585,6 +1585,7 @@ export function FormProvider({ children }) {
         .update({
           pdf_logement_url: pdfLogementUrl,
           pdf_menage_url: pdfMenageUrl,
+          pdf_last_generated_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq('id', formData.id)
