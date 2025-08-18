@@ -1,41 +1,32 @@
 # 📋 SUIVI - Développement Fiche Logement
 
-*Mise à jour : 14 août 2025*
-
----
-
 ## 🎯 **MISSION SPÉCIFIQUE**
 
-**Objectif :** Ajout section "Avis sur le logement" avec évaluations et alertes automatiques
+**Objectif :** Refonte section "Avis" avec évaluations et alertes automatiques
 
 ### **✅ RÉALISÉ**
 1. **Section Avis** restructurée et déplacée position 8 → 3 (après "Logement")
 2. **4 nouvelles parties** : Vidéo globale + Évaluations (quartier/immeuble/logement)  
 3. **Système d'alertes automatiques** : 12 champs critiques → Trigger Supabase → Webhook Make
-4. **Photos éléments abîmés** : 7 sections de pièces (cuisine, salon, chambres, SDB, extérieur)
-5. **Configuration WiFi** : Section permanente avec statut + automation Monday
+4. **Photos éléments abîmés** : 7 sections de pièces (cuisine, salon/SAM, chambres, SDB, extérieur)
+5. **Configuration WiFi** : Section permanente avec statut (équipements)
 
-**État :** ✅ **TERMINÉ** - Reste configuration Make notifications
+**État :** ✅ **TERMINÉ** - Reste configuration notifications dans Make
 
 ---
 
-## 🎯 **STATUT GLOBAL DU PROJET**
+## 🎯 **STATUT GLOBAL DU PROJET** 
 
 ### **✅ TERMINÉ RÉCEMMENT**
 - ✅ **Système d'alertes automatiques** : Trigger Supabase + webhook Make opérationnels
 - ✅ **Section Avis complète** : 4 nouvelles évaluations + upload photos + vidéos globales
 - ✅ **Configuration Wi-Fi** : Section permanente dans Équipements  
 - ✅ **Éléments abîmés** : Questions + photos dans 7 sections
-- ✅ **Nettoyage affichages conditionnels** : WiFi + Parking
 
 ### **🔄 EN COURS**
-- 🔄 **Configuration Make notifications** : Filtres + templates emails
+- 🔄 **Configuration Make notifications** : Filtres + templates emails + remontée de WiFi dans Monday
 - 🔄 **Mise à jour trigger Make.com** : 21 nouveaux champs photos
 
-### **⏳ À VENIR**
-- ⏳ **Automation Monday WiFi** : Colonne automatique selon statut
-- ⏳ Tests utilisateurs complets
-- ⏳ Documentation utilisateur finale
 
 ---
 
@@ -94,7 +85,7 @@
 ### **Architecture implémentée**
 - ✅ **Trigger Supabase** : `notify_fiche_alerts()` avec logique intelligente
 - ✅ **Webhook dédié** : `https://hook.eu2.make.com/b935os296umo923k889s254wb88wjxn4`
-- ✅ **Payload optimisé** : 12 champs critiques + métadonnées
+- ✅ **Payload optimisé** : 12 champs + métadonnées
 
 ### **Logique de déclenchement**
 - **Finalisation** : Brouillon → Complété = ✅ Webhook si alertes présentes

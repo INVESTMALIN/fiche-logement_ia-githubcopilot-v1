@@ -14,7 +14,7 @@
 
 ### ✅ **Phase 2 : Webhook Conditionnel**
 - **✅ Trigger SQL** se déclenche status "Brouillon" -> "Complété"
-- **✅ Payload** optimisé avce les champs nécessaires (58 champs)
+- **✅ Payload** optimisé avce les champs nécessaires (57 champs)
 - **✅ Make.com** reçoit données structurées
 - **✅ Tests end-to-end** validés avec fiches réelles
 
@@ -172,7 +172,7 @@ BEGIN
       'securite_photos_equipements', NEW.securite_photos_equipements_securite
     );
     
-    -- FUSION DES 3 PARTIES (58 champs total)
+    -- FUSION DES 3 PARTIES (57 champs total)
     media_final := media_part1 || media_part2 || media_part3;
     
     -- ENVOI VERS MAKE.COM PRODUCTION
@@ -252,7 +252,7 @@ CREATE TRIGGER fiche_any_update_webhook
     "salle_de_bain_1_photos": ["https://xyz.supabase.co/.../sdb1.png"],
     "cuisine1_cuisiniere_photo": ["https://xyz.supabase.co/.../cuisiniere.png"],
     "securite_photos_equipements": ["https://xyz.supabase.co/.../securite1.png"],
-    // ... 70 champs au total (58 médias + 11 métadonnées)
+    // ... 70 champs au total (57 médias + + 2 champs PDF + 9 métadonnées)
   }
 }
 ```
@@ -284,10 +284,6 @@ CREATE TRIGGER fiche_any_update_webhook
 ### **Structure finale validée**
 ```
 
-📁 1. Fiche logement et ménage (2 champs)
-- Fiche-logement-num de bien.pdf
-- Fiche-ménage-num de bien.pdf
-
 📁 2. Photos Visite Logement (16 champs)
 - chambres_chambre_1_photos → chambres_chambre_6_photos
 - salle_de_bain_1_photos → salle_de_bain_6_photos  
@@ -304,8 +300,8 @@ CREATE TRIGGER fiche_any_update_webhook
 - visite_video_visite
 
 
-📁 5. Tuto équipements (37 champs)
-- clefs_emplacement_photo (emplacement boîte à clefs)
+📁 5. Tuto équipements (38 champs)
+- clefs_emplacement_photo
 - clefs_interphone_photo  
 - clefs_tempo_gache_photo
 - clefs_digicode_photo
@@ -347,7 +343,7 @@ CREATE TRIGGER fiche_any_update_webhook
 - piscine_video
 ```
 
-Total : 58 champs médias ✅
+Total : 57 champs médias ✅
 
 ---
 
