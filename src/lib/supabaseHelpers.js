@@ -992,7 +992,7 @@ export const mapFormDataToSupabase = (formData) => {
     // PDF URLs - AJOUT POUR MAKE
     pdf_logement_url: formData.pdf_logement_url || null,
     pdf_menage_url: formData.pdf_menage_url || null,
-    pdf_last_generated_at: formData.pdf_last_generated_at || null,
+    // pdf_last_generated_at: formData.pdf_last_generated_at || null, Bug: Le mapFormDataToSupabase() écrase pdf_last_generated_at lors de la finalisation.
 
     updated_at: new Date().toISOString()
 
