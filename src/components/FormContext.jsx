@@ -1578,6 +1578,16 @@ export function FormProvider({ children }) {
         logementUrl: pdfLogementUrl,
         menageUrl: pdfMenageUrl
       })
+
+      // DEBUG
+      const updateData = {
+        pdf_logement_url: pdfLogementUrl,
+        pdf_menage_url: pdfMenageUrl,
+        pdf_last_generated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      
+      console.log('🔍 Données envoyées à Supabase:', updateData)
   
       // UPDATE des colonnes PDF en base → déclenche automatiquement le trigger
       const { data, error } = await supabase
