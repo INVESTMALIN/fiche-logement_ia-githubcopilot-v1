@@ -288,7 +288,6 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_video_systeme_chauffage: formData.section_equipements?.video_systeme_chauffage ?? null,
 
     // Équipements checklist
-    equipements_wifi: formData.section_equipements?.wifi ?? null,
     equipements_tv: formData.section_equipements?.tv ?? null,
     equipements_climatisation: formData.section_equipements?.climatisation ?? null,
     equipements_chauffage: formData.section_equipements?.chauffage ?? null,
@@ -1343,7 +1342,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
       video_systeme_chauffage: supabaseData.equipements_video_systeme_chauffage ?? null,
       
       // Équipements checklist
-      wifi: supabaseData.equipements_wifi ?? null,
       tv: supabaseData.equipements_tv ?? null,
       climatisation: supabaseData.equipements_climatisation ?? null,
       chauffage: supabaseData.equipements_chauffage ?? null,
