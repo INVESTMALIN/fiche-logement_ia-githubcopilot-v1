@@ -1,7 +1,12 @@
 // src/components/PDFMenageTemplate.jsx - VERSION 2 CLEAN & PHOTOS GRANDES
 import React from 'react'
-
+  
+const isVideoFile = (url) => {
+  if (!url) return false
+  return /\.(mp4|webm|ogg|mov|avi|m4v|mkv)$/i.test(url)
+} 
 const PDFMenageTemplate = ({ formData }) => {
+
   // Vérification des données
   if (!formData) {
     return (
@@ -301,32 +306,80 @@ const PhotosDisplayMenage = ({ photos, sectionTitle }) => {
                 overflow: 'hidden',
                 backgroundColor: '#ffffff',
                 boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                // 🔧 Le lien s'adapte à l'image
                 width: 'fit-content'
               }}
             >
-              <img 
-                src={photo.url}
-                alt={photo.label}
-                style={{
-                  display: 'block',
-                  // 🔧 TAILLES PLUS GRANDES pour le ménage
-                  maxWidth: photos.length === 1 ? '350px' : 
-         photos.length === 2 ? '280px' : 
-         photos.length <= 3 ? '220px' : '170px',
-maxHeight: photos.length === 1 ? '250px' : 
-          photos.length === 2 ? '200px' : 
-          photos.length <= 3 ? '170px' : '140px',
-                  width: 'auto',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  backgroundColor: '#f7fafc'
-                }}
-                onError={(e) => {
-                  e.target.style.display = 'none'
-                }}
-              />
+              {isVideoFile(photo.url) ? (
+                // AFFICHAGE VIDÉO : Format adapté aux GRANDES tailles ménage
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '25px 15px',
+                  backgroundColor: '#f7fafc',
+                  // 🔧 GRANDES TAILLES pour ménage (format portrait adaptées)
+                  width: photos.length === 1 ? '200px' : 
+                        photos.length === 2 ? '160px' : 
+                        photos.length <= 3 ? '120px' : '100px',
+                  height: photos.length === 1 ? '280px' : 
+                          photos.length === 2 ? '220px' : 
+                          photos.length <= 3 ? '170px' : '140px'
+                }}>
+                  <div style={{
+                    fontSize: photos.length === 1 ? '48px' : 
+                            photos.length === 2 ? '40px' : 
+                            photos.length <= 3 ? '32px' : '28px',
+                    marginBottom: '12px'
+                  }}>🎬</div>
+                  <div style={{
+                    fontSize: photos.length === 1 ? '14pt' : 
+                            photos.length === 2 ? '12pt' : 
+                            photos.length <= 3 ? '10pt' : '9pt',
+                    color: '#4a5568',
+                    textAlign: 'center',
+                    fontWeight: '600',
+                    marginBottom: '6px'
+                  }}>
+                    VIDÉO
+                  </div>
+                  <div style={{
+                    fontSize: photos.length === 1 ? '10pt' : 
+                            photos.length === 2 ? '9pt' : 
+                            photos.length <= 3 ? '8pt' : '7pt',
+                    color: '#718096',
+                    textAlign: 'center',
+                    lineHeight: '1.3'
+                  }}>
+                    Cliquer pour voir
+                  </div>
+                </div>
+              ) : (
+                // AFFICHAGE IMAGE : tailles originales ménage
+                <img 
+                  src={photo.url}
+                  alt={photo.label}
+                  style={{
+                    display: 'block',
+                    // 🔧 TAILLES ORIGINALES MÉNAGE (plus grandes)
+                    maxWidth: photos.length === 1 ? '350px' : 
+                            photos.length === 2 ? '280px' : 
+                            photos.length <= 3 ? '220px' : '170px',
+                    maxHeight: photos.length === 1 ? '250px' : 
+                              photos.length === 2 ? '200px' : 
+                              photos.length <= 3 ? '170px' : '140px',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    backgroundColor: '#f7fafc'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                  }}
+                />
+              )}
             </a>
+
             <div style={{
               fontSize: '9pt',
               color: '#4a5568',

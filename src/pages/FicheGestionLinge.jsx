@@ -6,6 +6,30 @@ import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 
+  const getChampsParType = (typeAccordeon) => {
+    const champsLits = [
+      'couettes', 'oreillers', 'draps_housses', 'housses_couette', 
+      'protections_matelas', 'taies_oreillers'
+    ]
+    
+    const champsMaison = [
+      'draps_bain', 'petites_serviettes', 'tapis_bain', 
+      'torchons', 'plaids', 'oreillers_decoratifs'
+    ]
+    
+    // Si c'est un accordéon de lit (90x200, 140x200, etc.)
+    if (typeAccordeon.includes('x200')) {
+      return champsLits
+    }
+    
+    // Si c'est l'accordéon "autres"
+    if (typeAccordeon === 'autres') {
+      return champsMaison
+    }
+    
+    // Fallback (ne devrait pas arriver)
+    return []
+  }
 
   // Composant pour une section d'inventaire
   const InventaireSection = ({ taille, titre, dataKey, formData, handleInputChange, openSections, toggleSection, getLingeLabel }) => {
@@ -25,7 +49,7 @@ import PhotoUpload from '../components/PhotoUpload'
         
         {isOpen && (
           <div className="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-            {Object.keys(formData.inventaire_90x200 || {}).map((typeLingeKey) => {
+            {getChampsParType(taille).map((typeLingeKey) => {
               const typeLingeLabel = getLingeLabel(typeLingeKey)
               return (
                 <div key={typeLingeKey}>

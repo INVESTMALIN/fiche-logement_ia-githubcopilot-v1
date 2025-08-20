@@ -327,7 +327,7 @@ export default function FicheLogement() {
               </Button>
             </div>
           </div>
-          
+          <div className="h-20"></div>   
         </div>
       </div>
     </div>

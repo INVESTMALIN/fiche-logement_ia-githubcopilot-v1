@@ -557,7 +557,6 @@ export default function FicheAvis() {
                   label=""
                   multiple={true}
                   maxFiles={5}
-                  capture={true}
                   acceptVideo={false}
                 />
               </div>

@@ -1,6 +1,12 @@
 // src/components/PDFTemplate.jsx - VERSION 2 CLEAN & COMPLETE
 import React from 'react'
 
+// Helper pour détecter les vidéos
+const isVideoFile = (url) => {
+  if (!url) return false
+  return /\.(mp4|webm|ogg|mov|avi|m4v|mkv)$/i.test(url)
+}
+
 const PDFTemplate = ({ formData }) => {
   // Vérification des données
   if (!formData) {
@@ -368,21 +374,63 @@ const PDFTemplate = ({ formData }) => {
               pageBreakInside: 'avoid',
               // Pas de width fixe, laisse l'image définir la taille
             }}>
-              <a 
-                href={photo.url} 
-                target="_blank"
-                style={{ 
-                  display: 'block', 
-                  textDecoration: 'none',
-                  border: '2px solid #3182ce',
-                  borderRadius: '6px',
-                  overflow: 'hidden',
-                  backgroundColor: '#ffffff',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  // 🔧 Le lien s'adapte à l'image
-                  width: 'fit-content'
-                }}
-              >
+            <a 
+              href={photo.url} 
+              target="_blank"
+              style={{ 
+                display: 'block', 
+                textDecoration: 'none',
+                border: '3px solid #dbae61',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                backgroundColor: '#ffffff',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                width: 'fit-content'
+              }}
+            >
+{isVideoFile(photo.url) ? (
+  // AFFICHAGE VIDÉO : Format mobile portrait
+  <div style={{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '15px 10px',
+    backgroundColor: '#f7fafc',
+    // 🔧 FORMAT MOBILE PORTRAIT (plus haut que large)
+    width: photos.length === 1 ? '100px' : 
+           photos.length === 2 ? '85px' : 
+           photos.length <= 4 ? '70px' : '60px',
+    height: photos.length === 1 ? '140px' : 
+            photos.length === 2 ? '120px' : 
+            photos.length <= 4 ? '100px' : '85px'
+  }}>
+    <div style={{
+      fontSize: photos.length === 1 ? '28px' : 
+               photos.length === 2 ? '24px' : '20px',
+      marginBottom: '6px'
+    }}>🎬</div>
+    <div style={{
+      fontSize: photos.length === 1 ? '9pt' : 
+               photos.length === 2 ? '8pt' : '7pt',
+      color: '#4a5568',
+      textAlign: 'center',
+      fontWeight: '600',
+      marginBottom: '3px'
+    }}>
+      VIDÉO
+    </div>
+    <div style={{
+      fontSize: photos.length === 1 ? '7pt' : '6pt',
+      color: '#718096',
+      textAlign: 'center',
+      lineHeight: '1.2'
+    }}>
+      Cliquer pour voir
+    </div>
+  </div>
+) : (
+                // AFFICHAGE IMAGE : normal
                 <img 
                   src={photo.url}
                   alt={photo.label}
@@ -390,10 +438,10 @@ const PDFTemplate = ({ formData }) => {
                     display: 'block',
                     // 🔧 TAILLE RESPONSIVE basée sur le nombre de photos
                     maxWidth: photos.length === 1 ? '150px' : 
-         photos.length === 2 ? '120px' : 
-         photos.length <= 4 ? '100px' : '80px',
-maxHeight: photos.length === 1 ? '120px' : 
-          photos.length === 2 ? '100px' : '70px',
+                photos.length === 2 ? '120px' : 
+                photos.length <= 4 ? '100px' : '80px',
+            maxHeight: photos.length === 1 ? '120px' : 
+                      photos.length === 2 ? '100px' : '70px',
                     width: 'auto',
                     height: 'auto',
                     objectFit: 'contain',
@@ -403,7 +451,9 @@ maxHeight: photos.length === 1 ? '120px' :
                     e.target.style.display = 'none'
                   }}
                 />
-              </a>
+              )}
+            </a>
+
               <div style={{
                 fontSize: '8pt',
                 color: '#6b7280',

@@ -42,30 +42,48 @@ export default function FicheCuisine2() {
   }
 
   // Composant CounterInput réutilisable
-  const CounterInput = ({ label, fieldPath, value }) => (
-    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-      <span className="text-sm flex-1">{label}</span>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => handleCounterChange(fieldPath, -1)}
-          className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-lg font-semibold"
-        >
-          −
-        </button>
-        <span className="w-12 text-center font-semibold text-lg">
-          {value || 0}
-        </span>
-        <button
-          type="button"
-          onClick={() => handleCounterChange(fieldPath, 1)}
-          className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center text-lg font-semibold"
-        >
-          +
-        </button>
+  const CounterInput = ({ label, fieldPath, value }) => {
+  
+    // Handler pour empêcher le scroll mobile
+    const handleCounterClick = (delta, event) => {
+      // Empêcher le scroll automatique mobile
+      event.preventDefault()
+      event.stopPropagation()
+      
+      // Appeler la fonction de compteur existante
+      handleCounterChange(fieldPath, delta)
+      
+      // Forcer la perte de focus pour éviter le keyboard
+      event.target.blur()
+    }
+    
+    return (
+      <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+        <span className="text-sm flex-1">{label}</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => handleCounterClick(-1, e)}
+            className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-lg font-semibold"
+            style={{ touchAction: 'manipulation' }} // CSS inline pour ce bouton uniquement
+          >
+            −
+          </button>
+          <span className="w-12 text-center font-semibold text-lg">
+            {value || 0}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => handleCounterClick(1, e)}
+            className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center text-lg font-semibold"
+            style={{ touchAction: 'manipulation' }} // CSS inline pour ce bouton uniquement
+          >
+            +
+          </button>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   // Listes des ustensiles par catégorie
   const vaisselle = [
