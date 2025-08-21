@@ -172,10 +172,14 @@ function EditUserModal({ user, onClose, onSuccess }) {
           </div>
 
           <div className="flex gap-3 justify-end pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          <button
+              onClick={() => setDeleteConfirm(null)}
+              disabled={deleting}
+              className={`px-4 py-2 transition-colors ${
+                deleting 
+                  ? 'text-gray-400 cursor-not-allowed' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
             >
               Annuler
             </button>
@@ -354,6 +358,7 @@ export default function AdminConsole() {
 
   // State pour le modal de suppression
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Charger les données utilisateurs et fiches
   const loadData = async () => {
@@ -661,18 +666,33 @@ export default function AdminConsole() {
               </button>
               <button
                 onClick={async () => {
-                  const result = await deleteFiche(deleteConfirm.id)
-                  if (result.success) {
-                    console.log('Fiche supprimée avec succès')
-                    loadData()
-                  } else {
-                    console.error('Erreur suppression:', result.error)
+                  setDeleting(true) // 🆕 Début du loading
+                  try {
+                    const result = await deleteFiche(deleteConfirm.id)
+                    if (result.success) {
+                      console.log('Fiche supprimée avec succès')
+                      loadData()
+                    } else {
+                      console.error('Erreur suppression:', result.error)
+                    }
+                  } catch (error) {
+                    console.error('Erreur inattendue:', error)
+                  } finally {
+                    setDeleting(false) // 🆕 Fin du loading
+                    setDeleteConfirm(null)
                   }
-                  setDeleteConfirm(null)
                 }}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                disabled={deleting}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                  deleting
+                    ? 'bg-red-400 cursor-not-allowed text-white'
+                    : 'bg-red-600 hover:bg-red-700 text-white'
+                }`}
               >
-                Supprimer
+                {deleting && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                )}
+                {deleting ? 'Suppression...' : 'Supprimer'}
               </button>
             </div>
           </div>

@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState("Tous")
   const [viewMode, setViewMode] = useState('grid') // 'grid' ou 'list'
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [deleting, setDeleting] = useState(false)
   const [shareModal, setShareModal] = useState({
     isOpen: false,
     fiche: null
@@ -108,16 +109,23 @@ export default function Dashboard() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteConfirm) return
-
-    const result = await deleteFiche(deleteConfirm.id)
+  
+    setDeleting(true) // 🆕 Début du loading
     
-    if (result.success) {
-      console.log('Fiche supprimée avec succès')
-    } else {
-      console.error('Erreur suppression:', result.error)
+    try {
+      const result = await deleteFiche(deleteConfirm.id)
+      
+      if (result.success) {
+        console.log('Fiche supprimée avec succès')
+      } else {
+        console.error('Erreur suppression:', result.error)
+      }
+    } catch (error) {
+      console.error('Erreur inattendue:', error)
+    } finally {
+      setDeleting(false) // 🆕 Fin du loading
+      setDeleteConfirm(null)
     }
-    
-    setDeleteConfirm(null)
   }
 
   const handleDeleteCancel = () => {
@@ -534,15 +542,28 @@ export default function Dashboard() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={handleDeleteCancel}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                disabled={deleting}
+                className={`px-4 py-2 transition-colors ${
+                  deleting 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
               >
                 Annuler
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                disabled={deleting}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                  deleting
+                    ? 'bg-red-400 cursor-not-allowed text-white'
+                    : 'bg-red-600 hover:bg-red-700 text-white'
+                }`}
               >
-                Supprimer
+                {deleting && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                )}
+                {deleting ? 'Suppression...' : 'Supprimer'}
               </button>
             </div>
           </div>
