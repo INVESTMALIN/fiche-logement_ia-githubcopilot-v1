@@ -173,14 +173,10 @@ function EditUserModal({ user, onClose, onSuccess }) {
           </div>
 
           <div className="flex gap-3 justify-end pt-4">
-          <button
-              onClick={() => setDeleteConfirm(null)}
-              disabled={deleting}
-              className={`px-4 py-2 transition-colors ${
-                deleting 
-                  ? 'text-gray-400 cursor-not-allowed' 
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
               Annuler
             </button>
