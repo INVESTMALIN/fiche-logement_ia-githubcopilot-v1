@@ -141,9 +141,10 @@ export default function FicheLogement() {
                   !getField('section_logement.numero_bien') || getField('section_logement.numero_bien').trim() === '' 
                     ? 'border-red-500' 
                     : ''
-                }`}
+                } ${getField('id') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 value={getField('section_logement.numero_bien') || ''}
                 onChange={(e) => handleInputChange('section_logement.numero_bien', e.target.value)}
+                disabled={!!getField('id')}
               />
               {(!getField('section_logement.numero_bien') || getField('section_logement.numero_bien').trim() === '') && (
                 <p className="text-red-600 text-sm mt-1">
@@ -327,7 +328,7 @@ export default function FicheLogement() {
               </Button>
             </div>
           </div>
-          <div className="h-20"></div>   
+          <div className="h-20"></div>
         </div>
       </div>
     </div>
