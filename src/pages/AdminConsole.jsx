@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { deleteFiche } from '../lib/supabaseHelpers'
 import { Edit, Archive, Trash2, RotateCcw, Eye, MoreHorizontal, Search, UserPen } from 'lucide-react'
 import FichePreviewModal from '../components/FichePreviewModal'
 import ReassignModal from '../components/ReassignModal'
@@ -425,20 +426,6 @@ export default function AdminConsole() {
     }
   }
 
-  const deleteFiche = async (ficheId) => {
-    try {
-      const { error } = await supabase
-        .from('fiches')
-        .delete()
-        .eq('id', ficheId)
-
-      if (error) throw error
-      return { success: true }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
-
   useEffect(() => {
     loadData()
   }, [])
@@ -522,12 +509,12 @@ export default function AdminConsole() {
   const tabs = [
     { 
       id: 'users', 
-      label: 'Gestion Utilisateurs', 
+      label: 'Utilisateurs', 
       count: users.length 
     },
     { 
       id: 'fiches', 
-      label: 'Toutes les Fiches', 
+      label: 'Toutes les fiches', 
       count: fiches.length 
     },
     { 
@@ -667,7 +654,7 @@ export default function AdminConsole() {
               <button
                 onClick={async () => {
                   setDeleting(true) // 🆕 Début du loading
-                  try {
+                  try {        
                     const result = await deleteFiche(deleteConfirm.id)
                     if (result.success) {
                       console.log('Fiche supprimée avec succès')

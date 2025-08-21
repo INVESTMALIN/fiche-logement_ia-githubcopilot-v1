@@ -149,17 +149,6 @@ export default function Login() {
               </div>
             </form>
 
-            {/* Accès test */}
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-600 font-medium mb-2">Accès test :</p>
-              <p className="text-xs text-blue-600">
-                📧 coordinateur1@test.com | 🔑 Test1234
-              </p>
-              <p className="text-xs text-blue-600">
-                📧 coordinateur2@test.com | 🔑 Test1234
-              </p>
-            </div>
-
             {/* Footer */}
             <div className="mt-8 text-center">
               <p className="text-xs text-gray-500">
