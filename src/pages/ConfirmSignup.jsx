@@ -120,7 +120,12 @@ export default function ConfirmSignup() {
                 </div>
 
                 <Button
-                  onClick={() => navigate('/login')}
+                  onClick={async () => {
+                    // DÉCONNECTER d'abord pour nettoyer toute session
+                    await supabase.auth.signOut()
+                    // Puis rediriger vers login avec des champs vides
+                    navigate('/login')
+                  }}
                   className="w-full py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold rounded-xl hover:from-yellow-500 hover:to-yellow-700 transition-all duration-200"
                 >
                   Me connecter
