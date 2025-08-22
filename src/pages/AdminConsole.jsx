@@ -205,6 +205,7 @@ function NewUserModal({ onClose, onSuccess }) {
   })
   const [loading, setLoading] = useState(false)
 
+  
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -244,6 +245,7 @@ if (profileError) throw profileError
       setLoading(false)
     }
   }
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -287,7 +289,7 @@ if (profileError) throw profileError
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe temporaire</label>
             <input
               type="password"
               value={formData.password}
@@ -309,6 +311,18 @@ if (profileError) throw profileError
               <option value="admin">Admin</option>
               <option value="super_admin">Super Admin</option>
             </select>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-start">
+              <span className="text-blue-600 mr-2">📧</span>
+              <div className="text-xs text-blue-700">
+                <p className="font-medium mb-1">Rappel :</p>
+                <p>1. L'utilisateur va recevoir un e-mail de confirmation.</p>
+                <p>2. Fournissez-lui le mot de passe temporaire.</p>
+                <p>3. Connexion possible après confirmation email.</p>
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-3 justify-end pt-4">
