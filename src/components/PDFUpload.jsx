@@ -10,13 +10,12 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
   const [pdfUrl, setPdfUrl] = useState(null)
   const [error, setError] = useState(null)
 
-
   const generateAndUploadPDF = async () => {
     if (!formData?.id) {
       setError('Aucune donnée de fiche disponible')
       return
     }
-  
+
     setGenerating(true)
     setError(null)
     
@@ -24,57 +23,40 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
       const numeroBien = formData.section_logement?.numero_bien || 'sans-numero'
       
       // ===============================
-      // 1. 🆕 PDF LOGEMENT - SERVEUR (TEST)
+      // 1. GÉNÉRATION PDF LOGEMENT AVEC DEBUG
       // ===============================
-      console.log('📄 Test génération PDF Logement côté SERVEUR...')
+      console.log('📄 Début génération PDF Logement avec html2pdf...')
       
-      
-      const serverPdfResponse = await fetch(`/api/print-pdf?fiche=${formData.id}`, {
-        method: 'GET'
-      })
-      console.log('🔍 Réponse serveur status:', serverPdfResponse.status)
-      console.log('🔍 Content-Type serveur:', serverPdfResponse.headers.get('content-type'))
-      
-      
-      if (!serverPdfResponse.ok) {
-        // Si erreur, voir ce que retourne le serveur
-        const errorText = await serverPdfResponse.text()
-        console.log('🔍 Erreur serveur:', errorText.substring(0, 200))
-        throw new Error(`Erreur serveur PDF: ${serverPdfResponse.status}`)
-      }
-      
-      const logementPdfBlob = await serverPdfResponse.blob()
-      
-      if (logementPdfBlob.type !== 'application/pdf') {
-        throw new Error('Réponse serveur invalide (pas un PDF)')
-      }
-      
-      console.log('✅ PDF Logement SERVEUR généré, taille:', (logementPdfBlob.size / 1024 / 1024).toFixed(2), 'MB')
+      const logementPdfBlob = await generatePDFBlob(`/print-pdf?fiche=${formData.id}`)
+      console.log('✅ PDF Logement généré, taille:', (logementPdfBlob.size / 1024 / 1024).toFixed(2), 'MB')
       
       // ===============================
-      // 2. PDF MÉNAGE - CLIENT (ANCIEN)
+      // 2. GÉNÉRATION PDF MÉNAGE AVEC DEBUG
       // ===============================
-      console.log('📄 Génération PDF Ménage côté CLIENT (ancien)...')
+      console.log('📄 Début génération PDF Ménage avec html2pdf...')
       
       const menagePdfBlob = await generatePDFBlob(`/print-pdf-menage?fiche=${formData.id}`)
-      console.log('✅ PDF Ménage CLIENT généré, taille:', (menagePdfBlob.size / 1024 / 1024).toFixed(2), 'MB')
+      console.log('✅ PDF Ménage généré, taille:', (menagePdfBlob.size / 1024 / 1024).toFixed(2), 'MB')
       
       // ===============================
-      // 3. UPLOAD DES 2 PDF (inchangé)
+      // 3. VÉRIFICATION TAILLE - LIMITE AUGMENTÉE
       // ===============================
       const maxSizeMB = 15
       const maxSizeBytes = maxSizeMB * 1024 * 1024
       
       if (logementPdfBlob.size > maxSizeBytes) {
-        throw new Error(`PDF logement trop volumineux: ${(logementPdfBlob.size / 1024 / 1024).toFixed(2)}MB`)
+        throw new Error(`PDF logement trop volumineux: ${(logementPdfBlob.size / 1024 / 1024).toFixed(2)}MB (limite: ${maxSizeMB}MB). Réduisez le nombre de photos ou contactez l'administrateur.`)
       }
       
       if (menagePdfBlob.size > maxSizeBytes) {
-        throw new Error(`PDF ménage trop volumineux: ${(menagePdfBlob.size / 1024 / 1024).toFixed(2)}MB`)
+        throw new Error(`PDF ménage trop volumineux: ${(menagePdfBlob.size / 1024 / 1024).toFixed(2)}MB (limite: ${maxSizeMB}MB). Le PDF a été généré avec moins de photos.`)
       }
       
-      // Upload PDF logement (serveur)
-      console.log('☁️ Upload PDF logement (SERVEUR) vers Supabase...')
+      // ===============================
+      // 4. UPLOAD PDF LOGEMENT
+      // ===============================
+      console.log('☁️ Upload PDF logement vers Supabase...')
+      
       const fileName = `fiche-logement-${numeroBien}.pdf`
       const { data, error: uploadError } = await supabase.storage
         .from('fiche-pdfs')
@@ -83,16 +65,20 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
           upsert: true,
           contentType: 'application/pdf'
         })
-  
+
       if (uploadError) throw uploadError
-  
+
       const { data: urlData } = supabase.storage
         .from('fiche-pdfs')
         .getPublicUrl(fileName)
+
       const finalUrl = urlData.publicUrl
       
-      // Upload PDF ménage (client)
-      console.log('☁️ Upload PDF ménage (CLIENT) vers Supabase...')
+      // ===============================
+      // 5. UPLOAD PDF MÉNAGE
+      // ===============================
+      console.log('☁️ Upload PDF ménage vers Supabase...')
+      
       const fileNameMenage = `fiche-menage-${numeroBien}.pdf`
       const { data: dataMenage, error: uploadErrorMenage } = await supabase.storage
         .from('fiche-pdfs')
@@ -101,18 +87,19 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
           upsert: true,
           contentType: 'application/pdf'
         })
-  
+
       if (uploadErrorMenage) throw uploadErrorMenage
-  
+
       const { data: urlDataMenage } = supabase.storage
         .from('fiche-pdfs')
         .getPublicUrl(fileNameMenage)
+
       const finalUrlMenage = urlDataMenage.publicUrl
       
-      console.log('✅ PDF logement (SERVEUR):', finalUrl)
-      console.log('✅ PDF ménage (CLIENT):', finalUrlMenage)
+      console.log('✅ PDF logement:', finalUrl)
+      console.log('✅ PDF ménage:', finalUrlMenage)
       
-      // Trigger webhook (inchangé)
+      // 🆕 NOUVEAU : Déclencher webhook PDF
       console.log('🔄 Déclenchement webhook PDF...')
       const webhookResult = await triggerPdfWebhook(finalUrl, finalUrlMenage)
       
@@ -128,16 +115,20 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
         onPDFGenerated(finalUrl)
       }
       
-      console.log('🎉 COMPARAISON DISPONIBLE: PDF Logement (serveur) vs PDF Ménage (client)')
+      console.log('🎉 Génération et synchronisation PDF terminées!')
       
     } catch (err) {
       console.error('❌ Erreur génération PDF:', err)
-      setError(err.message || 'Erreur lors de la génération du PDF')
+      
+      if (err.message.includes('trop volumineux')) {
+        setError(`${err.message}\n\n💡 Conseil: Les PDF avec beaucoup de photos peuvent être volumineux. Le PDF logement complet contient toutes les photos.`)
+      } else {
+        setError(err.message || 'Erreur lors de la génération du PDF')
+      }
     } finally {
       setGenerating(false)
     }
   }
-
 
   // ===============================
   // FONCTION GÉNÉRATION PDF BLOB - VERSION DEBUG AVANCÉE
