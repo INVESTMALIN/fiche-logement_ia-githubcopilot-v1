@@ -1,12 +1,5 @@
 {
-  "functions": {
-    "api/print-pdf.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 60
-    }
-  },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
