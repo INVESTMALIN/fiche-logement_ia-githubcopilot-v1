@@ -293,54 +293,57 @@ CREATE TRIGGER fiche_any_update_webhook
 - communs_photos_espaces
 
 📁 3. Accès au logement (2 champs)
-- guide_acces_photos_etapes (photos guide d'accès)
-- guide_acces_video_acces (vidéo guide d'accès)
+ └──📁 Photos guide d'accès
+     - guide_acces_photos_etapes
+ └──📁 Vidéo guide d'accès
+     - guide_acces_video_acces 
 
 📁 4. Tour générale du logement (1 champs)
 - visite_video_visite
 
 
 📁 5. Tuto équipements (38 champs)
-- clefs_emplacement_photo
-- clefs_interphone_photo  
-- clefs_tempo_gache_photo
-- clefs_digicode_photo
-- clefs_photos (clefs physiques)
-- equipements_poubelle_photos
-- equipements_disjoncteur_photos  
-- equipements_vanne_eau_photos
-- equipements_chauffage_eau_photos
-- cuisine1_cuisiniere_photo
-- cuisine1_plaque_cuisson_photo
-- cuisine1_four_photo
-- cuisine1_micro_ondes_photo
-- cuisine1_lave_vaisselle_photo
-- cuisine1_cafetiere_photo
-- linge_photos_linge
-- linge_emplacement_photos
-- jacuzzi_photos_jacuzzi
-- barbecue_photos
-- bebe_photos_equipements
-- securite_photos_equipements
+ └──📁 Équipement
+    - clefs_emplacement_photo
+    - clefs_interphone_photo  
+    - clefs_tempo_gache_photo
+    - clefs_digicode_photo
+    - clefs_photos (clefs physiques)
+    - equipements_poubelle_photos
+    - equipements_disjoncteur_photos  
+    - equipements_vanne_eau_photos
+    - equipements_chauffage_eau_photos
+    - cuisine1_cuisiniere_photo
+    - cuisine1_plaque_cuisson_photo
+    - cuisine1_four_photo
+    - cuisine1_micro_ondes_photo
+    - cuisine1_lave_vaisselle_photo
+    - cuisine1_cafetiere_photo
+    - linge_photos_linge
+    - linge_emplacement_photos
+    - jacuzzi_photos_jacuzzi
+    - barbecue_photos
+    - bebe_photos_equipements
+    - securite_photos_equipements
 
-- refrigerateur_video
-- congelateur_video
-- mini_refrigerateur_video
-- cuisiniere_video
-- plaque_cuisson_video
-- four_video
-- micro_ondes_video
-- lave_vaisselle_video
-- cafetiere_video
-- bouilloire_video
-- grille_pain_video
-- blender_video
-- cuiseur_riz_video
-- machine_pain_video
-
-- video_acces_poubelle
-- video_systeme_chauffage
-- piscine_video
+ └──📁 Tuto
+    - refrigerateur_video
+    - congelateur_video
+    - mini_refrigerateur_video
+    - cuisiniere_video
+    - plaque_cuisson_video
+    - four_video
+    - micro_ondes_video
+    - lave_vaisselle_video
+    - cafetiere_video
+    - bouilloire_video
+    - grille_pain_video
+    - blender_video
+    - cuiseur_riz_video
+    - machine_pain_video
+    - video_acces_poubelle
+    - video_systeme_chauffage
+    - piscine_video
 ```
 
 Total : 57 champs médias ✅

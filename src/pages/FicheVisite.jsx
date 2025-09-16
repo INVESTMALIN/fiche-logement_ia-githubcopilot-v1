@@ -131,6 +131,12 @@ export default function FicheVisite() {
                   <option value="5">5</option>
                   <option value="6">6</option>
                 </select>
+
+                {/* Note explicative Studio */}
+                <p className="mt-4 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  💡 <strong>Note pour Studio :</strong> Si vous avez sélectionné "Studio" dans la typologie, 
+                  choisissez 0 chambres (l'espace nuit sera configuré séparément dans la section Chambres).
+                </p>
                 
                 {/* Alerte de validation croisée */}
                 {showValidationError && (

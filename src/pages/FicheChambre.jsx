@@ -59,7 +59,9 @@ const AccordeonChambre = ({
         onClick={() => toggleAccordeon(chambreKey)}
         className="w-full px-4 py-3 bg-teal-600 text-white flex items-center justify-between hover:bg-teal-700 transition-colors"
       >
-        <span className="font-semibold">Chambre {numeroAffiche}</span>
+        <span className="font-semibold">
+          {typeof numeroAffiche === 'string' ? numeroAffiche : `Chambre ${numeroAffiche}`}
+        </span>
         <svg
           className={`w-5 h-5 transform transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -243,6 +245,15 @@ export default function FicheChambre() {
   const formDataVisite = getField('section_visite')
   const nombreChambres = parseInt(formDataVisite.nombre_chambres) || 0
   
+  // Récupérer la typologie depuis la section Logement
+  const formDataLogement = getField('section_logement')
+  const typologie = formDataLogement.typologie
+  
+  // 🔥 LOGIQUE STUDIO : Si Studio, forcer l'affichage d'1 "espace nuit"
+  const isStudio = typologie === "Studio"
+  const chambresAffichees = isStudio && nombreChambres === 0 ? 1 : nombreChambres
+  const labelChambre = isStudio && nombreChambres === 0 ? "Espace nuit" : "Chambre"
+  
   // Récupérer les données chambres
   const formDataChambres = getField('section_chambres')
 
@@ -312,7 +323,7 @@ export default function FicheChambre() {
     { key: 'equipements_autre', label: 'Autre (veuillez préciser)' }
   ]
 
-  return (
+   return (
     <div className="flex min-h-screen">
       <SidebarMenu />
       
@@ -320,12 +331,14 @@ export default function FicheChambre() {
         <ProgressBar />
         
         <div className="flex-1 p-6 bg-gray-100">
-          <h1 className="text-2xl font-bold mb-6">Chambres</h1>
+          <h1 className="text-2xl font-bold mb-6">
+            {isStudio && nombreChambres === 0 ? "Espace nuit" : "Chambres"}
+          </h1>
           
           <div className="bg-white p-6 rounded-lg shadow">
             
-            {/* Vérification nombre de chambres */}
-            {nombreChambres === 0 ? (
+            {/* Vérification nombre de chambres avec logique Studio */}
+            {chambresAffichees === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-600 mb-4">
                   Aucune chambre configurée. Veuillez d'abord indiquer le nombre de chambres dans la section Visite.
@@ -348,21 +361,30 @@ export default function FicheChambre() {
             ) : (
               <div>
                 <div className="mb-6">
-                  <p className="text-gray-600">
-                    Configuration des <strong>{nombreChambres} chambre{nombreChambres > 1 ? 's' : ''}</strong> du logement
-                  </p>
+                  {isStudio && nombreChambres === 0 ? (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <p className="text-blue-800">
+                        <strong>💡 Studio :</strong> Configuration de l'espace nuit unique du studio.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">
+                      Configuration des <strong>{chambresAffichees} {labelChambre.toLowerCase()}{chambresAffichees > 1 ? 's' : ''}</strong> du logement
+                    </p>
+                  )}
                 </div>
 
-                {/* ✅ ACCORDÉONS DYNAMIQUES AVEC PROPS PASSÉES */}
-                {Array.from({ length: nombreChambres }, (_, index) => {
+                {/* Accordéons dynamiques avec libellé adapté */}
+                {Array.from({ length: chambresAffichees }, (_, index) => {
                   const chambreKey = `chambre_${index + 1}`
                   const numeroAffiche = index + 1
+                  const labelAccordeon = isStudio && nombreChambres === 0 ? "Espace nuit" : numeroAffiche
                   
                   return (
                     <AccordeonChambre
                       key={chambreKey}
                       chambreKey={chambreKey}
-                      numeroAffiche={numeroAffiche}
+                      numeroAffiche={labelAccordeon} // Passer le label adapté
                       formDataChambres={formDataChambres}
                       accordeonsOuverts={accordeonsOuverts}
                       toggleAccordeon={toggleAccordeon}
@@ -376,9 +398,8 @@ export default function FicheChambre() {
                 })}
               </div>
             )}
-            
           </div>
-          
+                  
           {/* Indicateur de sauvegarde */}
           {saveStatus.saving && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">

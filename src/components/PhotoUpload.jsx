@@ -15,6 +15,7 @@ const PhotoUpload = ({
   const { getField, updateField, handleSave } = useForm()
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
+  const [compressing, setCompressing] = useState(false)
   const [error, setError] = useState(null)
 
   // Récupérer les photos actuelles
@@ -117,6 +118,165 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
     })
   }
 
+  // 🔧 FONCTION COMPRESSION VIDÉO AVEC AUDIO - Version corrigée
+
+  const compressVideo = async (file) => {
+    return new Promise((resolve, reject) => {
+      // Si la vidéo fait moins de 100MB (95MB par sécurité), on ne compresse pas
+      const seuil95MB = 95 * 1024 * 1024
+      if (file.size <= seuil95MB) {
+        console.log(`📹 Vidéo ${file.name} sous seuil 95MB, pas de compression`)
+        resolve(file)
+        return
+      }
+
+      console.log(`📹 Compression vidéo ${file.name}: ${(file.size / 1024 / 1024).toFixed(1)}MB`)
+      
+      // 🚨 ACTIVER LE FEEDBACK COMPRESSION
+      setCompressing(true)
+
+      // Créer les éléments nécessaires
+      const video = document.createElement('video')
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+
+      video.crossOrigin = 'anonymous'
+      video.muted = false // ← IMPORTANT: ne pas muter pour garder l'audio
+      video.playsInline = true
+
+      video.onloadedmetadata = async () => {
+        try {
+          // Calculer les nouvelles dimensions (moins agressif)
+          let { videoWidth, videoHeight } = video
+          const maxDimension = 1600 // Moins agressif: 1600px au lieu de 1280px
+          
+          if (videoWidth > maxDimension || videoHeight > maxDimension) {
+            const aspectRatio = videoWidth / videoHeight
+            if (videoWidth > videoHeight) {
+              videoWidth = maxDimension
+              videoHeight = Math.round(maxDimension / aspectRatio)
+            } else {
+              videoHeight = maxDimension
+              videoWidth = Math.round(maxDimension * aspectRatio)
+            }
+          }
+
+          canvas.width = videoWidth
+          canvas.height = videoHeight
+
+          // 🎵 RÉCUPÉRER L'AUDIO du fichier original
+          const audioContext = new AudioContext()
+          const arrayBuffer = await file.arrayBuffer()
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+          
+          // Créer un stream audio depuis le buffer
+          const audioStream = new MediaStream()
+          const source = audioContext.createBufferSource()
+          source.buffer = audioBuffer
+          
+          const destination = audioContext.createMediaStreamDestination()
+          source.connect(destination)
+          
+          // Ajouter les tracks audio au stream
+          destination.stream.getAudioTracks().forEach(track => {
+            audioStream.addTrack(track)
+          })
+
+          // 📹 RÉCUPÉRER LA VIDÉO compressée du canvas
+          const videoStream = canvas.captureStream(30) // 30 FPS pour meilleure qualité
+
+          // 🎬 COMBINER audio + vidéo
+          const combinedStream = new MediaStream([
+            ...videoStream.getVideoTracks(),
+            ...audioStream.getAudioTracks()
+          ])
+
+          // Configurer MediaRecorder avec paramètres moins agressifs
+          const mediaRecorder = new MediaRecorder(combinedStream, {
+            mimeType: 'video/webm;codecs=vp8,opus', // ← VP8 video + Opus audio
+            videoBitsPerSecond: 4000000, // 4 Mbps au lieu de 2 Mbps
+            audioBitsPerSecond: 128000   // 128 kbps pour l'audio
+          })
+
+          const chunks = []
+          let currentTime = 0
+          const frameRate = 1 / 30 // 30 FPS
+
+          mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+              chunks.push(event.data)
+            }
+          }
+
+          mediaRecorder.onstop = () => {
+            const compressedBlob = new Blob(chunks, { type: 'video/webm' })
+            
+            // Créer un nouveau File
+            const compressedFile = new File([compressedBlob], 
+              file.name.replace(/\.[^/.]+$/, '.webm'), {
+              type: 'video/webm',
+              lastModified: Date.now()
+            })
+
+            const reduction = ((file.size - compressedFile.size) / file.size * 100).toFixed(1)
+            console.log(`📹 Compression terminée: ${(file.size / 1024 / 1024).toFixed(1)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(1)}MB (-${reduction}%)`)
+
+            // 🚨 DÉSACTIVER LE FEEDBACK COMPRESSION
+            setCompressing(false)
+            
+            // Nettoyer
+            audioContext.close()
+            resolve(compressedFile)
+          }
+
+          // Démarrer l'audio ET l'enregistrement
+          source.start(0)
+          mediaRecorder.start()
+
+          // Fonction pour dessiner une frame et avancer
+          const drawFrame = () => {
+            video.currentTime = currentTime
+            
+            video.onseeked = () => {
+              ctx.drawImage(video, 0, 0, videoWidth, videoHeight)
+              
+              currentTime += frameRate
+              
+              if (currentTime < video.duration) {
+                // Frame suivante
+                setTimeout(drawFrame, 33) // ~30 FPS (1000/30 = 33ms)
+              } else {
+                // Terminé
+                mediaRecorder.stop()
+                source.stop()
+              }
+            }
+          }
+
+          // Commencer le traitement
+          video.currentTime = 0
+          drawFrame()
+
+        } catch (error) {
+          console.error('❌ Erreur compression vidéo:', error)
+          // 🚨 DÉSACTIVER LE FEEDBACK EN CAS D'ERREUR
+          setCompressing(false)
+          resolve(file) // Fallback vers fichier original
+        }
+      }
+
+      video.onerror = () => {
+        console.error('❌ Erreur chargement vidéo')
+        // 🚨 DÉSACTIVER LE FEEDBACK EN CAS D'ERREUR
+        setCompressing(false)
+        resolve(file) // Fallback vers fichier original
+      }
+
+      // Charger la vidéo
+      video.src = URL.createObjectURL(file)
+    })
+  }
+    
   // Upload vers Supabase Storage
   const uploadToSupabase = async (files) => {
     // 🚨 VALIDATION CRITIQUE - Numéro de bien obligatoire
@@ -137,17 +297,20 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
           throw new Error(`${file.name} n'est pas un format valide`)
         }
 
-        // 🆕 COMPRESSION AUTOMATIQUE pour les images
+        // 🆕 COMPRESSION AUTOMATIQUE pour images ET vidéos
         let fileToUpload = file
         if (isImage) {
           console.log(`📷 Compression de ${file.name}...`)
           fileToUpload = await compressImage(file)
-        }        
+        } else if (isVideo) {
+          console.log(`📹 Vérification compression vidéo ${file.name}...`)
+          fileToUpload = await compressVideo(file)
+        }    
   
         // Validation taille APRÈS compression (modifiée)
-        const maxSize = isVideo ? 200 * 1024 * 1024 : 20 * 1024 * 1024 // 20MB max pour images
+        const maxSize = isVideo ? 350 * 1024 * 1024 : 20 * 1024 * 1024 // 20MB max pour images
         if (fileToUpload.size > maxSize) {
-          const maxSizeMB = isVideo ? '200MB' : '20MB'
+          const maxSizeMB = isVideo ? '350MB' : '20MB'
           throw new Error(`${file.name} est encore trop volumineux après compression (max ${maxSizeMB})`)
         }
   
@@ -286,16 +449,22 @@ const handleDeletePhoto = async (photoUrl, index) => {
             multiple={multiple}
             capture={capture ? "environment" : undefined}
             onChange={handleFileChange}
-            disabled={uploading}
+            disabled={uploading || compressing}
             className="hidden"
             id={`upload-${fieldPath}`}
           />
           
           <label 
             htmlFor={`upload-${fieldPath}`}
-            className={`cursor-pointer ${uploading ? 'opacity-50' : ''}`}
+            className={`cursor-pointer ${(uploading || compressing) ? 'opacity-50' : ''}`}
           >
-            {uploading ? (
+            {compressing ? (
+              <div className="text-orange-600">
+                <div className="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent rounded-full mb-2"></div>
+                <p className="text-lg font-semibold">Compression en cours...</p>
+                <p className="text-sm">⏳ Merci de patienter, ne fermez pas cette page</p>
+              </div>
+            ) : uploading ? (
               <div className="text-blue-600">
                 <div className="animate-spin inline-block w-6 h-6 border-2 border-current border-t-transparent rounded-full mb-2"></div>
                 <p>Upload en cours...</p>
@@ -309,7 +478,7 @@ const handleDeletePhoto = async (photoUrl, index) => {
                   Ajouter des {acceptVideo ? 'photos/vidéos' : 'photos'}
                 </p>
                 <p className="text-xs mt-1">
-                  Max {maxFiles} fichiers, {acceptVideo ? '50MB/photo, 200MB/vidéo' : '20MB par fichier'}
+                  Max {maxFiles} fichiers, {acceptVideo ? '50MB/photo, 350MB/vidéo' : '20MB par fichier'}
                 </p>
               </div>
             )}
@@ -320,6 +489,21 @@ const handleDeletePhoto = async (photoUrl, index) => {
         {error && (
           <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
             {error}
+          </div>
+        )}
+
+        {/* Message info compression */}
+        {compressing && (
+          <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="animate-pulse w-3 h-3 bg-orange-500 rounded-full"></div>
+              <div>
+                <p className="text-sm text-orange-600">
+                  Les vidéos volumineuses sont automatiquement compressées pour optimiser le transfert.
+                  Cette opération peut prendre quelques minutes.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
