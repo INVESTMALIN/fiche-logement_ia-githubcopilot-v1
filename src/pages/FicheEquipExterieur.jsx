@@ -6,8 +6,36 @@ import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 
-// 🔧 COMPOSANT ENTRETIEN PATTERN - À PLACER AVANT export default function FicheEquipExterieur()
-// (juste après les imports et avant la fonction principale)
+
+// Cartes de schéma - définir quels champs nettoyer par branche
+const BRANCH_SCHEMAS = {
+  exterieur: [
+    'exterieur_type_espace', 'exterieur_description_generale', 'exterieur_entretien_prestataire',
+    'exterieur_entretien_frequence', 'exterieur_entretien_type_prestation', 'exterieur_entretien_qui',
+    'exterieur_equipements', 'exterieur_equipements_autre_details', 'exterieur_nombre_chaises_longues',
+    'exterieur_nombre_parasols', 'exterieur_acces', 'exterieur_type_acces', 'exterieur_type_acces_autre_details',
+    'barbecue_instructions', 'barbecue_type', 'barbecue_combustible_fourni', 'barbecue_ustensiles_fournis'
+  ],
+  piscine: [
+    'piscine_type', 'piscine_acces', 'piscine_dimensions', 'piscine_disponibilite',
+    'piscine_periode_disponibilite', 'piscine_heures', 'piscine_horaires_ouverture',
+    'piscine_caracteristiques', 'piscine_periode_chauffage', 'piscine_entretien_prestataire',
+    'piscine_entretien_frequence', 'piscine_entretien_type_prestation', 'piscine_entretien_qui',
+    'piscine_regles_utilisation'
+  ],
+  jacuzzi: [
+    'jacuzzi_acces', 'jacuzzi_entretien_prestataire', 'jacuzzi_entretien_frequence',
+    'jacuzzi_entretien_type_prestation', 'jacuzzi_entretien_qui', 'jacuzzi_taille',
+    'jacuzzi_heures_utilisation', 'jacuzzi_instructions'
+  ],
+  cuisine_ext: [
+    'cuisine_ext_entretien_prestataire', 'cuisine_ext_entretien_frequence',
+    'cuisine_ext_entretien_type_prestation', 'cuisine_ext_entretien_qui',
+    'cuisine_ext_superficie', 'cuisine_ext_type', 'cuisine_ext_caracteristiques'
+  ]
+}
+
+// 🔧 COMPOSANT ENTRETIEN PATTERN
 // Composant réutilisable pour pattern entretien
 const EntretienPattern = ({ prefix, label, formData, getField, handleInputChange, handleRadioChange }) => {
   const entretienField = `${prefix}_entretien_prestataire`
@@ -91,8 +119,44 @@ export default function FicheEquipExterieur() {
   }
 
   const handleRadioChange = (field, value) => {
-    updateField(field, value === 'true' ? true : (value === 'false' ? false : null))
+  const boolValue = value === 'true' ? true : (value === 'false' ? false : null)
+  
+  // Si on passe à false sur une question racine, nettoyer la branche
+  if (boolValue === false) {
+    const currentData = getField('section_equip_spe_exterieur')
+    const newData = { ...currentData }
+    
+    // Déterminer quelle branche nettoyer
+    let branchToClean = null
+    if (field.includes('dispose_exterieur')) branchToClean = 'exterieur'
+    else if (field.includes('dispose_piscine')) branchToClean = 'piscine'
+    else if (field.includes('dispose_jacuzzi')) branchToClean = 'jacuzzi'
+    else if (field.includes('dispose_cuisine_exterieure')) branchToClean = 'cuisine_ext'
+    
+    if (branchToClean) {
+      // Nettoyer les champs de la branche
+      BRANCH_SCHEMAS[branchToClean].forEach(key => {
+        if (Array.isArray(newData[key])) {
+          newData[key] = []
+        } else if (typeof newData[key] === 'object' && newData[key] !== null) {
+          newData[key] = {}
+        } else {
+          newData[key] = null
+        }
+      })
+    }
+    
+    // Remettre explicitement le flag racine à false
+    const fieldKey = field.split('.').pop()
+    newData[fieldKey] = false
+    
+    // Une seule mise à jour atomique
+    updateField('section_equip_spe_exterieur', newData)
+  } else {
+    // Comportement normal pour les autres cas
+    updateField(field, boolValue)
   }
+}
 
   const handleArrayCheckboxChange = (field, option, checked) => {
     const currentArray = formData[field.split('.').pop()] || []
