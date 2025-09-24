@@ -1,4 +1,3 @@
-// src/pages/FicheCuisine2.jsx
 import React from 'react'
 import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
@@ -6,12 +5,11 @@ import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 
-
 export default function FicheCuisine2() {
   const { 
     next, 
     back, 
-    currentStep,
+    currentStep, 
     totalSteps,
     getField, 
     updateField, 
@@ -19,53 +17,39 @@ export default function FicheCuisine2() {
     saveStatus 
   } = useForm()
 
-  // Récupération des données de la section
-  const formData = getField('section_cuisine_2')
+  // Récupérer formData pour cette section
+  const formData = getField('section_cuisine_2') || {}
 
-  // Handler pour champs simples
   const handleInputChange = (field, value) => {
-    updateField(field, value)
+    updateField(`section_cuisine_2.${field}`, value)
   }
 
-  // Handler pour compteurs numériques (+ et -)
-  const handleCounterChange = (field, delta) => {
-    const currentValue = parseInt(formData[field.split('.').pop()]) || 0
-    const newValue = Math.max(0, currentValue + delta) // Pas de valeurs négatives
-    updateField(field, newValue)
-  }
-
-  // Handler pour radio buttons
   const handleRadioChange = (field, value) => {
-    if (value === 'true') updateField(field, true)
-    else if (value === 'false') updateField(field, false)
-    else updateField(field, value)
+    updateField(`section_cuisine_2.${field}`, value === 'true' ? true : (value === 'false' ? false : null))
   }
 
-  // Composant CounterInput réutilisable
-  const CounterInput = ({ label, fieldPath, value }) => {
-  
-    // Handler pour empêcher le scroll mobile
-    const handleCounterClick = (delta, event) => {
-      // Empêcher le scroll automatique mobile
-      event.preventDefault()
-      event.stopPropagation()
-      
-      // Appeler la fonction de compteur existante
-      handleCounterChange(fieldPath, delta)
-      
-      // Forcer la perte de focus pour éviter le keyboard
-      event.target.blur()
-    }
+  const handleCounterClick = (increment, e, fieldPath) => {
+    e.preventDefault()
+    e.stopPropagation()
     
+    const currentValue = getField(fieldPath) || 0
+    const newValue = Math.max(0, currentValue + increment)
+    updateField(fieldPath, newValue)
+  }
+
+  // Composant Counter avec gestion des événements optimisée
+  const CounterInput = ({ label, fieldPath, value }) => {
     return (
-      <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-        <span className="text-sm flex-1">{label}</span>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between p-3 border rounded-lg">
+        <label className="text-sm text-gray-700 flex-1">
+          {label}
+        </label>
+        <div className="flex items-center gap-2 ml-4">
           <button
             type="button"
-            onClick={(e) => handleCounterClick(-1, e)}
-            className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-lg font-semibold"
-            style={{ touchAction: 'manipulation' }} // CSS inline pour ce bouton uniquement
+            onClick={(e) => handleCounterClick(-1, e, fieldPath)}
+            className="w-8 h-8 rounded-full bg-gray-500 hover:bg-gray-600 text-white flex items-center justify-center text-lg font-semibold"
+            style={{ touchAction: 'manipulation' }}
           >
             −
           </button>
@@ -74,9 +58,9 @@ export default function FicheCuisine2() {
           </span>
           <button
             type="button"
-            onClick={(e) => handleCounterClick(1, e)}
+            onClick={(e) => handleCounterClick(1, e, fieldPath)}
             className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center text-lg font-semibold"
-            style={{ touchAction: 'manipulation' }} // CSS inline pour ce bouton uniquement
+            style={{ touchAction: 'manipulation' }}
           >
             +
           </button>
@@ -107,24 +91,29 @@ export default function FicheCuisine2() {
     { key: 'couverts_cuilleres_dessert', label: 'Cuillères à dessert' }
   ]
 
-  const ustensilesCuisine = [
+  // 🟢 USTENSILES OBLIGATOIRES (selon demande Victoria)
+  const ustensilesObligatoires = [
     { key: 'ustensiles_poeles_differentes_tailles', label: 'Poêles de différentes tailles' },
     { key: 'ustensiles_casseroles_differentes_tailles', label: 'Casseroles de différentes tailles' },
-    { key: 'ustensiles_faitouts', label: 'Faitouts' },
-    { key: 'ustensiles_wok', label: 'Wok' },
-    { key: 'ustensiles_cocotte_minute', label: 'Cocotte-minute' },
     { key: 'ustensiles_couvercle_anti_eclaboussures', label: 'Couvercle anti-éclaboussures' },
-    { key: 'ustensiles_robot_cuisine', label: 'Robot de cuisine' },
-    { key: 'ustensiles_batteur_electrique', label: 'Batteur électrique' },
     { key: 'ustensiles_couteaux_cuisine', label: 'Couteaux de cuisine' },
-    { key: 'ustensiles_spatules', label: 'Spatules' },
     { key: 'ustensiles_ecumoire', label: 'Écumoire' },
+    { key: 'ustensiles_spatules', label: 'Spatules' },
     { key: 'ustensiles_ouvre_boite', label: 'Ouvre-boîte' },
-    { key: 'ustensiles_rape', label: 'Râpe' },
     { key: 'ustensiles_tire_bouchon', label: 'Tire-bouchon' },
     { key: 'ustensiles_econome', label: 'Économe' },
     { key: 'ustensiles_passoire', label: 'Passoire' },
-    { key: 'ustensiles_planche_decouper', label: 'Planche à découper' },
+    { key: 'ustensiles_planche_decouper', label: 'Planche à découper' }
+  ]
+
+  // 🔵 USTENSILES FACULTATIFS (tous les autres)
+  const ustensilesFacultatifs = [
+    { key: 'ustensiles_faitouts', label: 'Faitouts' },
+    { key: 'ustensiles_wok', label: 'Wok' },
+    { key: 'ustensiles_cocotte_minute', label: 'Cocotte-minute' },
+    { key: 'ustensiles_robot_cuisine', label: 'Robot de cuisine' },
+    { key: 'ustensiles_batteur_electrique', label: 'Batteur électrique' },
+    { key: 'ustensiles_rape', label: 'Râpe' },
     { key: 'ustensiles_rouleau_patisserie', label: 'Rouleau à pâtisserie' },
     { key: 'ustensiles_ciseaux_cuisine', label: 'Ciseaux de cuisine' },
     { key: 'ustensiles_balance_cuisine', label: 'Balance de cuisine' },
@@ -199,11 +188,36 @@ export default function FicheCuisine2() {
               </div>
             </div>
 
-            {/* USTENSILES DE CUISINE */}
+            {/* 🟢 USTENSILES DE CUISINE OBLIGATOIRES */}
             <div>
-              <h2 className="text-lg font-semibold mb-4 text-blue-800">Ustensiles de cuisine :</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {ustensilesCuisine.map(({ key, label }) => (
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-lg font-semibold text-green-700">🟢 Ustensiles de cuisine obligatoires :</h2>
+                <span className="text-sm text-green-600 bg-green-50 px-2 py-1 rounded">
+                  Indispensables
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
+                {ustensilesObligatoires.map(({ key, label }) => (
+                  <CounterInput
+                    key={key}
+                    label={label}
+                    fieldPath={`section_cuisine_2.${key}`}
+                    value={formData[key]}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* 🔵 USTENSILES DE CUISINE FACULTATIFS */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-lg font-semibold text-blue-700">🔵 Ustensiles de cuisine facultatifs :</h2>
+                <span className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  Optionnels
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                {ustensilesFacultatifs.map(({ key, label }) => (
                   <CounterInput
                     key={key}
                     label={label}
@@ -239,145 +253,148 @@ export default function FicheCuisine2() {
                 </label>
                 <textarea
                   placeholder="Précisez les autres ustensiles ou équipements disponibles dans votre cuisine."
-                  value={formData.autres_ustensiles || ""}
-                  onChange={(e) => handleInputChange('section_cuisine_2.autres_ustensiles', e.target.value)}
-                  className="w-full p-3 border rounded-lg h-24"
+                  className="w-full p-3 border rounded h-24"
+                  value={formData.autres_ustensiles || ''}
+                  onChange={(e) => handleInputChange('autres_ustensiles', e.target.value)}
                 />
               </div>
 
-              {/* Question quantité suffisante */}
+              {/* Quantité suffisante */}
               <div>
                 <label className="block font-semibold mb-3">
-                  Disposez-vous d'une quantité suffisante de vaisselle et couverts pour le nombre maximal de voyageurs ? <span className="text-red-500">*</span>
+                  La quantité d'ustensiles est-elle suffisante ?
                 </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex gap-6">
+                  <label className="inline-flex items-center gap-2">
                     <input
                       type="radio"
                       name="quantite_suffisante"
                       value="true"
                       checked={formData.quantite_suffisante === true}
-                      onChange={(e) => handleRadioChange('section_cuisine_2.quantite_suffisante', e.target.value)}
-                      className="w-4 h-4"
+                      onChange={(e) => handleRadioChange('quantite_suffisante', e.target.value)}
+                      className="form-radio text-blue-600"
                     />
-                    <span>Oui</span>
+                    <span className="text-sm">Oui</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="inline-flex items-center gap-2">
                     <input
                       type="radio"
                       name="quantite_suffisante"
                       value="false"
                       checked={formData.quantite_suffisante === false}
-                      onChange={(e) => handleRadioChange('section_cuisine_2.quantite_suffisante', e.target.value)}
-                      className="w-4 h-4"
+                      onChange={(e) => handleRadioChange('quantite_suffisante', e.target.value)}
+                      className="form-radio text-blue-600"
                     />
-                    <span>Non</span>
+                    <span className="text-sm">Non</span>
                   </label>
                 </div>
-
-                {/* Champ conditionnel si "Non" */}
-                {formData.quantite_suffisante === false && (
-                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <label className="block font-semibold mb-2">
-                      Veuillez préciser les éléments manquants ou en quantité insuffisante et indiquez un commentaire sur l'état de la vaisselle <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      placeholder="Indiquez quels éléments ne sont pas disponibles en quantité suffisante et commentez l'état de la vaisselle."
-                      value={formData.quantite_insuffisante_details || ""}
-                      onChange={(e) => handleInputChange('section_cuisine_2.quantite_insuffisante_details', e.target.value)}
-                      className="w-full p-3 border rounded-lg h-24"
-                    />
-                  </div>
-                )}
               </div>
 
-              {/* Question casseroles et poêles testées */}
+              {/* Champ conditionnel si quantité insuffisante */}
+              {formData.quantite_suffisante === false && (
+                <div className="border-l-4 border-red-400 pl-6 space-y-4">
+                  <div>
+                    <label className="block font-semibold mb-2 text-red-700">
+                      Quels ustensiles manquent-ils ?
+                    </label>
+                    <textarea
+                      placeholder="Détaillez les ustensiles manquants et les quantités nécessaires."
+                      className="w-full p-3 border rounded h-24"
+                      value={formData.quantite_insuffisante_details || ''}
+                      onChange={(e) => handleInputChange('quantite_insuffisante_details', e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Casseroles et poêles testées */}
               <div>
                 <label className="block font-semibold mb-3">
-                  Avez-vous testé les casseroles et les poêles ? <span className="text-red-500">*</span>
+                  Avez-vous testé les casseroles et poêles (revêtement, compatibilité plaque de cuisson) ?
                 </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex gap-6">
+                  <label className="inline-flex items-center gap-2">
                     <input
                       type="radio"
                       name="casseroles_poeles_testees"
                       value="true"
                       checked={formData.casseroles_poeles_testees === true}
-                      onChange={(e) => handleRadioChange('section_cuisine_2.casseroles_poeles_testees', e.target.value)}
-                      className="w-4 h-4"
+                      onChange={(e) => handleRadioChange('casseroles_poeles_testees', e.target.value)}
+                      className="form-radio text-blue-600"
                     />
-                    <span>Oui</span>
+                    <span className="text-sm">Oui</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="inline-flex items-center gap-2">
                     <input
                       type="radio"
                       name="casseroles_poeles_testees"
                       value="false"
                       checked={formData.casseroles_poeles_testees === false}
-                      onChange={(e) => handleRadioChange('section_cuisine_2.casseroles_poeles_testees', e.target.value)}
-                      className="w-4 h-4"
+                      onChange={(e) => handleRadioChange('casseroles_poeles_testees', e.target.value)}
+                      className="form-radio text-blue-600"
                     />
-                    <span>Non</span>
+                    <span className="text-sm">Non</span>
                   </label>
                 </div>
               </div>
 
-              {/* Upload photos */}
-              <div>
+              {/* Photos tiroirs et placards */}
+              <div className="border-t pt-6">
                 <PhotoUpload 
                   fieldPath="section_cuisine_2.photos_tiroirs_placards"
-                  label="Photos de tous les tiroirs et placards de la cuisine"
+                  label="Photos des tiroirs et placards de cuisine (ustensiles, vaisselle, rangement)"
                   multiple={true}
-                  maxFiles={8}
+                  maxFiles={10}
                 />
               </div>
 
             </div>
-
           </div>
-          {/* Indicateur de sauvegarde */}
-          {saveStatus.saving && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                ⏳ Sauvegarde en cours...
-              </div>
-            )}
-            {saveStatus.saved && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                ✅ Sauvegardé avec succès !
-              </div>
-            )}
-            {saveStatus.error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                ❌ {saveStatus.error}
-              </div>
-            )}
 
-            {/* Boutons de navigation */}
-            <div className="mt-6 flex justify-between">
-              <Button 
-                variant="ghost" 
-                onClick={back} 
-                disabled={currentStep === 0}
-              >
-                Retour
-              </Button>
-              <div className="flex gap-3">
-                <Button 
-                  variant="secondary"
-                  onClick={handleSave}
-                  disabled={saveStatus.saving}
-                >
-                  {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
-                </Button>
-                <Button 
-                  variant="primary" 
-                  onClick={next}
-                  disabled={currentStep === totalSteps - 1}
-                >
-                  Suivant
-                </Button>
-              </div>
+          {/* Messages de sauvegarde */}
+          {saveStatus.saving && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              ⏳ Sauvegarde en cours...
             </div>
+          )}
+          {saveStatus.saved && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+              ✅ Sauvegardé avec succès !
+            </div>
+          )}
+          {saveStatus.error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              ❌ {saveStatus.error}
+            </div>
+          )}
+
+          {/* Boutons de navigation */}
+          <div className="mt-6 flex justify-between">
+            <Button 
+              variant="ghost" 
+              onClick={back} 
+              disabled={currentStep === 0}
+            >
+              Retour
+            </Button>
+            
+            <div className="flex gap-3">
+              <Button 
+                variant="secondary"
+                onClick={handleSave}
+                disabled={saveStatus.saving}
+              >
+                {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={next}
+                disabled={currentStep === totalSteps - 1}
+              >
+                Suivant
+              </Button>
+            </div>
+          </div>
         </div>
         <div className="h-20"></div>
       </div>
