@@ -25,6 +25,7 @@ import FicheTeletravail from './FicheTeletravail'
 import FicheBebe from './FicheBebe'
 import FicheGuideAcces from './FicheGuideAcces'
 import FicheSecurite from './FicheSecurite'
+import FicheFinalisation from './FicheFinalisation'
 
 // Composant placeholder pour les sections pas encore créées
 function PlaceholderSection({ title }) {
@@ -99,7 +100,8 @@ export default function FicheWizard() {
     <FicheTeletravail key="teletravail" />,
     <FicheBebe key="bebe" />,
     <FicheGuideAcces key="guide-acces" />,
-    <FicheSecurite key="securite" />
+    <FicheSecurite key="securite" />,
+    <FicheFinalisation key="finalisation" />
   ]
 
   // Vérification de sécurité

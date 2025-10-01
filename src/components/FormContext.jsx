@@ -1141,7 +1141,7 @@ export function FormProvider({ children }) {
     "Propriétaire", "Logement", "Avis", "Clefs", "Airbnb", "Booking", "Réglementation",
     "Exigences", "Gestion linge", "Équipements", "Consommables", "Visite",
     "Chambres", "Salle de bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. spé. / Extérieur",
-    "Communs", "Télétravail", "Bébé", "Guide d'accès", "Sécurité"
+    "Communs", "Télétravail", "Bébé", "Guide d'accès", "Sécurité", "Finalisation"
   ]
 
   const totalSteps = sections.length

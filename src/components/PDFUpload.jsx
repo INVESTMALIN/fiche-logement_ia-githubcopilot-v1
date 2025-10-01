@@ -160,6 +160,17 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
           
           // 🔥 ATTENTE AUGMENTÉE : 5 secondes au lieu de 3
           await new Promise(resolve => setTimeout(resolve, 5000))
+
+          // Garde-fou ajouté ici
+          if (!iframe.contentWindow || !iframe.contentDocument) {
+            console.warn('⚠️ Iframe inaccessible, abandon génération')
+            clearTimeout(timeoutId)
+            if (iframe.parentNode) {
+              document.body.removeChild(iframe)
+            }
+            reject(new Error('Iframe inaccessible'))
+            return
+          }
           
           const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
                     
