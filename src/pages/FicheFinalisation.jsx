@@ -84,7 +84,7 @@ export default function FicheFinalisation() {
       }
       
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 90000)
+      const timeout = setTimeout(() => controller.abort(), 120000)
       
       const response = await fetch('https://hub.cardin.cloud/webhook/d9187cd4-1fd5-4ecd-afe0-125924773f69/chat', {
         method: 'POST',
