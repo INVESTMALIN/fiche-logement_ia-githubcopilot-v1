@@ -8,7 +8,7 @@ import Button from '../components/Button'
 import PDFUpload from '../components/PDFUpload'
 import MiniDashboard from '../components/MiniDashboard'
 import { prepareForN8nWebhook } from '../lib/PdfFormatter'
-import { CheckCircle, PenTool, Send, Bot, Copy } from 'lucide-react'
+import { CheckCircle, PenTool, Send, Bot, Copy, AlertCircle } from 'lucide-react'
 
 export default function FicheFinalisation() {
   const navigate = useNavigate()
@@ -229,6 +229,14 @@ export default function FicheFinalisation() {
                   <h3 className="text-lg font-semibold text-gray-900">Assistant Annonce</h3>
                   <p className="text-sm text-gray-600">Générez et affinez votre annonce avec l'IA</p>
                 </div>
+              </div>
+
+              {/* ⚠️ Note de développement */}
+              <div className="mb-6 flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-yellow-800 leading-snug">
+                  Cet assistant est encore en cours d’amélioration. Certaines fonctions peuvent être limitées ou en phase de test.
+                </p>
               </div>
 
               {/* Boutons de prompts rapides */}

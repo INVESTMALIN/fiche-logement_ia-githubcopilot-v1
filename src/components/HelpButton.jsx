@@ -233,7 +233,7 @@ export default function HelpButton() {
                 📄 Deux types de PDF sont générés simultanément
               </p>
               <p className="text-green-800 text-sm">
-                Lorsque vous avez fini de remplir votre fiche, cliquez sur <strong>Générer la Fiche logement (PDF)</strong>. Les deux Fiches (logement + ménage) seront générées simultanément et synchronisées sur le Drive et Monday. Vous pourrez télécharger une copie de la Fiche logement. La Fiche ménage ne sera pas disponible au téléchargement, mais sera bien envoyée sur le Drive, et remontera dans Monday.
+                Lorsque vous avez fini de remplir votre fiche, cliquez sur <strong>Générer la Fiche logement (PDF)</strong>. Les deux Fiches (logement + ménage) seront générées simultanément et synchronisées sur le Drive et Monday à chaque fois que vous cliquez sur <strong>"Générer la Fiche logement"</strong>. Vous pourrez télécharger une copie de la Fiche logement. La Fiche ménage ne sera pas disponible au téléchargement, mais sera bien envoyée sur le Drive, et remontera dans Monday.
               </p>
             </div>
 
@@ -280,10 +280,10 @@ export default function HelpButton() {
                 </h4>
                 <ol className="text-gray-600 text-sm space-y-2 list-decimal list-inside">
                   <li>Remplissez votre fiche complètement</li>
-                  <li>Sur la section Sécurité, cliquez <strong>"Générer la Fiche logement"</strong></li>
-                  <li>Les 2 PDF sont créés simultanément</li>
+                  <li>Sur la dernière page du formulaire, cliquez <strong>"Générer la Fiche logement"</strong></li>
+                  <li>Les 2 PDF sont créés simultanément en arrière plan</li>
                   <li>Vous pouvez télécharger la Fiche logement pour vérification (optionnel)</li>
-                  <li>Cliquez <strong>"Finaliser la fiche"</strong> pour envoyer sur le Drive et Monday</li>
+                  <li>Les deux PDF remontent sur le Drive et dans Monday</li>
                 </ol>
               </div>
             </div>
