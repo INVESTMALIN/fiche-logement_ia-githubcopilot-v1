@@ -2163,7 +2163,7 @@ export const getUserFiches = async (userId) => {
     const result = await safeSupabaseQuery(
       supabase
         .from('fiches')
-        .select('id, nom, statut, created_at, updated_at')
+        .select('id, nom, statut, created_at, updated_at, pdf_logement_url, pdf_menage_url')
         .eq('user_id', userId)
         .order('updated_at', { ascending: false })
     )
@@ -2188,13 +2188,12 @@ export const getUserFiches = async (userId) => {
 }
 
 
-// 🔥 NOUVELLE FONCTION : Récupérer TOUTES les fiches (pour admin/super admin)
-// 🔥 VERSION CORRIGÉE : Récupérer TOUTES les fiches sans JOIN complexe
+// Récupérer TOUTES les fiches (pour admin/super admin)
 export const getAllFiches = async (includeArchived = false) => {
   try {
     let query = supabase
       .from('fiches')
-      .select('id, nom, statut, created_at, updated_at, user_id') // Sans le JOIN profiles
+      .select('id, nom, statut, created_at, updated_at, user_id, pdf_logement_url, pdf_menage_url')
     
     // Filtrer les fiches archivées si demandé
     if (!includeArchived) {

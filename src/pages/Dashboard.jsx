@@ -579,99 +579,111 @@ export default function Dashboard() {
         onSuccess={handleReassignSuccess}
       />
 
-{/* 🆕 MODAL DE PARTAGE */}
-{shareModal.isOpen && shareModal.fiche && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div className="bg-white rounded-xl p-6 max-w-lg w-full">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        🔗 Partager la fiche "{shareModal.fiche.nom}"
-      </h3>
-      
-      <div className="space-y-4">
-        {/* PDF Logement */}
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium text-gray-900">📄 PDF Logement</span>
-          </div>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              readOnly 
-              value={`${window.location.origin}/print-pdf?fiche=${shareModal.fiche.id}`}
-              className="flex-1 px-3 py-2 bg-white border rounded text-sm"
-            />
-            <button
-              onClick={() => {
-                const url = `${window.location.origin}/print-pdf?fiche=${shareModal.fiche.id}`
-                navigator.clipboard.writeText(url)
-                // TODO: Ajouter feedback "Copié !"
-              }}
-              className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-            >
-              Copier
-            </button>
-            <button
-              onClick={() => {
-                const url = `${window.location.origin}/print-pdf?fiche=${shareModal.fiche.id}`
-                const message = `Voici le PDF Logement de la fiche "${shareModal.fiche.nom}" : ${url}`
-                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-                window.open(whatsappUrl, '_blank')
-              }}
-              className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-            >
-              WhatsApp
-            </button>
+      {/* 🆕 MODAL DE PARTAGE */}
+      {shareModal.isOpen && shareModal.fiche && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 max-w-lg w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              🔗 Partager la fiche "{shareModal.fiche.nom}"
+            </h3>
+            
+            {/* Vérifier si les PDFs existent */}
+            {!shareModal.fiche.pdf_logement_url && !shareModal.fiche.pdf_menage_url ? (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+                <p className="text-yellow-800 text-sm">
+                  ⚠️ Les PDFs n'ont pas encore été générés pour cette fiche.
+                  <br />
+                  Veuillez d'abord générer les PDFs depuis la page de finalisation.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* PDF Logement */}
+                {shareModal.fiche.pdf_logement_url && (
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900">📄 PDF Logement</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={shareModal.fiche.pdf_logement_url}
+                        className="flex-1 px-3 py-2 bg-white border rounded text-sm"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(shareModal.fiche.pdf_logement_url)
+                          // TODO: Ajouter feedback "Copié !"
+                        }}
+                        className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                      >
+                        Copier
+                      </button>
+                      <button
+                        onClick={() => {
+                          const message = `Voici le PDF Logement de la fiche "${shareModal.fiche.nom}" : ${shareModal.fiche.pdf_logement_url}`
+                          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                          window.open(whatsappUrl, '_blank')
+                        }}
+                        className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                      >
+                        WhatsApp
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* PDF Ménage */}
+                {shareModal.fiche.pdf_menage_url && (
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900">🧹 PDF Ménage</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={shareModal.fiche.pdf_menage_url}
+                        className="flex-1 px-3 py-2 bg-white border rounded text-sm"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(shareModal.fiche.pdf_menage_url)
+                          // TODO: Ajouter feedback "Copié !"
+                        }}
+                        className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                      >
+                        Copier
+                      </button>
+                      <button
+                        onClick={() => {
+                          const message = `Voici le PDF Ménage de la fiche "${shareModal.fiche.nom}" : ${shareModal.fiche.pdf_menage_url}`
+                          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                          window.open(whatsappUrl, '_blank')
+                        }}
+                        className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                      >
+                        WhatsApp
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Bouton Fermer */}
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={handleCloseShare}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* PDF Ménage */}
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium text-gray-900">🧹 PDF Ménage</span>
-          </div>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              readOnly 
-              value={`${window.location.origin}/print-pdf-menage?fiche=${shareModal.fiche.id}`}
-              className="flex-1 px-3 py-2 bg-white border rounded text-sm"
-            />
-            <button
-              onClick={() => {
-                const url = `${window.location.origin}/print-pdf-menage?fiche=${shareModal.fiche.id}`
-                navigator.clipboard.writeText(url)
-                // TODO: Ajouter feedback "Copié !"
-              }}
-              className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-            >
-              Copier
-            </button>
-            <button
-              onClick={() => {
-                const url = `${window.location.origin}/print-pdf-menage?fiche=${shareModal.fiche.id}`
-                const message = `Voici le PDF Ménage de la fiche "${shareModal.fiche.nom}" : ${url}`
-                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-                window.open(whatsappUrl, '_blank')
-              }}
-              className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-            >
-              WhatsApp
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 flex justify-end gap-3">
-        <button
-          onClick={handleCloseShare}
-          className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-        >
-          Fermer
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
     </div>
   )

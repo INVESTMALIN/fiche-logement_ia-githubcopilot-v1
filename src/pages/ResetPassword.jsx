@@ -82,7 +82,7 @@ export default function ResetPassword() {
                     📧 Un email de réinitialisation a été envoyé à <strong>{email}</strong>
                   </p>
                   <p className="text-green-600 text-xs mt-2">
-                    Vérifiez votre boîte de réception et suivez les instructions.
+                    Vérifiez votre boîte de réception et suivez les instructions. Si vous ne voyez pas l'e-mail de réinitialisation, attendez 2-3 minutes, pensez à vérifier votre dossier spam.
                   </p>
                 </div>
                 
