@@ -18,6 +18,8 @@ import PrintPDFMenage from './pages/PrintPDFMenage'
 import DuplicateAlertModal from './components/DuplicateAlertModal'
 import HelpButton from './components/HelpButton'
 
+import TestGuideAgent from './pages/TestGuideAgent'
+
 
 export default function App() {
   const navigate = useNavigate()
@@ -36,6 +38,15 @@ export default function App() {
           <Route path="/update-password" element={<UpdatePassword />} />
           <Route path="/confirm-signup" element={<ConfirmSignup />} />
 
+          <Route 
+            path="/test-guide-agent" 
+            element={
+              <ProtectedRoute>
+                <TestGuideAgent />
+              </ProtectedRoute>
+            } 
+          />        
+          
           <Route 
             path="/" 
             element={
