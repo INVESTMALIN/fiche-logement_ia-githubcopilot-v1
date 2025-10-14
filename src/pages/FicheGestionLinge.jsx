@@ -285,7 +285,7 @@ export default function FicheGestionLinge() {
                     fieldPath="section_gestion_linge.photos_linge"
                     label="Photos du linge"
                     multiple={true}
-                    maxFiles={5}
+                    maxFiles={12}
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     Appuyez pour prendre des photos ou accéder à la pellicule
@@ -311,7 +311,7 @@ export default function FicheGestionLinge() {
                   fieldPath="section_gestion_linge.emplacement_photos"
                   label="Photos de l'emplacement du stock"
                   multiple={true}
-                  maxFiles={5}
+                  maxFiles={10}
                 />
                   <p className="text-sm text-gray-500 mt-1">
                     Appuyez pour prendre des photos des espaces de stockage

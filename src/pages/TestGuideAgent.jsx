@@ -30,7 +30,7 @@ export default function TestGuideAgent() {
     sessionIdRef.current = id
   }, [])
 
-  const welcome = "Salut ! Je suis l'Assistant Guide d'Accès 🗺️. Envoie-moi une vidéo (MP4), un audio (MP3) ou une transcription (TXT) d'accès et je créerai un guide formaté pour Airbnb !"
+  const welcome = "Salut ! Je suis l'Assistant Guide d'Accès 🗺️."
 
   useEffect(() => {
     let i = 0
@@ -73,17 +73,18 @@ export default function TestGuideAgent() {
     const isMp3 = file.type === 'audio/mpeg' || file.name.toLowerCase().endsWith('.mp3')
     const isMp4 = file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4')
     const isTxt = file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')
+    const isMov = file.type === 'video/quicktime' || file.name.toLowerCase().endsWith('.mov')
 
-    if (!isMp3 && !isMp4 && !isTxt) {
-      alert('Veuillez sélectionner un fichier MP3, MP4 ou TXT uniquement.')
+    if (!isMp3 && !isMp4 && !isMov && !isTxt) {
+      alert('Veuillez sélectionner un fichier MP3, MP4, MOV ou TXT uniquement.')
       e.target.value = ''
       return
     }
 
     // Validation taille (50MB max pour vidéos, 10MB pour audio/txt)
-    const maxSize = isMp4 ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+    const maxSize = (isMp4 || isMov) ? 50 * 1024 * 1024 : 10 * 1024 * 1024
     if (file.size > maxSize) {
-      alert(`Le fichier est trop volumineux. Taille maximum : ${isMp4 ? '50MB' : '10MB'}.`)
+      alert(`Le fichier est trop volumineux. Taille maximum : ${(isMp4 || isMov) ? '50MB' : '10MB'}.`)
       e.target.value = ''
       return
     }
@@ -109,7 +110,7 @@ export default function TestGuideAgent() {
     if (!selectedFile) return <FileText className="w-4 h-4" />
     const name = selectedFile.name.toLowerCase()
     if (name.endsWith('.mp3')) return <FileAudio className="w-4 h-4 text-purple-600" />
-    if (name.endsWith('.mp4')) return <FileVideo className="w-4 h-4 text-blue-600" />
+    if (name.endsWith('.mp4') || name.endsWith('.mov')) return <FileVideo className="w-4 h-4 text-blue-600" />
     if (name.endsWith('.txt')) return <FileText className="w-4 h-4 text-green-600" />
     return <FileText className="w-4 h-4" />
   }
@@ -323,7 +324,7 @@ export default function TestGuideAgent() {
               <input
                 type="file"
                 ref={fileInputRef}
-                accept=".mp3,.mp4,.txt,audio/mpeg,video/mp4,text/plain"
+                accept=".mp3,.mp4,.mov,.txt,audio/mpeg,video/mp4,video/quicktime,text/plain"
                 onChange={handleFileSelect}
                 className="hidden"
                 id="file-upload"
@@ -335,7 +336,7 @@ export default function TestGuideAgent() {
                 <Upload className="w-4 h-4" />
                 Joindre fichier
               </label>
-              <span className="text-xs text-gray-500">MP3, MP4 ou TXT</span>
+              <span className="text-xs text-gray-500">MP3, MP4, MOV ou TXT</span>
             </div>
 
             <div className="flex gap-2">

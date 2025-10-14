@@ -80,7 +80,7 @@ export default function FicheClefs() {
                 fieldPath="section_clefs.emplacementPhoto"
                 label="Photo de l'emplacement"
                 multiple={true}
-                maxFiles={1}
+                maxFiles={10}
               />
               <p className="text-xs text-gray-500 mt-1">Photo obligatoire pour localiser la boîte à clés</p>
             </div>
@@ -234,7 +234,7 @@ export default function FicheClefs() {
                   fieldPath="section_clefs.interphonePhoto"
                   label="Photo de l'interphone"
                   multiple={true}
-                  maxFiles={1}
+                  maxFiles={10}
                 />
                 </div>
               </div>
@@ -286,7 +286,7 @@ export default function FicheClefs() {
                   fieldPath="section_clefs.tempoGachePhoto"
                   label="Photo du tempo-gâche"
                   multiple={true}
-                  maxFiles={1}
+                  maxFiles={10}
                 />
                 </div>
               </div>
@@ -338,7 +338,7 @@ export default function FicheClefs() {
                   fieldPath="section_clefs.digicodePhoto"
                   label="Photo du digicode"
                   multiple={true}
-                  maxFiles={1}
+                  maxFiles={10}
                 />
                 </div>
               </div>
@@ -354,7 +354,7 @@ export default function FicheClefs() {
                   fieldPath="section_clefs.clefs.photos"
                   label="Photos des clefs"
                   multiple={true}
-                  maxFiles={3}
+                  maxFiles={10}
                   acceptVideo={false}
                 />
                 </div>

@@ -167,7 +167,7 @@ export default function FicheSalonSam() {
                 fieldPath="section_salon_sam.photos_salon_sam"
                 label="Photos du Salon et de la Salle à Manger"
                 multiple={true}
-                maxFiles={8}
+                maxFiles={10}
               />
             </div>
 

@@ -144,7 +144,7 @@ export default function FicheCommuns() {
                     fieldPath="section_communs.photos_espaces_communs"
                     label="Photos des espaces communs"
                     multiple={true}
-                    maxFiles={8}
+                    maxFiles={15}
                   />
                 </div>
 

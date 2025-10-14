@@ -47,7 +47,7 @@ export default function FicheGuideAcces() {
                 fieldPath="section_guide_acces.photos_etapes"
                 label="Fournir plusieurs photos étape par étape pour le carrousel photo"
                 multiple={true}
-                maxFiles={20}
+                maxFiles={25}
               />
               <p className="text-sm text-gray-500 mt-2">
                 📸 Photos de chaque étape du parcours : panneau de rue, entrée immeuble, hall, ascenseur, palier, porte d'appartement, etc.

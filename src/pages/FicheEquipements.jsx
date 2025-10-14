@@ -155,7 +155,7 @@ export default function FicheEquipements() {
                   fieldPath="section_equipements.poubelle_photos"
                   label="Photos du local poubelle"
                   multiple={true}
-                  maxFiles={5}
+                  maxFiles={10}
                 />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos du local poubelle
@@ -181,7 +181,7 @@ export default function FicheEquipements() {
                 fieldPath="section_equipements.disjoncteur_photos"
                 label="Photos du disjoncteur"
                 multiple={true}
-                maxFiles={3}
+                maxFiles={10}
               />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos du disjoncteur
@@ -207,7 +207,7 @@ export default function FicheEquipements() {
                 fieldPath="section_equipements.vanne_arret_photos"
                 label="Photos de la vanne d'arrêt d'eau"
                 multiple={true}
-                maxFiles={3}
+                maxFiles={10}
               />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos de la vanne d'arrêt d'eau
@@ -262,7 +262,7 @@ export default function FicheEquipements() {
                 fieldPath="section_equipements.chauffage_eau_photos"
                 label="Photos du système de chauffage d'eau"
                 multiple={true}
-                maxFiles={5}
+                maxFiles={10}
               />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos du système de chauffage

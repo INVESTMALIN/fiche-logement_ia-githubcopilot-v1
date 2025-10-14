@@ -284,7 +284,7 @@ export default function FicheCuisine1() {
                     fieldPath="section_cuisine_1.cuisiniere_photo"
                     label="Cuisinière - Photo"
                     multiple={true}
-                    maxFiles={3}
+                    maxFiles={7}
                   />
                 </div>
 
@@ -365,7 +365,7 @@ export default function FicheCuisine1() {
                     fieldPath="section_cuisine_1.plaque_cuisson_photo"
                     label="Plaque de cuisson - Photo"
                     multiple={true}
-                    maxFiles={3}
+                    maxFiles={7}
                   />
                 </div>
 
@@ -431,7 +431,7 @@ export default function FicheCuisine1() {
                     fieldPath="section_cuisine_1.four_photo"
                     label="Four - Photo"
                     multiple={true}
-                    maxFiles={3}
+                    maxFiles={7}
                   />
                 </div>
 
@@ -469,7 +469,7 @@ export default function FicheCuisine1() {
                     fieldPath="section_cuisine_1.micro_ondes_photo"
                     label="Four à micro-ondes - Photo"
                     multiple={true}
-                    maxFiles={3}
+                    maxFiles={7}
                   />
                 </div>
 
@@ -507,7 +507,7 @@ export default function FicheCuisine1() {
                     fieldPath="section_cuisine_1.lave_vaisselle_photo"
                     label="Lave-vaisselle - Photo"
                     multiple={true}
-                    maxFiles={3}
+                    maxFiles={7}
                   />
                 </div>
 
@@ -577,7 +577,7 @@ export default function FicheCuisine1() {
                     fieldPath="section_cuisine_1.cafetiere_photo"
                     label="Cafetière - Photo"
                     multiple={true}
-                    maxFiles={3}
+                    maxFiles={7}
                   />
                 </div>
 

@@ -397,9 +397,7 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
     }
   }
 
-
 // Suppression d'une photo - VERSION FINALE
-// Remplacement de la fonction handleDeletePhoto dans PhotoUpload.jsx
 
 const handleDeletePhoto = async (photoUrl, index) => {
   try {

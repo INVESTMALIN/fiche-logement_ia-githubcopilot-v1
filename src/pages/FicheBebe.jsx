@@ -328,7 +328,7 @@ const handleArrayCheckboxChange = (field, option, checked) => {
                       fieldPath="section_bebe.photos_equipements_bebe"
                       label="Photos - Tous les équipements bébé sélectionnés"
                       multiple={true}
-                      maxFiles={12}
+                      maxFiles={15}
                     />
                   </div>
                 )}

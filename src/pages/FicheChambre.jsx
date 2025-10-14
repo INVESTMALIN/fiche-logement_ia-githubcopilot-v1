@@ -173,7 +173,7 @@ const AccordeonChambre = ({
               fieldPath={`section_chambres.${chambreKey}.photos_chambre`}
               label="Photos de la chambre avec tous les équipements"
               multiple={true}
-              maxFiles={3}
+              maxFiles={10}
             />
           </div>
 

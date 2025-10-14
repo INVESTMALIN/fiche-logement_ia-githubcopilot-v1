@@ -163,7 +163,7 @@ const AccordeonSalleDeBain = ({
               fieldPath={`section_salle_de_bains.${salleKey}.photos_salle_de_bain`}
               label={`Salle de bain ${numeroAffiche} - Photos`}
               multiple={true}
-              maxFiles={5}
+              maxFiles={10}
             />
           </div>
 

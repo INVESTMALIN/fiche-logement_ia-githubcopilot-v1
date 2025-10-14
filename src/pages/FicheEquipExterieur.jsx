@@ -407,7 +407,7 @@ export default function FicheEquipExterieur() {
                     fieldPath="section_equip_spe_exterieur.exterieur_photos"
                     label="Photos de l'extérieur"
                     multiple={true}
-                    maxFiles={8}
+                    maxFiles={12}
                   />
                 </div>
 
@@ -542,7 +542,7 @@ export default function FicheEquipExterieur() {
                         fieldPath="section_equip_spe_exterieur.barbecue_photos"
                         label="Photos du barbecue et des ustensiles"
                         multiple={true}
-                        maxFiles={3}
+                        maxFiles={10}
                       />
                     </div>
                   </div>
@@ -831,7 +831,7 @@ export default function FicheEquipExterieur() {
                     fieldPath="section_equip_spe_exterieur.jacuzzi_photos"
                     label="Photos du Jacuzzi"
                     multiple={true}
-                    maxFiles={3}
+                    maxFiles={10}
                   />
                 </div>
               </div>
