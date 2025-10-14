@@ -24,7 +24,7 @@ import PhotoUpload from '../components/PhotoUpload'
     
     // Si c'est l'accordéon "autres"
     if (typeAccordeon === 'autres') {
-      return champsMaison
+      return [...champsLits, ...champsMaison] 
     }
     
     // Fallback (ne devrait pas arriver)
