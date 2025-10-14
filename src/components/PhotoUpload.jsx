@@ -4,6 +4,16 @@ import { useForm } from './FormContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
 
+const sanitizeFileName = (fileName) => {
+  return fileName
+    .normalize('NFD')                    // Décompose les accents (é → e + ´)
+    .replace(/[\u0300-\u036f]/g, '')     // Supprime les accents
+    .replace(/\s+/g, '_')                // Remplace espaces par underscore
+    .replace(/[^a-zA-Z0-9._-]/g, '_')    // Remplace caractères spéciaux par underscore
+    .replace(/_+/g, '_')                 // Évite les underscores multiples
+    .replace(/^_|_$/g, '')               // Enlève underscores en début/fin
+}
+
 const PhotoUpload = ({ 
   fieldPath,           // ex: "section_equipements.poubelle_photos"
   label,               // ex: "Photos du local poubelle"
@@ -36,15 +46,17 @@ if (typeof rawPhotos === 'string') {
 const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
   // Génération du path pour Supabase Storage
   const generateStoragePath = (fileName) => {
-    const timestamp = Date.now()
-    const randomId = Math.random().toString(36).substr(2, 6)
-    const [section, field] = fieldPath.split('.')
-    
-    // Récupérer le numéro de bien depuis section_logement
-    const numeroBien = getField('section_logement.numero_bien') || `temp-${timestamp}`
+  const timestamp = Date.now()
+  const randomId = Math.random().toString(36).substr(2, 6)
+  const [section, field] = fieldPath.split('.')
   
-    return `user-${user.id}/fiche-${numeroBien}/${section}/${field}/${timestamp}_${randomId}_${fileName}`
-  }
+  const numeroBien = getField('section_logement.numero_bien') || `temp-${timestamp}`
+  
+  // 🧹 NETTOYER LE NOM DE FICHIER
+  const cleanFileName = sanitizeFileName(fileName)
+
+  return `user-${user.id}/fiche-${numeroBien}/${section}/${field}/${timestamp}_${randomId}_${cleanFileName}`
+}
 
    // 🔧 FONCTION COMPRESSION AUTOMATIQUE - Ajout pour anciens Android
   const compressImage = async (file) => {
@@ -315,8 +327,7 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
         }
   
         // Génération du path de stockage
-        const ficheId = getField('id')
-        const storagePath = generateStoragePath(fileToUpload.name, ficheId)
+        const storagePath = generateStoragePath(fileToUpload.name)
         
         // Upload vers Supabase
         const { data, error } = await supabase.storage
