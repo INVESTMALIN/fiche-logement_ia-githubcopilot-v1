@@ -26,6 +26,7 @@ const PhotoUpload = ({
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [compressing, setCompressing] = useState(false)
+  const [backendCompressing, setBackendCompressing] = useState(false)
   const [error, setError] = useState(null)
 
   // Récupérer les photos actuelles
@@ -315,9 +316,15 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
           console.log(`📷 Compression de ${file.name}...`)
           fileToUpload = await compressImage(file)
         } else if (isVideo) {
-          console.log(`📹 Vérification compression vidéo ${file.name}...`)
-          fileToUpload = await compressVideo(file)
-        }    
+          // Si vidéo > 95 MB, on SKIP la compression navigateur (backend gérera)
+          if (file.size > 95 * 1024 * 1024) {
+            console.log(`📹 Vidéo > 95MB, compression backend uniquement`)
+            fileToUpload = file // Pas de compression navigateur
+          } else {
+            console.log(`📹 Compression navigateur pour vidéo < 95MB`)
+            fileToUpload = await compressVideo(file)
+          }
+        }
   
         // Validation taille APRÈS compression (modifiée)
         const maxSize = isVideo ? 350 * 1024 * 1024 : 20 * 1024 * 1024 // 20MB max pour images
@@ -344,7 +351,40 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
           .from('fiche-photos')
           .getPublicUrl(storagePath)
   
-        uploadedUrls.push(urlData.publicUrl)
+        // 🎬 COMPRESSION BACKEND si vidéo > 95 MB
+        if (isVideo && file.size > 95 * 1024 * 1024) {
+          console.log('🎬 Vidéo > 95MB, compression backend en cours...')
+          setBackendCompressing(true)
+          
+          try {
+            const response = await fetch('https://video-compressor-production.up.railway.app/compress-video', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ videoUrl: urlData.publicUrl })
+            })
+            
+            if (!response.ok) {
+              throw new Error('Erreur compression backend')
+            }
+            
+            const result = await response.json()
+            console.log('✅ Compression backend terminée:', result.compressedUrl)
+            
+            // Stocker l'URL compressée au lieu de l'originale
+            uploadedUrls.push(result.compressedUrl)
+            
+          } catch (compressionError) {
+            console.error('❌ Erreur compression backend:', compressionError)
+            // Fallback : garder l'URL originale si compression échoue
+            uploadedUrls.push(urlData.publicUrl)
+            setError('Compression échouée, vidéo originale conservée')
+          } finally {
+            setBackendCompressing(false)
+          }
+        } else {
+          // Image ou vidéo < 95MB : URL normale
+          uploadedUrls.push(urlData.publicUrl)
+        }
       }
   
       return { success: true, urls: uploadedUrls }
@@ -355,47 +395,46 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
 
   // Gestion du changement de fichier
   const handleFileChange = async (event) => {
-    const files = Array.from(event.target.files)
-    
-    if (files.length === 0) return
+  const files = Array.from(event.target.files)
+  
+  if (files.length === 0) return
 
-    // Vérification limite nombre de fichiers
-    if (currentPhotos.length + files.length > maxFiles) {
-      setError(`Maximum ${maxFiles} photos autorisées`)
-      return
-    }
-
-    setUploading(true)
-    setError(null)
-
-    try {
-      const result = await uploadToSupabase(files)
-      
-      if (result.success) {
-        // Mise à jour du FormContext avec les nouvelles URLs
-        const newUrls = result.urls
-        
-        if (multiple) {
-          // Mode multiple : ajouter aux photos existantes
-          const updatedPhotos = [...currentPhotos, ...newUrls]
-          updateField(fieldPath, updatedPhotos)
-        } else {
-          // Mode single : remplacer par la première URL
-          updateField(fieldPath, newUrls[0])
-        }      
-       
-        // Reset du input
-        event.target.value = ''
-      } else {
-        setError(result.error)
-      }
-
-    } catch (err) {
-      setError('Erreur lors de l\'upload: ' + err.message)
-    } finally {
-      setUploading(false)
-    }
+  // Vérification limite nombre de fichiers
+  if (currentPhotos.length + files.length > maxFiles) {
+    setError(`Maximum ${maxFiles} photos autorisées`)
+    return
   }
+
+  setUploading(true)
+  setError(null)
+
+  try {
+    const result = await uploadToSupabase(files)
+    
+    if (result.success) {
+      // FORCER currentPhotos à être un array
+      const safeCurrentPhotos = Array.isArray(currentPhotos) ? currentPhotos : []
+      
+      const newUrls = result.urls
+      
+      if (multiple) {
+        const updatedPhotos = [...safeCurrentPhotos, ...newUrls]
+        updateField(fieldPath, updatedPhotos)
+      } else {
+        updateField(fieldPath, newUrls[0])
+      }
+      
+      // Reset du input
+      event.target.value = ''
+    } else {
+      setError(result.error)
+    }
+  } catch (err) {
+    setError('Erreur lors de l\'upload: ' + err.message)
+  } finally {
+    setUploading(false)
+  }
+}
 
 // Suppression d'une photo - VERSION FINALE
 
@@ -458,16 +497,22 @@ const handleDeletePhoto = async (photoUrl, index) => {
             multiple={multiple}
             capture={capture ? "environment" : undefined}
             onChange={handleFileChange}
-            disabled={uploading || compressing}
+            disabled={uploading || compressing || backendCompressing}
             className="hidden"
             id={`upload-${fieldPath}`}
           />
           
           <label 
             htmlFor={`upload-${fieldPath}`}
-            className={`cursor-pointer ${(uploading || compressing) ? 'opacity-50' : ''}`}
+            className={`cursor-pointer ${(uploading || compressing || backendCompressing) ? 'opacity-50' : ''}`}
           >
-            {compressing ? (
+            {backendCompressing ? (
+              <div className="text-purple-600">
+                <div className="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent rounded-full mb-2"></div>
+                <p className="text-lg font-semibold">Compression en cours...</p>
+                <p className="text-sm mt-2">⏳ Votre vidéo est compressée pour faciliter le transfert et l'archivage.</p>
+              </div>
+            ) : compressing ? (
               <div className="text-orange-600">
                 <div className="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent rounded-full mb-2"></div>
                 <p className="text-lg font-semibold">Compression en cours...</p>
@@ -489,6 +534,12 @@ const handleDeletePhoto = async (photoUrl, index) => {
                 <p className="text-xs mt-1">
                   Max {maxFiles} fichiers, {acceptVideo ? '50MB/photo, 350MB/vidéo' : '20MB par fichier'}
                 </p>
+                {acceptVideo && (
+                  <p className="text-xs mt-2 text-orange-600">
+                    💡 <strong>Astuce :</strong> Filmez en 720p pour réduire la taille. 
+                    Les vidéos &gt;100MB prennent 4-5 min à optimiser.
+                  </p>
+                )}
               </div>
             )}
           </label>

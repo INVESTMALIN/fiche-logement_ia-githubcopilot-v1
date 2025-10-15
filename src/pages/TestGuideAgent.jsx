@@ -82,9 +82,9 @@ export default function TestGuideAgent() {
     }
 
     // Validation taille (50MB max pour vidéos, 10MB pour audio/txt)
-    const maxSize = (isMp4 || isMov) ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+    const maxSize = (isMp4 || isMov) ? 200 * 1024 * 1024 : 10 * 1024 * 1024
     if (file.size > maxSize) {
-      alert(`Le fichier est trop volumineux. Taille maximum : ${(isMp4 || isMov) ? '50MB' : '10MB'}.`)
+      alert(`Le fichier est trop volumineux. Taille maximum : ${(isMp4 || isMov) ? '200MB' : '10MB'}.`)
       e.target.value = ''
       return
     }
@@ -140,10 +140,9 @@ export default function TestGuideAgent() {
           throw new Error('HTTP 400 - Fichier vide')
         }
 
-        const maxSize = selectedFile.name.toLowerCase().endsWith('.mp4') ? 50 * 1024 * 1024 : 10 * 1024 * 1024
-        if (selectedFile.size > maxSize) {
-          throw new Error('HTTP 413 - Fichier trop volumineux')
-        }
+        const maxSize = selectedFile.name.toLowerCase().endsWith('.mp4') || selectedFile.name.toLowerCase().endsWith('.mov') 
+          ? 200 * 1024 * 1024 
+          : 10 * 1024 * 1024
 
         const base64Promise = new Promise((resolve, reject) => {
           const reader = new FileReader()
@@ -210,7 +209,7 @@ export default function TestGuideAgent() {
       } else if (err.message?.includes('HTTP 500') || err.message?.includes('HTTP 502') || err.message?.includes('HTTP 503')) {
         errorMessage = "Une erreur technique s'est produite côté serveur. Merci de réessayer dans quelques instants."
       } else if (err.message?.includes('HTTP 413')) {
-        errorMessage = "Le fichier est trop volumineux. Merci d'utiliser un fichier de moins de 50MB (vidéo) ou 10MB (audio/texte)."
+        errorMessage = "Le fichier est trop volumineux. Merci d'utiliser un fichier de moins de 200MB (vidéo) ou 10MB (audio/texte)."
       } else if (err.message?.includes('HTTP 400')) {
         errorMessage = "Problème avec votre demande. Vérifiez le fichier sélectionné et réessayez."
       } else if (err.message?.includes('HTTP 401') || err.message?.includes('HTTP 403')) {
