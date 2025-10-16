@@ -433,6 +433,105 @@ PhotoUpload avec `multiple={false}` retourne une **string URL** au lieu d'un **a
 ```
 
 ---
+## 🚨 **BUG #007 - Champs conditionnels non nettoyés lors de la désélection d'équipements**
+**Date :** 16/10/2025  
+**Gravité :** Majeure  
+**Statut :** ✅ RÉSOLU  
+
+### **Symptômes**
+- Quand un coordinateur coche un équipement (ex: Climatisation), remplit les champs conditionnels (type, instructions, vidéo), puis **décoche** l'équipement
+- Les champs conditionnels disparaissent visuellement de l'interface
+- **MAIS** les données restent en mémoire dans FormContext et sont sauvegardées en DB
+- Résultat : données orphelines dans la BDD et les PDFs pour des équipements non cochés
+
+### **Cause racine**
+Les checkboxes principales utilisaient un simple `handleInputChange()` qui ne gérait pas le nettoyage des champs enfants. Quand `equipement = false`, les champs liés (type, instructions, vidéos, etc.) n'étaient jamais remis à `null` ou `[]`.
+
+### **Solution finale**
+**Pattern appliqué : BRANCH_SCHEMAS + nettoyage automatique**
+
+**Étape 1 :** Créer une carte de mapping équipement → champs à nettoyer
+```javascript
+const BRANCH_SCHEMAS = {
+  tv: [
+    'tv_type', 'tv_taille', 'tv_type_autre_details', 'tv_video', 
+    'tv_services', 'tv_consoles', 'tv_console_video'
+  ],
+  climatisation: [
+    'climatisation_type', 'climatisation_instructions', 'climatisation_video'
+  ],
+  chauffage: [
+    'chauffage_type', 'chauffage_instructions', 'chauffage_video'
+  ],
+  lave_linge: [
+    'lave_linge_prix', 'lave_linge_emplacement', 
+    'lave_linge_instructions', 'lave_linge_video'
+  ],
+  seche_linge: [
+    'seche_linge_prix', 'seche_linge_emplacement', 
+    'seche_linge_instructions', 'seche_linge_video'
+  ],
+  parking_equipement: [
+    'parking_photos', 'parking_videos'
+  ],
+  piano: [
+    'piano_marque', 'piano_type'
+  ],
+  accessible_mobilite_reduite: [
+    'pmr_details'
+  ],
+  animaux_acceptes: [
+    'animaux_commentaire'
+  ]
+}
+```
+
+**Étape 2 :** Modifier `handleInputChange()` pour détecter et nettoyer
+```javascript
+const handleInputChange = (field, value) => {
+  const fieldKey = field.split('.').pop()
+  
+  if (BRANCH_SCHEMAS[fieldKey] && value === false) {
+    // Checkbox racine décochée → nettoyer la branche
+    const currentData = getField('section_equipements')
+    const newData = { ...currentData }
+    
+    // Nettoyer tous les champs de la branche
+    BRANCH_SCHEMAS[fieldKey].forEach(key => {
+      if (Array.isArray(newData[key])) {
+        newData[key] = []
+      } else if (typeof newData[key] === 'object' && newData[key] !== null) {
+        newData[key] = {}
+      } else {
+        newData[key] = null
+      }
+    })
+    
+    // Remettre explicitement le flag racine à false
+    newData[fieldKey] = false
+    
+    // Une seule mise à jour atomique
+    updateField('section_equipements', newData)
+  } else {
+    // Comportement normal
+    updateField(field, value)
+  }
+}
+```
+
+### **Tests validés**
+- ✅ Cocher Climatisation → remplir type + instructions + vidéo → décocher → sauvegarder → recharger = champs vides
+- ✅ Cocher TV → remplir services + consoles + vidéo → décocher → sauvegarder → recharger = champs vides
+- ✅ Cocher Lave-linge → remplir prix + emplacement + instructions → décocher → pas de données orphelines en DB
+- ✅ Vérification PDF : équipements décochés n'apparaissent plus avec des données fantômes
+
+### **Prévention**
+- ⚠️ **Pattern réutilisable** : Ce même pattern BRANCH_SCHEMAS a déjà été appliqué dans `FicheEquipExterieur.jsx` (extérieur, piscine, jacuzzi, cuisine ext)
+- ⚠️ Pour toute **nouvelle section avec affichage conditionnel** : toujours créer un `BRANCH_SCHEMAS` et modifier le handler principal
+- ⚠️ Les fichiers physiques (photos/vidéos) sur Supabase Storage ne sont pas supprimés automatiquement, mais deviennent orphelins et seront nettoyés par la politique de rétention (40 jours)
+- ⚠️ **Fichiers concernés** : `FicheEquipements.jsx`, `FicheEquipExterieur.jsx` (référence du pattern)
+
+---
 ## 🔧 **Template pour nouveaux bugs**
 
 ```markdown

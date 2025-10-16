@@ -1,11 +1,11 @@
 # 📊 SUPABASE SPEC - Fiche Logement
-*Architecture technique - Mise à jour : 19 août 2025*
+*Architecture technique - Mise à jour : 16 octobre 2025*
 
 ---
 
 ## 🎯 **ARCHITECTURE GÉNÉRALE**
 
-Application React + Supabase pour remplacer les formulaires Jotform. 22 sections de formulaire avec upload média, génération PDF automatique et 3 systèmes de webhooks indépendants vers Make.com.
+Application React + Supabase pour remplacer les formulaires Jotform. 24 sections de formulaire avec upload média, génération PDF automatique et 3 systèmes de webhooks indépendants vers Make.com.
 
 **Stack :**
 - Frontend : React + Vite + Tailwind
@@ -51,7 +51,7 @@ CREATE TABLE fiches (
   chambres_chambre_1_photos TEXT[],
   cuisine_1_elements_abimes_photos TEXT[], -- Nouveaux champs session 14/08
   avis_video_globale_videos TEXT[], -- Nouveaux champs session 14/08
-  -- ... 59 champs média au total
+  -- ... 68 champs média au total
 );
 
 -- Table utilisateurs
@@ -100,18 +100,164 @@ export const mapSupabaseToFormData = (supabaseData) => ({
 
 ### **1. Trigger Principal - Drive/Monday**
 ```sql
+-- Trigger actuel en production : fiche_any_update_webhook
+-- Fonction actuelle 16 Oct 25 : notify_fiche_completed()
+
 CREATE OR REPLACE FUNCTION public.notify_fiche_completed()
-RETURNS trigger AS $function$
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
+DECLARE
+  media_part1 jsonb;
+  media_part2 jsonb;
+  media_part3 jsonb;
+  media_part4 jsonb;
+  media_part5 jsonb; -- nouveaux équipements
+  media_final jsonb;
 BEGIN
-  -- Déclenché UNIQUEMENT lors du passage à "Complété"
   IF NEW.statut = 'Complété' AND OLD.statut IS DISTINCT FROM 'Complété' THEN
-    
+
+    -- PARTIE 1 : Clefs + Equipements + Linge + Chambres (20 champs)
+    media_part1 := jsonb_build_object(
+      'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
+      'clefs_interphone_photo', NEW.clefs_interphone_photo,
+      'clefs_tempo_gache_photo', NEW.clefs_tempo_gache_photo,
+      'clefs_digicode_photo', NEW.clefs_digicode_photo,
+      'clefs_photos', NEW.clefs_photos,
+      'equipements_poubelle_photos', NEW.equipements_poubelle_photos,
+      'equipements_disjoncteur_photos', NEW.equipements_disjoncteur_photos,
+      'equipements_vanne_eau_photos', NEW.equipements_vanne_eau_photos,
+      'equipements_chauffage_eau_photos', NEW.equipements_chauffage_eau_photos,
+      'equipements_video_acces_poubelle', NEW.equipements_video_acces_poubelle,
+      'equipements_video_systeme_chauffage', NEW.equipements_video_systeme_chauffage,
+      'linge_photos_linge', NEW.linge_photos_linge,
+      'linge_emplacement_photos', NEW.linge_emplacement_photos,
+      'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos_chambre,
+      'chambres_chambre_2_photos', NEW.chambres_chambre_2_photos_chambre,
+      'chambres_chambre_3_photos', NEW.chambres_chambre_3_photos_chambre,
+      'chambres_chambre_4_photos', NEW.chambres_chambre_4_photos_chambre,
+      'chambres_chambre_5_photos', NEW.chambres_chambre_5_photos_chambre,
+      'chambres_chambre_6_photos', NEW.chambres_chambre_6_photos_chambre,
+      'salle_de_bain_1_photos', NEW.salle_de_bains_salle_de_bain_1_photos_salle_de_bain
+    );
+
+    -- PARTIE 2 : Salles de bains + Cuisine 1 vidéos (19 champs)
+    media_part2 := jsonb_build_object(
+      'salle_de_bain_2_photos', NEW.salle_de_bains_salle_de_bain_2_photos_salle_de_bain,
+      'salle_de_bain_3_photos', NEW.salle_de_bains_salle_de_bain_3_photos_salle_de_bain,
+      'salle_de_bain_4_photos', NEW.salle_de_bains_salle_de_bain_4_photos_salle_de_bain,
+      'salle_de_bain_5_photos', NEW.salle_de_bains_salle_de_bain_5_photos_salle_de_bain,
+      'salle_de_bain_6_photos', NEW.salle_de_bains_salle_de_bain_6_photos_salle_de_bain,
+      'cuisine1_refrigerateur_video', NEW.cuisine_1_refrigerateur_video,
+      'cuisine1_congelateur_video', NEW.cuisine_1_congelateur_video,
+      'cuisine1_mini_refrigerateur_video', NEW.cuisine_1_mini_refrigerateur_video,
+      'cuisine1_cuisiniere_video', NEW.cuisine_1_cuisiniere_video,
+      'cuisine1_plaque_cuisson_video', NEW.cuisine_1_plaque_cuisson_video,
+      'cuisine1_four_video', NEW.cuisine_1_four_video,
+      'cuisine1_micro_ondes_video', NEW.cuisine_1_micro_ondes_video,
+      'cuisine1_lave_vaisselle_video', NEW.cuisine_1_lave_vaisselle_video,
+      'cuisine1_cafetiere_video', NEW.cuisine_1_cafetiere_video,
+      'cuisine1_bouilloire_video', NEW.cuisine_1_bouilloire_video,
+      'cuisine1_grille_pain_video', NEW.cuisine_1_grille_pain_video,
+      'cuisine1_blender_video', NEW.cuisine_1_blender_video,
+      'cuisine1_cuiseur_riz_video', NEW.cuisine_1_cuiseur_riz_video,
+      'cuisine1_machine_pain_video', NEW.cuisine_1_machine_pain_video
+    );
+
+    -- PARTIE 3 : Cuisine photos + Autres sections (18 champs)
+    media_part3 := jsonb_build_object(
+      'cuisine1_cuisiniere_photo', NEW.cuisine_1_cuisiniere_photo,
+      'cuisine1_plaque_cuisson_photo', NEW.cuisine_1_plaque_cuisson_photo,
+      'cuisine1_four_photo', NEW.cuisine_1_four_photo,
+      'cuisine1_micro_ondes_photo', NEW.cuisine_1_micro_ondes_photo,
+      'cuisine1_lave_vaisselle_photo', NEW.cuisine_1_lave_vaisselle_photo,
+      'cuisine1_cafetiere_photo', NEW.cuisine_1_cafetiere_photo,
+      'cuisine2_photos_tiroirs_placards', NEW.cuisine_2_photos_tiroirs_placards,
+      'salon_sam_photos', NEW.salon_sam_photos_salon_sam,
+      'exterieur_photos_espaces', NEW.equip_spe_ext_exterieur_photos,
+      'jacuzzi_photos_jacuzzi', NEW.equip_spe_ext_jacuzzi_photos,
+      'barbecue_photos', NEW.equip_spe_ext_barbecue_photos,
+      'piscine_video', NEW.equip_spe_ext_piscine_video,
+      'communs_photos_espaces', NEW.communs_photos_espaces_communs,
+      'bebe_photos_equipements', NEW.bebe_photos_equipements_bebe,
+      'visite_video_visite', NEW.visite_video_visite,
+      'guide_acces_photos_etapes', NEW.guide_acces_photos_etapes,
+      'guide_acces_video_acces', NEW.guide_acces_video_acces,
+      'securite_photos_equipements', NEW.securite_photos_equipements_securite
+    );
+
+    -- PARTIE 4 : Nouveaux champs Avis + Éléments abîmés (21 champs)
+    media_part4 := jsonb_build_object(
+      -- Avis
+      'avis_video_globale_videos', NEW.avis_video_globale_videos,
+      'avis_logement_vis_a_vis_photos', NEW.avis_logement_vis_a_vis_photos,
+
+      -- Cuisine éléments abîmés
+      'cuisine1_elements_abimes_photos', NEW.cuisine_1_elements_abimes_photos,
+
+      -- Salon/SAM éléments abîmés
+      'salon_sam_salon_elements_abimes_photos', NEW.salon_sam_salon_elements_abimes_photos,
+      'salon_sam_salle_manger_elements_abimes_photos', NEW.salon_sam_salle_manger_elements_abimes_photos,
+
+      -- Chambres éléments abîmés
+      'chambres_chambre_1_elements_abimes_photos', NEW.chambres_chambre_1_elements_abimes_photos,
+      'chambres_chambre_2_elements_abimes_photos', NEW.chambres_chambre_2_elements_abimes_photos,
+      'chambres_chambre_3_elements_abimes_photos', NEW.chambres_chambre_3_elements_abimes_photos,
+      'chambres_chambre_4_elements_abimes_photos', NEW.chambres_chambre_4_elements_abimes_photos,
+      'chambres_chambre_5_elements_abimes_photos', NEW.chambres_chambre_5_elements_abimes_photos,
+      'chambres_chambre_6_elements_abimes_photos', NEW.chambres_chambre_6_elements_abimes_photos,
+
+      -- Salles de bains éléments abîmés
+      'salle_de_bains_salle_de_bain_1_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_1_elements_abimes_photos,
+      'salle_de_bains_salle_de_bain_2_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_2_elements_abimes_photos,
+      'salle_de_bains_salle_de_bain_3_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_3_elements_abimes_photos,
+      'salle_de_bains_salle_de_bain_4_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_4_elements_abimes_photos,
+      'salle_de_bains_salle_de_bain_5_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_5_elements_abimes_photos,
+      'salle_de_bains_salle_de_bain_6_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_6_elements_abimes_photos,
+
+      -- Équipements extérieurs éléments abîmés
+      'equip_spe_ext_garage_elements_abimes_photos', NEW.equip_spe_ext_garage_elements_abimes_photos,
+      'equip_spe_ext_buanderie_elements_abimes_photos', NEW.equip_spe_ext_buanderie_elements_abimes_photos,
+      'equip_spe_ext_autres_pieces_elements_abimes_photos', NEW.equip_spe_ext_autres_pieces_elements_abimes_photos
+    );
+
+    -- PARTIE 5 : Nouveaux médias Équipements
+    media_part5 := jsonb_build_object(
+      -- TV
+      'equipements_tv_video', NEW.equipements_tv_video,
+      'equipements_tv_console_video', NEW.equipements_tv_console_video,
+      'equipements_tv_services', NEW.equipements_tv_services,
+      'equipements_tv_consoles', NEW.equipements_tv_consoles,
+
+      -- Climatisation
+      'equipements_climatisation_video', NEW.equipements_climatisation_video,
+
+      -- Chauffage
+      'equipements_chauffage_video', NEW.equipements_chauffage_video,
+
+      -- Lave-linge
+      'equipements_lave_linge_video', NEW.equipements_lave_linge_video,
+
+      -- Sèche-linge
+      'equipements_seche_linge_video', NEW.equipements_seche_linge_video,
+
+      -- Parking
+      'equipements_parking_photos', NEW.equipements_parking_photos,
+      'equipements_parking_videos', NEW.equipements_parking_videos
+    );
+
+    -- Fusion complète
+    media_final := media_part1 || media_part2 || media_part3 || media_part4 || media_part5;
+
+    -- Envoi vers Make
     PERFORM net.http_post(
       url := 'https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj',
       body := jsonb_build_object(
         'id', NEW.id,
         'nom', NEW.nom,
         'statut', NEW.statut,
+        'created_at', NEW.created_at,
+        'updated_at', NEW.updated_at,
         'proprietaire', jsonb_build_object(
           'prenom', NEW.proprietaire_prenom,
           'nom', NEW.proprietaire_nom,
@@ -124,12 +270,7 @@ BEGIN
           'logement_url', NEW.pdf_logement_url,
           'menage_url', NEW.pdf_menage_url
         ),
-        'media', jsonb_build_object(
-          'clefs_photos', NEW.clefs_photos,
-          'equipements_poubelle_photos', NEW.equipements_poubelle_photos,
-          'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos,
-          -- ... 59 champs média total
-        )
+        'media', media_final
       ),
       headers := '{"Content-Type": "application/json"}'::jsonb
     );
@@ -138,43 +279,6 @@ BEGIN
 END;
 $function$;
 
-CREATE TRIGGER fiche_any_update_webhook
-  AFTER UPDATE ON public.fiches
-  FOR EACH ROW
-  EXECUTE FUNCTION notify_fiche_completed();
-```
-
-### **2. Trigger PDF - Génération Indépendante**
-```sql
-CREATE OR REPLACE FUNCTION public.notify_pdf_update()
-RETURNS trigger AS $function$
-BEGIN
-  -- Déclenché UNIQUEMENT si pdf_last_generated_at change
-  IF OLD.pdf_last_generated_at IS DISTINCT FROM NEW.pdf_last_generated_at THEN
-    
-    PERFORM net.http_post(
-      url := 'https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q',
-      body := jsonb_build_object(
-        'id', NEW.id,
-        'nom', NEW.nom,
-        'statut', NEW.statut,
-        'pdfs', jsonb_build_object(
-          'logement_url', NEW.pdf_logement_url,
-          'menage_url', NEW.pdf_menage_url
-        ),
-        'trigger_type', 'pdf_update'
-      ),
-      headers := '{"Content-Type": "application/json"}'::jsonb
-    );
-  END IF;
-  RETURN NEW;
-END;
-$function$;
-
-CREATE TRIGGER fiche_pdf_update_webhook
-  AFTER UPDATE ON public.fiches
-  FOR EACH ROW
-  EXECUTE FUNCTION notify_pdf_update();
 ```
 
 ### **3. Trigger Alertes - Notifications Automatiques**
@@ -268,14 +372,15 @@ fiche-logement-{numero_bien}.pdf
 fiche-menage-{numero_bien}.pdf
 ```
 
-### **59 Champs Média Total**
+### **68 Champs Média Total**
 - **Clefs** : 5 champs (emplacement, interphone, photos, etc.)
 - **Équipements** : 9 champs (poubelle, disjoncteur, vidéos, etc.)
 - **Chambres** : 6 champs (chambre_1_photos à chambre_6_photos)
 - **Salles de bains** : 6 champs  
 - **Cuisine** : 21 champs (14 vidéos tutos + 6 photos + 1 tiroirs)
 - **Autres sections** : 12 champs
-- **🆕 Session 14/08** : 21 nouveaux champs (éléments abîmés + vidéos globales)
+- **Session 14/08** : 21 nouveaux champs (éléments abîmés + vidéos globales)
+- **Session 16/10** : 8 nouveaux champs (vidéos équipements)
 
 ---
 
@@ -299,7 +404,7 @@ fiche-menage-{numero_bien}.pdf
 
 ---
 
-## ✅ **TESTS VALIDÉS (19 AOÛT 2025)**
+## ✅ **TESTS VALIDÉS (16 OCT 2025)**
 
 ### **Local + Prod - Comportement identique**
 - ✅ **Fix pdf_last_generated_at** : Suppression ligne dans mapFormDataToSupabase()
@@ -357,5 +462,5 @@ const handleSave = async () => {
 
 ---
 
-*📝 Document technique de référence - Session 19 août 2025*  
+*📝 Document technique de référence - Session 16 octobre 2025*  
 *🔧 Triggers opérationnels - Architecture validée*
