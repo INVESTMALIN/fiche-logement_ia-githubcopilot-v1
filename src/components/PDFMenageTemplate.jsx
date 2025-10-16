@@ -184,7 +184,6 @@ const maskSecretCodes = (value, fieldKey) => {
   const formatValue = (value, fieldKey = '') => {
     if (isEmpty(value)) return null
     
-    // 🚫 EXCLURE LES CHAMPS PHOTOS
     // 🚫 EXCLURE LES CHAMPS PHOTOS ET VIDÉOS
     if (
         fieldKey.toLowerCase().includes('photo') || 

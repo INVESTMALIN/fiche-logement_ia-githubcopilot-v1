@@ -1197,11 +1197,27 @@ export function FormProvider({ children }) {
     const adresseVille = queryParams.get('adresse[city]')
     const adressePostal = queryParams.get('adresse[postal]')
     
+
     if (fullName || email || adresseRue || adresseVille || adressePostal) {
       mondayData.section_proprietaire = {}
       
-      if (fullName) mondayData.section_proprietaire.nom = decodeURIComponent(fullName)
+      // Splitter fullName en prénom + nom
+      if (fullName) {
+        const decoded = decodeURIComponent(fullName)
+        const parts = decoded.trim().split(' ')
+        
+        // Premier mot = prénom, reste = nom de famille
+        if (parts.length > 1) {
+          mondayData.section_proprietaire.prenom = parts[0]
+          mondayData.section_proprietaire.nom = parts.slice(1).join(' ')
+        } else {
+          // Si un seul mot, on le met dans nom
+          mondayData.section_proprietaire.nom = decoded
+        }
+      }
+      
       if (email) mondayData.section_proprietaire.email = decodeURIComponent(email)
+        
       
       if (adresseRue || adresseVille || adressePostal) {
         mondayData.section_proprietaire.adresse = {}
