@@ -511,6 +511,67 @@ const PDFTemplate = ({ formData }) => {
       }
     }
 
+    // 🍳 FONCTION SPÉCIALE : Rendu groupé pour Cuisine 1
+const renderCuisine1Grouped = (sectionData) => {
+  const equipements = [
+    { key: 'refrigerateur', label: 'Réfrigérateur', emoji: '🧊' },
+    { key: 'congelateur', label: 'Congélateur', emoji: '❄️' },
+    { key: 'mini_refrigerateur', label: 'Mini réfrigérateur', emoji: '🧊' },
+    { key: 'cuisiniere', label: 'Cuisinière', emoji: '🔥' },
+    { key: 'plaque_cuisson', label: 'Plaque de cuisson', emoji: '🔥' },
+    { key: 'four', label: 'Four', emoji: '🔥' },
+    { key: 'micro_ondes', label: 'Four à micro-ondes', emoji: '📡' },
+    { key: 'lave_vaisselle', label: 'Lave-vaisselle', emoji: '🧽' },
+    { key: 'cafetiere', label: 'Cafetière', emoji: '☕' },
+    { key: 'bouilloire', label: 'Bouilloire électrique', emoji: '💧' },
+    { key: 'grille_pain', label: 'Grille-pain', emoji: '🍞' },
+    { key: 'blender', label: 'Blender', emoji: '🥤' },
+    { key: 'cuiseur_riz', label: 'Cuiseur à riz', emoji: '🍚' },
+    { key: 'machine_pain', label: 'Machine à pain', emoji: '🥖' },
+    { key: 'lave_linge', label: 'Lave-linge', emoji: '🧺' }
+  ]
+
+  const groupedEquipements = []
+
+  equipements.forEach(equip => {
+    // Vérifier si l'équipement est coché
+    if (sectionData[`equipements_${equip.key}`] === true) {
+      const details = {}
+      const photos = []
+
+      // Récupérer tous les champs liés à cet équipement
+      Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+        if (fieldKey.startsWith(equip.key) && !isEmpty(fieldValue)) {
+          if (fieldKey.includes('photo') || fieldKey.includes('video')) {
+            // Extraire les photos/vidéos
+            const urls = parsePhotoValue(fieldValue)
+            urls.forEach(url => photos.push({
+              url: cleanUrl(url),
+              label: formatFieldName(fieldKey),
+              fieldKey: fieldKey,
+              isValid: isImageUrl(cleanUrl(url))
+            }))
+          } else {
+            // Ajouter les détails texte
+            details[fieldKey] = fieldValue
+          }
+        }
+      })
+
+      // Ajouter l'équipement groupé seulement s'il a des détails ou photos
+      if (Object.keys(details).length > 0 || photos.length > 0) {
+        groupedEquipements.push({
+          ...equip,
+          details,
+          photos: photos.filter(p => p.isValid)
+        })
+      }
+    }
+  })
+
+  return groupedEquipements
+}
+
   // 🎯 GÉNÉRATION DES SECTIONS COMPLÈTES
   const generateSections = () => {
     const sections = []
@@ -675,63 +736,123 @@ const PDFTemplate = ({ formData }) => {
               {section.label}
             </h3>
 
-            {/* Champs de la section */}
-            {section.fields.length > 0 && (
-              <div style={{
-                backgroundColor: '#ffffff',
+{/* Champs de la section */}
+{section.fields.length > 0 && (
+  <div style={{
+    backgroundColor: '#ffffff',
+    border: '1px solid #e2e8f0',
+    borderRadius: '6px',
+    padding: '16px',
+    marginBottom: section.photos.length > 0 ? '16px' : '0'
+  }}>
+    {/* 🍳 CAS SPÉCIAL : Cuisine 1 - Rendu groupé */}
+    {section.key === 'section_cuisine_1' ? (
+      (() => {
+        const groupedEquipements = renderCuisine1Grouped(formData.section_cuisine_1 || {})
+        
+        return groupedEquipements.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {groupedEquipements.map((equip, idx) => (
+              <div key={idx} style={{
+                padding: '12px',
+                backgroundColor: '#f8fafc',
                 border: '1px solid #e2e8f0',
                 borderRadius: '6px',
-                padding: '16px',
-                marginBottom: section.photos.length > 0 ? '16px' : '0'
+                pageBreakInside: 'avoid'
               }}>
-                {section.fields.map((field, fieldIndex) => (
-                  <div key={field.key} style={{
-                    marginBottom: fieldIndex < section.fields.length - 1 ? '12px' : '0',
+                {/* Titre équipement */}
+                <h4 style={{
+                  margin: '0 0 8px 0',
+                  fontSize: '11pt',
+                  fontWeight: '600',
+                  color: '#2d3748',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <span>{equip.emoji}</span>
+                  <span>{equip.label}</span>
+                </h4>
+
+                {/* Détails équipement */}
+                {Object.keys(equip.details).length > 0 && (
+                  <div style={{ marginBottom: equip.photos.length > 0 ? '8px' : '0' }}>
+                    {Object.entries(equip.details).map(([key, value], detailIdx) => (
+                      <div key={detailIdx} style={{
+                        marginBottom: detailIdx < Object.entries(equip.details).length - 1 ? '6px' : '0',
+                        fontSize: '9pt',
+                        color: '#4a5568'
+                      }}>
+                        <span style={{ fontWeight: '600' }}>{formatFieldName(key.replace(equip.key + '_', ''))}:</span>{' '}
+                        <span style={{ color: '#2d3748' }}>{formatValue(value, key)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Photos/vidéos équipement */}
+                {equip.photos.length > 0 && (
+                  <PhotosDisplay photos={equip.photos} sectionTitle={equip.label} />
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize: '9pt', color: '#6b7280', fontStyle: 'italic' }}>
+            Aucun équipement configuré
+          </div>
+        )
+      })()
+    ) : (
+      /* RENDU NORMAL pour les autres sections */
+      section.fields.map((field, fieldIndex) => (
+        <div key={field.key} style={{
+          marginBottom: fieldIndex < section.fields.length - 1 ? '12px' : '0',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px'
+        }}>
+          <span style={{
+            fontSize: '9pt',
+            fontWeight: '600',
+            color: '#4a5568',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            {field.label}
+          </span>
+          <span style={{
+            fontSize: '10pt',
+            color: '#2d3748',
+            lineHeight: '1.4'
+          }}>
+            {typeof field.value === 'object' && field.value.type === 'bullet-list' ? (
+              <div style={{ marginTop: '4px' }}>
+                {field.value.items.map((item, itemIndex) => (
+                  <div key={itemIndex} style={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
+                    alignItems: 'flex-start',
+                    gap: '6px',
+                    marginBottom: itemIndex < field.value.items.length - 1 ? '3px' : '0'
                   }}>
-                    <span style={{
-                      fontSize: '9pt',
-                      fontWeight: '600',
-                      color: '#4a5568',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      {field.label}
-                    </span>
-                    <span style={{
-                      fontSize: '10pt',
-                      color: '#2d3748',
-                      lineHeight: '1.4'
-                    }}>
-                      {/* 🎯 GESTION BULLET LIST pour les objects */}
-                      {typeof field.value === 'object' && field.value.type === 'bullet-list' ? (
-                        <div style={{ marginTop: '4px' }}>
-                          {field.value.items.map((item, itemIndex) => (
-                            <div key={itemIndex} style={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                              gap: '6px',
-                              marginBottom: itemIndex < field.value.items.length - 1 ? '3px' : '0'
-                            }}>
-                              <span style={{ 
-                                color: '#3182ce', 
-                                fontSize: '8pt',
-                                marginTop: '1px'
-                              }}>•</span>
-                              <span>{item}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        field.value
-                      )}
-                    </span>
+                    <span style={{ 
+                      color: '#3182ce', 
+                      fontSize: '8pt',
+                      marginTop: '1px'
+                    }}>•</span>
+                    <span>{item}</span>
                   </div>
                 ))}
               </div>
+            ) : (
+              field.value
             )}
+          </span>
+        </div>
+      ))
+    )}
+  </div>
+)}
 
             {/* Photos de la section */}
             {section.photos.length > 0 && (
