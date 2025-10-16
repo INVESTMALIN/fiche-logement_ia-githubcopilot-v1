@@ -339,52 +339,79 @@ const initialFormData = {
     emplacement_code_cadenas: ""
   },
   section_equipements: {
-    // Équipements techniques essentiels
-    video_acces_poubelle: [],
-    poubelle_emplacement: "",
-    poubelle_ramassage: "",
-    poubelle_photos: [],
-    disjoncteur_emplacement: "",
-    disjoncteur_photos: [],
-    vanne_eau_emplacement: "",
-    vanne_eau_photos: [],
-    systeme_chauffage_eau: "",
-    chauffage_eau_emplacement: "",
-    chauffage_eau_photos: [],
-    video_systeme_chauffage: [],
-    
-    // Équipements et Commodités - Checklist
-    wifi: null,
-    tv: null,
-    climatisation: null,
-    chauffage: null,
-    lave_linge: null,
-    seche_linge: null,
-    fer_repasser: null,
-    etendoir: null,
-    parking_equipement: null,
-    tourne_disque: null,
-    piano: null,
-    cinema: null,
-    coffre_fort: null,
-    ascenseur: null,
-    compacteur_dechets: null,
-    accessible_mobilite_reduite: null,
-    animaux_acceptes: null,
-    fetes_autorisees: null,
-    fumeurs_acceptes: null,
-
-    wifi_statut: null,        // "oui", "en_cours", "non"
-    wifi_details: "",         // Détails si "en_cours"
-    
-    // Parking principal et champs conditionnels
-    parking_type: "",
-    parking_rue_details: "",
-    parking_sur_place_types: [],
-    parking_sur_place_details: "",
-    parking_payant_type: "",
-    parking_payant_details: ""
-  },
+  // Équipements techniques essentiels
+  video_acces_poubelle: [],
+  poubelle_emplacement: "",
+  poubelle_ramassage: "",
+  poubelle_photos: [],
+  disjoncteur_emplacement: "",
+  disjoncteur_photos: [],
+  vanne_eau_emplacement: "",
+  vanne_arret_photos: [],
+  systeme_chauffage_eau: "",
+  chauffage_eau_emplacement: "",
+  chauffage_eau_photos: [],
+  video_systeme_chauffage: [],
+  
+  // WiFi
+  wifi_statut: "",
+  wifi_details: "",
+  
+  // Parking
+  parking_type: "",
+  parking_rue_details: "",
+  parking_sur_place_types: [],
+  parking_sur_place_details: "",
+  parking_payant_type: "",
+  parking_payant_details: "",
+  
+  // Checkboxes équipements
+  climatisation: null,
+  lave_linge: null,
+  seche_linge: null,
+  parking_equipement: null,
+  tourne_disque: null,
+  coffre_fort: null,
+  ascenseur: null,
+  animaux_acceptes: null,
+  fetes_autorisees: null,
+  tv: null,
+  chauffage: null,
+  fer_repasser: null,
+  etendoir: null,
+  piano: null,
+  cinema: null,
+  compacteur_dechets: null,
+  accessible_mobilite_reduite: null,
+  fumeurs_acceptes: null,
+  tv_type: "",                          // Menu déroulant
+  tv_taille: "",                        // Texte libre
+  tv_type_autre_details: "",            // Conditionnel si "Autre"
+  tv_video: [],                         // PhotoUpload vidéo
+  tv_services: [],                      // Array checkboxes
+  tv_consoles: [],                      // Array checkboxes (si Console coché)
+  tv_console_video: [],                 // PhotoUpload vidéo (si Console coché)
+  climatisation_type: "",               // Menu déroulant
+  climatisation_instructions: "",       // Textarea
+  climatisation_video: [],              // PhotoUpload vidéo
+  chauffage_type: "",                   // Menu déroulant (obligatoire)
+  chauffage_instructions: "",           // Textarea
+  chauffage_video: [],                  // PhotoUpload vidéo
+  lave_linge_prix: "",                  // Radio (compris/supplément)
+  lave_linge_emplacement: "",           // Radio (logement/immeuble)
+  lave_linge_instructions: "",          // Textarea
+  lave_linge_video: [],                 // PhotoUpload vidéo
+  seche_linge_prix: "",                 // Radio
+  seche_linge_emplacement: "",          // Radio
+  seche_linge_instructions: "",         // Textarea
+  seche_linge_video: [],                // PhotoUpload vidéo
+  parking_photo: [],                    // PhotoUpload photo
+  parking_video: [],                    // PhotoUpload vidéo
+  piano_marque: "",                     // Texte libre
+  piano_type: "",                       // Radio (queue/numérique/droit)
+  pmr_details: "",                      // Textarea (obligatoire)
+  animaux_commentaire: ""               // Textarea
+},
   section_consommables: {
     // Question principale
     fournis_par_prestataire: null,

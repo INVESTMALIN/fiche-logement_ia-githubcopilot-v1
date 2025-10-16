@@ -274,18 +274,18 @@ export const mapFormDataToSupabase = (formData) => {
     linge_emplacement_code_cadenas: formData.section_gestion_linge?.emplacement_code_cadenas || null,
 
     // Section Équipements
-    equipements_video_acces_poubelle: formData.section_equipements?.video_acces_poubelle ?? null,
+    equipements_video_acces_poubelle: formData.section_equipements?.video_acces_poubelle || [],
     equipements_poubelle_emplacement: formData.section_equipements?.poubelle_emplacement || null,
     equipements_poubelle_ramassage: formData.section_equipements?.poubelle_ramassage || null,
     equipements_poubelle_photos: formData.section_equipements?.poubelle_photos || [],
     equipements_disjoncteur_emplacement: formData.section_equipements?.disjoncteur_emplacement || null,
     equipements_disjoncteur_photos: formData.section_equipements?.disjoncteur_photos || [],
     equipements_vanne_eau_emplacement: formData.section_equipements?.vanne_eau_emplacement || null,
-    equipements_vanne_eau_photos: formData.section_equipements?.vanne_eau_photos || [],
+    equipements_vanne_eau_photos: formData.section_equipements?.vanne_arret_photos || [],
     equipements_systeme_chauffage_eau: formData.section_equipements?.systeme_chauffage_eau || null,
     equipements_chauffage_eau_emplacement: formData.section_equipements?.chauffage_eau_emplacement || null,
     equipements_chauffage_eau_photos: formData.section_equipements?.chauffage_eau_photos || [],
-    equipements_video_systeme_chauffage: formData.section_equipements?.video_systeme_chauffage ?? null,
+    equipements_video_systeme_chauffage: formData.section_equipements?.video_systeme_chauffage || [],
 
     // Équipements checklist
     equipements_tv: formData.section_equipements?.tv ?? null,
@@ -317,6 +317,51 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_parking_sur_place_details: formData.section_equipements?.parking_sur_place_details || null,
     equipements_parking_payant_type: formData.section_equipements?.parking_payant_type || null,
     equipements_parking_payant_details: formData.section_equipements?.parking_payant_details || null,
+
+    // 🆕 TV
+    equipements_tv_type: formData.section_equipements?.tv_type || null,
+    equipements_tv_taille: formData.section_equipements?.tv_taille || null,
+    equipements_tv_type_autre_details: formData.section_equipements?.tv_type_autre_details || null,
+    equipements_tv_video: formData.section_equipements?.tv_video || [],
+    equipements_tv_services: formData.section_equipements?.tv_services || [],
+    equipements_tv_consoles: formData.section_equipements?.tv_consoles || [],
+    equipements_tv_console_video: formData.section_equipements?.tv_console_video || [],
+
+    // 🆕 CLIMATISATION
+    equipements_climatisation_type: formData.section_equipements?.climatisation_type || null,
+    equipements_climatisation_instructions: formData.section_equipements?.climatisation_instructions || null,
+    equipements_climatisation_video: formData.section_equipements?.climatisation_video || [],
+
+    // 🆕 CHAUFFAGE
+    equipements_chauffage_type: formData.section_equipements?.chauffage_type || null,
+    equipements_chauffage_instructions: formData.section_equipements?.chauffage_instructions || null,
+    equipements_chauffage_video: formData.section_equipements?.chauffage_video || [],
+
+    // 🆕 LAVE-LINGE
+    equipements_lave_linge_prix: formData.section_equipements?.lave_linge_prix || null,
+    equipements_lave_linge_emplacement: formData.section_equipements?.lave_linge_emplacement || null,
+    equipements_lave_linge_instructions: formData.section_equipements?.lave_linge_instructions || null,
+    equipements_lave_linge_video: formData.section_equipements?.lave_linge_video || [],
+
+    // 🆕 SÈCHE-LINGE
+    equipements_seche_linge_prix: formData.section_equipements?.seche_linge_prix || null,
+    equipements_seche_linge_emplacement: formData.section_equipements?.seche_linge_emplacement || null,
+    equipements_seche_linge_instructions: formData.section_equipements?.seche_linge_instructions || null,
+    equipements_seche_linge_video: formData.section_equipements?.seche_linge_video || [],
+
+    // 🆕 PARKING (ajouts aux champs existants)
+    equipements_parking_photos: formData.section_equipements?.parking_photo || [],
+    equipements_parking_videos: formData.section_equipements?.parking_video || [],
+
+    // 🆕 PIANO
+    equipements_piano_marque: formData.section_equipements?.piano_marque || null,
+    equipements_piano_type: formData.section_equipements?.piano_type || null,
+
+    // 🆕 PMR
+    equipements_pmr_details: formData.section_equipements?.pmr_details || null,
+
+    // 🆕 ANIMAUX
+    equipements_animaux_commentaire: formData.section_equipements?.animaux_commentaire || null,
 
     // Section Consommables
     consommables_fournis_par_prestataire: formData.section_consommables?.fournis_par_prestataire ?? null,
@@ -1328,18 +1373,18 @@ export const mapSupabaseToFormData = (supabaseData) => {
 
     section_equipements: {
       // Équipements techniques essentiels
-      video_acces_poubelle: supabaseData.equipements_video_acces_poubelle ?? null,
+      video_acces_poubelle: supabaseData.equipements_video_acces_poubelle ?? [],
       poubelle_emplacement: supabaseData.equipements_poubelle_emplacement || "",
       poubelle_ramassage: supabaseData.equipements_poubelle_ramassage || "",
       poubelle_photos: supabaseData.equipements_poubelle_photos || [],
       disjoncteur_emplacement: supabaseData.equipements_disjoncteur_emplacement || "",
       disjoncteur_photos: supabaseData.equipements_disjoncteur_photos || [],
       vanne_eau_emplacement: supabaseData.equipements_vanne_eau_emplacement || "",
-      vanne_eau_photos: supabaseData.equipements_vanne_eau_photos || [],
+      vanne_arret_photos: supabaseData.equipements_vanne_eau_photos || [],
       systeme_chauffage_eau: supabaseData.equipements_systeme_chauffage_eau || "",
       chauffage_eau_emplacement: supabaseData.equipements_chauffage_eau_emplacement || "",
       chauffage_eau_photos: supabaseData.equipements_chauffage_eau_photos || [],
-      video_systeme_chauffage: supabaseData.equipements_video_systeme_chauffage ?? null,
+      video_systeme_chauffage: supabaseData.equipements_video_systeme_chauffage ?? [],
       
       // Équipements checklist
       tv: supabaseData.equipements_tv ?? null,
@@ -1370,7 +1415,52 @@ export const mapSupabaseToFormData = (supabaseData) => {
       parking_rue_details: supabaseData.equipements_parking_rue_details || "",
       parking_sur_place_types: supabaseData.equipements_parking_sur_place_types || [],
       parking_sur_place_details: supabaseData.equipements_parking_sur_place_details || "",
-      parking_payant_type: supabaseData.equipements_parking_payant_type || "",      parking_payant_details: supabaseData.equipements_parking_payant_details || ""
+      parking_payant_type: supabaseData.equipements_parking_payant_type || "",      parking_payant_details: supabaseData.equipements_parking_payant_details || "",
+
+      // 🆕 TV
+      tv_type: supabaseData.equipements_tv_type || "",
+      tv_taille: supabaseData.equipements_tv_taille || "",
+      tv_type_autre_details: supabaseData.equipements_tv_type_autre_details || "",
+      tv_video: supabaseData.equipements_tv_video || [],
+      tv_services: supabaseData.equipements_tv_services || [],
+      tv_consoles: supabaseData.equipements_tv_consoles || [],
+      tv_console_video: supabaseData.equipements_tv_console_video || [],
+      
+      // 🆕 CLIMATISATION
+      climatisation_type: supabaseData.equipements_climatisation_type || "",
+      climatisation_instructions: supabaseData.equipements_climatisation_instructions || "",
+      climatisation_video: supabaseData.equipements_climatisation_video || [],
+      
+      // 🆕 CHAUFFAGE
+      chauffage_type: supabaseData.equipements_chauffage_type || "",
+      chauffage_instructions: supabaseData.equipements_chauffage_instructions || "",
+      chauffage_video: supabaseData.equipements_chauffage_video || [],
+      
+      // 🆕 LAVE-LINGE
+      lave_linge_prix: supabaseData.equipements_lave_linge_prix || "",
+      lave_linge_emplacement: supabaseData.equipements_lave_linge_emplacement || "",
+      lave_linge_instructions: supabaseData.equipements_lave_linge_instructions || "",
+      lave_linge_video: supabaseData.equipements_lave_linge_video || [],
+      
+      // 🆕 SÈCHE-LINGE
+      seche_linge_prix: supabaseData.equipements_seche_linge_prix || "",
+      seche_linge_emplacement: supabaseData.equipements_seche_linge_emplacement || "",
+      seche_linge_instructions: supabaseData.equipements_seche_linge_instructions || "",
+      seche_linge_video: supabaseData.equipements_seche_linge_video || [],
+      
+      // 🆕 PARKING
+      parking_photo: supabaseData.equipements_parking_photos || [],
+      parking_video: supabaseData.equipements_parking_videos || [],
+      
+      // 🆕 PIANO
+      piano_marque: supabaseData.equipements_piano_marque || "",
+      piano_type: supabaseData.equipements_piano_type || "",
+      
+      // 🆕 PMR
+      pmr_details: supabaseData.equipements_pmr_details || "",
+      
+      // 🆕 ANIMAUX
+      animaux_commentaire: supabaseData.equipements_animaux_commentaire || ""
     },
 
     section_consommables: {
@@ -1395,8 +1485,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
       cafe_autre: supabaseData.consommables_cafe_autre ?? null,
       cafe_autre_details: supabaseData.consommables_cafe_autre_details || ""
     },
-    // À REMPLACER dans mapSupabaseToFormData() : 
-// Remplace `section_visite: {},` par :
 
     section_visite: {
       // Types de pièces (14 checkboxes)

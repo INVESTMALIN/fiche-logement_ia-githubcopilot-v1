@@ -510,7 +510,7 @@ const handleDeletePhoto = async (photoUrl, index) => {
               <div className="text-purple-600">
                 <div className="animate-spin inline-block w-8 h-8 border-4 border-current border-t-transparent rounded-full mb-2"></div>
                 <p className="text-lg font-semibold">Compression en cours...</p>
-                <p className="text-sm mt-2">⏳ Votre vidéo est compressée pour faciliter le transfert et l'archivage.</p>
+                <p className="text-sm mt-2">⏳ Votre vidéo est compressée, cela peut prendre quelques minutes.</p>
               </div>
             ) : compressing ? (
               <div className="text-orange-600">

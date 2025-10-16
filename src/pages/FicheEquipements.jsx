@@ -281,23 +281,733 @@ export default function FicheEquipements() {
               </div>
             </div>
 
+
             {/* SECTION 2: Équipements et C=commodités */}
             <div>
-              <h2 className="text-lg font-semibold mb-4">Équipements et commodités</h2>
-              
-              {/* Checklist équipements en 2 colonnes */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-                {equipements.map(({ key, label }) => (
-                  <label key={key} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input 
-                      type="checkbox"
-                      checked={formData[key] === true}
-                      onChange={(e) => handleInputChange(`section_equipements.${key}`, e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              <div>
+                <h2 className="text-lg font-semibold mb-4">Équipements et commodités</h2>
+                
+                {/* Checklist équipements en 2 colonnes */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                  {equipements.map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input 
+                        type="checkbox"
+                        checked={formData[key] === true}
+                        onChange={(e) => handleInputChange(`section_equipements.${key}`, e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">{label}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* ============================================
+                    TV - AFFICHAGE CONDITIONNEL
+                    ============================================ */}
+                {formData.tv === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">📺 Télévision</h3>
+                    
+                    {/* Type de TV */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Type de TV *</label>
+                      <select
+                        className="w-full p-3 border rounded"
+                        value={formData.tv_type || ""}
+                        onChange={(e) => handleInputChange('section_equipements.tv_type', e.target.value)}
+                      >
+                        <option value="">Sélectionnez un type</option>
+                        <option value="TV standard">TV standard</option>
+                        <option value="TV HD">TV HD</option>
+                        <option value="Smart TV">Smart TV</option>
+                        <option value="TV avec câble/satellite">TV avec câble/satellite</option>
+                        <option value="TV connectée (services de streaming)">TV connectée (services de streaming)</option>
+                        <option value="Autre (veuillez préciser)">Autre (veuillez préciser)</option>
+                      </select>
+                    </div>
+
+                    {/* Taille de la TV */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Taille de la TV</label>
+                      <input
+                        type="text"
+                        className="w-full p-3 border rounded"
+                        placeholder="Ex: 55 pouces"
+                        value={formData.tv_taille || ""}
+                        onChange={(e) => handleInputChange('section_equipements.tv_taille', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Autre - Précisions */}
+                    {formData.tv_type === "Autre (veuillez préciser)" && (
+                      <div className="mb-4">
+                        <label className="block font-medium mb-2">Précisions *</label>
+                        <textarea
+                          className="w-full p-3 border rounded h-24"
+                          placeholder="Précisez le type de TV..."
+                          value={formData.tv_type_autre_details || ""}
+                          onChange={(e) => handleInputChange('section_equipements.tv_type_autre_details', e.target.value)}
+                        />
+                      </div>
+                    )}
+
+                    {/* Vidéo de la TV */}
+                    <div className="mb-4">
+                      <PhotoUpload
+                        fieldPath="section_equipements.tv_video"
+                        label="Faire une vidéo de la TV"
+                        multiple={true}
+                        maxFiles={1}
+                        acceptVideo={true}
+                      />
+                    </div>
+
+                    {/* Services ou fonctionnalités disponibles */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-3">Services ou fonctionnalités disponibles</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {[
+                          "Amazon Prime Video",
+                          "Apple TV",
+                          "Chromecast",
+                          "Disney+",
+                          "Fire TV",
+                          "Max",
+                          "Hulu",
+                          "Netflix",
+                          "Télévision par câble haut de gamme",
+                          "Roku",
+                          "Abonnement au câble standard",
+                          "Lecteur DVD",
+                          "Console"
+                        ].map(service => (
+                          <label key={service} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={(formData.tv_services || []).includes(service)}
+                              onChange={(e) => handleCheckboxArrayChange('section_equipements.tv_services', service, e.target.checked)}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className="text-sm">{service}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Console - Sous-section conditionnelle */}
+                    {(formData.tv_services || []).includes("Console") && (
+                      <div className="ml-6 p-3 border-l-4 border-blue-400 bg-blue-50">
+                        <h4 className="font-medium mb-3">🎮 Consoles disponibles</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                          {[
+                            "Nintendo Switch",
+                            "Nintendo Wii",
+                            "Nintendo Wii U",
+                            "PS2",
+                            "PS3",
+                            "PS4",
+                            "PS5",
+                            "Xbox 360",
+                            "Xbox One",
+                            "Xbox Series X"
+                          ].map(console => (
+                            <label key={console} className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={(formData.tv_consoles || []).includes(console)}
+                                onChange={(e) => handleCheckboxArrayChange('section_equipements.tv_consoles', console, e.target.checked)}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-sm">{console}</span>
+                            </label>
+                          ))}
+                        </div>
+
+                        {/* Vidéo instruction console */}
+                        <PhotoUpload
+                          fieldPath="section_equipements.tv_console_video"
+                          label="Vidéo d'instruction pour utiliser la console"
+                          multiple={true}
+                          maxFiles={1}
+                          acceptVideo={true}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ============================================
+                    CLIMATISATION - AFFICHAGE CONDITIONNEL
+                    ============================================ */}
+                {formData.climatisation === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">❄️ Climatisation</h3>
+                    
+                    {/* Type de climatisation */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Type de climatisation</label>
+                      <select
+                        className="w-full p-3 border rounded"
+                        value={formData.climatisation_type || ""}
+                        onChange={(e) => handleInputChange('section_equipements.climatisation_type', e.target.value)}
+                      >
+                        <option value="">Sélectionnez un type</option>
+                        <option value="Climatisation centrale">Climatisation centrale</option>
+                        <option value="Climatiseur portable">Climatiseur portable</option>
+                        <option value="Climatiseur de fenêtre">Climatiseur de fenêtre</option>
+                        <option value="Système split sans évacuation">Système split sans évacuation</option>
+                      </select>
+                    </div>
+
+                    {/* Instructions d'utilisation */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Instructions d'utilisation</label>
+                      <textarea
+                        className="w-full p-3 border rounded h-24"
+                        placeholder="Décrivez comment utiliser la climatisation..."
+                        value={formData.climatisation_instructions || ""}
+                        onChange={(e) => handleInputChange('section_equipements.climatisation_instructions', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Vidéo d'instruction */}
+                    <PhotoUpload
+                      fieldPath="section_equipements.climatisation_video"
+                      label="Vidéo d'instruction climatisation"
+                      multiple={true}
+                      maxFiles={1}
+                      acceptVideo={true}
                     />
-                    <span className="text-sm">{label}</span>
-                  </label>
-                ))}
+                  </div>
+                )}
+
+                {/* ============================================
+                    CHAUFFAGE - AFFICHAGE CONDITIONNEL
+                    ============================================ */}
+                {formData.chauffage === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">🔥 Chauffage</h3>
+                    
+                    {/* Type de chauffage */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Type de chauffage *</label>
+                      <select
+                        className="w-full p-3 border rounded"
+                        value={formData.chauffage_type || ""}
+                        onChange={(e) => handleInputChange('section_equipements.chauffage_type', e.target.value)}
+                      >
+                        <option value="">Sélectionnez un type</option>
+                        <option value="Chauffage central">Chauffage central</option>
+                        <option value="Chauffage d'appoint">Chauffage d'appoint</option>
+                        <option value="Chauffage radiant">Chauffage radiant</option>
+                        <option value="Système split sans évacuation">Système split sans évacuation</option>
+                      </select>
+                    </div>
+
+                    {/* Instructions d'utilisation */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Instructions d'utilisation</label>
+                      <textarea
+                        className="w-full p-3 border rounded h-24"
+                        placeholder="Décrivez comment utiliser le système de chauffage..."
+                        value={formData.chauffage_instructions || ""}
+                        onChange={(e) => handleInputChange('section_equipements.chauffage_instructions', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Vidéo du thermostat/système */}
+                    <PhotoUpload
+                      fieldPath="section_equipements.chauffage_video"
+                      label="Vidéo du thermostat / système de chauffage"
+                      multiple={true}
+                      maxFiles={1}
+                      acceptVideo={true}
+                    />
+                  </div>
+                )}
+
+                {/* ============================================
+                    LAVE-LINGE - AFFICHAGE CONDITIONNEL
+                    ============================================ */}
+                {formData.lave_linge === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">🧺 Lave-linge</h3>
+                    
+                    {/* Prix */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Prix</label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="lave_linge_prix"
+                            checked={formData.lave_linge_prix === 'compris'}
+                            onChange={() => handleInputChange('section_equipements.lave_linge_prix', 'compris')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Compris</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="lave_linge_prix"
+                            checked={formData.lave_linge_prix === 'supplément'}
+                            onChange={() => handleInputChange('section_equipements.lave_linge_prix', 'supplément')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Supplément</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Emplacement */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Emplacement</label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="lave_linge_emplacement"
+                            checked={formData.lave_linge_emplacement === 'dans logement'}
+                            onChange={() => handleInputChange('section_equipements.lave_linge_emplacement', 'dans logement')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Dans le logement</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="lave_linge_emplacement"
+                            checked={formData.lave_linge_emplacement === 'dans immeuble'}
+                            onChange={() => handleInputChange('section_equipements.lave_linge_emplacement', 'dans immeuble')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Dans l'immeuble</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Instructions */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Instructions d'utilisation</label>
+                      <textarea
+                        className="w-full p-3 border rounded h-24"
+                        placeholder="Décrivez comment utiliser le lave-linge..."
+                        value={formData.lave_linge_instructions || ""}
+                        onChange={(e) => handleInputChange('section_equipements.lave_linge_instructions', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Vidéo de l'appareil */}
+                    <PhotoUpload
+                      fieldPath="section_equipements.lave_linge_video"
+                      label="Vidéo du lave-linge"
+                      multiple={true}
+                      maxFiles={1}
+                      acceptVideo={true}
+                    />
+                  </div>
+                )}
+
+                {/* ============================================
+                    SÈCHE-LINGE - AFFICHAGE CONDITIONNEL
+                    ============================================ */}
+                {formData.seche_linge === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">🌀 Sèche-linge</h3>
+                    
+                    {/* Prix */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Prix</label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="seche_linge_prix"
+                            checked={formData.seche_linge_prix === 'compris'}
+                            onChange={() => handleInputChange('section_equipements.seche_linge_prix', 'compris')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Compris</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="seche_linge_prix"
+                            checked={formData.seche_linge_prix === 'supplément'}
+                            onChange={() => handleInputChange('section_equipements.seche_linge_prix', 'supplément')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Supplément</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Emplacement */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Emplacement</label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="seche_linge_emplacement"
+                            checked={formData.seche_linge_emplacement === 'dans logement'}
+                            onChange={() => handleInputChange('section_equipements.seche_linge_emplacement', 'dans logement')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Dans le logement</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="seche_linge_emplacement"
+                            checked={formData.seche_linge_emplacement === 'dans immeuble'}
+                            onChange={() => handleInputChange('section_equipements.seche_linge_emplacement', 'dans immeuble')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Dans l'immeuble</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Instructions */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Instructions d'utilisation</label>
+                      <textarea
+                        className="w-full p-3 border rounded h-24"
+                        placeholder="Décrivez comment utiliser le sèche-linge..."
+                        value={formData.seche_linge_instructions || ""}
+                        onChange={(e) => handleInputChange('section_equipements.seche_linge_instructions', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Vidéo de l'appareil */}
+                    <PhotoUpload
+                      fieldPath="section_equipements.seche_linge_video"
+                      label="Vidéo du sèche-linge"
+                      multiple={true}
+                      maxFiles={1}
+                      acceptVideo={true}
+                    />
+                  </div>
+                )}
+
+                {/* ============================================
+                    PARKING - AFFICHAGE CONDITIONNEL (PHOTOS/VIDÉOS UNIQUEMENT)
+                    ============================================ */}
+                {formData.parking_equipement === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">🚗 Parking - Photos et Vidéo</h3>
+                    
+                    {/* Photos de la place */}
+                    <div className="mb-4">
+                      <PhotoUpload
+                        fieldPath="section_equipements.parking_photos"
+                        label="Photos de la place de stationnement"
+                        multiple={true}
+                        maxFiles={10}
+                        capture={true}
+                        acceptVideo={false}
+                      />
+                    </div>
+
+                    {/* Vidéo de la place */}
+                    <PhotoUpload
+                      fieldPath="section_equipements.parking_videos"
+                      label="Vidéo de la place de stationnement"
+                      multiple={true}
+                      maxFiles={1}
+                      acceptVideo={true}
+                    />
+                  </div>
+                )}
+
+                {/* ============================================
+                    PIANO - AFFICHAGE CONDITIONNEL
+                    ============================================ */}
+                {formData.piano === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">🎹 Piano</h3>
+                    
+                    {/* Marque */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Marque</label>
+                      <input
+                        type="text"
+                        className="w-full p-3 border rounded"
+                        placeholder="Ex: Yamaha, Steinway..."
+                        value={formData.piano_marque || ""}
+                        onChange={(e) => handleInputChange('section_equipements.piano_marque', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Type */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Type de piano</label>
+                      <div className="flex flex-col gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="piano_type"
+                            checked={formData.piano_type === 'à queue'}
+                            onChange={() => handleInputChange('section_equipements.piano_type', 'à queue')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Piano à queue</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="piano_type"
+                            checked={formData.piano_type === 'numérique'}
+                            onChange={() => handleInputChange('section_equipements.piano_type', 'numérique')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Piano numérique</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="piano_type"
+                            checked={formData.piano_type === 'droit'}
+                            onChange={() => handleInputChange('section_equipements.piano_type', 'droit')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Piano droit</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ============================================
+                    PMR - AFFICHAGE CONDITIONNEL
+                    ============================================ */}
+                {formData.accessible_mobilite_reduite === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">♿ Accessibilité PMR</h3>
+                    
+                    {/* Détails obligatoires */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">
+                        Détails sur les équipements et aménagements d'accessibilité *
+                      </label>
+                      <textarea
+                        className="w-full p-3 border rounded h-32"
+                        placeholder="Veuillez fournir des informations détaillées sur les équipements et aménagements d'accessibilité du logement (rampes, largeur des portes, salle de bain adaptée, etc.)"
+                        value={formData.pmr_details || ""}
+                        onChange={(e) => handleInputChange('section_equipements.pmr_details', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* ============================================
+                    ANIMAUX - AFFICHAGE CONDITIONNEL
+                    ============================================ */}
+                {formData.animaux_acceptes === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">🐾 Animaux acceptés</h3>
+                    
+                    {/* Commentaire */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">
+                        Commentaire (plainte ou demande spécifique du propriétaire)
+                      </label>
+                      <textarea
+                        className="w-full p-3 border rounded h-24"
+                        placeholder="Précisez les conditions d'acceptation des animaux, restrictions éventuelles, demandes du propriétaire..."
+                        value={formData.animaux_commentaire || ""}
+                        onChange={(e) => handleInputChange('section_equipements.animaux_commentaire', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* SECTION Configuration Wi-Fi (EXISTANT - NE PAS TOUCHER) */}
+                <div className="mt-6 mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">📶 Configuration Wi-Fi</h3>
+                  
+                  <div className="mb-4">
+                    <label className="block font-semibold mb-3">Statut du WiFi</label>
+                    <div className="space-y-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="radio"
+                          name="wifi_statut"
+                          value="oui"
+                          checked={formData.wifi_statut === 'oui'}
+                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
+                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span>Oui (WiFi disponible et fonctionnel)</span>
+                      </label>
+                      
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="radio"
+                          name="wifi_statut"
+                          value="en_cours"
+                          checked={formData.wifi_statut === 'en_cours'}
+                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
+                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span>En cours d'installation</span>
+                      </label>
+                      
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="radio"
+                          name="wifi_statut"
+                          value="non"
+                          checked={formData.wifi_statut === 'non'}
+                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
+                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-red-600 font-medium">Non (pas de WiFi disponible) ❌</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Champ conditionnel pour "En cours" */}
+                  {formData.wifi_statut === 'en_cours' && (
+                    <div className="mt-4">
+                      <label className="block font-semibold mb-2">Détails sur l'installation</label>
+                      <textarea 
+                        className="w-full p-3 border rounded h-24"
+                        placeholder="Décrivez la date d'installation du Wi-Fi, comment et par qui..."
+                        value={formData.wifi_details || ""}
+                        onChange={(e) => handleInputChange('section_equipements.wifi_details', e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* SECTION PARKING DÉTAILLÉE (EXISTANT - NE PAS TOUCHER) */}
+                <div className="mb-4">
+                  <label className="block font-semibold mb-3">Parking *</label>
+                  <div className="space-y-1 max-w-lg">
+                    <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input 
+                        type="radio" 
+                        name="parking_type"
+                        checked={formData.parking_type === 'rue'}
+                        onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'rue')}
+                        className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Parking gratuit dans la rue</span>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input 
+                        type="radio" 
+                        name="parking_type"
+                        checked={formData.parking_type === 'sur_place'}
+                        onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'sur_place')}
+                        className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Parking gratuit sur place</span>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input 
+                        type="radio" 
+                        name="parking_type"
+                        checked={formData.parking_type === 'payant'}
+                        onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'payant')}
+                        className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Stationnement payant à l'extérieur de la propriété</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Champs conditionnels parking (EXISTANT - NE PAS TOUCHER) */}
+                {formData.parking_type === 'rue' && (
+                  <div className="mb-4">
+                    <label className="block font-semibold mb-2">
+                      Parking gratuit dans la rue - Détails *
+                    </label>
+                    <textarea 
+                      className="w-full p-3 border rounded h-32"
+                      placeholder={`Fournissez des informations détaillées sur le parking gratuit :
+              • Emplacement des places de stationnement (noms des rues spécifiques)
+              • Disponibilité habituelle des places (facile/difficile à trouver)
+              • Restrictions éventuelles (horaires, durée maximale, jours spécifiques)
+              • Règles de stationnement particulières (ex: alternance côté pair/impair)
+              • Distance approximative du logement
+              • Conseils pour trouver une place
+              • Sécurité du quartier pour le stationnement
+              • Toute autre information utile pour les voyageurs`}
+                      value={formData.parking_rue_details || ""}
+                      onChange={(e) => handleInputChange('section_equipements.parking_rue_details', e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {formData.parking_type === 'sur_place' && (
+                  <>
+                    <div className="mb-4">
+                      <label className="block font-semibold mb-2">Parking - Type * (plusieurs choix possibles)</label>
+                      <div className="space-y-2">
+                        {typesParkingGratuitOptions.map(option => (
+                          <label key={option} className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                              type="checkbox"
+                              checked={(formData.parking_sur_place_types || []).includes(option)}
+                              onChange={(e) => handleCheckboxArrayChange('section_equipements.parking_sur_place_types', option, e.target.checked)}
+                              className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className="text-sm">{option}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <label className="block font-semibold mb-2">
+                        Parking gratuit sur place - Détails *
+                      </label>
+                      <textarea 
+                        className="w-full p-3 border rounded h-32"
+                        placeholder={`Fournissez des informations détaillées sur le parking gratuit...`}
+                        value={formData.parking_sur_place_details || ""}
+                        onChange={(e) => handleInputChange('section_equipements.parking_sur_place_details', e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {formData.parking_type === 'payant' && (
+                  <>
+                    <div className="mb-4">
+                      <label className="block font-semibold mb-2">Parking - Stationnement payant - Type *</label>
+                      <div className="space-y-2">
+                        {typesParkingPayantOptions.map(option => (
+                          <label key={option} className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                              type="radio"
+                              name="parking_payant_type"
+                              checked={formData.parking_payant_type === option}
+                              onChange={() => handleInputChange('section_equipements.parking_payant_type', option)}
+                              className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className="text-sm">{option}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <label className="block font-semibold mb-2">
+                        Parking - Stationnement payant - Détails *
+                      </label>
+                      <textarea 
+                        className="w-full p-3 border rounded h-32"
+                        placeholder={`Fournissez des informations détaillées sur le parking payant...`}
+                        value={formData.parking_payant_details || ""}
+                        onChange={(e) => handleInputChange('section_equipements.parking_payant_details', e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* SECTION Configuration Wi-Fi */}

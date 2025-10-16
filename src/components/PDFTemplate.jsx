@@ -264,9 +264,12 @@ const PDFTemplate = ({ formData }) => {
     
     // 🚫 EXCLURE LES CHAMPS PHOTOS - ils sont gérés séparément
     if (fieldKey.toLowerCase().includes('photo') || 
-        fieldKey.toLowerCase().includes('photos') || 
+        fieldKey.toLowerCase().includes('photos') ||
+        fieldKey.toLowerCase().includes('video') || 
+        fieldKey.toLowerCase().includes('videos') ||
         fieldKey === 'photos' || 
         fieldKey.endsWith('_photos') ||
+        fieldKey.endsWith('_videos') ||
         fieldKey.endsWith('Photo')) {
       return null
     }

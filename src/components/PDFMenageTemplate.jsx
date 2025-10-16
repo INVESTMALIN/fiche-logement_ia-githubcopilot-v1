@@ -185,13 +185,19 @@ const maskSecretCodes = (value, fieldKey) => {
     if (isEmpty(value)) return null
     
     // 🚫 EXCLURE LES CHAMPS PHOTOS
-    if (fieldKey.toLowerCase().includes('photo') || 
+    // 🚫 EXCLURE LES CHAMPS PHOTOS ET VIDÉOS
+    if (
+        fieldKey.toLowerCase().includes('photo') || 
         fieldKey.toLowerCase().includes('photos') || 
+        fieldKey.toLowerCase().includes('video') || 
+        fieldKey.toLowerCase().includes('videos') || 
         fieldKey === 'photos' || 
-        fieldKey.endsWith('_photos') ||
+        fieldKey.endsWith('_photos') || 
+        fieldKey.endsWith('_videos') || 
         fieldKey.endsWith('Photo')) {
       return null
     }
+
     
     // Booléens
     if (typeof value === 'boolean') {
