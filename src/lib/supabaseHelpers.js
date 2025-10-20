@@ -311,6 +311,7 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_wifi_details: formData.section_equipements?.wifi_details || null,
     equipements_wifi_nom_reseau: formData.section_equipements?.wifi_nom_reseau || null,
     equipements_wifi_mot_de_passe: formData.section_equipements?.wifi_mot_de_passe || null,
+    equipements_wifi_routeur_photo: formData.section_equipements?.wifi_routeur_photo || [],
 
     // Parking
     equipements_parking_type: formData.section_equipements?.parking_type || null,
@@ -1013,6 +1014,10 @@ export const mapFormDataToSupabase = (formData) => {
     // Section Télétravail
     teletravail_equipements: formData.section_teletravail?.equipements || [],
     teletravail_equipements_autre_details: formData.section_teletravail?.equipements_autre_details || null,
+    teletravail_ethernet_disponible: formData.section_teletravail?.ethernet_disponible ?? null,
+    teletravail_speedtest_resultat: formData.section_teletravail?.speedtest_resultat || null,
+    teletravail_speedtest_photos: formData.section_teletravail?.speedtest_photos || [],
+    teletravail_espace_travail_photos: formData.section_teletravail?.espace_travail_photos || [],
 
     // Section Bébé
     bebe_equipements: formData.section_bebe?.equipements || [],
@@ -1413,6 +1418,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       wifi_details: supabaseData.equipements_wifi_details || "",
       wifi_nom_reseau: supabaseData.equipements_wifi_nom_reseau || "",
       wifi_mot_de_passe: supabaseData.equipements_wifi_mot_de_passe || "",
+      wifi_routeur_photo: supabaseData.equipements_wifi_routeur_photo || [],
       
       // Parking
       parking_type: supabaseData.equipements_parking_type || "",
@@ -2137,7 +2143,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
 
     section_teletravail: {
       equipements: supabaseData.teletravail_equipements || [],
-      equipements_autre_details: supabaseData.teletravail_equipements_autre_details || ""
+      equipements_autre_details: supabaseData.teletravail_equipements_autre_details || "",
+      ethernet_disponible: supabaseData.teletravail_ethernet_disponible ?? null,
+      speedtest_resultat: supabaseData.teletravail_speedtest_resultat || "",
+      speedtest_photos: supabaseData.teletravail_speedtest_photos || [],
+      espace_travail_photos: supabaseData.teletravail_espace_travail_photos || []
     },
 
     section_bebe: {

@@ -4,6 +4,7 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import PhotoUpload from '../components/PhotoUpload'
 
 export default function FicheTeletravail() {
   const { 
@@ -103,6 +104,73 @@ export default function FicheTeletravail() {
                   )}
                 </div>
               </div>
+
+              {/* Après la fermeture de la div des équipements, ajoute : */}
+
+{/* Connexion Ethernet */}
+<div className="mt-6">
+  <label className="block font-semibold mb-3">
+    Connexion par câble Ethernet disponible ? *
+  </label>
+  <div className="space-y-2">
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input 
+        type="radio"
+        name="ethernet_disponible"
+        value="true"
+        checked={formData.ethernet_disponible === true}
+        onChange={(e) => updateField('section_teletravail.ethernet_disponible', e.target.value === 'true')}
+        className="w-4 h-4 text-blue-600"
+      />
+      <span className="text-sm">Oui</span>
+    </label>
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input 
+        type="radio"
+        name="ethernet_disponible"
+        value="false"
+        checked={formData.ethernet_disponible === false}
+        onChange={(e) => updateField('section_teletravail.ethernet_disponible', e.target.value === 'true')}
+        className="w-4 h-4 text-blue-600"
+      />
+      <span className="text-sm">Non</span>
+    </label>
+  </div>
+</div>
+
+{/* Speedtest résultat */}
+<div className="mt-6">
+  <label className="block font-semibold mb-2">
+    Résultat du test de vitesse (Speedtest) *
+  </label>
+  <input
+    type="text"
+    placeholder="Ex: Download 150 Mbps / Upload 50 Mbps"
+    className="w-full p-3 border rounded"
+    value={formData.speedtest_resultat || ""}
+    onChange={(e) => handleInputChange('section_teletravail.speedtest_resultat', e.target.value)}
+  />
+</div>
+
+{/* Photos Speedtest */}
+<div className="mt-6">
+  <PhotoUpload 
+    fieldPath="section_teletravail.speedtest_photos"
+    label="Photos du test de vitesse (capture d'écran Speedtest)"
+    multiple={true}
+    maxFiles={3}
+  />
+</div>
+
+{/* Photos espace de travail */}
+<div className="mt-6">
+  <PhotoUpload 
+    fieldPath="section_teletravail.espace_travail_photos"
+    label="Photos de l'espace de travail"
+    multiple={true}
+    maxFiles={10}
+  />
+</div>
 
             </div>
             {/* 🚨 MESSAGES DE SAUVEGARDE - PATTERN EXACT OBLIGATOIRE */}

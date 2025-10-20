@@ -358,6 +358,7 @@ const initialFormData = {
   wifi_details: "",
   wifi_nom_reseau: "",
   wifi_mot_de_passe: "",
+  wifi_routeur_photo: [],
   
   // Parking
   parking_type: "",

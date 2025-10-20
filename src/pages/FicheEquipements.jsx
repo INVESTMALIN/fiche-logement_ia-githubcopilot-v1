@@ -40,7 +40,8 @@ const BRANCH_SCHEMAS = {
   ],
   wifi_disponible: [
     'wifi_nom_reseau',
-    'wifi_mot_de_passe'
+    'wifi_mot_de_passe',
+    'wifi_routeur_photo'
   ]
 }
 
@@ -924,7 +925,7 @@ export default function FicheEquipements() {
                         />
                         <span className="text-red-600 font-medium">Non (pas de WiFi disponible) ❌</span>
                       </label>
-                      
+
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input 
                           type="radio"
@@ -985,6 +986,14 @@ export default function FicheEquipements() {
                         placeholder="Mot de passe du réseau"
                         value={formData.wifi_mot_de_passe || ""}
                         onChange={(e) => handleInputChange('section_equipements.wifi_mot_de_passe', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <PhotoUpload 
+                        fieldPath="section_equipements.wifi_routeur_photo"
+                        label="Photo du routeur ou des instructions WiFi"
+                        multiple={true}
+                        maxFiles={5}
                       />
                     </div>
                   </div>

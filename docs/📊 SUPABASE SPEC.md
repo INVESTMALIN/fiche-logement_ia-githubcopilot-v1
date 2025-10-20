@@ -112,12 +112,12 @@ DECLARE
   media_part2 jsonb;
   media_part3 jsonb;
   media_part4 jsonb;
-  media_part5 jsonb; -- nouveaux équipements
+  media_part5 jsonb;
   media_final jsonb;
 BEGIN
   IF NEW.statut = 'Complété' AND OLD.statut IS DISTINCT FROM 'Complété' THEN
 
-    -- PARTIE 1 : Clefs + Equipements + Linge + Chambres (20 champs)
+    -- PARTIE 1 : Clefs + Equipements + Linge + Chambres + WiFi routeur (21 champs)
     media_part1 := jsonb_build_object(
       'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
       'clefs_interphone_photo', NEW.clefs_interphone_photo,
@@ -130,6 +130,7 @@ BEGIN
       'equipements_chauffage_eau_photos', NEW.equipements_chauffage_eau_photos,
       'equipements_video_acces_poubelle', NEW.equipements_video_acces_poubelle,
       'equipements_video_systeme_chauffage', NEW.equipements_video_systeme_chauffage,
+      'equipements_wifi_routeur_photo', NEW.equipements_wifi_routeur_photo,
       'linge_photos_linge', NEW.linge_photos_linge,
       'linge_emplacement_photos', NEW.linge_emplacement_photos,
       'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos_chambre,
@@ -221,7 +222,7 @@ BEGIN
       'equip_spe_ext_autres_pieces_elements_abimes_photos', NEW.equip_spe_ext_autres_pieces_elements_abimes_photos
     );
 
-    -- PARTIE 5 : Nouveaux médias Équipements
+    -- PARTIE 5 : Nouveaux médias Équipements + Télétravail
     media_part5 := jsonb_build_object(
       -- TV
       'equipements_tv_video', NEW.equipements_tv_video,
@@ -243,7 +244,11 @@ BEGIN
 
       -- Parking
       'equipements_parking_photos', NEW.equipements_parking_photos,
-      'equipements_parking_videos', NEW.equipements_parking_videos
+      'equipements_parking_videos', NEW.equipements_parking_videos,
+
+      -- Télétravail
+      'teletravail_speedtest_photos', NEW.teletravail_speedtest_photos,
+      'teletravail_espace_travail_photos', NEW.teletravail_espace_travail_photos
     );
 
     -- Fusion complète
@@ -372,15 +377,99 @@ fiche-logement-{numero_bien}.pdf
 fiche-menage-{numero_bien}.pdf
 ```
 
-### **68 Champs Média Total**
-- **Clefs** : 5 champs (emplacement, interphone, photos, etc.)
-- **Équipements** : 9 champs (poubelle, disjoncteur, vidéos, etc.)
-- **Chambres** : 6 champs (chambre_1_photos à chambre_6_photos)
-- **Salles de bains** : 6 champs  
-- **Cuisine** : 21 champs (14 vidéos tutos + 6 photos + 1 tiroirs)
-- **Autres sections** : 12 champs
-- **Session 14/08** : 21 nouveaux champs (éléments abîmés + vidéos globales)
-- **Session 16/10** : 8 nouveaux champs (vidéos équipements)
+### **94 Champs Média Total**
+
+#### 🗝️ Clefs (5)
+
+* clefs_emplacement_photo
+* clefs_interphone_photo
+* clefs_tempo_gache_photo
+* clefs_digicode_photo
+* clefs_photos
+
+#### ⚙️ Équipements (10)
+
+* equipements_poubelle_photos
+* equipements_disjoncteur_photos
+* equipements_vanne_eau_photos
+* equipements_chauffage_eau_photos
+* equipements_video_acces_poubelle
+* equipements_video_systeme_chauffage
+* equipements_wifi_routeur_photo (🆕 16/10)
+* equipements_parking_photos
+* equipements_parking_videos
+* télétravail_speedtest_photos / télétravail_espace_travail_photos (🆕 16/10)
+
+#### 🛏️ Chambres (6)
+
+* chambres_chambre_1_photos_chambre
+* chambres_chambre_2_photos_chambre
+* chambres_chambre_3_photos_chambre
+* chambres_chambre_4_photos_chambre
+* chambres_chambre_5_photos_chambre
+* chambres_chambre_6_photos_chambre
+
+#### 🛁 Salles de bains (6)
+
+* salle_de_bains_salle_de_bain_1_photos_salle_de_bain
+* salle_de_bains_salle_de_bain_2_photos_salle_de_bain
+* salle_de_bains_salle_de_bain_3_photos_salle_de_bain
+* salle_de_bains_salle_de_bain_4_photos_salle_de_bain
+* salle_de_bains_salle_de_bain_5_photos_salle_de_bain
+* salle_de_bains_salle_de_bain_6_photos_salle_de_bain
+
+#### 🍳 Cuisine (21)
+
+**Vidéos tutos (14)** :
+refrigerateur / congelateur / mini_refrigerateur / cuisiniere / plaque_cuisson / four / micro_ondes / lave_vaisselle / cafetiere / bouilloire / grille_pain / blender / cuiseur_riz / machine_pain
+**Photos (6)** :
+cuisiniere / plaque_cuisson / four / micro_ondes / lave_vaisselle / cafetiere
+**Autres (1)** :
+cuisine_2_photos_tiroirs_placards
+
+#### 🛋️ Autres sections (12)
+
+* salon_sam_photos_salon_sam
+* exterieur_photos_espaces
+* jacuzzi_photos_jacuzzi
+* barbecue_photos
+* piscine_video
+* communs_photos_espaces_communs
+* bebe_photos_equipements_bebe
+* visite_video_visite
+* guide_acces_photos_etapes
+* guide_acces_video_acces
+* securite_photos_equipements_securite
+* linge_photos_linge / linge_emplacement_photos
+
+#### ⚠️ Session 14/08 – Éléments abîmés + Avis (21)
+
+* avis_video_globale_videos
+* avis_logement_vis_a_vis_photos
+* cuisine_1_elements_abimes_photos
+* salon_sam_salon_elements_abimes_photos
+* salon_sam_salle_manger_elements_abimes_photos
+* chambres_chambre_[1–6]_elements_abimes_photos
+* salle_de_bains_salle_de_bain_[1–6]_elements_abimes_photos
+* equip_spe_ext_garage_elements_abimes_photos
+* equip_spe_ext_buanderie_elements_abimes_photos
+* equip_spe_ext_autres_pieces_elements_abimes_photos
+
+#### 🔧 Session 16/10 – Vidéos Équipements (8)
+
+* equipements_tv_video
+* equipements_tv_console_video
+* equipements_tv_services
+* equipements_tv_consoles
+* equipements_climatisation_video
+* equipements_chauffage_video
+* equipements_lave_linge_video
+* equipements_seche_linge_video
+
+---
+
+💡 **Total : 94 champs média**
+Cette version correspond **exactement** au trigger `notify_fiche_completed()` actuellement en production (20 octobre).
 
 ---
 
@@ -462,5 +551,5 @@ const handleSave = async () => {
 
 ---
 
-*📝 Document technique de référence - Session 16 octobre 2025*  
+*📝 Document technique de référence - Session 20 octobre 2025*  
 *🔧 Triggers opérationnels - Architecture validée*
