@@ -309,6 +309,8 @@ export const mapFormDataToSupabase = (formData) => {
 
     equipements_wifi_statut: formData.section_equipements?.wifi_statut || null,
     equipements_wifi_details: formData.section_equipements?.wifi_details || null,
+    equipements_wifi_nom_reseau: formData.section_equipements?.wifi_nom_reseau || null,
+    equipements_wifi_mot_de_passe: formData.section_equipements?.wifi_mot_de_passe || null,
 
     // Parking
     equipements_parking_type: formData.section_equipements?.parking_type || null,
@@ -1409,6 +1411,8 @@ export const mapSupabaseToFormData = (supabaseData) => {
       wifi: supabaseData.equipements_wifi ?? null,
       wifi_statut: supabaseData.equipements_wifi_statut || null,
       wifi_details: supabaseData.equipements_wifi_details || "",
+      wifi_nom_reseau: supabaseData.equipements_wifi_nom_reseau || "",
+      wifi_mot_de_passe: supabaseData.equipements_wifi_mot_de_passe || "",
       
       // Parking
       parking_type: supabaseData.equipements_parking_type || "",

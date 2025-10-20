@@ -37,6 +37,10 @@ const BRANCH_SCHEMAS = {
   ],
   animaux_acceptes: [
     'animaux_commentaire'
+  ],
+  wifi_disponible: [
+    'wifi_nom_reseau',
+    'wifi_mot_de_passe'
   ]
 }
 
@@ -84,6 +88,22 @@ export default function FicheEquipements() {
     } else {
       // Comportement normal pour les autres cas
       updateField(field, value)
+    }
+  }
+
+  // 🧹 Handler spécialisé pour le statut WiFi avec nettoyage
+  const handleWifiStatutChange = (field, value) => {
+    updateField(field, value)
+    
+    // Nettoyer les identifiants si on quitte "oui"
+    if (value !== 'oui') {
+      updateField('section_equipements.wifi_nom_reseau', '')
+      updateField('section_equipements.wifi_mot_de_passe', '')
+    }
+    
+    // Nettoyer les détails si on quitte "en_cours"
+    if (value !== 'en_cours') {
+      updateField('section_equipements.wifi_details', '')
     }
   }
 
@@ -897,12 +917,12 @@ export default function FicheEquipements() {
                         <input 
                           type="radio"
                           name="wifi_statut"
-                          value="oui"
-                          checked={formData.wifi_statut === 'oui'}
-                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
+                          value="non"
+                          checked={formData.wifi_statut === 'non'}
+                          onChange={(e) => handleWifiStatutChange('section_equipements.wifi_statut', e.target.value)}
                           className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                         />
-                        <span>Oui (WiFi disponible et fonctionnel)</span>
+                        <span className="text-red-600 font-medium">Non (pas de WiFi disponible) ❌</span>
                       </label>
                       
                       <label className="flex items-center gap-2 cursor-pointer">
@@ -911,23 +931,23 @@ export default function FicheEquipements() {
                           name="wifi_statut"
                           value="en_cours"
                           checked={formData.wifi_statut === 'en_cours'}
-                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
+                          onChange={(e) => handleWifiStatutChange('section_equipements.wifi_statut', e.target.value)}
                           className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                         />
                         <span>En cours d'installation</span>
                       </label>
-                      
+
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input 
                           type="radio"
                           name="wifi_statut"
-                          value="non"
-                          checked={formData.wifi_statut === 'non'}
-                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
+                          value="oui"
+                          checked={formData.wifi_statut === 'oui'}
+                          onChange={(e) => handleWifiStatutChange('section_equipements.wifi_statut', e.target.value)}
                           className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                         />
-                        <span className="text-red-600 font-medium">Non (pas de WiFi disponible) ❌</span>
-                      </label>
+                        <span>Oui (WiFi disponible et fonctionnel)</span>
+                      </label>                      
                     </div>
                   </div>
 
@@ -943,6 +963,32 @@ export default function FicheEquipements() {
                       />
                     </div>
                   )}
+
+                {/* Champs conditionnels pour WiFi disponible */}
+                {formData.wifi_statut === 'oui' && (
+                  <div className="mt-4 space-y-4 border-l-4 border-green-500 pl-4">
+                    <div>
+                      <label className="block font-semibold mb-2">Nom du réseau WiFi *</label>
+                      <input 
+                        type="text"
+                        className="w-full p-3 border rounded"
+                        placeholder="SSID du réseau WiFi"
+                        value={formData.wifi_nom_reseau || ""}
+                        onChange={(e) => handleInputChange('section_equipements.wifi_nom_reseau', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-2">Mot de passe WiFi *</label>
+                      <input 
+                        type="text"
+                        className="w-full p-3 border rounded"
+                        placeholder="Mot de passe du réseau"
+                        value={formData.wifi_mot_de_passe || ""}
+                        onChange={(e) => handleInputChange('section_equipements.wifi_mot_de_passe', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
                 </div>
 
                 {/* SECTION PARKING DÉTAILLÉE (EXISTANT - NE PAS TOUCHER) */}
@@ -1070,191 +1116,6 @@ export default function FicheEquipements() {
                   </>
                 )}
               </div>
-
-              {/* SECTION Configuration Wi-Fi */}
-              <div className="mt-6 mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-4 text-blue-800">📶 Configuration Wi-Fi</h3>
-                  
-                  <div className="mb-4">
-                    <label className="block font-semibold mb-3">Statut du WiFi</label>
-                    <div className="space-y-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="radio"
-                          name="wifi_statut"
-                          value="oui"
-                          checked={formData.wifi_statut === 'oui'}
-                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
-                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                        />
-                        <span>Oui (WiFi disponible et fonctionnel)</span>
-                      </label>
-                      
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="radio"
-                          name="wifi_statut"
-                          value="en_cours"
-                          checked={formData.wifi_statut === 'en_cours'}
-                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
-                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                        />
-                        <span>En cours d'installation</span>
-                      </label>
-                      
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="radio"
-                          name="wifi_statut"
-                          value="non"
-                          checked={formData.wifi_statut === 'non'}
-                          onChange={(e) => handleInputChange('section_equipements.wifi_statut', e.target.value)}
-                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                        />
-                        <span className="text-red-600 font-medium">Non (pas de WiFi disponible) ❌</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Champ conditionnel pour "En cours" */}
-                  {formData.wifi_statut === 'en_cours' && (
-                    <div className="mt-4">
-                      <label className="block font-semibold mb-2">Détails sur l'installation</label>
-                      <textarea 
-                        className="w-full p-3 border rounded h-24"
-                        placeholder="Décrivez la date d'installation du Wi-Fi, comment et par qui..."
-                        value={formData.wifi_details || ""}
-                        onChange={(e) => handleInputChange('section_equipements.wifi_details', e.target.value)}
-                      />
-                    </div>
-                  )}
-                </div>
-
-              {/* Parking principal */}
-              <div className="mb-4">
-                <label className="block font-semibold mb-3">Parking *</label>
-                <div className="space-y-1 max-w-lg">
-                  <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input 
-                      type="radio" 
-                      name="parking_type"
-                      checked={formData.parking_type === 'rue'}
-                      onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'rue')}
-                      className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Parking gratuit dans la rue</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input 
-                      type="radio" 
-                      name="parking_type"
-                      checked={formData.parking_type === 'sur_place'}
-                      onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'sur_place')}
-                      className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Parking gratuit sur place</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input 
-                      type="radio" 
-                      name="parking_type"
-                      checked={formData.parking_type === 'payant'}
-                      onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'payant')}
-                      className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Stationnement payant à l'extérieur de la propriété</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Champs conditionnels parking */}
-              {formData.parking_type === 'rue' && (
-                <div className="mb-4">
-                  <label className="block font-semibold mb-2">
-                    Parking gratuit dans la rue - Détails *
-                  </label>
-                  <textarea 
-                    className="w-full p-3 border rounded h-32"
-                    placeholder={`Fournissez des informations détaillées sur le parking gratuit :
-• Emplacement des places de stationnement (noms des rues spécifiques)
-• Disponibilité habituelle des places (facile/difficile à trouver)
-• Restrictions éventuelles (horaires, durée maximale, jours spécifiques)
-• Règles de stationnement particulières (ex: alternance côté pair/impair)
-• Distance approximative du logement
-• Conseils pour trouver une place
-• Sécurité du quartier pour le stationnement
-• Toute autre information utile pour les voyageurs`}
-                    value={formData.parking_rue_details || ""}
-                    onChange={(e) => handleInputChange('section_equipements.parking_rue_details', e.target.value)}
-                  />
-                </div>
-              )}
-
-
-            {formData.parking_type === 'sur_place' && (
-              <>
-                <div className="mb-4">
-                  <label className="block font-semibold mb-2">Parking - Type * (plusieurs choix possibles)</label>
-                  <div className="space-y-2">
-                    {typesParkingGratuitOptions.map(option => (
-                      <label key={option} className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="checkbox"
-                          checked={(formData.parking_sur_place_types || []).includes(option)}
-                          onChange={(e) => handleCheckboxArrayChange('section_equipements.parking_sur_place_types', option, e.target.checked)}
-                          className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                        />
-                        <span className="text-sm">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <label className="block font-semibold mb-2">
-                    Parking gratuit sur place - Détails *
-                  </label>
-                  <textarea 
-                    className="w-full p-3 border rounded h-32"
-                    placeholder={`Fournissez des informations détaillées sur le parking gratuit...`}
-                    value={formData.parking_sur_place_details || ""}
-                    onChange={(e) => handleInputChange('section_equipements.parking_sur_place_details', e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-
-              {formData.parking_type === 'payant' && (
-                <>
-                  <div className="mb-4">
-                    <label className="block font-semibold mb-2">Parking - Stationnement payant - Type *</label>
-                    <div className="space-y-2">
-                      {typesParkingPayantOptions.map(option => (
-                        <label key={option} className="flex items-center gap-2 cursor-pointer">
-                          <input 
-                            type="radio"
-                            name="parking_payant_type"
-                            checked={formData.parking_payant_type === option}
-                            onChange={() => handleInputChange('section_equipements.parking_payant_type', option)}
-                            className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                          />
-                          <span className="text-sm">{option}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mb-4">
-                    <label className="block font-semibold mb-2">
-                      Parking - Stationnement payant - Détails *
-                    </label>
-                    <textarea 
-                      className="w-full p-3 border rounded h-32"
-                      placeholder={`Fournissez des informations détaillées sur le parking payant...`}
-                      value={formData.parking_payant_details || ""}
-                      onChange={(e) => handleInputChange('section_equipements.parking_payant_details', e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
             </div>
         
           </div>
