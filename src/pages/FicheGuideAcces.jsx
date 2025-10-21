@@ -70,7 +70,7 @@ export default function FicheGuideAcces() {
       // ÉTAPE 2 : Envoi vers webhook n8n
       console.log('🤖 Génération du guide d\'accès...')
 
-      const guideResponse = await fetch('https://hub.cardin.cloud/webhook/396c1d02-5034-466e-865a-774764ccdaae', {
+      const guideResponse = await fetch('https://hub.cardin.cloud/webhook/5ebcffdd-fee8-4525-85f1-33f57ce4d28d/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
