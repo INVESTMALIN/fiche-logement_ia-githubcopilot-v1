@@ -537,7 +537,7 @@ const handleDeletePhoto = async (photoUrl, index) => {
                 {acceptVideo && (
                   <p className="text-xs mt-2 text-orange-600">
                     💡 <strong>Astuce :</strong> Filmez en 720p pour réduire la taille. 
-                    Les vidéos &gt;100MB prennent 4-5 min à optimiser.
+                    Les vidéos &gt;300MB prennent 4-5 min à optimiser.
                   </p>
                 )}
               </div>

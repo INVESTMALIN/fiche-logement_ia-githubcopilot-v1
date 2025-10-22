@@ -75,7 +75,10 @@ export default function FicheGuideAcces() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: sessionIdRef.current,
-          audioUrl: audioUrl
+          files: [{
+            mimeType: 'audio/mpeg',
+            url: audioUrl
+          }]
         })
       })
 
@@ -134,7 +137,7 @@ export default function FicheGuideAcces() {
             {/* Introduction */}
             <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
               <h3 className="font-semibold text-blue-800 mb-2">
-                Préparation Guide d'accès : depuis le panneau de la rue ou un élément identifiable, jusqu'à l'intérieur de l'appartement
+                Préparation Guide d'accès : depuis le panneau de la rue ou un élément identifiable, jusqu'à la porte de l'appartement
               </h3>
               <p className="text-blue-700 text-sm">
                 Fournissez les éléments visuels nécessaires pour créer un guide d'accès complet pour les voyageurs.
@@ -156,16 +159,29 @@ export default function FicheGuideAcces() {
 
             {/* Upload Vidéo */}
             <div>
+              {/* 💡 Conseil visible AVANT l'upload */}
+              <div className="mb-4 p-4 bg-orange-50 border-l-4 border-orange-400 rounded-r-lg">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🎥</span>
+                  <div>
+                    <p className="font-semibold text-orange-800 mb-1">Conseil : Filmez en 720p</p>
+                    <p className="text-sm text-orange-700">
+                      Cette vidéo peut être longue. Filmer en 720p réduira considérablement la taille du fichier et accélérera l'upload.
+                    </p>
+                    <p className="text-sm text-orange-700">
+                      Si la vidéo est trop lourde, veuillez la sauvegarder sur le Drive directement.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <PhotoUpload 
                 fieldPath="section_guide_acces.video_acces"
-                label="Fournir une vidéo depuis le panneau de la rue ou un emplacement identifiable"
+                label="Vidéo pour le Guide d'accès (depuis un emplacement identifiable)"
                 multiple={true}
                 maxFiles={1}
                 acceptVideo={true}
               />
-              <p className="text-sm text-gray-500 mt-2">
-                🎥 Vidéo continue du trajet complet depuis un point de repère identifiable jusqu'à la porte d'entrée.
-              </p>
             </div>
 
             {/* ASSISTANT - Guide d'accès */}
