@@ -671,7 +671,79 @@ const PhotosDisplayMenage = ({ photos, sectionTitle }) => {
                 marginBottom: section.photos.length > 0 ? '16px' : '0'
               }}>
                 {/* 🍳 CAS SPÉCIAL : Cuisine 1 - Rendu groupé */}
-                {section.key === 'section_cuisine_1' ? (
+                {/* 🧴 CAS SPÉCIAL : Consommables - Liste des consommables obligatoires */}
+                  {section.key === 'section_consommables' && formData.section_consommables?.fournis_par_prestataire === true ? (
+                    <div style={{ marginBottom: '16px' }}>
+                      {/* Liste rouge des consommables obligatoires */}
+                      <div style={{
+                        backgroundColor: '#fef2f2',
+                        border: '2px solid #dc2626',
+                        borderRadius: '6px',
+                        padding: '16px',
+                        marginBottom: '16px',
+                        pageBreakInside: 'avoid'
+                      }}>
+                        <h4 style={{
+                          margin: '0 0 12px 0',
+                          fontSize: '10pt',
+                          fontWeight: '700',
+                          color: '#991b1b'
+                        }}>
+                          Les consommables ci-dessous devront OBLIGATOIREMENT être fournis par le prestataire de ménage :
+                        </h4>
+                        <ul style={{
+                          margin: '0',
+                          paddingLeft: '20px',
+                          fontSize: '9pt',
+                          color: '#7f1d1d',
+                          lineHeight: '1.6'
+                        }}>
+                          <li>2 rouleaux de papier toilette par toilette</li>
+                          <li>1 savon pour les mains disponible par lavabo</li>
+                          <li>1 produit vaisselle par cuisine</li>
+                          <li>1 éponge par cuisine (en bon état)</li>
+                          <li>Sel, poivre, sucre (en quantité adéquate)</li>
+                          <li>Café et thé (1 sachet par personne)</li>
+                          <li>Essuie-tout/Sopalin</li>
+                          <li>Sac poubelle</li>
+                          <li>Produit vitres</li>
+                          <li>Produit sol</li>
+                          <li>Produit salle de bain/multi-surfaces ou vinaigre ménager</li>
+                          <li>Produit WC / Javel</li>
+                        </ul>
+                      </div>
+
+                      {/* Autres champs de la section (sur demande, café, etc.) */}
+                      {section.fields.length > 0 && (
+                        <div>
+                          {section.fields.map((field, fieldIndex) => (
+                            <div key={field.key} style={{
+                              marginBottom: fieldIndex < section.fields.length - 1 ? '12px' : '0',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px'
+                            }}>
+                              <span style={{
+                                fontSize: '9pt',
+                                fontWeight: '600',
+                                color: '#4a5568',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                {field.label}
+                              </span>
+                              <span style={{
+                                fontSize: '10pt',
+                                color: '#2d3748'
+                              }}>
+                                {formatValue(field.value, field.key)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : section.key === 'section_cuisine_1' ? (
                   (() => {
                     const groupedEquipements = renderCuisine1Grouped(formData.section_cuisine_1 || {})
                     

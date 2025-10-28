@@ -22,7 +22,8 @@ export default function FicheGuideAcces() {
 
   // États pour l'assistant Guide d'accès
   const [loading, setLoading] = useState(false)
-  const [guideGenere, setGuideGenere] = useState('')
+  const [messages, setMessages] = useState([])
+  const [userMessage, setUserMessage] = useState('')
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
   const sessionIdRef = useRef(null)
@@ -77,7 +78,8 @@ export default function FicheGuideAcces() {
           sessionId: sessionIdRef.current,
           files: [{
             mimeType: 'audio/mpeg',
-            url: audioUrl
+            url: audioUrl,
+            numero_bien: formData.section_logement?.numero_bien || null
           }]
         })
       })
@@ -89,7 +91,7 @@ export default function FicheGuideAcces() {
       const guideData = await guideResponse.json()
       const guide = guideData.output || guideData.response || 'Guide généré (format non reconnu)'
       
-      setGuideGenere(guide)
+      setMessages([{ role: 'assistant', content: guide }])
       console.log('✅ Guide généré avec succès')
 
     } catch (err) {
@@ -111,16 +113,57 @@ export default function FicheGuideAcces() {
     }
   }
 
-  const handleCopyGuide = () => {
-    navigator.clipboard.writeText(guideGenere)
-      .then(() => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+  const handleSendMessage = async () => {
+    if (!userMessage.trim()) return
+
+    const newUserMessage = { role: 'user', content: userMessage.trim() }
+    setMessages(prev => [...prev, newUserMessage])
+    setUserMessage('')
+    setLoading(true)
+    setError(null)
+
+    try {
+      const guideResponse = await fetch('https://hub.cardin.cloud/webhook/5ebcffdd-fee8-4525-85f1-33f57ce4d28d/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          audioUrl: getField('section_guide_acces.video_acces')?.[0],
+          numero_bien: formData.section_logement?.numero_bien || null,
+          message: userMessage.trim()
+        })
       })
-      .catch(() => {
-        setError('Impossible de copier le texte.')
-      })
+
+      if (!guideResponse.ok) {
+        throw new Error(`Erreur réponse assistant: ${guideResponse.status}`)
+      }
+
+      const guideData = await guideResponse.json()
+      const guide = guideData.output || guideData.response || 'Réponse non reconnue'
+      
+      setMessages(prev => [...prev, { role: 'assistant', content: guide }])
+
+    } catch (err) {
+      console.error('❌ Erreur envoi message:', err)
+      setError('Impossible d\'envoyer le message. Réessayez.')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const handleCopyGuide = () => {
+      const lastMessage = messages[messages.length - 1]
+      if (!lastMessage) return
+      
+      navigator.clipboard.writeText(lastMessage.content)
+        .then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        })
+        .catch(() => {
+          setError('Impossible de copier le texte.')
+        })
+    }
 
   return (
     <div className="flex min-h-screen">
@@ -184,7 +227,7 @@ export default function FicheGuideAcces() {
               />
             </div>
 
-            {/* ASSISTANT - Guide d'accès */}
+{/* ASSISTANT - Guide d'accès */}
             {hasVideo && (
               <div className="mt-8 p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200">
                 <div className="flex items-center gap-3 mb-4">
@@ -197,8 +240,8 @@ export default function FicheGuideAcces() {
                   </div>
                 </div>
 
-                {/* Bouton générer */}
-                {!guideGenere && !loading && (
+                {/* Bouton générer (seulement si pas encore de messages) */}
+                {messages.length === 0 && !loading && (
                   <button
                     onClick={handleGenererGuide}
                     disabled={loading}
@@ -214,8 +257,15 @@ export default function FicheGuideAcces() {
                   <div className="flex items-center justify-center gap-3 py-8">
                     <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
                     <div className="text-center">
-                      <p className="font-medium text-gray-900">Génération en cours...</p>
-                      <p className="text-sm text-gray-600 mt-1">Extraction audio + transcription + génération du guide</p>
+                      <p className="font-medium text-gray-900">
+                        {messages.length === 0 ? 'Génération en cours...' : 'Envoi en cours...'}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {messages.length === 0 
+                          ? 'Extraction audio + transcription + génération du guide'
+                          : 'Envoi de votre message à l\'assistant'
+                        }
+                      </p>
                     </div>
                   </div>
                 )}
@@ -227,7 +277,12 @@ export default function FicheGuideAcces() {
                     <div className="flex-1">
                       <p className="text-sm text-red-800">{error}</p>
                       <button
-                        onClick={handleGenererGuide}
+                        onClick={() => {
+                          setError(null)
+                          if (messages.length === 0) {
+                            handleGenererGuide()
+                          }
+                        }}
                         className="mt-2 text-sm text-red-600 hover:text-red-700 font-medium underline"
                       >
                         Réessayer
@@ -236,42 +291,88 @@ export default function FicheGuideAcces() {
                   </div>
                 )}
 
-                {/* Guide généré */}
-                {guideGenere && (
+                {/* Conversation */}
+                {messages.length > 0 && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-700">Guide d'accès généré :</p>
+                    {/* Historique des messages */}
+                    <div className="bg-white rounded-lg border max-h-96 overflow-y-auto p-4 space-y-3">
+                      {messages.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[80%] rounded-lg p-3 ${
+                              msg.role === 'user'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-gray-100 text-gray-900'
+                            }`}
+                          >
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                              {msg.content}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Bouton copier le dernier message (si c'est l'assistant) */}
+                    {messages[messages.length - 1]?.role === 'assistant' && (
+                      <div className="flex justify-end">
+                        <button
+                          onClick={handleCopyGuide}
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white hover:bg-gray-50 border rounded-lg transition-colors"
+                        >
+                          {copied ? (
+                            <>
+                              <Check className="w-4 h-4 text-green-600" />
+                              <span className="text-green-600">Copié !</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4" />
+                              <span>Copier le dernier message</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Input pour continuer la conversation */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={userMessage}
+                        onChange={(e) => setUserMessage(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && !loading) {
+                            handleSendMessage()
+                          }
+                        }}
+                        placeholder="Ajouter des précisions ou poser une question..."
+                        disabled={loading}
+                        className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      />
                       <button
-                        onClick={handleCopyGuide}
-                        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white hover:bg-gray-50 border rounded-lg transition-colors"
+                        onClick={handleSendMessage}
+                        disabled={loading || !userMessage.trim()}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {copied ? (
-                          <>
-                            <Check className="w-4 h-4 text-green-600" />
-                            <span className="text-green-600">Copié !</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4" />
-                            <span>Copier</span>
-                          </>
-                        )}
+                        Envoyer
                       </button>
                     </div>
 
-                    <div className="bg-white rounded-lg border p-4 max-h-96 overflow-y-auto">
-                      <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
-                        {guideGenere}
-                      </p>
-                    </div>
-
-                    {/* Bouton régénérer */}
+                    {/* Bouton recommencer */}
                     <button
-                      onClick={handleGenererGuide}
+                      onClick={() => {
+                        setMessages([])
+                        setUserMessage('')
+                        setError(null)
+                      }}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg font-medium transition-all"
                     >
                       <Sparkles className="w-4 h-4" />
-                      Régénérer le guide
+                      Recommencer une nouvelle génération
                     </button>
                   </div>
                 )}
