@@ -225,7 +225,7 @@ export default function FicheGuideAcces() {
               />
             </div>
 
-{/* ASSISTANT - Guide d'accès */}
+            {/* ASSISTANT - Guide d'accès */}
             {hasVideo && (
               <div className="mt-8 p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200">
                 <div className="flex items-center gap-3 mb-4">
@@ -237,7 +237,7 @@ export default function FicheGuideAcces() {
                     <p className="text-sm text-gray-600">Génération automatique du guide d'accès depuis votre vidéo</p>
                   </div>
                 </div>
-                
+
                 {/* ⚠️ Note de développement */}
                 <div className="mb-6 flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />

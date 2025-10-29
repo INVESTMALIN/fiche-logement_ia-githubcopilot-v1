@@ -89,7 +89,10 @@ export default function FicheFinalisation() {
       const response = await fetch('https://hub.cardin.cloud/webhook/d9187cd4-1fd5-4ecd-afe0-125924773f69/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          ...requestBody,
+          numero_bien: formData.section_logement?.numero_bien || null
+        }),
         signal: controller.signal
       })
       
@@ -230,6 +233,14 @@ export default function FicheFinalisation() {
                   <p className="text-sm text-gray-600">Générez et affinez votre annonce avec l'IA</p>
                 </div>
               </div>
+
+                {/* ⚠️ Note de développement */}
+                <div className="mb-6 flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-yellow-800 leading-snug">
+                    Cet assistant est encore en cours d’amélioration. Certaines fonctions peuvent être limitées ou en phase de test.
+                  </p>
+                </div>                
 
               {/* Boutons de prompts rapides */}
               <div className="mb-4">
