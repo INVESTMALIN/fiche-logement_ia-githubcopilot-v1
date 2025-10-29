@@ -231,14 +231,6 @@ export default function FicheFinalisation() {
                 </div>
               </div>
 
-              {/* ⚠️ Note de développement */}
-              <div className="mb-6 flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-yellow-800 leading-snug">
-                  Cet assistant est encore en cours d’amélioration. Certaines fonctions peuvent être limitées ou en phase de test.
-                </p>
-              </div>
-
               {/* Boutons de prompts rapides */}
               <div className="mb-4">
                 <p className="text-sm text-gray-600 mb-3">Suggestions rapides :</p>

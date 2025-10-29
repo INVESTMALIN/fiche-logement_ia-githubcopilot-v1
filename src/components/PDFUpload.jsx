@@ -205,7 +205,7 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave  }) => {
               quality: 0.7 // 🔥 COMPRESSION RÉDUITE pour fiabilité
             },
             html2canvas: { 
-              scale: 1.2, // 🔥 SCALE RÉDUIT pour performance
+              scale: 2,
               useCORS: true,
               letterRendering: true,
               logging: false,
