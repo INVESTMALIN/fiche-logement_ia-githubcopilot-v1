@@ -155,7 +155,7 @@ export default function FicheEquipements() {
     { key: 'tv', label: 'TV' },
     { key: 'chauffage', label: 'Chauffage' },
     { key: 'fer_repasser', label: 'Fer à repasser' },
-    { key: 'etendoir', label: 'Etendoir' },
+    { key: 'etendoir', label: 'Étendoir' },
     { key: 'piano', label: 'Piano' },
     { key: 'cinema', label: 'Cinéma' },
     { key: 'compacteur_dechets', label: 'Compacteur de déchets' },

@@ -86,8 +86,14 @@ export default function FicheGuideAcces() {
         throw new Error(`Erreur génération guide: ${guideResponse.status}`)
       }
 
-      const guideData = await guideResponse.json()
-      const guide = guideData.output || guideData.response || 'Guide généré (format non reconnu)'
+      const responseText = await guideResponse.text()
+      console.log('🔍 Réponse brute du webhook:', responseText)
+
+      const guideData = JSON.parse(responseText)
+      // Si c'est un array, prendre le premier élément
+      const data = Array.isArray(guideData) ? guideData[0] : guideData
+      // Aller chercher dans data.data.output si ça existe
+      const guide = data.data?.output || data.output || data.response || 'Guide généré (format non reconnu)'
       
       setMessages([{ role: 'assistant', content: guide }])
       console.log('✅ Guide généré avec succès')
@@ -126,7 +132,6 @@ export default function FicheGuideAcces() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: sessionIdRef.current,
-          audioUrl: getField('section_guide_acces.video_acces')?.[0],
           numero_bien: formData.section_logement?.numero_bien || null,
           message: userMessage.trim()
         })
@@ -136,8 +141,16 @@ export default function FicheGuideAcces() {
         throw new Error(`Erreur réponse assistant: ${guideResponse.status}`)
       }
 
-      const guideData = await guideResponse.json()
-      const guide = guideData.output || guideData.response || 'Réponse non reconnue'
+      const responseText = await guideResponse.text()
+      console.log('🔍 Réponse follow-up:', responseText)
+
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Le webhook n\'a renvoyé aucune donnée')
+      }
+
+      const guideData = JSON.parse(responseText)
+      const data = Array.isArray(guideData) ? guideData[0] : guideData
+      const guide = data.data?.output || data.output || data.response || 'Réponse non reconnue'
       
       setMessages(prev => [...prev, { role: 'assistant', content: guide }])
 
@@ -268,7 +281,7 @@ export default function FicheGuideAcces() {
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
                         {messages.length === 0 
-                          ? 'Extraction audio + transcription + génération du guide'
+                          ? 'La vidéo est en cours d\'analyse pour générer le guide d\'accès'
                           : 'Envoi de votre message à l\'assistant'
                         }
                       </p>
@@ -346,18 +359,19 @@ export default function FicheGuideAcces() {
 
                     {/* Input pour continuer la conversation */}
                     <div className="flex gap-2">
-                      <input
-                        type="text"
+                      <textarea
                         value={userMessage}
                         onChange={(e) => setUserMessage(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter' && !loading) {
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey && !loading) {
+                            e.preventDefault()
                             handleSendMessage()
                           }
                         }}
-                        placeholder="Ajouter des précisions ou poser une question..."
+                        placeholder="Ajouter des précisions ou poser une question... (Maj+Entrée pour aller à la ligne)"
                         disabled={loading}
-                        className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        rows={3}
+                        className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed resize-none"
                       />
                       <button
                         onClick={handleSendMessage}

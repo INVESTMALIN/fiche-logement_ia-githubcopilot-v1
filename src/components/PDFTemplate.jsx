@@ -18,7 +18,7 @@ const PDFTemplate = ({ formData }) => {
     )
   }
 
-  // 📋 CONFIGURATION : Toutes les 22 sections avec labels et emojis
+  // 📋 CONFIGURATION : Toutes les 23 sections avec labels et emojis
   const sectionsConfig = [
     { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
     { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
@@ -391,48 +391,48 @@ const PDFTemplate = ({ formData }) => {
                 width: 'fit-content'
               }}
             >
-{isVideoFile(photo.url) ? (
-  // AFFICHAGE VIDÉO : Format mobile portrait
-  <div style={{
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '15px 10px',
-    backgroundColor: '#f7fafc',
-    // 🔧 FORMAT MOBILE PORTRAIT (plus haut que large)
-    width: photos.length === 1 ? '100px' : 
-           photos.length === 2 ? '85px' : 
-           photos.length <= 4 ? '70px' : '60px',
-    height: photos.length === 1 ? '140px' : 
-            photos.length === 2 ? '120px' : 
-            photos.length <= 4 ? '100px' : '85px'
-  }}>
-    <div style={{
-      fontSize: photos.length === 1 ? '28px' : 
-               photos.length === 2 ? '24px' : '20px',
-      marginBottom: '6px'
-    }}>🎬</div>
-    <div style={{
-      fontSize: photos.length === 1 ? '9pt' : 
-               photos.length === 2 ? '8pt' : '7pt',
-      color: '#4a5568',
-      textAlign: 'center',
-      fontWeight: '600',
-      marginBottom: '3px'
-    }}>
-      VIDÉO
-    </div>
-    <div style={{
-      fontSize: photos.length === 1 ? '7pt' : '6pt',
-      color: '#718096',
-      textAlign: 'center',
-      lineHeight: '1.2'
-    }}>
-      Cliquer pour voir
-    </div>
-  </div>
-) : (
+              {isVideoFile(photo.url) ? (
+                // AFFICHAGE VIDÉO : Format mobile portrait
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '15px 10px',
+                  backgroundColor: '#f7fafc',
+                  // 🔧 FORMAT MOBILE PORTRAIT (plus haut que large)
+                  width: photos.length === 1 ? '100px' : 
+                        photos.length === 2 ? '85px' : 
+                        photos.length <= 4 ? '70px' : '60px',
+                  height: photos.length === 1 ? '140px' : 
+                          photos.length === 2 ? '120px' : 
+                          photos.length <= 4 ? '100px' : '85px'
+                }}>
+                  <div style={{
+                    fontSize: photos.length === 1 ? '28px' : 
+                            photos.length === 2 ? '24px' : '20px',
+                    marginBottom: '6px'
+                  }}>🎬</div>
+                  <div style={{
+                    fontSize: photos.length === 1 ? '9pt' : 
+                            photos.length === 2 ? '8pt' : '7pt',
+                    color: '#4a5568',
+                    textAlign: 'center',
+                    fontWeight: '600',
+                    marginBottom: '3px'
+                  }}>
+                    VIDÉO
+                  </div>
+                  <div style={{
+                    fontSize: photos.length === 1 ? '7pt' : '6pt',
+                    color: '#718096',
+                    textAlign: 'center',
+                    lineHeight: '1.2'
+                  }}>
+                    Cliquer pour voir
+                  </div>
+                </div>
+              ) : (
                 // AFFICHAGE IMAGE : normal
                 <img 
                   src={photo.url}
@@ -441,10 +441,10 @@ const PDFTemplate = ({ formData }) => {
                     display: 'block',
                     // 🔧 TAILLE RESPONSIVE basée sur le nombre de photos
                     maxWidth: photos.length === 1 ? '150px' : 
-                photos.length === 2 ? '120px' : 
-                photos.length <= 4 ? '100px' : '80px',
-            maxHeight: photos.length === 1 ? '120px' : 
-                      photos.length === 2 ? '100px' : '70px',
+                    photos.length === 2 ? '120px' : 
+                    photos.length <= 4 ? '100px' : '80px',
+                    maxHeight: photos.length === 1 ? '120px' : 
+                    photos.length === 2 ? '100px' : '70px',
                     width: 'auto',
                     height: 'auto',
                     objectFit: 'contain',
@@ -511,103 +511,281 @@ const PDFTemplate = ({ formData }) => {
       }
     }
 
-    // 🍳 FONCTION SPÉCIALE : Rendu groupé pour Cuisine 1
-const renderCuisine1Grouped = (sectionData) => {
+  // 🍳 FONCTION SPÉCIALE : Rendu groupé pour Cuisine 1
+  const renderCuisine1Grouped = (sectionData) => {
+    const equipements = [
+      { key: 'refrigerateur', label: 'Réfrigérateur', emoji: '🧊' },
+      { key: 'congelateur', label: 'Congélateur', emoji: '❄️' },
+      { key: 'mini_refrigerateur', label: 'Mini réfrigérateur', emoji: '🧊' },
+      { key: 'cuisiniere', label: 'Cuisinière', emoji: '🔥' },
+      { key: 'plaque_cuisson', label: 'Plaque de cuisson', emoji: '🔥' },
+      { key: 'four', label: 'Four', emoji: '🔥' },
+      { key: 'micro_ondes', label: 'Four à micro-ondes', emoji: '📡' },
+      { key: 'lave_vaisselle', label: 'Lave-vaisselle', emoji: '🧽' },
+      { key: 'cafetiere', label: 'Cafetière', emoji: '☕' },
+      { key: 'bouilloire', label: 'Bouilloire électrique', emoji: '💧' },
+      { key: 'grille_pain', label: 'Grille-pain', emoji: '🍞' },
+      { key: 'blender', label: 'Blender', emoji: '🥤' },
+      { key: 'cuiseur_riz', label: 'Cuiseur à riz', emoji: '🍚' },
+      { key: 'machine_pain', label: 'Machine à pain', emoji: '🥖' },
+      { key: 'lave_linge', label: 'Lave-linge', emoji: '🧺' }
+    ]
+
+    const groupedEquipements = []
+
+    equipements.forEach(equip => {
+      // Vérifier si l'équipement est coché
+      if (sectionData[`equipements_${equip.key}`] === true) {
+        const details = {}
+        const photos = []
+
+        // Récupérer tous les champs liés à cet équipement
+        Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+          if (fieldKey.startsWith(equip.key) && !isEmpty(fieldValue)) {
+            if (fieldKey.includes('photo') || fieldKey.includes('video')) {
+              // Extraire les photos/vidéos
+              const urls = parsePhotoValue(fieldValue)
+              urls.forEach(url => photos.push({
+                url: cleanUrl(url),
+                label: formatFieldName(fieldKey),
+                fieldKey: fieldKey,
+                isValid: isImageUrl(cleanUrl(url))
+              }))
+            } else {
+              // Ajouter les détails texte
+              details[fieldKey] = fieldValue
+            }
+          }
+        })
+
+        // Ajouter l'équipement groupé seulement s'il a des détails ou photos
+        if (Object.keys(details).length > 0 || photos.length > 0) {
+          groupedEquipements.push({
+            ...equip,
+            details,
+            photos: photos.filter(p => p.isValid)
+          })
+        }
+      }
+    })
+
+    return groupedEquipements
+  }
+
+// 🎯 GÉNÉRATION DES SECTIONS COMPLÈTES
+    const generateSections = () => {
+      const sections = []
+
+      sectionsConfig.forEach(config => {
+        const sectionData = formData[config.key]
+        
+        if (!sectionData || typeof sectionData !== 'object') return
+
+        // Extraire les photos de cette section
+        const photos = extractAllPhotos(sectionData, config.key)
+
+        // Extraire les champs non-photos
+        const fields = []
+        Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+          // 🚫 FILTRE SPÉCIAL : Exclure WiFi et Parking de section_equipements (ils ont leur propre rendu groupé)
+          if (config.key === 'section_equipements') {
+            const excludedFields = [
+              'wifi_statut', 'wifi_nom_reseau', 'wifi_mot_de_passe', 'wifi_details', 'wifi_routeur_photo', 'wifi_disponible',
+              'parking_type', 'parking_rue_details', 'parking_sur_place_types', 'parking_sur_place_details',
+              'parking_payant_type', 'parking_payant_details', 'parking_equipement', 'parking_photos', 'parking_videos'
+            ]
+            if (excludedFields.includes(fieldKey)) return
+          }
+
+          const formattedValue = formatValue(fieldValue, fieldKey)
+          if (formattedValue !== null) {
+            fields.push({
+              key: fieldKey,
+              label: formatFieldName(fieldKey),
+              value: formattedValue
+            })
+          }
+        })
+
+        // Ajouter la section seulement si elle a du contenu (champs OU photos)
+        if (fields.length > 0 || photos.length > 0) {
+          sections.push({
+            ...config,
+            fields,
+            photos
+          })
+        }
+      })
+
+      return sections
+    }
+
+    // 🏠 FONCTION SPÉCIALE : Rendu groupé pour Équipements
+const renderEquipementsGrouped = (sectionData) => {
   const equipements = [
-    { key: 'refrigerateur', label: 'Réfrigérateur', emoji: '🧊' },
-    { key: 'congelateur', label: 'Congélateur', emoji: '❄️' },
-    { key: 'mini_refrigerateur', label: 'Mini réfrigérateur', emoji: '🧊' },
-    { key: 'cuisiniere', label: 'Cuisinière', emoji: '🔥' },
-    { key: 'plaque_cuisson', label: 'Plaque de cuisson', emoji: '🔥' },
-    { key: 'four', label: 'Four', emoji: '🔥' },
-    { key: 'micro_ondes', label: 'Four à micro-ondes', emoji: '📡' },
-    { key: 'lave_vaisselle', label: 'Lave-vaisselle', emoji: '🧽' },
-    { key: 'cafetiere', label: 'Cafetière', emoji: '☕' },
-    { key: 'bouilloire', label: 'Bouilloire électrique', emoji: '💧' },
-    { key: 'grille_pain', label: 'Grille-pain', emoji: '🍞' },
-    { key: 'blender', label: 'Blender', emoji: '🥤' },
-    { key: 'cuiseur_riz', label: 'Cuiseur à riz', emoji: '🍚' },
-    { key: 'machine_pain', label: 'Machine à pain', emoji: '🥖' },
-    { key: 'lave_linge', label: 'Lave-linge', emoji: '🧺' }
+    // Équipements avec conditionnels complets
+    { key: 'tv', label: 'TV', emoji: '📺', hasConditionals: true },
+    { key: 'climatisation', label: 'Climatisation', emoji: '❄️', hasConditionals: true },
+    { key: 'chauffage', label: 'Chauffage', emoji: '🔥', hasConditionals: true },
+    { key: 'lave_linge', label: 'Lave-linge', emoji: '🧺', hasConditionals: true },
+    { key: 'seche_linge', label: 'Sèche-linge', emoji: '🌀', hasConditionals: true },
+    { key: 'piano', label: 'Piano', emoji: '🎹', hasConditionals: true },
+    { key: 'accessible_mobilite_reduite', label: 'Accessible aux personnes à mobilité réduite', emoji: '♿', hasConditionals: true },
+    { key: 'animaux_acceptes', label: 'Animaux acceptés', emoji: '🐾', hasConditionals: true },
+    
+    // Équipements simples (checkbox only)
+    { key: 'fer_repasser', label: 'Fer à repasser', emoji: '🧹', hasConditionals: false },
+    { key: 'etendoir', label: 'Étendoir', emoji: '🪜', hasConditionals: false },
+    { key: 'tourne_disque', label: 'Tourne disque', emoji: '🎵', hasConditionals: false },
+    { key: 'coffre_fort', label: 'Coffre fort', emoji: '🔒', hasConditionals: false },
+    { key: 'ascenseur', label: 'Ascenseur', emoji: '🛗', hasConditionals: false },
+    { key: 'cinema', label: 'Cinéma', emoji: '🎬', hasConditionals: false },
+    { key: 'compacteur_dechets', label: 'Compacteur de déchets', emoji: '🗑️', hasConditionals: false },
+    { key: 'fetes_autorisees', label: 'Fêtes autorisées', emoji: '🎉', hasConditionals: false },
+    { key: 'fumeurs_acceptes', label: 'Fumeurs acceptés', emoji: '🚬', hasConditionals: false }
   ]
 
   const groupedEquipements = []
 
   equipements.forEach(equip => {
     // Vérifier si l'équipement est coché
-    if (sectionData[`equipements_${equip.key}`] === true) {
+    if (sectionData[equip.key] === true) {
       const details = {}
       const photos = []
 
-      // Récupérer tous les champs liés à cet équipement
-      Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
-        if (fieldKey.startsWith(equip.key) && !isEmpty(fieldValue)) {
-          if (fieldKey.includes('photo') || fieldKey.includes('video')) {
-            // Extraire les photos/vidéos
-            const urls = parsePhotoValue(fieldValue)
-            urls.forEach(url => photos.push({
-              url: cleanUrl(url),
-              label: formatFieldName(fieldKey),
-              fieldKey: fieldKey,
-              isValid: isImageUrl(cleanUrl(url))
-            }))
-          } else {
-            // Ajouter les détails texte
-            details[fieldKey] = fieldValue
+      if (equip.hasConditionals) {
+        // Récupérer tous les champs liés à cet équipement
+        Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+          if (fieldKey.startsWith(equip.key + '_') && !isEmpty(fieldValue)) {
+            if (fieldKey.includes('photo') || fieldKey.includes('video')) {
+              // Extraire les photos/vidéos
+              const urls = parsePhotoValue(fieldValue)
+              urls.forEach(url => photos.push({
+                url: cleanUrl(url),
+                label: formatFieldName(fieldKey),
+                fieldKey: fieldKey,
+                isValid: isImageUrl(cleanUrl(url))
+              }))
+            } else {
+              // Ajouter les détails texte
+              details[fieldKey] = fieldValue
+            }
           }
-        }
-      })
-
-      // Ajouter l'équipement groupé seulement s'il a des détails ou photos
-      if (Object.keys(details).length > 0 || photos.length > 0) {
-        groupedEquipements.push({
-          ...equip,
-          details,
-          photos: photos.filter(p => p.isValid)
         })
       }
+
+      // ⚡ CAS SPÉCIAL TV : Gérer les sous-services et Console
+      if (equip.key === 'tv' && sectionData.tv_services && Array.isArray(sectionData.tv_services)) {
+        // Stocker les services TV séparément
+        details['tv_services'] = sectionData.tv_services
+        
+        // Détecter si Console est cochée dans les services
+        if (sectionData.tv_services.includes('Console')) {
+          // Récupérer les consoles disponibles
+          if (sectionData.tv_consoles && Array.isArray(sectionData.tv_consoles) && sectionData.tv_consoles.length > 0) {
+            details['tv_consoles'] = sectionData.tv_consoles
+          }
+          
+          // Récupérer la vidéo console
+          if (sectionData.tv_console_video && !isEmpty(sectionData.tv_console_video)) {
+            const urls = parsePhotoValue(sectionData.tv_console_video)
+            urls.forEach(url => photos.push({
+              url: cleanUrl(url),
+              label: 'Vidéo Console',
+              fieldKey: 'tv_console_video',
+              isValid: isImageUrl(cleanUrl(url))
+            }))
+          }
+        }
+      }
+
+      // Ajouter l'équipement (même sans détails pour les équipements simples)
+      groupedEquipements.push({
+        ...equip,
+        details,
+        photos: photos.filter(p => p.isValid)
+      })
     }
   })
 
   return groupedEquipements
 }
 
-  // 🎯 GÉNÉRATION DES SECTIONS COMPLÈTES
-  const generateSections = () => {
-    const sections = []
+  // 📶 FONCTION SPÉCIALE : Rendu groupé pour WiFi
+  const renderWifiGrouped = (sectionData) => {
+    if (!sectionData.wifi_statut) return null
 
-    sectionsConfig.forEach(config => {
-      const sectionData = formData[config.key]
+    const wifiData = {
+      statut: sectionData.wifi_statut,
+      details: {},
+      photos: []
+    }
+
+    // Selon le statut, récupérer les champs pertinents
+    if (sectionData.wifi_statut === 'oui') {
+      if (sectionData.wifi_nom_reseau) wifiData.details.wifi_nom_reseau = sectionData.wifi_nom_reseau
+      if (sectionData.wifi_mot_de_passe) wifiData.details.wifi_mot_de_passe = sectionData.wifi_mot_de_passe
       
-      if (!sectionData || typeof sectionData !== 'object') return
-
-      // Extraire les photos de cette section
-      const photos = extractAllPhotos(sectionData, config.key)
-
-      // Extraire les champs non-photos
-      const fields = []
-      Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
-        const formattedValue = formatValue(fieldValue, fieldKey)
-        if (formattedValue !== null) {
-          fields.push({
-            key: fieldKey,
-            label: formatFieldName(fieldKey),
-            value: formattedValue
-          })
-        }
-      })
-
-      // Ajouter la section seulement si elle a du contenu (champs OU photos)
-      if (fields.length > 0 || photos.length > 0) {
-        sections.push({
-          ...config,
-          fields,
-          photos
-        })
+      // Photos routeur
+      if (sectionData.wifi_routeur_photo && !isEmpty(sectionData.wifi_routeur_photo)) {
+        const urls = parsePhotoValue(sectionData.wifi_routeur_photo)
+        urls.forEach(url => wifiData.photos.push({
+          url: cleanUrl(url),
+          label: 'Photo du routeur',
+          isValid: isImageUrl(cleanUrl(url))
+        }))
       }
-    })
+    } else if (sectionData.wifi_statut === 'en_cours') {
+      if (sectionData.wifi_details) wifiData.details.wifi_details = sectionData.wifi_details
+    }
 
-    return sections
+    return wifiData
+  }
+
+  // 🅿️ FONCTION SPÉCIALE : Rendu groupé pour Parking
+  const renderParkingGrouped = (sectionData) => {
+    if (!sectionData.parking_type) return null
+
+    const parkingData = {
+      type: sectionData.parking_type,
+      details: {},
+      photos: []
+    }
+
+    // Selon le type, récupérer les champs pertinents
+    if (sectionData.parking_type === 'rue') {
+      if (sectionData.parking_rue_details) parkingData.details.parking_rue_details = sectionData.parking_rue_details
+    } else if (sectionData.parking_type === 'sur_place') {
+      if (sectionData.parking_sur_place_types && Array.isArray(sectionData.parking_sur_place_types)) {
+        parkingData.details.parking_sur_place_types = sectionData.parking_sur_place_types
+      }
+      if (sectionData.parking_sur_place_details) parkingData.details.parking_sur_place_details = sectionData.parking_sur_place_details
+    } else if (sectionData.parking_type === 'payant') {
+      if (sectionData.parking_payant_type) parkingData.details.parking_payant_type = sectionData.parking_payant_type
+      if (sectionData.parking_payant_details) parkingData.details.parking_payant_details = sectionData.parking_payant_details
+    }
+
+    // Photos/vidéos parking (si équipement parking coché)
+    if (sectionData.parking_equipement === true) {
+      if (sectionData.parking_photos && !isEmpty(sectionData.parking_photos)) {
+        const urls = parsePhotoValue(sectionData.parking_photos)
+        urls.forEach(url => parkingData.photos.push({
+          url: cleanUrl(url),
+          label: 'Photo parking',
+          isValid: isImageUrl(cleanUrl(url))
+        }))
+      }
+      if (sectionData.parking_videos && !isEmpty(sectionData.parking_videos)) {
+        const urls = parsePhotoValue(sectionData.parking_videos)
+        urls.forEach(url => parkingData.photos.push({
+          url: cleanUrl(url),
+          label: 'Vidéo parking',
+          isValid: isImageUrl(cleanUrl(url))
+        }))
+      }
+    }
+
+    return parkingData
   }
 
   const sections = generateSections()
@@ -736,15 +914,15 @@ const renderCuisine1Grouped = (sectionData) => {
               {section.label}
             </h3>
 
-{/* Champs de la section */}
-{section.fields.length > 0 && (
-  <div style={{
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '6px',
-    padding: '16px',
-    marginBottom: section.photos.length > 0 ? '16px' : '0'
-  }}>
+  {/* Champs de la section */}
+  {section.fields.length > 0 && (
+    <div style={{
+      backgroundColor: '#ffffff',
+      border: '1px solid #e2e8f0',
+      borderRadius: '6px',
+      padding: '16px',
+      marginBottom: section.photos.length > 0 ? '16px' : '0'
+    }}>
 
    {/* 🧴 CAS SPÉCIAL : Consommables - Liste des consommables obligatoires et Cuisine1 regroupé*/}
     {section.key === 'section_consommables' && formData.section_consommables?.fournis_par_prestataire === true ? (
@@ -818,64 +996,295 @@ const renderCuisine1Grouped = (sectionData) => {
           </div>
         )}
       </div>
-    ) : section.key === 'section_cuisine_1' ? (
-      (() => {
-        const groupedEquipements = renderCuisine1Grouped(formData.section_cuisine_1 || {})
-        
-        return groupedEquipements.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {groupedEquipements.map((equip, idx) => (
-              <div key={idx} style={{
-                padding: '12px',
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '6px',
-                pageBreakInside: 'avoid'
-              }}>
-                {/* Titre équipement */}
-                <h4 style={{
-                  margin: '0 0 8px 0',
-                  fontSize: '11pt',
-                  fontWeight: '600',
-                  color: '#2d3748',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
+      ) : section.key === 'section_cuisine_1' ? (
+        (() => {
+          const groupedEquipements = renderCuisine1Grouped(formData.section_cuisine_1 || {})
+          
+          return groupedEquipements.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {groupedEquipements.map((equip, idx) => (
+                <div key={idx} style={{
+                  padding: '12px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  pageBreakInside: 'avoid'
                 }}>
-                  <span>{equip.emoji}</span>
-                  <span>{equip.label}</span>
+                  {/* Titre équipement */}
+                  <h4 style={{
+                    margin: '0 0 8px 0',
+                    fontSize: '11pt',
+                    fontWeight: '600',
+                    color: '#2d3748',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <span>{equip.emoji}</span>
+                    <span>{equip.label}</span>
+                  </h4>
+
+                  {/* Détails équipement */}
+                  {Object.keys(equip.details).length > 0 && (
+                    <div style={{ marginBottom: equip.photos.length > 0 ? '8px' : '0' }}>
+                      {Object.entries(equip.details).map(([key, value], detailIdx) => (
+                        <div key={detailIdx} style={{
+                          marginBottom: detailIdx < Object.entries(equip.details).length - 1 ? '6px' : '0',
+                          fontSize: '9pt',
+                          color: '#4a5568'
+                        }}>
+                          <span style={{ fontWeight: '600' }}>{formatFieldName(key.replace(equip.key + '_', ''))}:</span>{' '}
+                          <span style={{ color: '#2d3748' }}>{formatValue(value, key)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Photos/vidéos équipement */}
+                  {equip.photos.length > 0 && (
+                    <PhotosDisplay photos={equip.photos} sectionTitle={equip.label} />
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: '9pt', color: '#6b7280', fontStyle: 'italic' }}>
+              Aucun équipement configuré
+            </div>
+          )
+        })()
+      ) : section.key === 'section_equipements' ? (
+      (() => {
+        const equipementsData = renderEquipementsGrouped(formData.section_equipements || {})
+        const wifiData = renderWifiGrouped(formData.section_equipements || {})
+        const parkingData = renderParkingGrouped(formData.section_equipements || {})
+        
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            {/* PARTIE 1 : ÉQUIPEMENTS ET COMMODITÉS */}
+            {equipementsData.length > 0 && (
+              <div>
+                <h4 style={{
+                  margin: '0 0 12px 0',
+                  fontSize: '11pt',
+                  fontWeight: '700',
+                  color: '#1e40af',
+                  borderBottom: '2px solid #dbeafe',
+                  paddingBottom: '6px'
+                }}>
+                  🏠 Équipements et commodités
                 </h4>
-
-                {/* Détails équipement */}
-                {Object.keys(equip.details).length > 0 && (
-                  <div style={{ marginBottom: equip.photos.length > 0 ? '8px' : '0' }}>
-                    {Object.entries(equip.details).map(([key, value], detailIdx) => (
-                      <div key={detailIdx} style={{
-                        marginBottom: detailIdx < Object.entries(equip.details).length - 1 ? '6px' : '0',
-                        fontSize: '9pt',
-                        color: '#4a5568'
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {equipementsData.map((equip, idx) => (
+                    <div key={idx} style={{
+                      padding: '12px',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      pageBreakInside: 'avoid'
+                    }}>
+                      {/* Titre équipement */}
+                      <h5 style={{
+                        margin: '0 0 8px 0',
+                        fontSize: '10pt',
+                        fontWeight: '600',
+                        color: '#2d3748',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
                       }}>
-                        <span style={{ fontWeight: '600' }}>{formatFieldName(key.replace(equip.key + '_', ''))}:</span>{' '}
-                        <span style={{ color: '#2d3748' }}>{formatValue(value, key)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                        <span>{equip.emoji}</span>
+                        <span>{equip.label}</span>
+                      </h5>
 
-                {/* Photos/vidéos équipement */}
-                {equip.photos.length > 0 && (
-                  <PhotosDisplay photos={equip.photos} sectionTitle={equip.label} />
-                )}
+                      {/* Détails équipement */}
+                      {Object.keys(equip.details).length > 0 && (
+                        <div style={{ marginBottom: equip.photos.length > 0 ? '8px' : '0' }}>
+                          {Object.entries(equip.details).map(([key, value], detailIdx) => {
+                            // CAS SPÉCIAL : TV Services (array de checkboxes)
+                            if (key === 'tv_services' && Array.isArray(value)) {
+                              return (
+                                <div key={detailIdx} style={{ marginBottom: '8px' }}>
+                                  <div style={{ fontWeight: '600', fontSize: '9pt', color: '#4a5568', marginBottom: '4px' }}>
+                                    Services disponibles :
+                                  </div>
+                                  <div style={{ fontSize: '9pt', color: '#2d3748', paddingLeft: '12px' }}>
+                                    {value.filter(s => s !== 'Console').join(', ')}
+                                  </div>
+                                </div>
+                              )
+                            }
+                            
+                            // CAS SPÉCIAL : Console (sous-groupe dans TV)
+                            if (key === 'tv_consoles' && Array.isArray(value)) {
+                              return (
+                                <div key={detailIdx} style={{
+                                  marginTop: '8px',
+                                  marginLeft: '12px',
+                                  paddingLeft: '12px',
+                                  borderLeft: '3px solid #3b82f6',
+                                  backgroundColor: '#eff6ff',
+                                  padding: '8px',
+                                  borderRadius: '4px'
+                                }}>
+                                  <div style={{ fontWeight: '600', fontSize: '9pt', color: '#1e40af', marginBottom: '4px' }}>
+                                    🎮 Consoles disponibles :
+                                  </div>
+                                  <div style={{ fontSize: '9pt', color: '#2d3748' }}>
+                                    {value.join(', ')}
+                                  </div>
+                                </div>
+                              )
+                            }
+
+                            // RENDU NORMAL pour autres champs
+                            return (
+                              <div key={detailIdx} style={{
+                                marginBottom: detailIdx < Object.entries(equip.details).length - 1 ? '6px' : '0',
+                                fontSize: '9pt',
+                                color: '#4a5568'
+                              }}>
+                                <span style={{ fontWeight: '600' }}>
+                                  {formatFieldName(key.replace(equip.key + '_', ''))}:
+                                </span>{' '}
+                                <span style={{ color: '#2d3748' }}>{formatValue(value, key)}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Photos/vidéos équipement */}
+                      {equip.photos.length > 0 && (
+                        <PhotosDisplay photos={equip.photos} sectionTitle={equip.label} />
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ fontSize: '9pt', color: '#6b7280', fontStyle: 'italic' }}>
-            Aucun équipement configuré
+            )}
+
+            {/* PARTIE 2 : CONFIGURATION WIFI */}
+            {wifiData && (
+              <div>
+                <h4 style={{
+                  margin: '0 0 12px 0',
+                  fontSize: '11pt',
+                  fontWeight: '700',
+                  color: '#1e40af',
+                  borderBottom: '2px solid #dbeafe',
+                  paddingBottom: '6px'
+                }}>
+                  📶 Configuration Wi-Fi
+                </h4>
+                <div style={{
+                  padding: '12px',
+                  backgroundColor: wifiData.statut === 'oui' ? '#f0fdf4' : wifiData.statut === 'en_cours' ? '#fef3c7' : '#fef2f2',
+                  border: `1px solid ${wifiData.statut === 'oui' ? '#86efac' : wifiData.statut === 'en_cours' ? '#fcd34d' : '#fca5a5'}`,
+                  borderRadius: '6px',
+                  pageBreakInside: 'avoid'
+                }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontWeight: '600', fontSize: '9pt', color: '#4a5568' }}>Statut : </span>
+                    <span style={{ fontSize: '9pt', color: '#2d3748', fontWeight: '600' }}>
+                      {wifiData.statut === 'oui' ? '✅ WiFi disponible et fonctionnel' : 
+                       wifiData.statut === 'en_cours' ? '⏳ En cours d\'installation' : 
+                       '❌ Pas de WiFi disponible'}
+                    </span>
+                  </div>
+
+                  {Object.keys(wifiData.details).length > 0 && (
+                    <div style={{ marginTop: '12px' }}>
+                      {Object.entries(wifiData.details).map(([key, value], idx) => (
+                        <div key={idx} style={{ marginBottom: '6px', fontSize: '9pt', color: '#4a5568' }}>
+                          <span style={{ fontWeight: '600' }}>{formatFieldName(key.replace('wifi_', ''))}:</span>{' '}
+                          <span style={{ color: '#2d3748' }}>{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {wifiData.photos.length > 0 && (
+                    <div style={{ marginTop: '8px' }}>
+                      <PhotosDisplay photos={wifiData.photos} sectionTitle="WiFi" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* PARTIE 3 : PARKING */}
+            {parkingData && (
+              <div>
+                <h4 style={{
+                  margin: '0 0 12px 0',
+                  fontSize: '11pt',
+                  fontWeight: '700',
+                  color: '#1e40af',
+                  borderBottom: '2px solid #dbeafe',
+                  paddingBottom: '6px'
+                }}>
+                  🅿️ Parking
+                </h4>
+                <div style={{
+                  padding: '12px',
+                  backgroundColor: '#fefce8',
+                  border: '1px solid #fde047',
+                  borderRadius: '6px',
+                  pageBreakInside: 'avoid'
+                }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontWeight: '600', fontSize: '9pt', color: '#4a5568' }}>Type : </span>
+                    <span style={{ fontSize: '9pt', color: '#2d3748', fontWeight: '600' }}>
+                      {parkingData.type === 'rue' ? 'Parking gratuit dans la rue' : 
+                       parkingData.type === 'sur_place' ? 'Parking gratuit sur place' : 
+                       'Stationnement payant à l\'extérieur'}
+                    </span>
+                  </div>
+
+                  {Object.keys(parkingData.details).length > 0 && (
+                    <div style={{ marginTop: '12px' }}>
+                      {Object.entries(parkingData.details).map(([key, value], idx) => {
+                        // CAS SPÉCIAL : Types parking sur place (array)
+                        if (key === 'parking_sur_place_types' && Array.isArray(value)) {
+                          return (
+                            <div key={idx} style={{ marginBottom: '6px', fontSize: '9pt', color: '#4a5568' }}>
+                              <span style={{ fontWeight: '600' }}>Types disponibles :</span>{' '}
+                              <span style={{ color: '#2d3748' }}>{value.join(', ')}</span>
+                            </div>
+                          )
+                        }
+                        
+                        return (
+                          <div key={idx} style={{ marginBottom: '6px', fontSize: '9pt', color: '#4a5568' }}>
+                            <span style={{ fontWeight: '600' }}>{formatFieldName(key.replace('parking_', ''))}:</span>{' '}
+                            <span style={{ color: '#2d3748' }}>{value}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {parkingData.photos.length > 0 && (
+                    <div style={{ marginTop: '8px' }}>
+                      <PhotosDisplay photos={parkingData.photos} sectionTitle="Parking" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Message si aucune donnée */}
+            {equipementsData.length === 0 && !wifiData && !parkingData && (
+              <div style={{ fontSize: '9pt', color: '#6b7280', fontStyle: 'italic' }}>
+                Aucun équipement configuré
+              </div>
+            )}
           </div>
         )
       })()
-    ) : (
+      ) : (
       /* RENDU NORMAL pour les autres sections */
       section.fields.map((field, fieldIndex) => (
         <div key={field.key} style={{

@@ -8,7 +8,7 @@ import Button from '../components/Button'
 import PDFUpload from '../components/PDFUpload'
 import MiniDashboard from '../components/MiniDashboard'
 import { prepareForN8nWebhook } from '../lib/PdfFormatter'
-import { CheckCircle, PenTool, Send, Bot, Copy, AlertCircle } from 'lucide-react'
+import { CheckCircle, PenTool, Send, Bot, Copy, AlertCircle, Sparkles, Loader2 } from 'lucide-react'
 
 export default function FicheFinalisation() {
   const navigate = useNavigate()
@@ -29,34 +29,6 @@ export default function FicheFinalisation() {
     finaliserFiche
   } = useForm()
 
-  const quickPrompts = [
-    { 
-      label: "Créer une annonce attractive", 
-      prompt: "Crée une annonce attractive pour ce logement basée sur l'inspection réalisée",
-      icon: "✨" 
-    },
-    { 
-      label: "Version courte Airbnb", 
-      prompt: "Crée une annonce courte et percutante pour Airbnb, mettant en avant les points forts",
-      icon: "🏠" 
-    },
-    { 
-      label: "Mettre en avant les équipements", 
-      prompt: "Réécris l'annonce en mettant l'accent sur les équipements et commodités disponibles",
-      icon: "⚡" 
-    },
-    { 
-      label: "Plus professionnelle", 
-      prompt: "Transforme cette description en version plus professionnelle pour agence immobilière",
-      icon: "💼" 
-    },
-    { 
-      label: "Ajouter des détails pratiques", 
-      prompt: "Enrichis l'annonce avec des détails pratiques sur l'accès, le quartier et les transports",
-      icon: "📍" 
-    }
-  ]
-
   useEffect(() => {
     if (!annonceSessionIdRef.current && formData) {
       const ficheId = formData.id || formData.nom || 'nouvelle_fiche'
@@ -68,7 +40,7 @@ export default function FicheFinalisation() {
   const sendMessage = async (message) => {
     if (!message.trim()) return
     
-    const userMessage = { type: 'user', content: message, timestamp: Date.now() }
+    const userMessage = { role: 'user', content: message }
     setChatMessages(prev => [...prev, userMessage])
     setCurrentInput('')
   
@@ -78,7 +50,7 @@ export default function FicheFinalisation() {
       const ficheDataForAI = prepareForN8nWebhook(formData)
 
       const requestBody = {
-        chatInput: message,
+        message: message,
         sessionId: annonceSessionIdRef.current,
         ficheData: ficheDataForAI
       }
@@ -102,11 +74,20 @@ export default function FicheFinalisation() {
         throw new Error(`HTTP ${response.status}`)
       }
       
-      const data = await response.json()
+      const responseText = await response.text()
+      console.log('🔍 Réponse Annonce webhook:', responseText)
+
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Le webhook n\'a renvoyé aucune donnée')
+      }
+
+      const responseData = JSON.parse(responseText)
+      const data = Array.isArray(responseData) ? responseData[0] : responseData
+      const content = data.data?.output || data.output || 'Réponse indisponible.'
+
       const botMessage = { 
-        type: 'bot', 
-        content: data.output || 'Réponse indisponible.', 
-        timestamp: Date.now() 
+        role: 'assistant', 
+        content: content
       }
       
       setChatMessages(prev => [...prev, botMessage])
@@ -123,9 +104,8 @@ export default function FicheFinalisation() {
       }
       
       const errorMsg = { 
-        type: 'bot', 
-        content: errorMessage,
-        timestamp: Date.now() 
+        role: 'assistant', 
+        content: errorMessage
       }
       setChatMessages(prev => [...prev, errorMsg])
     } finally {
@@ -133,16 +113,9 @@ export default function FicheFinalisation() {
     }
   }
 
-  const handleQuickPrompt = async (prompt) => {
-    setCurrentInput(prompt)
+  const handleGenererAnnonce = async () => {
+    const prompt = "Crée une annonce attractive pour ce logement basée sur l'inspection réalisée"
     await sendMessage(prompt)
-  }
-  
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage(currentInput)
-    }
   }
 
   const handleCopyMessage = (content, index) => {
@@ -242,82 +215,108 @@ export default function FicheFinalisation() {
                   </p>
                 </div>                
 
-              {/* Boutons de prompts rapides */}
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-3">Suggestions rapides :</p>
-                <div className="flex flex-wrap gap-2">
-                  {quickPrompts.map((prompt, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleQuickPrompt(prompt.prompt)}
-                      disabled={annonceLoading}
-                      className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 border"
-                    >
-                      <span>{prompt.icon}</span>
-                      <span>{prompt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Zone de chat */}
               <div className="space-y-4">
                 {chatMessages.length > 0 && (
                   <div className="max-h-80 overflow-y-auto space-y-3 bg-gray-50 rounded-lg p-4">
-                    {chatMessages.map((msg, index) => (
-                      <div key={index} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] rounded-lg ${
-                          msg.type === 'user' 
-                            ? 'bg-purple-600 text-white p-3' 
-                            : 'bg-white border shadow-sm text-gray-900'
-                        }`}>
-                          {msg.type === 'bot' && (
-                            <div className="flex items-center justify-between mb-2 pb-2 border-b">
-                              <div className="flex items-center gap-2">
-                                <Bot className="w-4 h-4 text-purple-600" />
-                                <span className="text-xs font-medium text-gray-500">Assistant</span>
-                              </div>
-                              <button
-                                onClick={() => handleCopyMessage(msg.content, index)}
-                                className="p-1 hover:bg-gray-100 rounded transition-colors"
-                                title="Copier"
-                              >
-                                {copiedIndex === index ? (
-                                  <span className="text-xs text-green-600">✓</span>
-                                ) : (
-                                  <Copy className="w-3 h-3 text-gray-400" />
-                                )}
-                              </button>
-                            </div>
-                          )}
-                          <div className="text-sm whitespace-pre-wrap p-3">{msg.content}</div>
-                        </div>
-                      </div>
-                    ))}
                     
-                    {annonceLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-white border shadow-sm rounded-lg p-3 max-w-[80%]">
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Bot className="w-4 h-4 text-purple-600 animate-pulse" />
-                            L'IA génère votre annonce...
+                {/* Conversation */}
+                {chatMessages.length > 0 && (
+                  <div className="space-y-4 mb-4">
+                    {/* Historique des messages */}
+                    <div className="bg-white rounded-lg border max-h-96 overflow-y-auto p-4 space-y-3">
+                      {chatMessages.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[80%] rounded-lg p-3 ${
+                              msg.role === 'user'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-gray-100 text-gray-900'
+                            }`}
+                          >
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                              {msg.content}
+                            </p>
                           </div>
                         </div>
+                      ))}
+                    </div>
+
+                    {/* Bouton copier le dernier message (si c'est l'assistant) */}
+                    {chatMessages[chatMessages.length - 1]?.role === 'assistant' && (
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => handleCopyMessage(chatMessages[chatMessages.length - 1].content, chatMessages.length - 1)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white hover:bg-gray-50 border rounded-lg transition-colors"
+                        >
+                          {copiedIndex === chatMessages.length - 1 ? (
+                            <>
+                              <Check className="w-4 h-4 text-green-600" />
+                              <span className="text-green-600">Copié !</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4" />
+                              <span>Copier le dernier message</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     )}
                   </div>
                 )}
+                    
+                  {/* Loading state */}
+                  {annonceLoading && (
+                    <div className="flex items-center justify-center gap-3 py-8 mb-4">
+                      <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
+                      <div className="text-center">
+                        <p className="font-medium text-gray-900">
+                          {chatMessages.length === 0 ? 'Génération en cours...' : 'Envoi en cours...'}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {chatMessages.length === 0 
+                            ? 'L\'IA génère votre annonce...'
+                            : 'Envoi de votre message à l\'assistant'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  </div>
+                )}
+
+                {/* Bouton générer (seulement si pas encore de messages) */}
+                {chatMessages.length === 0 && !annonceLoading && (
+                  <button
+                    onClick={handleGenererAnnonce}
+                    disabled={annonceLoading}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Générer l'annonce
+                  </button>
+                )}
 
                 {/* Zone de saisie */}
+                {chatMessages.length > 0 && (
                 <div className="flex gap-2">
-                  <input
-                    type="text"
+                  <textarea
                     value={currentInput}
                     onChange={(e) => setCurrentInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Demandez une modification ou posez une question..."
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey && !annonceLoading) {
+                        e.preventDefault()
+                        sendMessage(currentInput)
+                      }
+                    }}
+                    placeholder="Demandez une modification ou posez une question... (Maj+Entrée pour aller à la ligne)"
                     disabled={annonceLoading}
+                    rows={3}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                   />
                   <button
                     onClick={() => sendMessage(currentInput)}
@@ -331,8 +330,23 @@ export default function FicheFinalisation() {
                     <Send className="w-4 h-4" />
                   </button>
                 </div>
+              )}
+              {/* Bouton recommencer */}
+              {chatMessages.length > 0 && (
+                <button
+                  onClick={() => {
+                    setChatMessages([])
+                    setCurrentInput('')
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg font-medium transition-all"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Recommencer une nouvelle génération
+                </button>
+              )}
               </div>
             </div>
+            
 
             {/* Messages sauvegarde */}
             {saveStatus.saving && (
