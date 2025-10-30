@@ -18,6 +18,15 @@ export default function FicheFinalisation() {
   const [annonceLoading, setAnnonceLoading] = useState(false)
   const [copiedIndex, setCopiedIndex] = useState(null)
   const annonceSessionIdRef = useRef(null)
+  const messagesEndRef = useRef(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [chatMessages, annonceLoading])
   
   const { 
     back, 
@@ -243,6 +252,7 @@ export default function FicheFinalisation() {
                           </div>
                         </div>
                       ))}
+                      <div ref={messagesEndRef} />
                     </div>
 
                     {/* Bouton copier le dernier message (si c'est l'assistant) */}

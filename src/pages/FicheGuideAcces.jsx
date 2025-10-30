@@ -27,6 +27,15 @@ export default function FicheGuideAcces() {
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
   const sessionIdRef = useRef(null)
+  const messagesEndRef = useRef(null) 
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, loading])
 
   // Générer sessionId au montage
   useEffect(() => {
@@ -333,6 +342,7 @@ export default function FicheGuideAcces() {
                           </div>
                         </div>
                       ))}
+                      <div ref={messagesEndRef} />
                     </div>
 
                     {/* Bouton copier le dernier message (si c'est l'assistant) */}
