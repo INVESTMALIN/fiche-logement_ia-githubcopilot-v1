@@ -1,5 +1,5 @@
 // src/components/FormContext.jsx
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
 import { useAuth } from './AuthContext'
@@ -1176,6 +1176,10 @@ export function FormProvider({ children }) {
 
   const totalSteps = sections.length
 
+  // Flag pour distinguer changements utilisateur vs serveur
+  const isUserChangeRef = useRef(false)
+  const lastSaveRef = useRef(0)
+
   const capitalize = (str) => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -1464,6 +1468,8 @@ export function FormProvider({ children }) {
   const getCurrentSection = () => sections[currentStep]
 
   const updateSection = (sectionName, newData) => {
+    isUserChangeRef.current = true
+
     setFormData(prev => {
       const updatedData = {
         ...prev,
@@ -1485,6 +1491,8 @@ export function FormProvider({ children }) {
   }
 
   const updateField = (fieldPath, value) => {
+    isUserChangeRef.current = true
+
     setFormData(prev => {
       const newData = { ...prev }
       const keys = fieldPath.split('.')
@@ -1587,6 +1595,31 @@ export function FormProvider({ children }) {
       return { success: false, error: errorMessage };
     }
   };
+
+  // Auto-save automatique avec debounce
+  useEffect(() => {
+    // Ne rien faire si pas d'utilisateur
+    if (!user?.id) return
+    
+    // Ne rien faire si c'est une mise à jour interne (pas utilisateur)
+    if (!isUserChangeRef.current) return
+    
+    // Ne rien faire si déjà en train de sauvegarder
+    if (saveStatus.saving) return
+    
+    // Anti-spam : minimum 1.5s entre deux sauvegardes
+    const now = Date.now()
+    if (now - lastSaveRef.current < 1500) return
+    
+    // Debounce de 5 secondes
+    const timeout = setTimeout(async () => {
+      isUserChangeRef.current = false // Reset le flag avant de sauvegarder
+      lastSaveRef.current = Date.now()
+      await handleSave()
+    }, 5000)
+    
+    return () => clearTimeout(timeout)
+  }, [formData, user?.id, saveStatus.saving, handleSave])
 
   const updateStatut = async (newStatut) => {
     if (!formData.id) {
