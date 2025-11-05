@@ -7,6 +7,68 @@ import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 import { Sparkles, Copy, Check, AlertCircle, Loader2 } from 'lucide-react'
 
+// Helper pour préparer le contexte pour le webhook Guide d'accès
+const prepareGuideAccesContext = (formData) => {
+  const context = {}
+
+  // Adresse
+  const proprietaire = formData.section_proprietaire || {}
+  if (proprietaire.adresse) {
+    const adresseData = {}
+    if (proprietaire.adresse.rue) adresseData.rue = proprietaire.adresse.rue
+    if (proprietaire.adresse.complement) adresseData.complement = proprietaire.adresse.complement
+    if (proprietaire.adresse.ville) adresseData.ville = proprietaire.adresse.ville
+    if (proprietaire.adresse.codePostal) adresseData.codePostal = proprietaire.adresse.codePostal
+    if (Object.keys(adresseData).length > 0) context.adresse = adresseData
+  }
+
+  // Clefs
+  const clefs = formData.section_clefs || {}
+  const clefsData = {}
+
+  if (clefs.emplacementBoite) clefsData.emplacement_boite = clefs.emplacementBoite
+  if (clefs.interphone !== null && clefs.interphone !== undefined) clefsData.interphone = clefs.interphone
+  if (clefs.interphoneDetails) clefsData.interphone_instructions = clefs.interphoneDetails
+  if (clefs.tempoGache !== null && clefs.tempoGache !== undefined) clefsData.tempo_gache = clefs.tempoGache
+  if (clefs.tempoGacheDetails) clefsData.tempo_gache_instructions = clefs.tempoGacheDetails
+  if (clefs.digicode !== null && clefs.digicode !== undefined) clefsData.digicode = clefs.digicode
+  if (clefs.digicodeDetails) clefsData.digicode_instructions = clefs.digicodeDetails
+  if (clefs.clefs?.precision) clefsData.precisions = clefs.clefs.precision
+
+  if (Object.keys(clefsData).length > 0) context.clefs = clefsData
+
+  // Équipements
+  const eq = formData.section_equipements || {}
+  const equipData = {}
+
+  if (eq.parking_type) {
+    equipData.parking_type = eq.parking_type
+    if (eq.parking_type === 'rue' && eq.parking_rue_details)
+      equipData.parking_details = eq.parking_rue_details
+    if (eq.parking_type === 'sur_place' && eq.parking_sur_place_details)
+      equipData.parking_details = eq.parking_sur_place_details
+    if (eq.parking_type === 'payant' && eq.parking_payant_details)
+      equipData.parking_details = eq.parking_payant_details
+  }
+
+  if (eq.wifi_statut) equipData.wifi_statut = eq.wifi_statut
+  if (eq.wifi_nom_reseau) equipData.wifi_nom_reseau = eq.wifi_nom_reseau
+  if (eq.wifi_mot_de_passe) equipData.wifi_mot_de_passe = eq.wifi_mot_de_passe
+  if (eq.wifi_details) equipData.wifi_details = eq.wifi_details
+
+  if (Object.keys(equipData).length > 0) context.equipements = equipData
+
+  // Logement
+  const logement = formData.section_logement?.appartement || {}
+  const logementData = {}
+
+  if (logement.etage) logementData.etage = logement.etage
+  if (logement.numero_porte) logementData.numero_porte = logement.numero_porte
+  if (Object.keys(logementData).length > 0) context.logement = logementData
+
+  return Object.keys(context).length > 0 ? context : null
+}
+
 export default function FicheGuideAcces() {
   const { 
     next, 
@@ -78,17 +140,28 @@ export default function FicheGuideAcces() {
       // ÉTAPE 2 : Envoi vers webhook n8n
       console.log('🤖 Génération du guide d\'accès...')
 
+      // Préparer le contexte
+      const context = prepareGuideAccesContext(formData)
+
+      // Construire le payload
+      const payload = {
+        sessionId: sessionIdRef.current,
+        files: [{
+          mimeType: 'audio/mpeg',
+          url: audioUrl
+        }],
+        numero_bien: formData.section_logement?.numero_bien || null
+      }
+
+      // Ajouter le contexte s'il existe
+      if (context) {
+        payload.context = context
+      }
+
       const guideResponse = await fetch('https://hub.cardin.cloud/webhook/5ebcffdd-fee8-4525-85f1-33f57ce4d28d/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: sessionIdRef.current,
-          files: [{
-            mimeType: 'audio/mpeg',
-            url: audioUrl,
-            numero_bien: formData.section_logement?.numero_bien || null
-          }]
-        })
+        body: JSON.stringify(payload)
       })
 
       if (!guideResponse.ok) {
