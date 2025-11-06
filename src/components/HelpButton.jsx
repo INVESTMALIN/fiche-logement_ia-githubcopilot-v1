@@ -197,7 +197,7 @@ export default function HelpButton() {
                   Les vidéos sont disponibles dans certaines sections uniquement :
                 </p>
                 <ul className="text-gray-600 text-sm space-y-1">
-                  <li>• <strong>Guide d'accès</strong> : pour expliquer l'accès au logement</li>
+                  <li>• <strong>Guide d'accès</strong> : pour expliquer l'accès au logement. La vidéo sert également à la création du Guide d'accès</li>
                   <li>• <strong>Équipements</strong> : pour montrer l'utilisation d'appareils complexes</li>
                   <li>• <strong>Cuisine</strong> : pour les modes d'emploi des électroménagers</li>
                   <li>• <strong>Équipements spé.</strong> : pour montrer les équipements extérieurs</li>
@@ -211,11 +211,11 @@ export default function HelpButton() {
                   Finalisation de la fiche
                 </h4>
                 <p className="text-gray-600 text-sm mb-2">
-                  Sur la dernière section (Sécurité), le bouton <strong>"Finaliser la fiche"</strong> :
+                  Sur la dernière section (Finalisation), le bouton <strong>"Finaliser la fiche"</strong> :
                 </p>
                 <ul className="text-gray-600 text-sm space-y-1">
                   <li>• <strong>Synchronise</strong> toutes vos photos et vidéos sur Google Drive</li>
-                  <li>• <strong>Change le statut</strong> en "Complété"</li>
+                  <li>• <strong>Change le statut</strong> en "Complété", mais la fiche reste consutable et modifiable</li>
                   <li>• <strong>Action définitive</strong> ⚠️  : une seule finalisation possible par fiche</li>
                 </ul>
               </div>
