@@ -216,13 +216,23 @@ export default function FicheFinalisation() {
                 </div>
               </div>
 
-                {/* ⚠️ Note de développement */}
-                <div className="mb-6 flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-yellow-800 leading-snug">
-                    Cet assistant est encore en cours d’amélioration. Certaines fonctions peuvent être limitées ou en phase de test.
+              {/* 🚀 Badge Beta + New */}
+              <div className="mb-6 flex items-start gap-3 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
+                    <Sparkles className="w-3 h-3" />
+                    BETA
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-purple-900 leading-relaxed">
+                    Cette fonctionnalité beta est disponible et s'améliore continuellement grâce à vos retours. N'hésitez pas à l'essayer !
+                    <span className="ml-2 px-2.5 py-0.5 bg-green-500 text-white text-xs font-semibold rounded-full animate-pulse">
+                      NEW
+                    </span>
                   </p>
-                </div>                
+                </div>
+              </div>        
 
               {/* Zone de chat */}
               <div className="space-y-4">
