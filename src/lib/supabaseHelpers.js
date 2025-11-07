@@ -353,8 +353,8 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_seche_linge_video: formData.section_equipements?.seche_linge_video || [],
 
     // 🆕 PARKING (ajouts aux champs existants)
-    equipements_parking_photos: formData.section_equipements?.parking_photo || [],
-    equipements_parking_videos: formData.section_equipements?.parking_video || [],
+    equipements_parking_photos: formData.section_equipements?.parking_photos || [],
+    equipements_parking_videos: formData.section_equipements?.parking_videos || [],
 
     // 🆕 PIANO
     equipements_piano_marque: formData.section_equipements?.piano_marque || null,
@@ -1459,8 +1459,8 @@ export const mapSupabaseToFormData = (supabaseData) => {
       seche_linge_video: supabaseData.equipements_seche_linge_video || [],
       
       // 🆕 PARKING
-      parking_photo: supabaseData.equipements_parking_photos || [],
-      parking_video: supabaseData.equipements_parking_videos || [],
+      parking_photos: supabaseData.equipements_parking_photos || [],
+      parking_videos: supabaseData.equipements_parking_videos || [],
       
       // 🆕 PIANO
       piano_marque: supabaseData.equipements_piano_marque || "",

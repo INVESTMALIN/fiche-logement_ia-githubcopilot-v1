@@ -84,6 +84,65 @@ const PDFMenageTemplate = ({ formData }) => {
     return []
   }
 
+// 🛏️ Helper pour agréger tous les types de lits du logement
+const aggregateBeds = (formData) => {
+  const chambres = formData.section_chambres || {}
+  const salon = formData.section_salon_sam || {}
+
+  const bedsCount = {}
+  
+  // Types de lits à compter (SANS les canapés-lits, on les traite séparément)
+  const bedTypes = [
+    { key: 'lit_simple_90_190', label: 'Lit simple (90×190)' },
+    { key: 'lit_double_140_190', label: 'Lit double (140×190)' },
+    { key: 'lit_queen_160_200', label: 'Queen size (160×200)' },
+    { key: 'lit_king_180_200', label: 'King size (180×200)' },
+    { key: 'lits_superposes_90_190', label: 'Lits superposés' },
+    { key: 'lit_gigogne', label: 'Lit gigogne' }
+  ]
+  
+  // Parcourir les 6 chambres possibles
+  for (let i = 1; i <= 6; i++) {
+    const chambre = chambres[`chambre_${i}`]
+    if (!chambre) continue
+    
+    // Lits normaux
+    bedTypes.forEach(bedType => {
+      const count = chambre[bedType.key] || 0
+      if (count > 0) {
+        if (!bedsCount[bedType.label]) {
+          bedsCount[bedType.label] = 0
+        }
+        bedsCount[bedType.label] += count
+      }
+    })
+    
+    // 🛋️ Canapés-lits CHAMBRES (séparés simple/double)
+    const canapeLitSimple = chambre.canape_lit_simple || 0
+    const canapeLitDouble = chambre.canape_lit_double || 0
+    
+    if (canapeLitSimple > 0) {
+      const label = 'Canapé-lit simple (chambre)'
+      if (!bedsCount[label]) bedsCount[label] = 0
+      bedsCount[label] += canapeLitSimple
+    }
+    
+    if (canapeLitDouble > 0) {
+      const label = 'Canapé-lit double (chambre)'
+      if (!bedsCount[label]) bedsCount[label] = 0
+      bedsCount[label] += canapeLitDouble
+    }
+  }
+  
+  // 🛋️ Canapé-lit SALON
+  if (salon.equipements_canape_lit === true) {
+    const label = 'Canapé-lit (salon)'
+    bedsCount[label] = 1
+  }  
+
+  return bedsCount
+}
+
   // 🔍 FONCTION PRINCIPALE : Détection intelligente de TOUTES les photos
   const extractAllPhotos = (sectionData, sectionKey) => {
     const photos = []
@@ -487,6 +546,12 @@ const PhotosDisplayMenage = ({ photos, sectionTitle }) => {
   const generateMenageSections = () => {
     const sections = []
 
+    // 🛏️ Agrégation des lits pour injection dans section Logement
+    const bedsDetail = aggregateBeds(formData)
+    const bedsText = Object.entries(bedsDetail)
+      .map(([type, count]) => `${count}× ${type}`)
+      .join(', ')
+
     menageSectionsConfig.forEach(config => {
       const sectionData = formData[config.key]
       
@@ -498,6 +563,24 @@ const PhotosDisplayMenage = ({ photos, sectionTitle }) => {
       // Extraire les champs non-photos avec filtrage spécial équipements
       const fields = []
       Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+        // 🛏️ INJECTION SPÉCIALE : Détail des lits dans section Logement
+        if (config.key === 'section_logement' && fieldKey === 'nombre_lits' && bedsText) {
+          const formattedValue = formatValue(fieldValue, fieldKey)
+          if (formattedValue !== null) {
+            fields.push({
+              key: fieldKey,
+              label: formatFieldName(fieldKey),
+              value: formattedValue
+            })
+            fields.push({
+              key: 'detail_lits',
+              label: 'Détail des lits',
+              value: bedsText
+            })
+          }
+          return // Skip traitement normal
+        }
+
         // 🎯 FILTRAGE SPÉCIAL ÉQUIPEMENTS pour ménage
         if (config.key === 'section_equipements') {
           const menageEquipementsFields = [
