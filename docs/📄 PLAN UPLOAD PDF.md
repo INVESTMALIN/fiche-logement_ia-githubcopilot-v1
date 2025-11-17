@@ -1,273 +1,375 @@
-# 📄 PLAN UPLOAD PDF - Architecture Complète Implémentée
-*Mise à jour : 18 juillet 2025*
+# 📄 PLAN UPLOAD PDF - Architecture Complète
+*Mise à jour : 17 novembre 2025*
 
 ---
 
-## 🎯 **OBJECTIF ATTEINT**
+## 🎯 **VUE D'ENSEMBLE**
 
-Intégrer la génération et l'upload automatique des **2 PDF** (logement + ménage) lors de la finalisation des fiches, avec intégration transparente dans l'automatisation Make existante.
-
-### ✅ **Phase : Génération PDF**
-- **✅ PDF Logement + Ménage** générés automatiquement sur FicheSecurite
-- **✅ Upload Storage** automatique lors de finalisation de fiche
-- **✅ URLs disponibles** dans webhook
-- **✅ Téléchargement HTTP** validé dans Make
+Système complet de génération et synchronisation PDF pour l'application Fiche Logement, comprenant :
+- **2 PDF Fiches** : Logement (complet) + Ménage (filtré)
+- **2 PDF Assistants IA** : Guide d'accès + Annonce
+- **Synchronisation automatique** vers Google Drive et Monday.com via Make
 
 ---
 
-## 🏗️ **ARCHITECTURE FINALE IMPLÉMENTÉE**
+## 🏗️ **ARCHITECTURE GÉNÉRALE**
 
-### **Workflow Complet : Frontend → Supabase → Make**
+### **Workflow Frontend → Supabase → Make**
 
 ```mermaid
 graph TD
-    A[Utilisateur clique "Générer PDF automatique"] --> B1[Générer PDF Logement via iframe]
-    A --> B2[Générer PDF Ménage via iframe]
-    B1 --> C1[Upload PDF Logement vers Storage]
-    B2 --> C2[Upload PDF Ménage vers Storage]
-    C1 --> D[URLs PDF disponibles]
-    C2 --> D
-    D --> E[Bouton 'Télécharger' → PDF Logement]
-    D --> F[Make récupère les 2 PDF via HTTP GET]
-    F --> G[Organisation Drive + Monday]
+    A[Utilisateur génère PDF] --> B[Génération + Upload Storage]
+    B --> C[FormContext.triggerWebhook]
+    C --> D[UPDATE Supabase colonnes + timestamps]
+    D --> E[Trigger SQL détecte changement]
+    E --> F[Webhook Make POST]
+    F --> G[Make télécharge PDF]
+    G --> H[Upload Drive + Monday]
 ```
 
 ---
 
-## 📊 **STRUCTURE DONNÉES FINALE**
+## 📊 **1. PDF FICHES LOGEMENT & MÉNAGE**
 
-### **Supabase Storage**
+### **Composants**
+
+#### **PDFUpload.jsx**
+- Génère 2 PDF simultanément via iframes cachés
+- Routes : `/print-pdf` (logement) + `/print-pdf-menage` (ménage)
+- Upload vers bucket `fiche-pdfs`
+- Appelle `triggerPdfWebhook(urlLogement, urlMenage)`
+
+#### **Templates**
+- **PDFTemplate.jsx** : Fiche complète (23 sections)
+- **PDFMenageTemplate.jsx** : Fiche filtrée (14 sections ménage)
+
+#### **Génération**
+```javascript
+// html2pdf.js avec pagination intelligente
+const options = {
+  margin: [15, 15, 15, 15],
+  image: { type: 'jpeg', quality: 0.95 },
+  html2canvas: { scale: 2, useCORS: true },
+  jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+  pagebreak: { mode: ['avoid-all', 'css'], avoid: ['.section', '.header'] }
+}
+```
+
+### **Storage Supabase**
+
 ```
 📁 Bucket "fiche-pdfs" (PUBLIC)
-├── 📄 fiche-logement-5566.pdf    ← PDF Logement complet
-├── 📄 fiche-menage-5566.pdf      ← PDF Ménage filtré
-├── 📄 fiche-logement-1280.pdf
-├── 📄 fiche-menage-1280.pdf
+├── 📄 fiche-logement-7755.pdf
+├── 📄 fiche-menage-7755.pdf
 └── ...
 
--- Pattern nommage final :
--- PDF Logement : fiche-logement-{numero_bien}.pdf
--- PDF Ménage : fiche-menage-{numero_bien}.pdf
--- URLs automatiques : https://xyz.supabase.co/storage/v1/object/public/fiche-pdfs//filename.pdf
+Pattern nommage : fiche-{type}-{numero_bien}.pdf
 ```
 
-### **Base de Données (Future)**
+### **Base de données**
+
 ```sql
--- Colonnes à ajoutées à Supabase
-ALTER TABLE fiches ADD COLUMN pdf_logement_url TEXT;
-ALTER TABLE fiches ADD COLUMN pdf_menage_url TEXT;
+-- Colonnes PDF Fiches
+pdf_logement_url TEXT
+pdf_menage_url TEXT
+pdf_last_generated_at TIMESTAMP WITH TIME ZONE
+```
+
+### **Trigger SQL**
+
+```sql
+-- Fonction : notify_pdf_update()
+-- Trigger : fiche_pdf_update_webhook
+-- Condition : pdf_last_generated_at change
+
+CREATE OR REPLACE FUNCTION public.notify_pdf_update()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+  IF OLD.pdf_last_generated_at IS DISTINCT FROM NEW.pdf_last_generated_at THEN
+    PERFORM net.http_post(
+      url := 'https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q',
+      body := jsonb_build_object(
+        'id', NEW.id,
+        'nom', NEW.nom,
+        'statut', NEW.statut,
+        'updated_at', NEW.updated_at,
+        'proprietaire', jsonb_build_object(...),
+        'logement', jsonb_build_object(...),
+        'pdfs', jsonb_build_object(
+          'logement_url', NEW.pdf_logement_url,
+          'menage_url', NEW.pdf_menage_url
+        ),
+        'trigger_type', 'pdf_update'
+      ),
+      headers := '{"Content-Type": "application/json"}'::jsonb
+    );
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+```
+
+### **FormContext.jsx**
+
+```javascript
+const triggerPdfWebhook = async (pdfLogementUrl, pdfMenageUrl) => {
+  // UPDATE direct Supabase
+  const { data, error } = await supabase
+    .from('fiches')
+    .update({
+      pdf_logement_url: pdfLogementUrl,
+      pdf_menage_url: pdfMenageUrl,
+      pdf_last_generated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', formData.id)
+    .select()
+  
+  // Trigger SQL se déclenche automatiquement
+  return { success: true, data: data[0] }
+}
 ```
 
 ---
 
-## 🔧 **IMPLÉMENTATION TECHNIQUE RÉALISÉE**
+## 🤖 **2. PDF ASSISTANTS IA (GUIDE D'ACCÈS + ANNONCE)**
 
-### **✅ 1. Composants Créés**
+### **Composants**
 
-#### **PDFMenageTemplate.jsx**
-- **Basé sur** : PDFTemplate.jsx (même styles et structure)
-- **Sections filtrées** : 14 sections spécifiques au ménage
-- **Filtrage intelligent** : Section équipements → seulement poubelle + parking
-- **En-tête spécialisé** : "🧹 Fiche Ménage • {nom} • Letahost"
+#### **generateAssistantPDF.js**
+- **generateGuideAccesPDF()** : Génère PDF guide d'accès
+- **generateAnnoncePDF()** : Génère PDF annonce
+- Upload vers buckets dédiés avec `upsert: true`
+- Pattern nommage : `guide_acces_{ficheId}.pdf` / `annonce_{ficheId}.pdf`
 
-#### **PrintPDFMenage.jsx**
-- **Route dédiée** : `/print-pdf-menage?fiche={id}`
-- **Même logique** que PrintPDF.jsx
-- **Import** : PDFMenageTemplate au lieu de PDFTemplate
-
-### **✅ 2. Génération Double PDF - VERSION FINALE HTML2PDF**
-
-#### **PDFUpload.jsx - Version finale html2pdf**
+#### **FicheGuideAcces.jsx**
 ```javascript
-const generateAndUploadPDF = async () => {
-  // 1. GÉNÉRATION PDF LOGEMENT
-  // - Iframe caché pointant vers /print-pdf?fiche={id}
-  // - Génération html2pdf avec pagination intelligente
-  // - Upload : fiche-logement-{numeroBien}.pdf
+const handleValidateGuide = async () => {
+  // Nettoyer contenu IA
+  const cleanedContent = message.content
+    .replace(/([^\s]):/g, '$1 :')
+    .replace(/\u00A0/g, ' ')
   
-  // 2. GÉNÉRATION PDF MÉNAGE  
-  // - Iframe caché pointant vers /print-pdf-menage?fiche={id}
-  // - Génération html2pdf avec pagination intelligente
-  // - Upload : fiche-menage-{numeroBien}.pdf
+  // Générer PDF
+  const pdfUrl = await generateGuideAccesPDF(cleanedContent, metadata, formData.id)
   
-  // 3. FINALISATION
-  // - setPdfUrl(finalUrl) APRÈS les 2 générations
-  // - Bouton "Télécharger" → PDF Logement
-  // - Les 2 PDF disponibles dans Storage pour Make
+  // Déclencher webhook
+  const result = await triggerAssistantPdfWebhook(pdfUrl, null)
 }
+```
 
-// FONCTION GÉNÉRATION OPTIMISÉE
-const generatePDFBlob = async (url) => {
-  // Configuration html2pdf optimale
-  const options = {
-    margin: [15, 15, 15, 15], // mm : top, right, bottom, left
-    filename: 'document.pdf',
-    image: { 
-      type: 'jpeg', 
-      quality: 0.95 // Qualité élevée
-    },
-    html2canvas: { 
-      scale: 2, // Résolution élevée
-      useCORS: true,
-      letterRendering: true,
-      logging: false,
-      backgroundColor: '#ffffff'
-    },
-    jsPDF: { 
-      unit: 'mm', 
-      format: 'a4', 
-      orientation: 'portrait',
-      compress: true
-    },
-    pagebreak: { 
-      mode: ['avoid-all', 'css'], // Respecte les CSS page-break
-      avoid: ['.section', '.header'] // Évite de couper ces éléments
-    }
+#### **FicheFinalisation.jsx**
+```javascript
+const handleValidateAnnonce = async () => {
+  // Nettoyer contenu IA
+  const cleanedContent = message.content
+    .replace(/([^\s]):/g, '$1 :')
+    .replace(/\u00A0/g, ' ')
+  
+  // Générer PDF
+  const pdfUrl = await generateAnnoncePDF(cleanedContent, metadata, formData.id)
+  
+  // Déclencher webhook
+  const result = await triggerAssistantPdfWebhook(null, pdfUrl)
+}
+```
+
+### **Storage Supabase**
+
+```
+📁 Bucket "guide-acces-pdfs" (PUBLIC)
+├── 📄 guide_acces_6ce4732b-1062-4f43-bc4d-e91aff9f32c9.pdf
+└── ...
+
+📁 Bucket "annonce-pdfs" (PUBLIC)
+├── 📄 annonce_6ce4732b-1062-4f43-bc4d-e91aff9f32c9.pdf
+└── ...
+```
+
+### **Base de données**
+
+```sql
+-- Colonnes PDF Assistants
+guide_acces_pdf_url TEXT
+guide_acces_last_generated_at TIMESTAMP WITH TIME ZONE
+annonce_pdf_url TEXT
+annonce_last_generated_at TIMESTAMP WITH TIME ZONE
+```
+
+### **Triggers SQL (2 triggers séparés)**
+
+#### **Trigger Guide d'accès**
+```sql
+-- Fonction : notify_guide_acces_pdf_update()
+-- Trigger : fiche_guide_acces_pdf_webhook
+-- Condition : guide_acces_last_generated_at change
+
+CREATE OR REPLACE FUNCTION public.notify_guide_acces_pdf_update()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+  IF OLD.guide_acces_last_generated_at IS DISTINCT FROM NEW.guide_acces_last_generated_at THEN
+    PERFORM net.http_post(
+      url := 'https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z',
+      body := jsonb_build_object(
+        'id', NEW.id,
+        'nom', NEW.nom,
+        'assistant_pdf', jsonb_build_object(
+          'url', NEW.guide_acces_pdf_url,
+          'type', 'guide_acces',
+          'last_generated_at', NEW.guide_acces_last_generated_at
+        ),
+        'trigger_type', 'assistant_pdf_update',
+        'pdf_type', 'guide_acces'
+      ),
+      headers := '{"Content-Type": "application/json"}'::jsonb
+    );
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+```
+
+#### **Trigger Annonce**
+```sql
+-- Fonction : notify_annonce_pdf_update()
+-- Trigger : fiche_annonce_pdf_webhook
+-- Condition : annonce_last_generated_at change
+
+CREATE OR REPLACE FUNCTION public.notify_annonce_pdf_update()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+  IF OLD.annonce_last_generated_at IS DISTINCT FROM NEW.annonce_last_generated_at THEN
+    PERFORM net.http_post(
+      url := 'https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z',
+      body := jsonb_build_object(
+        'id', NEW.id,
+        'nom', NEW.nom,
+        'assistant_pdf', jsonb_build_object(
+          'url', NEW.annonce_pdf_url,
+          'type', 'annonce',
+          'last_generated_at', NEW.annonce_last_generated_at
+        ),
+        'trigger_type', 'assistant_pdf_update',
+        'pdf_type', 'annonce'
+      ),
+      headers := '{"Content-Type": "application/json"}'::jsonb
+    );
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+```
+
+### **FormContext.jsx**
+
+```javascript
+const triggerAssistantPdfWebhook = async (guideAccesUrl, annonceUrl) => {
+  const updateData = {}
+  
+  if (guideAccesUrl) {
+    updateData.guide_acces_pdf_url = guideAccesUrl
+    updateData.guide_acces_last_generated_at = new Date().toISOString()
   }
   
-  // Génération avec html2pdf (pagination intelligente)
-  return html2pdf().from(element).set(options).outputPdf('blob')
+  if (annonceUrl) {
+    updateData.annonce_pdf_url = annonceUrl
+    updateData.annonce_last_generated_at = new Date().toISOString()
+  }
+  
+  updateData.updated_at = new Date().toISOString()
+  
+  const { data, error } = await supabase
+    .from('fiches')
+    .update(updateData)
+    .eq('id', formData.id)
+    .select()
+  
+  // Triggers SQL se déclenchent automatiquement
+  return { success: true, data: data[0] }
 }
 ```
 
-### **✅ 3. Routes et Navigation**
+---
 
-#### **App.jsx**
+## 🔧 **MAPPING SUPABASEHELPERS.JS**
+
+### **mapFormDataToSupabase**
 ```javascript
-// Routes ajoutées
-<Route path="/print-pdf" element={<PrintPDF />} />
-<Route path="/print-pdf-menage" element={<PrintPDFMenage />} />
+// PDF Fiches
+pdf_logement_url: formData.pdf_logement_url || null,
+pdf_menage_url: formData.pdf_menage_url || null,
+// pdf_last_generated_at: NE PAS MAPPER (géré par triggerPdfWebhook)
+
+// PDF Assistants
+guide_acces_pdf_url: formData.guide_acces_pdf_url || null,
+annonce_pdf_url: formData.annonce_pdf_url || null,
+// guide_acces_last_generated_at: NE PAS MAPPER (géré par triggerAssistantPdfWebhook)
+// annonce_last_generated_at: NE PAS MAPPER (géré par triggerAssistantPdfWebhook)
 ```
 
-#### **Styles CSS Optimisés pour html2pdf**
-```css
-.pdf-container {
-  /* Styles optimisés pour affichage web ET génération PDF */
-  margin: 0 auto;
-  max-width: 800px;
-  border: 1px solid #ddd;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
+### **mapSupabaseToFormData**
+```javascript
+// PDF Fiches
+pdf_logement_url: supabaseData.pdf_logement_url || null,
+pdf_menage_url: supabaseData.pdf_menage_url || null,
+pdf_last_generated_at: supabaseData.pdf_last_generated_at,
 
-/* 🎯 PAGINATION INTELLIGENTE */
-.header {
-  page-break-inside: avoid; /* Ne jamais couper le header */
-  margin-bottom: 25px;
-}
-
-.section {
-  page-break-inside: avoid; /* Évite de couper une section */
-  margin-bottom: 25px;
-  padding-bottom: 20px;
-}
-
-/* 🎨 CONTRÔLE AVANCÉ DES PAGES */
-.force-new-page {
-  page-break-before: always; /* Force nouvelle page */
-}
-
-.keep-together {
-  page-break-inside: avoid; /* Garde ensemble */
-}
+// PDF Assistants
+guide_acces_pdf_url: supabaseData.guide_acces_pdf_url || null,
+annonce_pdf_url: supabaseData.annonce_pdf_url || null,
+guide_acces_last_generated_at: supabaseData.guide_acces_last_generated_at,
+annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 ```
 
 ---
 
-## 🎯 **FONCTIONNALITÉS OPÉRATIONNELLES**
+## 📦 **RÉCAPITULATIF DES WEBHOOKS MAKE**
 
-### **✅ Interface Utilisateur**
-- **Bouton unique** : "📄 Générer PDF automatique"
-- **Feedback temps réel** : "⏳ Génération 2 PDF..." 
-- **Lien téléchargement** : "✅ PDF logement généré : Télécharger"
-- **Upload invisible** : PDF ménage généré automatiquement
-
-### **✅ Génération Robuste html2pdf**
-- **Pagination intelligente** : Respect automatique des éléments CSS
-- **Qualité vectorielle** : Texte reste net, pas de rastérisation
-- **Multi-pages naturelles** : Coupures logiques entre sections
-- **Performance** : ~5-8 secondes pour les 2 PDF
-- **Taille optimisée** : Compression JPEG 0.95 + limite 6MB
-
-### **✅ Gestion d'Erreurs**
-- **Validation** : Vérification présence données fiche
-- **Timeout** : 10 secondes d'attente rendu par iframe
-- **Cleanup sécurisé** : Vérification parentNode avant removeChild
-- **Feedback** : Messages d'erreur explicites utilisateur
+| Type | Webhook URL | Trigger | Payload |
+|------|------------|---------|---------|
+| PDF Fiches | `https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q` | `pdf_last_generated_at` change | Logement + Ménage URLs |
+| PDF Guide d'accès | `https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | `guide_acces_last_generated_at` change | Guide URL + `pdf_type: 'guide_acces'` |
+| PDF Annonce | `https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | `annonce_last_generated_at` change | Annonce URL + `pdf_type: 'annonce'` |
 
 ---
 
-## 📁 **ORGANISATION GOOGLE DRIVE (À CONFIGURER DANS MAKE)**
+## ✅ **TESTS VALIDÉS**
 
-### **Structure finale recommandée**
-```
-📁 2. DOSSIERS PROPRIETAIRES/
-├── 📁 5566. Florence TEISSIER - Saint Pons/
-│   ├── 📁 1. PHOTOS COMMERCIAL/
-│   ├── 📁 2. INFORMATIONS PROPRIETAIRE/
-│   ├── 📁 3. INFORMATIONS LOGEMENT/
-│   │   ├── 📁 1. Fiche logement/
-│   │   ├── ── Fiche-logement-num de bien.pdf
-│   │   ├── ── Fiche-ménage-num de bien.pdf
-│   │   ├── 📁 2. Photos Visite Logement/
-│   │   ├── 📁 3. Accès au logement/
-│   │   ├── 📁 4. Tour générale du logement/
-│   │   ├── 📁 5. Tuto équipements/
-│   │   └── 📁 6. Identifiants Wifi/
-│   ├── 📁 4. PHOTOS ANNONCE/
-└── 📁 1280. Autre propriétaire - Autre ville/
-```
+### **PDF Fiches**
+- ✅ Génération simultanée Logement + Ménage
+- ✅ Upload Storage avec upsert
+- ✅ Trigger webhook déclenché correctement
+- ✅ Make télécharge et organise sur Drive/Monday
+- ✅ Regénération fonctionne (même URLs)
+
+### **PDF Assistants**
+- ✅ Génération Guide d'accès depuis IA
+- ✅ Génération Annonce depuis IA
+- ✅ Upload Storage avec upsert
+- ✅ Triggers séparés fonctionnels
+- ✅ Make route selon `pdf_type`
+- ✅ Timestamps mis à jour correctement
+- ✅ Regénération fonctionne (même URLs)
 
 ---
 
-## 🧪 **STATUT TESTS**
+## 🎯 **AVANTAGES DU SYSTÈME**
 
-### **✅ Phase 1 : Migration html2pdf**
-- ✅ **Migration réussie** : html2canvas → html2pdf sans régression
-- ✅ **Pagination naturelle** : Sections se suivent sans vide excessif
-- ✅ **Qualité améliorée** : Texte vectoriel, meilleur rendu
-- ✅ **Performance stable** : 5-8s pour les 2 PDF (amélioration)
-
-### **✅ Phase 2 : Upload Storage**
-- ✅ **Bucket fiche-pdfs** : Créé et configuré public
-- ✅ **Upload automatique** : Les 2 PDF uploadés systématiquement
-- ✅ **URLs publiques** : Accessibles sans authentification
-- ✅ **Nommage** : Pattern cohérent numero_bien
-
-### **✅ Phase 3 : Interface Utilisateur**
-- ✅ **Bouton aligné gauche** : UX améliorée, pas de largeur 100%
-- ✅ **Texte simplifié** : Suppression "(html2pdf)" du bouton
-- ✅ **Feedback propre** : Messages de progression clairs
-- ✅ **Gestion erreurs robuste** : Cleanup sécurisé des iframes
-
-### **✅ Phase 4 : Intégration Make**
-- ✅ **Configuration modules** HTTP GET pour récupération PDFs
-- ✅ **Tests téléchargement** via URLs publiques Supabase
-- ✅ **Upload Google Drive** dans structure dossiers souhaitée
-- ✅ **Validation end-to-end** : Frontend → Storage → Make → Drive
+- ✅ **Workflow unifié** : Même pattern pour tous les PDFs
+- ✅ **Triggers indépendants** : Pas d'interférence entre PDF types
+- ✅ **Regénération illimitée** : Timestamps garantissent le déclenchement
+- ✅ **Make optimisé** : Routage intelligent selon type
+- ✅ **Storage organisé** : Buckets dédiés par type
+- ✅ **Upsert automatique** : Pas d'accumulation de fichiers
 
 ---
 
-## ⚡ **AVANTAGES RÉALISÉS AVEC HTML2PDF**
-
-### **✅ Pagination intelligente**
-- **Respect CSS** : page-break-before/after automatiquement appliqués
-- **Sections cohérentes** : Plus de coupures au milieu d'un élément
-- **Moins de vide** : Utilisation optimale de l'espace page
-- **Contrôle fin** : Possibilité de forcer des sauts si nécessaire
-
-### **✅ Qualité optimisée**
-- **Texte vectoriel** : Plus de pixelisation, rendu professionnel
-- **Meilleure compression** : Fichiers plus légers à qualité égale
-- **Couleurs fidèles** : Reproduction exacte des couleurs CSS
-
-### **✅ Architecture robuste**
-- **Gestion d'erreurs améliorée** : Vérification parentNode
-- **Performance** : 30% plus rapide qu'html2canvas
-- **Maintenance** : Moins de code custom de découpage
-
----
-
-*📅 Dernière mise à jour : 25 juillet 2025*  
-*👤 Développeurs : Julien + Claude Sonnet 4*  
-*🎯 Statut : ✅ MIGRÉ HTML2PDF - Prêt pour intégration Make*  
-*📈 Version : 5.0 - html2pdf avec pagination intelligente*
+*📝 Document maintenu à jour - Dernière mise à jour : 17 novembre 2025*  
+*🎯 Système PDF complet opérationnel en production*
+``

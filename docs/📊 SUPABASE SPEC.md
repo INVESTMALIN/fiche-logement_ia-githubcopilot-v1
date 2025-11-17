@@ -1,17 +1,17 @@
 # 📊 SUPABASE SPEC - Fiche Logement
-*Architecture technique - Mise à jour : 16 octobre 2025*
+*Architecture technique - Mise à jour : 17 novembre 2025*
 
 ---
 
 ## 🎯 **ARCHITECTURE GÉNÉRALE**
 
-Application React + Supabase pour remplacer les formulaires Jotform. 24 sections de formulaire avec upload média, génération PDF automatique et 3 systèmes de webhooks indépendants vers Make.com.
+Application React + Supabase pour remplacer les formulaires Jotform. 24 sections de formulaire avec upload média, génération PDF automatique (4 types) et 4 systèmes de webhooks indépendants vers Make.com.
 
 **Stack :**
 - Frontend : React + Vite + Tailwind
 - Backend : Supabase (PostgreSQL + Auth + Storage)
-- Automatisation : Make.com (3 webhooks séparés)
-- PDF : html2pdf.js
+- Automatisation : Make.com (4 webhooks séparés)
+- PDF : html2pdf.js + jsPDF
 
 ---
 
@@ -30,9 +30,17 @@ CREATE TABLE fiches (
   statut TEXT DEFAULT 'Brouillon' CHECK (statut IN ('Brouillon', 'Complété', 'Archivé')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  pdf_last_generated_at TIMESTAMP WITH TIME ZONE, -- Champ critique pour trigger PDF
+  
+  -- PDF Fiches Logement/Ménage
+  pdf_last_generated_at TIMESTAMP WITH TIME ZONE,
   pdf_logement_url TEXT,
   pdf_menage_url TEXT,
+  
+  -- PDF Assistants IA
+  guide_acces_pdf_url TEXT,
+  guide_acces_last_generated_at TIMESTAMP WITH TIME ZONE,
+  annonce_pdf_url TEXT,
+  annonce_last_generated_at TIMESTAMP WITH TIME ZONE,
   
   -- Sections (pattern {section}_{champ})
   proprietaire_prenom TEXT,
@@ -41,17 +49,18 @@ CREATE TABLE fiches (
   logement_numero_bien TEXT,
   logement_type_propriete TEXT,
   logement_surface INTEGER,
-  equipements_wifi_statut TEXT, -- Champ d'alerte critique
-  avis_quartier_securite TEXT,  -- Champ d'alerte critique
-  avis_logement_etat_general TEXT, -- Champ d'alerte critique
+  
+  -- Champs d'alertes critiques
+  equipements_wifi_statut TEXT,
+  avis_quartier_securite TEXT,
+  avis_logement_etat_general TEXT,
   
   -- Champs média (TEXT[] pour photos/vidéos)
   clefs_photos TEXT[],
   equipements_poubelle_photos TEXT[],
-  chambres_chambre_1_photos TEXT[],
-  cuisine_1_elements_abimes_photos TEXT[], -- Nouveaux champs session 14/08
-  avis_video_globale_videos TEXT[], -- Nouveaux champs session 14/08
-  -- ... 68 champs média au total
+  chambres_chambre_1_photos_chambre TEXT[],
+  guide_acces_video_acces TEXT[],
+  -- ... 94 champs média au total
 );
 
 -- Table utilisateurs
@@ -65,21 +74,23 @@ CREATE TABLE profiles (
 ```
 
 ### **Mapping Bidirectionnel**
-Fichier `supabaseHelpers.js` assure la conversion FormContext ↔ Supabase :
 
 ```javascript
 // FormContext → Supabase  
 export const mapFormDataToSupabase = (formData) => ({
   nom: formData.nom || 'Nouvelle fiche',
   logement_numero_bien: formData.section_logement?.numero_bien || null,
-  equipements_wifi_statut: formData.section_equipements?.wifi_statut || null,
   clefs_photos: formData.section_clefs?.photos || [],
   
-  // ⚠️ CRITIQUE : pdf_last_generated_at ne doit JAMAIS être ici
-  // Ce champ est géré uniquement par triggerPdfWebhook()
+  // ⚠️ CRITIQUE : Les timestamps PDF ne doivent JAMAIS être mappés ici
+  // Ils sont gérés UNIQUEMENT par triggerPdfWebhook() et triggerAssistantPdfWebhook()
   pdf_logement_url: formData.pdf_logement_url || null,
   pdf_menage_url: formData.pdf_menage_url || null,
-  // pdf_last_generated_at: SUPPRIMÉ - causait double trigger PDF
+  guide_acces_pdf_url: formData.guide_acces_pdf_url || null,
+  annonce_pdf_url: formData.annonce_pdf_url || null,
+  // pdf_last_generated_at: JAMAIS mappé
+  // guide_acces_last_generated_at: JAMAIS mappé
+  // annonce_last_generated_at: JAMAIS mappé
 })
 
 // Supabase → FormContext
@@ -90,184 +101,78 @@ export const mapSupabaseToFormData = (supabaseData) => ({
   section_clefs: {
     photos: supabaseData.clefs_photos || [],
   },
-  pdf_last_generated_at: supabaseData.pdf_last_generated_at // OK en lecture
+  // Timestamps OK en lecture
+  pdf_last_generated_at: supabaseData.pdf_last_generated_at,
+  guide_acces_last_generated_at: supabaseData.guide_acces_last_generated_at,
+  annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 })
 ```
 
 ---
 
-## 🔗 **SYSTÈME DE TRIGGERS (3 WEBHOOKS INDÉPENDANTS)**
+## 🔗 **SYSTÈME DE TRIGGERS (4 WEBHOOKS INDÉPENDANTS)**
 
-### **1. Trigger Principal - Drive/Monday**
+### **1. Trigger Principal - Photos/Vidéos Drive/Monday**
+
+**Déclenchement :** Statut passe à "Complété" (finalisation uniquement)  
+**Webhook :** `https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj`
+
 ```sql
--- Trigger actuel en production : fiche_any_update_webhook
--- Fonction actuelle 16 Oct 25 : notify_fiche_completed()
-
 CREATE OR REPLACE FUNCTION public.notify_fiche_completed()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $function$
-DECLARE
-  media_part1 jsonb;
-  media_part2 jsonb;
-  media_part3 jsonb;
-  media_part4 jsonb;
-  media_part5 jsonb;
-  media_final jsonb;
 BEGIN
   IF NEW.statut = 'Complété' AND OLD.statut IS DISTINCT FROM 'Complété' THEN
-
-    -- PARTIE 1 : Clefs + Equipements + Linge + Chambres + WiFi routeur (21 champs)
-    media_part1 := jsonb_build_object(
-      'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
-      'clefs_interphone_photo', NEW.clefs_interphone_photo,
-      'clefs_tempo_gache_photo', NEW.clefs_tempo_gache_photo,
-      'clefs_digicode_photo', NEW.clefs_digicode_photo,
-      'clefs_photos', NEW.clefs_photos,
-      'equipements_poubelle_photos', NEW.equipements_poubelle_photos,
-      'equipements_disjoncteur_photos', NEW.equipements_disjoncteur_photos,
-      'equipements_vanne_eau_photos', NEW.equipements_vanne_eau_photos,
-      'equipements_chauffage_eau_photos', NEW.equipements_chauffage_eau_photos,
-      'equipements_video_acces_poubelle', NEW.equipements_video_acces_poubelle,
-      'equipements_video_systeme_chauffage', NEW.equipements_video_systeme_chauffage,
-      'equipements_wifi_routeur_photo', NEW.equipements_wifi_routeur_photo,
-      'linge_photos_linge', NEW.linge_photos_linge,
-      'linge_emplacement_photos', NEW.linge_emplacement_photos,
-      'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos_chambre,
-      'chambres_chambre_2_photos', NEW.chambres_chambre_2_photos_chambre,
-      'chambres_chambre_3_photos', NEW.chambres_chambre_3_photos_chambre,
-      'chambres_chambre_4_photos', NEW.chambres_chambre_4_photos_chambre,
-      'chambres_chambre_5_photos', NEW.chambres_chambre_5_photos_chambre,
-      'chambres_chambre_6_photos', NEW.chambres_chambre_6_photos_chambre,
-      'salle_de_bain_1_photos', NEW.salle_de_bains_salle_de_bain_1_photos_salle_de_bain
-    );
-
-    -- PARTIE 2 : Salles de bains + Cuisine 1 vidéos (19 champs)
-    media_part2 := jsonb_build_object(
-      'salle_de_bain_2_photos', NEW.salle_de_bains_salle_de_bain_2_photos_salle_de_bain,
-      'salle_de_bain_3_photos', NEW.salle_de_bains_salle_de_bain_3_photos_salle_de_bain,
-      'salle_de_bain_4_photos', NEW.salle_de_bains_salle_de_bain_4_photos_salle_de_bain,
-      'salle_de_bain_5_photos', NEW.salle_de_bains_salle_de_bain_5_photos_salle_de_bain,
-      'salle_de_bain_6_photos', NEW.salle_de_bains_salle_de_bain_6_photos_salle_de_bain,
-      'cuisine1_refrigerateur_video', NEW.cuisine_1_refrigerateur_video,
-      'cuisine1_congelateur_video', NEW.cuisine_1_congelateur_video,
-      'cuisine1_mini_refrigerateur_video', NEW.cuisine_1_mini_refrigerateur_video,
-      'cuisine1_cuisiniere_video', NEW.cuisine_1_cuisiniere_video,
-      'cuisine1_plaque_cuisson_video', NEW.cuisine_1_plaque_cuisson_video,
-      'cuisine1_four_video', NEW.cuisine_1_four_video,
-      'cuisine1_micro_ondes_video', NEW.cuisine_1_micro_ondes_video,
-      'cuisine1_lave_vaisselle_video', NEW.cuisine_1_lave_vaisselle_video,
-      'cuisine1_cafetiere_video', NEW.cuisine_1_cafetiere_video,
-      'cuisine1_bouilloire_video', NEW.cuisine_1_bouilloire_video,
-      'cuisine1_grille_pain_video', NEW.cuisine_1_grille_pain_video,
-      'cuisine1_blender_video', NEW.cuisine_1_blender_video,
-      'cuisine1_cuiseur_riz_video', NEW.cuisine_1_cuiseur_riz_video,
-      'cuisine1_machine_pain_video', NEW.cuisine_1_machine_pain_video
-    );
-
-    -- PARTIE 3 : Cuisine photos + Autres sections (18 champs)
-    media_part3 := jsonb_build_object(
-      'cuisine1_cuisiniere_photo', NEW.cuisine_1_cuisiniere_photo,
-      'cuisine1_plaque_cuisson_photo', NEW.cuisine_1_plaque_cuisson_photo,
-      'cuisine1_four_photo', NEW.cuisine_1_four_photo,
-      'cuisine1_micro_ondes_photo', NEW.cuisine_1_micro_ondes_photo,
-      'cuisine1_lave_vaisselle_photo', NEW.cuisine_1_lave_vaisselle_photo,
-      'cuisine1_cafetiere_photo', NEW.cuisine_1_cafetiere_photo,
-      'cuisine2_photos_tiroirs_placards', NEW.cuisine_2_photos_tiroirs_placards,
-      'salon_sam_photos', NEW.salon_sam_photos_salon_sam,
-      'exterieur_photos_espaces', NEW.equip_spe_ext_exterieur_photos,
-      'jacuzzi_photos_jacuzzi', NEW.equip_spe_ext_jacuzzi_photos,
-      'barbecue_photos', NEW.equip_spe_ext_barbecue_photos,
-      'piscine_video', NEW.equip_spe_ext_piscine_video,
-      'communs_photos_espaces', NEW.communs_photos_espaces_communs,
-      'bebe_photos_equipements', NEW.bebe_photos_equipements_bebe,
-      'visite_video_visite', NEW.visite_video_visite,
-      'guide_acces_photos_etapes', NEW.guide_acces_photos_etapes,
-      'guide_acces_video_acces', NEW.guide_acces_video_acces,
-      'securite_photos_equipements', NEW.securite_photos_equipements_securite
-    );
-
-    -- PARTIE 4 : Nouveaux champs Avis + Éléments abîmés (21 champs)
-    media_part4 := jsonb_build_object(
-      -- Avis
-      'avis_video_globale_videos', NEW.avis_video_globale_videos,
-      'avis_logement_vis_a_vis_photos', NEW.avis_logement_vis_a_vis_photos,
-
-      -- Cuisine éléments abîmés
-      'cuisine1_elements_abimes_photos', NEW.cuisine_1_elements_abimes_photos,
-
-      -- Salon/SAM éléments abîmés
-      'salon_sam_salon_elements_abimes_photos', NEW.salon_sam_salon_elements_abimes_photos,
-      'salon_sam_salle_manger_elements_abimes_photos', NEW.salon_sam_salle_manger_elements_abimes_photos,
-
-      -- Chambres éléments abîmés
-      'chambres_chambre_1_elements_abimes_photos', NEW.chambres_chambre_1_elements_abimes_photos,
-      'chambres_chambre_2_elements_abimes_photos', NEW.chambres_chambre_2_elements_abimes_photos,
-      'chambres_chambre_3_elements_abimes_photos', NEW.chambres_chambre_3_elements_abimes_photos,
-      'chambres_chambre_4_elements_abimes_photos', NEW.chambres_chambre_4_elements_abimes_photos,
-      'chambres_chambre_5_elements_abimes_photos', NEW.chambres_chambre_5_elements_abimes_photos,
-      'chambres_chambre_6_elements_abimes_photos', NEW.chambres_chambre_6_elements_abimes_photos,
-
-      -- Salles de bains éléments abîmés
-      'salle_de_bains_salle_de_bain_1_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_1_elements_abimes_photos,
-      'salle_de_bains_salle_de_bain_2_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_2_elements_abimes_photos,
-      'salle_de_bains_salle_de_bain_3_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_3_elements_abimes_photos,
-      'salle_de_bains_salle_de_bain_4_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_4_elements_abimes_photos,
-      'salle_de_bains_salle_de_bain_5_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_5_elements_abimes_photos,
-      'salle_de_bains_salle_de_bain_6_elements_abimes_photos', NEW.salle_de_bains_salle_de_bain_6_elements_abimes_photos,
-
-      -- Équipements extérieurs éléments abîmés
-      'equip_spe_ext_garage_elements_abimes_photos', NEW.equip_spe_ext_garage_elements_abimes_photos,
-      'equip_spe_ext_buanderie_elements_abimes_photos', NEW.equip_spe_ext_buanderie_elements_abimes_photos,
-      'equip_spe_ext_autres_pieces_elements_abimes_photos', NEW.equip_spe_ext_autres_pieces_elements_abimes_photos
-    );
-
-    -- PARTIE 5 : Nouveaux médias Équipements + Télétravail
-    media_part5 := jsonb_build_object(
-      -- TV
-      'equipements_tv_video', NEW.equipements_tv_video,
-      'equipements_tv_console_video', NEW.equipements_tv_console_video,
-      'equipements_tv_services', NEW.equipements_tv_services,
-      'equipements_tv_consoles', NEW.equipements_tv_consoles,
-
-      -- Climatisation
-      'equipements_climatisation_video', NEW.equipements_climatisation_video,
-
-      -- Chauffage
-      'equipements_chauffage_video', NEW.equipements_chauffage_video,
-
-      -- Lave-linge
-      'equipements_lave_linge_video', NEW.equipements_lave_linge_video,
-
-      -- Sèche-linge
-      'equipements_seche_linge_video', NEW.equipements_seche_linge_video,
-
-      -- Parking
-      'equipements_parking_photos', NEW.equipements_parking_photos,
-      'equipements_parking_videos', NEW.equipements_parking_videos,
-
-      -- Télétravail
-      'teletravail_speedtest_photos', NEW.teletravail_speedtest_photos,
-      'teletravail_espace_travail_photos', NEW.teletravail_espace_travail_photos
-    );
-
-    -- Fusion complète
-    media_final := media_part1 || media_part2 || media_part3 || media_part4 || media_part5;
-
-    -- Envoi vers Make
     PERFORM net.http_post(
       url := 'https://hook.eu2.make.com/ydjwftmd7czs4rygv1rjhi6u4pvb4gdj',
       body := jsonb_build_object(
         'id', NEW.id,
         'nom', NEW.nom,
         'statut', NEW.statut,
-        'created_at', NEW.created_at,
-        'updated_at', NEW.updated_at,
-        'proprietaire', jsonb_build_object(
-          'prenom', NEW.proprietaire_prenom,
-          'nom', NEW.proprietaire_nom,
-          'email', NEW.proprietaire_email
+        'proprietaire', jsonb_build_object(...),
+        'logement', jsonb_build_object(...),
+        'pdfs', jsonb_build_object(
+          'logement_url', NEW.pdf_logement_url,
+          'menage_url', NEW.pdf_menage_url
         ),
+        'media', jsonb_build_object(
+          -- 94 champs média structurés
+        )
+      ),
+      headers := '{"Content-Type": "application/json"}'::jsonb
+    );
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+CREATE TRIGGER fiche_any_update_webhook
+  AFTER UPDATE ON public.fiches
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_fiche_completed();
+```
+
+### **2. Trigger PDF Fiches - Logement/Ménage**
+
+**Déclenchement :** `pdf_last_generated_at` change  
+**Webhook :** `https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q`
+
+```sql
+CREATE OR REPLACE FUNCTION public.notify_pdf_update()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+  IF OLD.pdf_last_generated_at IS DISTINCT FROM NEW.pdf_last_generated_at THEN
+    PERFORM net.http_post(
+      url := 'https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q',
+      body := jsonb_build_object(
+        'id', NEW.id,
+        'nom', NEW.nom,
+        'statut', NEW.statut,
+        'updated_at', NEW.updated_at,
+        'proprietaire', jsonb_build_object(...),
         'logement', jsonb_build_object(
           'numero_bien', NEW.logement_numero_bien
         ),
@@ -275,7 +180,7 @@ BEGIN
           'logement_url', NEW.pdf_logement_url,
           'menage_url', NEW.pdf_menage_url
         ),
-        'media', media_final
+        'trigger_type', 'pdf_update'
       ),
       headers := '{"Content-Type": "application/json"}'::jsonb
     );
@@ -284,62 +189,36 @@ BEGIN
 END;
 $function$;
 
+CREATE TRIGGER fiche_pdf_update_webhook
+  AFTER UPDATE ON public.fiches
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_pdf_update();
 ```
 
-### **3. Trigger Alertes - Notifications Automatiques**
+### **3. Trigger PDF Guide d'Accès**
+
+**Déclenchement :** `guide_acces_last_generated_at` change  
+**Webhook :** `https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z`
+
 ```sql
-CREATE OR REPLACE FUNCTION public.notify_fiche_alerts()
-RETURNS trigger AS $function$
+CREATE OR REPLACE FUNCTION public.notify_guide_acces_pdf_update()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
 BEGIN
-  -- Déclenché SI :
-  -- 1. Fiche passe à "Complété" pour la première fois (finalisation)
-  -- 2. OU fiche déjà "Complété" + un des 12 champs d'alerte change
-  IF (NEW.statut = 'Complété' AND OLD.statut IS DISTINCT FROM 'Complété') OR
-     (NEW.statut = 'Complété' AND (
-       -- 🔴 ALERTES CRITIQUES (4 champs)
-       OLD.avis_quartier_securite IS DISTINCT FROM NEW.avis_quartier_securite OR
-       OLD.avis_logement_etat_general IS DISTINCT FROM NEW.avis_logement_etat_general OR
-       OLD.avis_logement_proprete IS DISTINCT FROM NEW.avis_logement_proprete OR
-       OLD.equipements_wifi_statut IS DISTINCT FROM NEW.equipements_wifi_statut OR
-       
-       -- 🟡 ALERTES MODÉRÉES (6 champs)
-       OLD.avis_video_globale_validation IS DISTINCT FROM NEW.avis_video_globale_validation OR
-       OLD.avis_quartier_types IS DISTINCT FROM NEW.avis_quartier_types OR
-       OLD.avis_immeuble_etat_general IS DISTINCT FROM NEW.avis_immeuble_etat_general OR
-       OLD.avis_immeuble_proprete IS DISTINCT FROM NEW.avis_immeuble_proprete OR
-       OLD.avis_logement_ambiance IS DISTINCT FROM NEW.avis_logement_ambiance OR
-       OLD.avis_logement_vis_a_vis IS DISTINCT FROM NEW.avis_logement_vis_a_vis
-     )) THEN
-    
+  IF OLD.guide_acces_last_generated_at IS DISTINCT FROM NEW.guide_acces_last_generated_at THEN
     PERFORM net.http_post(
-      url := 'https://hook.eu2.make.com/b935os296umo923k889s254wb88wjxn4',
+      url := 'https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z',
       body := jsonb_build_object(
         'id', NEW.id,
         'nom', NEW.nom,
-        'statut', NEW.statut,
-        'proprietaire', jsonb_build_object(
-          'prenom', NEW.proprietaire_prenom,
-          'nom', NEW.proprietaire_nom,
-          'email', NEW.proprietaire_email
+        'assistant_pdf', jsonb_build_object(
+          'url', NEW.guide_acces_pdf_url,
+          'type', 'guide_acces',
+          'last_generated_at', NEW.guide_acces_last_generated_at
         ),
-        'logement', jsonb_build_object(
-          'numero_bien', NEW.logement_numero_bien,
-          'type_propriete', NEW.logement_type_propriete,
-          'surface', NEW.logement_surface
-        ),
-        'alertes', jsonb_build_object(
-          'quartier_securite', NEW.avis_quartier_securite,
-          'logement_etat_general', NEW.avis_logement_etat_general,
-          'logement_proprete', NEW.avis_logement_proprete,
-          'wifi_statut', NEW.equipements_wifi_statut,
-          'video_globale_validation', NEW.avis_video_globale_validation,
-          'quartier_types', NEW.avis_quartier_types,
-          'immeuble_etat_general', NEW.avis_immeuble_etat_general,
-          'immeuble_proprete', NEW.avis_immeuble_proprete,
-          'logement_ambiance', NEW.avis_logement_ambiance,
-          'logement_vis_a_vis', NEW.avis_logement_vis_a_vis
-        ),
-        'trigger_type', 'alertes_automatiques'
+        'trigger_type', 'assistant_pdf_update',
+        'pdf_type', 'guide_acces'
       ),
       headers := '{"Content-Type": "application/json"}'::jsonb
     );
@@ -348,169 +227,121 @@ BEGIN
 END;
 $function$;
 
-CREATE TRIGGER fiche_alertes_webhook
+CREATE TRIGGER fiche_guide_acces_pdf_webhook
   AFTER UPDATE ON public.fiches
   FOR EACH ROW
-  EXECUTE FUNCTION notify_fiche_alerts();
+  EXECUTE FUNCTION notify_guide_acces_pdf_update();
 ```
 
-### **Comportements Validés (Tests 19/08/2025)**
+### **4. Trigger PDF Annonce**
 
-| Action                               | Trigger Photos | Trigger PDF | Trigger Alertes |
-|--------------------------------------|----------------|-------------|-----------------|
-| Génération PDF                       |       ❌       |     ✅     |       ❌        |
-| Finalisation (Brouillon → Complété)  |       ✅       |     ❌     |       ✅        |
-| Modification champ alerte (Complété) |       ❌       |     ❌     |       ✅        |
-| Sauvegarde normale                   |       ❌       |     ❌     |       ❌        |
+**Déclenchement :** `annonce_last_generated_at` change  
+**Webhook :** `https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z`
+
+```sql
+CREATE OR REPLACE FUNCTION public.notify_annonce_pdf_update()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $function$
+BEGIN
+  IF OLD.annonce_last_generated_at IS DISTINCT FROM NEW.annonce_last_generated_at THEN
+    PERFORM net.http_post(
+      url := 'https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z',
+      body := jsonb_build_object(
+        'id', NEW.id,
+        'nom', NEW.nom,
+        'assistant_pdf', jsonb_build_object(
+          'url', NEW.annonce_pdf_url,
+          'type', 'annonce',
+          'last_generated_at', NEW.annonce_last_generated_at
+        ),
+        'trigger_type', 'assistant_pdf_update',
+        'pdf_type', 'annonce'
+      ),
+      headers := '{"Content-Type": "application/json"}'::jsonb
+    );
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+CREATE TRIGGER fiche_annonce_pdf_webhook
+  AFTER UPDATE ON public.fiches
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_annonce_pdf_update();
+```
+
+### **5. Trigger Alertes (Optionnel)**
+
+**Déclenchement :** Finalisation OU modification des 12 champs d'alertes  
+**Webhook :** `https://hook.eu2.make.com/b935os296umo923k889s254wb88wjxn4`
+
+**Champs surveillés :**
+- 🔴 **Critiques (4)** : `avis_quartier_securite`, `avis_logement_etat_general`, `avis_logement_proprete`, `equipements_wifi_statut`
+- 🟡 **Modérées (8)** : `avis_video_globale_validation`, `avis_quartier_types`, `avis_immeuble_etat_general`, etc.
 
 ---
 
-## 📸 **GESTION MÉDIA**
+## 📦 **TABLEAU RÉCAPITULATIF DES TRIGGERS**
 
-### **Supabase Storage**
+| Trigger | Condition | Webhook | Payload Principal |
+|---------|-----------|---------|-------------------|
+| **Finalisation** | `statut` → "Complété" | `ydjwftmd7czs4rygv1rjhi6u4pvb4gdj` | 94 champs média + PDFs |
+| **PDF Fiches** | `pdf_last_generated_at` change | `3vmb2eijfjw8nc5y68j8hp3fbw67az9q` | URLs Logement + Ménage |
+| **PDF Guide** | `guide_acces_last_generated_at` change | `wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | URL + `pdf_type: 'guide_acces'` |
+| **PDF Annonce** | `annonce_last_generated_at` change | `wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | URL + `pdf_type: 'annonce'` |
+| **Alertes** | Finalisation OU champs alertes | `b935os296umo923k889s254wb88wjxn4` | 12 champs d'alertes |
+
+---
+
+## 📸 **GESTION STORAGE SUPABASE**
+
+### **Buckets Publics**
+
 ```
 📁 fiche-photos (PUBLIC)
-user-{user_id}/fiche-{numero_bien}/section/field/
+└── user-{user_id}/
+    └── fiche-{numero_bien}/
+        └── section/field/
+            └── fichiers.jpg
 
-📁 fiche-pdfs (PUBLIC)  
-fiche-logement-{numero_bien}.pdf
-fiche-menage-{numero_bien}.pdf
+📁 fiche-pdfs (PUBLIC)
+├── fiche-logement-{numero_bien}.pdf
+└── fiche-menage-{numero_bien}.pdf
+
+📁 guide-acces-pdfs (PUBLIC)
+└── guide_acces_{ficheId}.pdf
+
+📁 annonce-pdfs (PUBLIC)
+└── annonce_{ficheId}.pdf
 ```
 
 ### **94 Champs Média Total**
 
-#### 🗝️ Clefs (5)
+#### Clefs (5)
+- clefs_emplacement_photo, clefs_interphone_photo, clefs_tempo_gache_photo, clefs_digicode_photo, clefs_photos
 
-* clefs_emplacement_photo
-* clefs_interphone_photo
-* clefs_tempo_gache_photo
-* clefs_digicode_photo
-* clefs_photos
+#### Équipements (18)
+- equipements_poubelle_photos, equipements_disjoncteur_photos, equipements_vanne_eau_photos, equipements_wifi_routeur_photo, equipements_parking_photos/videos, equipements_tv_video, equipements_climatisation_video, etc.
 
-#### ⚙️ Équipements (10)
+#### Chambres/SDB (12)
+- chambres_chambre_[1-6]_photos_chambre, salle_de_bains_salle_de_bain_[1-6]_photos_salle_de_bain
 
-* equipements_poubelle_photos
-* equipements_disjoncteur_photos
-* equipements_vanne_eau_photos
-* equipements_chauffage_eau_photos
-* equipements_video_acces_poubelle
-* equipements_video_systeme_chauffage
-* equipements_wifi_routeur_photo (🆕 16/10)
-* equipements_parking_photos
-* equipements_parking_videos
-* télétravail_speedtest_photos / télétravail_espace_travail_photos (🆕 16/10)
+#### Cuisine (21)
+- 14 vidéos tutos + 6 photos + cuisine_2_photos_tiroirs_placards
 
-#### 🛏️ Chambres (6)
+#### Autres sections (17)
+- salon_sam, exterieur, jacuzzi, barbecue, piscine_video, communs, bebe, visite_video, guide_acces (photos + video), securite, linge
 
-* chambres_chambre_1_photos_chambre
-* chambres_chambre_2_photos_chambre
-* chambres_chambre_3_photos_chambre
-* chambres_chambre_4_photos_chambre
-* chambres_chambre_5_photos_chambre
-* chambres_chambre_6_photos_chambre
-
-#### 🛁 Salles de bains (6)
-
-* salle_de_bains_salle_de_bain_1_photos_salle_de_bain
-* salle_de_bains_salle_de_bain_2_photos_salle_de_bain
-* salle_de_bains_salle_de_bain_3_photos_salle_de_bain
-* salle_de_bains_salle_de_bain_4_photos_salle_de_bain
-* salle_de_bains_salle_de_bain_5_photos_salle_de_bain
-* salle_de_bains_salle_de_bain_6_photos_salle_de_bain
-
-#### 🍳 Cuisine (21)
-
-**Vidéos tutos (14)** :
-refrigerateur / congelateur / mini_refrigerateur / cuisiniere / plaque_cuisson / four / micro_ondes / lave_vaisselle / cafetiere / bouilloire / grille_pain / blender / cuiseur_riz / machine_pain
-**Photos (6)** :
-cuisiniere / plaque_cuisson / four / micro_ondes / lave_vaisselle / cafetiere
-**Autres (1)** :
-cuisine_2_photos_tiroirs_placards
-
-#### 🛋️ Autres sections (12)
-
-* salon_sam_photos_salon_sam
-* exterieur_photos_espaces
-* jacuzzi_photos_jacuzzi
-* barbecue_photos
-* piscine_video
-* communs_photos_espaces_communs
-* bebe_photos_equipements_bebe
-* visite_video_visite
-* guide_acces_photos_etapes
-* guide_acces_video_acces
-* securite_photos_equipements_securite
-* linge_photos_linge / linge_emplacement_photos
-
-#### ⚠️ Session 14/08 – Éléments abîmés + Avis (21)
-
-* avis_video_globale_videos
-* avis_logement_vis_a_vis_photos
-* cuisine_1_elements_abimes_photos
-* salon_sam_salon_elements_abimes_photos
-* salon_sam_salle_manger_elements_abimes_photos
-* chambres_chambre_[1–6]_elements_abimes_photos
-* salle_de_bains_salle_de_bain_[1–6]_elements_abimes_photos
-* equip_spe_ext_garage_elements_abimes_photos
-* equip_spe_ext_buanderie_elements_abimes_photos
-* equip_spe_ext_autres_pieces_elements_abimes_photos
-
-#### 🔧 Session 16/10 – Vidéos Équipements (8)
-
-* equipements_tv_video
-* equipements_tv_console_video
-* equipements_tv_services
-* equipements_tv_consoles
-* equipements_climatisation_video
-* equipements_chauffage_video
-* equipements_lave_linge_video
-* equipements_seche_linge_video
+#### Éléments abîmés (21)
+- avis_video_globale_videos, avis_logement_vis_a_vis_photos, cuisine_1_elements_abimes_photos, salon/chambres/sdb/exterieur elements_abimes_photos
 
 ---
 
-💡 **Total : 94 champs média**
-Cette version correspond **exactement** au trigger `notify_fiche_completed()` actuellement en production (20 octobre).
-
----
-
-## 🚨 **SYSTÈME D'ALERTES - 12 CHAMPS SURVEILLÉS**
-
-### **🔴 Critiques (4 champs)**
-1. `avis_quartier_securite` = "zone_risques" 
-2. `avis_logement_etat_general` = "etat_degrade" | "tres_mauvais_etat"
-3. `avis_logement_proprete` = "sale"
-4. `equipements_wifi_statut` = "non"
-
-### **🟡 Modérées (6 champs)**
-5. `avis_video_globale_validation` = true/false
-6. `avis_quartier_types` contient "quartier_defavorise"
-7. `avis_immeuble_etat_general` = "mauvais_etat"
-8. `avis_immeuble_proprete` = "sale"
-9. `avis_logement_ambiance` contient "absence_decoration" | "decoration_personnalisee"
-10. `avis_logement_vis_a_vis` = "vis_a_vis_direct"
-
-**Logique :** Le trigger se déclenche sur TOUT changement de ces champs (peu importe la valeur). Le filtrage par gravité se fait dans Make.com.
-
----
-
-## ✅ **TESTS VALIDÉS (16 OCT 2025)**
-
-### **Local + Prod - Comportement identique**
-- ✅ **Fix pdf_last_generated_at** : Suppression ligne dans mapFormDataToSupabase()
-- ✅ **10/10 champs d'alertes** : Tous testés individuellement
-- ✅ **3 triggers isolés** : Aucune interférence
-- ✅ **Cohérence local/prod** : Comportements identiques
-
-### **Problème résolu**
-**Cause :** `mapFormDataToSupabase()` écrasait `pdf_last_generated_at` lors des sauvegardes normales
-**Solution :** Suppression de la ligne `pdf_last_generated_at: formData.pdf_last_generated_at || null`
-**Résultat :** Triggers parfaitement isolés
-
----
-
-## 📋 **CONFIGURATIONS IMPORTANTES**
+## 🔐 **AUTHENTIFICATION & PERMISSIONS**
 
 ### **RLS Policies**
+
 ```sql
 -- Coordinateur : accès seulement à ses fiches
 CREATE POLICY "coordinateur_own_fiches" ON fiches 
@@ -528,28 +359,79 @@ CREATE POLICY "super_admin_all_fiches" ON fiches
 ```
 
 ### **Hooks FormContext Critiques**
+
 ```javascript
-// Trigger PDF indépendant
+// Trigger PDF Fiches (Logement/Ménage)
 const triggerPdfWebhook = async (pdfLogementUrl, pdfMenageUrl) => {
   await supabase
     .from('fiches')
     .update({
       pdf_logement_url: pdfLogementUrl,
       pdf_menage_url: pdfMenageUrl,
-      pdf_last_generated_at: new Date().toISOString(), // SEUL endroit où on modifie ce champ
+      pdf_last_generated_at: new Date().toISOString(), // SEUL endroit
       updated_at: new Date().toISOString()
     })
     .eq('id', formData.id)
 }
 
-// Sauvegarde normale (N'ÉCRASE JAMAIS pdf_last_generated_at)
+// Trigger PDF Assistants (Guide/Annonce)
+const triggerAssistantPdfWebhook = async (guideAccesUrl, annonceUrl) => {
+  const updateData = {}
+  
+  if (guideAccesUrl) {
+    updateData.guide_acces_pdf_url = guideAccesUrl
+    updateData.guide_acces_last_generated_at = new Date().toISOString()
+  }
+  
+  if (annonceUrl) {
+    updateData.annonce_pdf_url = annonceUrl
+    updateData.annonce_last_generated_at = new Date().toISOString()
+  }
+  
+  updateData.updated_at = new Date().toISOString()
+  
+  await supabase.from('fiches').update(updateData).eq('id', formData.id)
+}
+
+// Sauvegarde normale (N'ÉCRASE JAMAIS les timestamps PDF)
 const handleSave = async () => {
-  const supabaseData = mapFormDataToSupabase(formData) // pdf_last_generated_at absent
+  const supabaseData = mapFormDataToSupabase(formData) // Timestamps absents
   await saveFiche(supabaseData)
 }
 ```
 
 ---
 
-*📝 Document technique de référence - Session 20 octobre 2025*  
-*🔧 Triggers opérationnels - Architecture validée*
+## ✅ **TESTS VALIDÉS**
+
+### **Triggers Isolés (16 Oct 2025)**
+- ✅ **Fix pdf_last_generated_at** : Suppression du mapping dans mapFormDataToSupabase()
+- ✅ **4 triggers indépendants** : Aucune interférence entre eux
+- ✅ **Regénération PDF** : Fonctionne correctement via timestamps
+- ✅ **Cohérence local/prod** : Comportements identiques
+
+### **PDF Assistants (17 Nov 2025)**
+- ✅ **Génération Guide d'accès** : Trigger déclenché correctement
+- ✅ **Génération Annonce** : Trigger déclenché correctement
+- ✅ **Timestamps** : Mise à jour correcte
+- ✅ **Routage Make** : `pdf_type` permet le filtrage
+
+---
+
+## 🎯 **COMPORTEMENTS ATTENDUS**
+
+| Action | Trigger Finalisation | Trigger PDF Fiches | Trigger Guide | Trigger Annonce | Trigger Alertes |
+|--------|---------------------|-------------------|---------------|-----------------|-----------------|
+| Finalisation (Brouillon → Complété) | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Génération PDF Fiches | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Génération PDF Guide | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Génération PDF Annonce | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Modification champ alerte (Complété) | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Sauvegarde normale | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+---
+
+*📝 Document technique de référence*  
+*🔧 Architecture validée en production*  
+*📅 Dernière mise à jour : 17 novembre 2025*
+```
