@@ -3,6 +3,9 @@ import { supabase, safeSupabaseQuery } from './supabaseClient'
 
 // 🔄 Mapping FormContext → Colonnes Supabase
 export const mapFormDataToSupabase = (formData) => {
+  console.log('🔍 formData.guide_acces_pdf_url:', formData.guide_acces_pdf_url)
+  console.log('🔍 formData.annonce_pdf_url:', formData.annonce_pdf_url)
+  
   return {
     nom: formData.nom || 'Nouvelle fiche',
     statut: formData.statut || 'Brouillon',
@@ -1035,12 +1038,18 @@ export const mapFormDataToSupabase = (formData) => {
     // Section Guide d'accès
     guide_acces_photos_etapes: formData.section_guide_acces?.photos_etapes || [],
     guide_acces_video_acces: formData.section_guide_acces?.video_acces || [],
+    
+    // PDF URLs - Assistants IA
+    guide_acces_pdf_url: formData.guide_acces_pdf_url || null,
+    annonce_pdf_url: formData.annonce_pdf_url || null,
+    // guide_acces_last_generated_at: NE PAS MAPPER (géré par triggerAssistantPdfWebhook)
+    // annonce_last_generated_at: NE PAS MAPPER (géré par triggerAssistantPdfWebhook)
   
     // Section Sécurité
     securite_equipements: formData.section_securite?.equipements || [],
     securite_alarme_desarmement: formData.section_securite?.alarme_desarmement || null,
     securite_photos_equipements_securite: formData.section_securite?.photos_equipements_securite || [],
-    // PDF URLs - AJOUT POUR MAKE
+    // PDF URLs
     pdf_logement_url: formData.pdf_logement_url || null,
     pdf_menage_url: formData.pdf_menage_url || null,
     // pdf_last_generated_at: formData.pdf_last_generated_at || null, Bug: Le mapFormDataToSupabase() écrase pdf_last_generated_at lors de la finalisation.
@@ -2166,8 +2175,14 @@ export const mapSupabaseToFormData = (supabaseData) => {
 
     section_guide_acces: {
       photos_etapes: supabaseData.guide_acces_photos_etapes || [],
-      video_acces: supabaseData.guide_acces_video_acces || []
+      video_acces: supabaseData.guide_acces_video_acces || [],
     },
+
+    // PDF Guide d'accès et annonce
+    guide_acces_pdf_url: supabaseData.guide_acces_pdf_url || null,
+    annonce_pdf_url: supabaseData.annonce_pdf_url || null,
+    guide_acces_last_generated_at: supabaseData.guide_acces_last_generated_at,
+    annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 
     section_securite: {
       equipements: supabaseData.securite_equipements || [],

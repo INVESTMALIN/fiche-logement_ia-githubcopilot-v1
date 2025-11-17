@@ -8,7 +8,9 @@ import Button from '../components/Button'
 import PDFUpload from '../components/PDFUpload'
 import MiniDashboard from '../components/MiniDashboard'
 import { prepareForN8nWebhook } from '../lib/PdfFormatter'
-import { CheckCircle, PenTool, Send, Bot, Copy, AlertCircle, Sparkles, Loader2 } from 'lucide-react'
+import { CheckCircle, PenTool, Send, Bot, Copy, AlertCircle, Sparkles, Loader2, Check } from 'lucide-react'
+import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
+import { supabase } from '../lib/supabaseClient'
 
 export default function FicheFinalisation() {
   const navigate = useNavigate()
@@ -17,6 +19,8 @@ export default function FicheFinalisation() {
   const [currentInput, setCurrentInput] = useState('')
   const [annonceLoading, setAnnonceLoading] = useState(false)
   const [copiedIndex, setCopiedIndex] = useState(null)
+  const [validatingAnnonce, setValidatingAnnonce] = useState(false)
+  const [validatedAnnonce, setValidatedAnnonce] = useState(false)
   const annonceSessionIdRef = useRef(null)
   const messagesEndRef = useRef(null)
 
@@ -35,7 +39,8 @@ export default function FicheFinalisation() {
     updateField,
     handleSave,
     saveStatus,
-    finaliserFiche
+    finaliserFiche,
+    triggerAssistantPdfWebhook
   } = useForm()
 
   useEffect(() => {
@@ -119,6 +124,67 @@ export default function FicheFinalisation() {
       setChatMessages(prev => [...prev, errorMsg])
     } finally {
       setAnnonceLoading(false)
+    }
+  }
+
+  const handleValidateAnnonce = async () => {
+    const lastMessage = chatMessages[chatMessages.length - 1]
+    
+    if (!lastMessage || lastMessage.role !== 'assistant') {
+      console.error('Aucune annonce à valider')
+      return
+    }
+
+    setValidatingAnnonce(true)
+
+    try {
+      console.log('📄 Validation de l\'annonce...')
+      
+      const metadata = {
+        numero_bien: formData.section_logement?.numero_bien || 'N/A',
+        type_propriete: formData.section_logement?.type_propriete || 'Non spécifié',
+        adresse: {
+          rue: formData.section_proprietaire?.adresse?.rue || '',
+          complement: formData.section_proprietaire?.adresse?.complement || '',
+          code_postal: formData.section_proprietaire?.adresse?.codePostal || '',
+          ville: formData.section_proprietaire?.adresse?.ville || ''
+        }
+      }
+
+      // Nettoyer le contenu
+      const cleanedContent = lastMessage.content
+        .replace(/([^\s]):/g, '$1 :')
+        .replace(/([^\s])!/g, '$1 !')
+        .replace(/([^\s])\?/g, '$1 ?')
+        .replace(/([^\s]);/g, '$1 ;')
+        .replace(/\u00A0/g, ' ')
+        .replace(/\u202F/g, ' ')
+
+      // Générer le PDF
+      const pdfUrl = await generateAnnoncePDF(
+        cleanedContent,
+        metadata,
+        formData.id || formData.nom || 'nouvelle_fiche'
+      )
+
+      console.log('✅ PDF Annonce généré:', pdfUrl)
+
+      // 🔥 DÉCLENCHER WEBHOOK via FormContext
+      const result = await triggerAssistantPdfWebhook(null, pdfUrl)
+
+      if (result.success) {
+        console.log('✅ URL annonce sauvegardée et webhook déclenché!')
+        setValidatedAnnonce(true)
+        setTimeout(() => setValidatedAnnonce(false), 3000)
+      } else {
+        console.error('❌ Erreur sauvegarde URL annonce:', result.error)
+        throw new Error(result.error)
+      }
+
+    } catch (err) {
+      console.error('❌ Erreur validation annonce:', err)
+    } finally {
+      setValidatingAnnonce(false)
     }
   }
 
@@ -234,141 +300,167 @@ export default function FicheFinalisation() {
                 </div>
               </div>        
 
-              {/* Zone de chat */}
-              <div className="space-y-4">
-                {chatMessages.length > 0 && (
-                  <div className="max-h-80 overflow-y-auto space-y-3 bg-gray-50 rounded-lg p-4">
-                    
-                {/* Conversation */}
-                {chatMessages.length > 0 && (
-                  <div className="space-y-4 mb-4">
-                    {/* Historique des messages */}
-                    <div className="bg-white rounded-lg border max-h-96 overflow-y-auto p-4 space-y-3">
-                      {chatMessages.map((msg, idx) => (
-                        <div
-                          key={idx}
-                          className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={`max-w-[80%] rounded-lg p-3 ${
-                              msg.role === 'user'
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-gray-100 text-gray-900'
-                            }`}
-                          >
-                            <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                              {msg.content}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                      <div ref={messagesEndRef} />
-                    </div>
+ {/* Bouton générer (seulement si pas encore de messages) */}
+{chatMessages.length === 0 && !annonceLoading && (
+  <button
+    onClick={handleGenererAnnonce}
+    disabled={annonceLoading}
+    className="flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    <Sparkles className="w-5 h-5" />
+    Générer l'annonce
+  </button>
+)}
 
-                    {/* Bouton copier le dernier message (si c'est l'assistant) */}
-                    {chatMessages[chatMessages.length - 1]?.role === 'assistant' && (
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() => handleCopyMessage(chatMessages[chatMessages.length - 1].content, chatMessages.length - 1)}
-                          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white hover:bg-gray-50 border rounded-lg transition-colors"
-                        >
-                          {copiedIndex === chatMessages.length - 1 ? (
-                            <>
-                              <Check className="w-4 h-4 text-green-600" />
-                              <span className="text-green-600">Copié !</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-4 h-4" />
-                              <span>Copier le dernier message</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                    
-                  {/* Loading state */}
-                  {annonceLoading && (
-                    <div className="flex items-center justify-center gap-3 py-8 mb-4">
-                      <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
-                      <div className="text-center">
-                        <p className="font-medium text-gray-900">
-                          {chatMessages.length === 0 ? 'Génération en cours...' : 'Envoi en cours...'}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {chatMessages.length === 0 
-                            ? 'L\'IA génère votre annonce...'
-                            : 'Envoi de votre message à l\'assistant'
-                          }
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  </div>
-                )}
+{/* Loading state */}
+{annonceLoading && (
+  <div className="flex items-center justify-center gap-3 py-8">
+    <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
+    <div className="text-center">
+      <p className="font-medium text-gray-900">
+        {chatMessages.length === 0 ? 'Génération en cours...' : 'Envoi en cours...'}
+      </p>
+      <p className="text-sm text-gray-600 mt-1">
+        {chatMessages.length === 0 
+          ? 'L\'IA génère votre annonce...'
+          : 'Envoi de votre message à l\'assistant'
+        }
+      </p>
+    </div>
+  </div>
+)}
 
-                {/* Bouton générer (seulement si pas encore de messages) */}
-                {chatMessages.length === 0 && !annonceLoading && (
-                  <button
-                    onClick={handleGenererAnnonce}
-                    disabled={annonceLoading}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    Générer l'annonce
-                  </button>
-                )}
+{/* Conversation */}
+{chatMessages.length > 0 && (
+  <div className="space-y-4">
+    {/* Historique des messages */}
+    <div className="bg-white rounded-lg border max-h-96 overflow-y-auto p-4 space-y-3">
+      {chatMessages.map((msg, idx) => (
+        <div
+          key={idx}
+          className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+        >
+          <div
+            className={`max-w-[80%] rounded-lg p-3 ${
+              msg.role === 'user'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-100 text-gray-900'
+            }`}
+          >
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">
+              {msg.content}
+            </p>
+          </div>
+        </div>
+      ))}
+      <div ref={messagesEndRef} />
+    </div>
 
-                {/* Zone de saisie */}
-                {chatMessages.length > 0 && (
-                <div className="flex gap-2">
-                  <textarea
-                    value={currentInput}
-                    onChange={(e) => setCurrentInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey && !annonceLoading) {
-                        e.preventDefault()
-                        sendMessage(currentInput)
-                      }
-                    }}
-                    placeholder="Demandez une modification ou posez une question... (Maj+Entrée pour aller à la ligne)"
-                    disabled={annonceLoading}
-                    rows={3}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                  />
-                  <button
-                    onClick={() => sendMessage(currentInput)}
-                    disabled={annonceLoading || !currentInput.trim()}
-                    className={`px-4 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                      annonceLoading || !currentInput.trim()
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                        : 'bg-purple-600 hover:bg-purple-700 text-white'
-                    }`}
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-              {/* Bouton recommencer */}
-              {chatMessages.length > 0 && (
-                <button
-                  onClick={() => {
-                    setChatMessages([])
-                    setCurrentInput('')
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg font-medium transition-all"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Recommencer une nouvelle génération
-                </button>
-              )}
-              </div>
-            </div>
-            
+    {/* Zone d'actions : Copier + Valider */}
+    {chatMessages[chatMessages.length - 1]?.role === 'assistant' && (
+      <div className="space-y-3">
+        {/* Note d'information validation */}
+        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 text-sm text-blue-800">
+            <p className="font-medium mb-1">Validation de l'annonce</p>
+            <p className="text-blue-700">
+              Cliquez sur "Valider cette annonce" pour générer un PDF professionnel et l'enregistrer. 
+              Ce PDF sera automatiquement envoyé vers Monday à chaque validation.
+            </p>
+          </div>
+        </div>
 
-            {/* Messages sauvegarde */}
+        {/* Boutons Copier + Valider (côte à côte) */}
+        <div className="flex gap-3">
+          <button
+            onClick={() => handleCopyMessage(chatMessages[chatMessages.length - 1].content, chatMessages.length - 1)}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg font-medium transition-all flex-1"
+          >
+            {copiedIndex === chatMessages.length - 1 ? (
+              <>
+                <Check className="w-4 h-4 text-green-600" />
+                <span className="text-green-600">Copié !</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4 text-gray-700" />
+                <span className="text-gray-700">Copier le texte</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleValidateAnnonce}
+            disabled={validatingAnnonce}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+          >
+            {validatingAnnonce ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Génération PDF...</span>
+              </>
+            ) : validatedAnnonce ? (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Annonce validée !</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Valider cette annonce</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* Input pour continuer la conversation */}
+    <div className="flex gap-2">
+      <textarea
+        value={currentInput}
+        onChange={(e) => setCurrentInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey && !annonceLoading) {
+            e.preventDefault()
+            sendMessage(currentInput)
+          }
+        }}
+        placeholder="Demandez une modification ou posez une question... (Maj+Entrée pour aller à la ligne)"
+        disabled={annonceLoading}
+        rows={3}
+        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+      />
+      <button
+        onClick={() => sendMessage(currentInput)}
+        disabled={annonceLoading || !currentInput.trim()}
+        className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+          annonceLoading || !currentInput.trim()
+            ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+            : 'bg-purple-600 hover:bg-purple-700 text-white'
+        }`}
+      >
+        <Send className="w-4 h-4" />
+      </button>
+    </div>
+
+    {/* Bouton recommencer (discret) */}
+    <button
+      onClick={() => {
+        setChatMessages([])
+        setCurrentInput('')
+      }}
+      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all"
+    >
+      <Sparkles className="w-4 h-4" />
+      Recommencer une nouvelle génération
+    </button>
+  </div>
+)}
+</div>
+
+{/* Messages sauvegarde */}
             {saveStatus.saving && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
                 ⏳ Sauvegarde en cours...

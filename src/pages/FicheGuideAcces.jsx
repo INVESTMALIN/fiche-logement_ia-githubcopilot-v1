@@ -6,6 +6,8 @@ import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 import { Sparkles, Copy, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { generateGuideAccesPDF } from '../lib/generateAssistantPDF'
+import { supabase } from '../lib/supabaseClient'
 
 // Helper pour préparer le contexte pour le webhook Guide d'accès
 const prepareGuideAccesContext = (formData) => {
@@ -79,7 +81,8 @@ export default function FicheGuideAcces() {
     getField, 
     updateField, 
     handleSave, 
-    saveStatus 
+    saveStatus,
+    triggerAssistantPdfWebhook
   } = useForm()
 
   // États pour l'assistant Guide d'accès
@@ -88,6 +91,8 @@ export default function FicheGuideAcces() {
   const [userMessage, setUserMessage] = useState('')
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [validating, setValidating] = useState(false)
+  const [validated, setValidated] = useState(false)
   const sessionIdRef = useRef(null)
   const messagesEndRef = useRef(null) 
 
@@ -241,6 +246,67 @@ export default function FicheGuideAcces() {
       setError('Impossible d\'envoyer le message. Réessayez.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleValidateGuide = async () => {
+    const lastMessage = messages[messages.length - 1]
+    
+    if (!lastMessage || lastMessage.role !== 'assistant') {
+      console.error('Aucun guide à valider')
+      return
+    }
+
+    setValidating(true)
+
+    try {
+      console.log('📄 Validation du guide...')
+      
+      const metadata = {
+        numero_bien: formData.section_logement?.numero_bien || 'N/A',
+        type_propriete: formData.section_logement?.type_propriete || 'Non spécifié',
+        adresse: {
+          rue: formData.section_proprietaire?.adresse?.rue || '',
+          complement: formData.section_proprietaire?.adresse?.complement || '',
+          code_postal: formData.section_proprietaire?.adresse?.codePostal || '',
+          ville: formData.section_proprietaire?.adresse?.ville || ''
+        }
+      }
+
+      // Nettoyer le contenu
+      const cleanedContent = lastMessage.content
+        .replace(/([^\s]):/g, '$1 :')
+        .replace(/([^\s])!/g, '$1 !')
+        .replace(/([^\s])\?/g, '$1 ?')
+        .replace(/([^\s]);/g, '$1 ;')
+        .replace(/\u00A0/g, ' ')
+        .replace(/\u202F/g, ' ')
+
+      // Générer le PDF
+      const pdfUrl = await generateGuideAccesPDF(
+        cleanedContent,
+        metadata,
+        formData.id || formData.nom || 'nouvelle_fiche'
+      )
+
+      console.log('✅ PDF Guide d\'accès généré:', pdfUrl)
+
+      // 🔥 DÉCLENCHER WEBHOOK via FormContext
+      const result = await triggerAssistantPdfWebhook(pdfUrl, null)
+
+      if (result.success) {
+        console.log('✅ URL guide sauvegardée et webhook déclenché!')
+        setValidated(true)
+        setTimeout(() => setValidated(false), 3000)
+      } else {
+        console.error('❌ Erreur sauvegarde URL guide:', result.error)
+        throw new Error(result.error)
+      }
+
+    } catch (err) {
+      console.error('❌ Erreur validation guide:', err)
+    } finally {
+      setValidating(false)
     }
   }
 
@@ -402,6 +468,7 @@ export default function FicheGuideAcces() {
                   </div>
                 )}
 
+
                 {/* Conversation */}
                 {messages.length > 0 && (
                   <div className="space-y-4">
@@ -428,25 +495,63 @@ export default function FicheGuideAcces() {
                       <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Bouton copier le dernier message (si c'est l'assistant) */}
+                    {/* Zone d'actions : Copier + Valider */}
                     {messages[messages.length - 1]?.role === 'assistant' && (
-                      <div className="flex justify-end">
-                        <button
-                          onClick={handleCopyGuide}
-                          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white hover:bg-gray-50 border rounded-lg transition-colors"
-                        >
-                          {copied ? (
-                            <>
-                              <Check className="w-4 h-4 text-green-600" />
-                              <span className="text-green-600">Copié !</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-4 h-4" />
-                              <span>Copier le dernier message</span>
-                            </>
-                          )}
-                        </button>
+                      <div className="space-y-3">
+                        {/* Note d'information validation */}
+                        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1 text-sm text-blue-800">
+                            <p className="font-medium mb-1">Validation du guide</p>
+                            <p className="text-blue-700">
+                              Cliquez sur "Valider ce guide" pour générer un PDF professionnel et l'enregistrer. 
+                              Ce PDF sera automatiquement envoyé vers Monday à chaque validation.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Boutons Copier + Valider (côte à côte) */}
+                        <div className="flex gap-3">
+                          <button
+                            onClick={handleCopyGuide}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg font-medium transition-all flex-1"
+                          >
+                            {copied ? (
+                              <>
+                                <Check className="w-4 h-4 text-green-600" />
+                                <span className="text-green-600">Copié !</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-4 h-4 text-gray-700" />
+                                <span className="text-gray-700">Copier le texte</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            onClick={handleValidateGuide}
+                            disabled={validating}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+                          >
+                            {validating ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Génération PDF...</span>
+                              </>
+                            ) : validated ? (
+                              <>
+                                <Check className="w-4 h-4" />
+                                <span>Guide validé !</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-4 h-4" />
+                                <span>Valider ce guide</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -469,20 +574,20 @@ export default function FicheGuideAcces() {
                       <button
                         onClick={handleSendMessage}
                         disabled={loading || !userMessage.trim()}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Envoyer
                       </button>
                     </div>
 
-                    {/* Bouton recommencer */}
+                    {/* Bouton recommencer (discret) */}
                     <button
                       onClick={() => {
                         setMessages([])
                         setUserMessage('')
                         setError(null)
                       }}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg font-medium transition-all"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all"
                     >
                       <Sparkles className="w-4 h-4" />
                       Recommencer une nouvelle génération
@@ -491,7 +596,6 @@ export default function FicheGuideAcces() {
                 )}
               </div>
             )}
-
           </div>
 
           {/* Indicateur de sauvegarde */}
