@@ -52,6 +52,9 @@ export default function FicheSalonSam() {
     { key: 'equipements_livres_jouets_enfants', label: 'Livres et jouets pour enfants' },
     { key: 'equipements_climatisation', label: 'Climatisation' },
     { key: 'equipements_chauffage', label: 'Chauffage' },
+    { key: 'equipements_stores_manuels', label: 'Stores manuels' },
+    { key: 'equipements_volets', label: 'Volets' },
+    { key: 'equipements_stores_electriques', label: 'Stores électriques' },
     { key: 'equipements_autre', label: 'Autre (veuillez préciser)' }
   ]
 

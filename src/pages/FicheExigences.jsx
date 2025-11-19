@@ -74,6 +74,48 @@ export default function FicheExigences() {
             />
           </div>
 
+          {/* Animaux acceptés */}
+          <div className="col-span-1 md:col-span-2 mt-6">
+            <label className="block font-semibold mb-3">Animaux acceptés</label>
+            <div className="flex gap-4 mb-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="radio"
+                  name="animaux_acceptes"
+                  value="oui"
+                  checked={getField('section_exigences.animaux_acceptes') === 'oui'}
+                  onChange={(e) => handleInputChange('section_exigences.animaux_acceptes', e.target.value)}
+                  className="w-4 h-4"
+                />
+                <span>OUI</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input 
+                  type="radio"
+                  name="animaux_acceptes"
+                  value="non"
+                  checked={getField('section_exigences.animaux_acceptes') === 'non'}
+                  onChange={(e) => handleInputChange('section_exigences.animaux_acceptes', e.target.value)}
+                  className="w-4 h-4"
+                />
+                <span>NON</span>
+              </label>
+            </div>
+            
+            {/* Commentaire conditionnel */}
+            {getField('section_exigences.animaux_acceptes') && (
+              <div className="mt-4">
+                <label className="block font-medium mb-2">Commentaire (facultatif)</label>
+                <textarea 
+                  placeholder="Précisez les conditions d'acceptation des animaux, restrictions éventuelles..."
+                  className="w-full p-3 border rounded h-24"
+                  value={getField('section_exigences.animaux_commentaire')}
+                  onChange={(e) => handleInputChange('section_exigences.animaux_commentaire', e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Indicateur de sauvegarde */}
           {saveStatus.saving && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">

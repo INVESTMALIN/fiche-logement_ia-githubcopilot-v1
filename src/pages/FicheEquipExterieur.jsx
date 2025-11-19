@@ -347,7 +347,7 @@ export default function FicheEquipExterieur() {
                       'Table extérieure', 'Chaises', 'Chaises longues', 'Barbecue', 'Parasol',
                       'Produits pour la plage', 'Brasero', 'Hamac', 'Jeux pour enfants',
                       'Éclairage extérieur', 'Brise-vue', 'Clôture', 'Douche extérieure',
-                      'Moustiquaire', 'Autre'
+                      'Moustiquaire', 'Store banne électrique', 'Store banne manuel', 'Autre'
                     ].map(option => (
                       <label key={option} className="flex items-center gap-2 cursor-pointer">
                         <input

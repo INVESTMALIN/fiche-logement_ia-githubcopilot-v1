@@ -67,7 +67,7 @@ export default function FicheLogement() {
   const formData = getField('section_logement')
   const typePropriete = formData.type_propriete
   const isAutre = typePropriete === 'Autre'
-  const isAppartement = typePropriete === 'Appartement'
+  const isAppartement = typePropriete === 'Appartement' || typePropriete === 'Studio'
 
   return (
     <div className="flex min-h-screen">
@@ -203,7 +203,9 @@ export default function FicheLogement() {
           {/* Section conditionnelle Appartement */}
           {isAppartement && (
             <div className="mb-6">
-              <h3 className="font-semibold text-lg mb-4">Appartement - Accès au logement</h3>
+              <h3 className="font-semibold text-lg mb-4">
+                {typePropriete === 'Studio' ? 'Studio' : 'Appartement'} - Accès au logement
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 {/* Nom de la résidence */}

@@ -153,7 +153,9 @@ const initialFormData = {
     nombre_nuits_minimum: "",
     tarif_minimum_nuit: "",
     dates_bloquees: "",
-    precisions_exigences: ""
+    precisions_exigences: "",
+    animaux_acceptes: null,
+    animaux_commentaire: ""  
   },
 
   section_avis: {    
@@ -394,8 +396,8 @@ const initialFormData = {
   tv_services: [],                      // Array checkboxes
   tv_consoles: [],                      // Array checkboxes (si Console coché)
   tv_console_video: [],                 // PhotoUpload vidéo (si Console coché)
-  climatisation_type: "",               // Menu déroulant
-  climatisation_instructions: "",       // Textarea
+  climatisation_type: [],               // Menu déroulant
+  climatisation_instructions: "",       // Text
   climatisation_video: [],              // PhotoUpload vidéo
   chauffage_type: "",                   // Menu déroulant (obligatoire)
   chauffage_instructions: "",           // Textarea
@@ -484,7 +486,9 @@ const initialFormData = {
       equipements_ventilateur_plafond: null,
       equipements_espace_rangement: null,
       equipements_lit_bebe_60_120: null,
-      equipements_stores: null,
+      equipements_stores_manuels: null,
+      equipements_volets: null,
+      equipements_stores_electriques: null,
       equipements_television: null,
       equipements_oreillers_couvertures_sup: null,
       equipements_chauffage: null,
@@ -1006,6 +1010,9 @@ section_salon_sam: {
   equipements_livres_jouets_enfants: null,
   equipements_climatisation: null,
   equipements_chauffage: null,
+  equipements_stores_manuels: null,
+  equipements_volets: null,
+  equipements_stores_electriques: null,
   equipements_autre: null,
   equipements_autre_details: "",
   

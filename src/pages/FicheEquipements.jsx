@@ -35,9 +35,6 @@ const BRANCH_SCHEMAS = {
   accessible_mobilite_reduite: [
     'pmr_details'
   ],
-  animaux_acceptes: [
-    'animaux_commentaire'
-  ],
   wifi_disponible: [
     'wifi_nom_reseau',
     'wifi_mot_de_passe',
@@ -148,7 +145,6 @@ export default function FicheEquipements() {
     { key: 'tourne_disque', label: 'Tourne disque' },
     { key: 'coffre_fort', label: 'Coffre fort' },
     { key: 'ascenseur', label: 'Ascenseur' },
-    { key: 'animaux_acceptes', label: 'Animaux acceptés' },
     { key: 'fetes_autorisees', label: 'Fêtes autorisées' },
     
     // Colonne 2
@@ -528,18 +524,32 @@ export default function FicheEquipements() {
                     
                     {/* Type de climatisation */}
                     <div className="mb-4">
-                      <label className="block font-medium mb-2">Type de climatisation</label>
-                      <select
-                        className="w-full p-3 border rounded"
-                        value={formData.climatisation_type || ""}
-                        onChange={(e) => handleInputChange('section_equipements.climatisation_type', e.target.value)}
-                      >
-                        <option value="">Sélectionnez un type</option>
-                        <option value="Climatisation centrale">Climatisation centrale</option>
-                        <option value="Climatiseur portable">Climatiseur portable</option>
-                        <option value="Climatiseur de fenêtre">Climatiseur de fenêtre</option>
-                        <option value="Système split sans évacuation">Système split sans évacuation</option>
-                      </select>
+                      <label className="block font-medium mb-2">Type(s) de climatisation</label>
+                      <div className="space-y-2">
+                        {[
+                          'Climatisation centrale',
+                          'Climatiseur portable',
+                          'Climatiseur de fenêtre',
+                          'Système split sans évacuation'
+                        ].map(option => (
+                          <label key={option} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={(formData.climatisation_type || []).includes(option)}
+                              onChange={(e) => {
+                                const currentArray = formData.climatisation_type || []
+                                if (e.target.checked) {
+                                  handleInputChange('section_equipements.climatisation_type', [...currentArray, option])
+                                } else {
+                                  handleInputChange('section_equipements.climatisation_type', currentArray.filter(item => item !== option))
+                                }
+                              }}
+                              className="w-4 h-4"
+                            />
+                            <span>{option}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Instructions d'utilisation */}
@@ -880,28 +890,6 @@ export default function FicheEquipements() {
                         placeholder="Veuillez fournir des informations détaillées sur les équipements et aménagements d'accessibilité du logement (rampes, largeur des portes, salle de bain adaptée, etc.)"
                         value={formData.pmr_details || ""}
                         onChange={(e) => handleInputChange('section_equipements.pmr_details', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* ============================================
-                    ANIMAUX - AFFICHAGE CONDITIONNEL
-                    ============================================ */}
-                {formData.animaux_acceptes === true && (
-                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <h3 className="font-semibold mb-3 text-gray-800">🐾 Animaux acceptés</h3>
-                    
-                    {/* Commentaire */}
-                    <div className="mb-4">
-                      <label className="block font-medium mb-2">
-                        Commentaire (plainte ou demande spécifique du propriétaire)
-                      </label>
-                      <textarea
-                        className="w-full p-3 border rounded h-24"
-                        placeholder="Précisez les conditions d'acceptation des animaux, restrictions éventuelles, demandes du propriétaire..."
-                        value={formData.animaux_commentaire || ""}
-                        onChange={(e) => handleInputChange('section_equipements.animaux_commentaire', e.target.value)}
                       />
                     </div>
                   </div>

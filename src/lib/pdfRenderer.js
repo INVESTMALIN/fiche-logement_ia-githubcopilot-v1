@@ -336,11 +336,6 @@ export const renderEquipementsSection = (doc, sectionData, yPos) => {
       name: 'Accessible PMR',
       checkField: 'accessible_mobilite_reduite',
       relatedFields: ['pmr_details']
-    },
-    {
-      name: 'Animaux acceptés',
-      checkField: 'animaux_acceptes',
-      relatedFields: ['animaux_commentaire']
     }
   ]
   

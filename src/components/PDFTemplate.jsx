@@ -715,7 +715,6 @@ const renderEquipementsGrouped = (sectionData) => {
     { key: 'seche_linge', label: 'Sèche-linge', emoji: '🌀', hasConditionals: true },
     { key: 'piano', label: 'Piano', emoji: '🎹', hasConditionals: true },
     { key: 'accessible_mobilite_reduite', label: 'Accessible aux personnes à mobilité réduite', emoji: '♿', hasConditionals: true },
-    { key: 'animaux_acceptes', label: 'Animaux acceptés', emoji: '🐾', hasConditionals: true },
     
     // Équipements simples (checkbox only)
     { key: 'fer_repasser', label: 'Fer à repasser', emoji: '🧹', hasConditionals: false },

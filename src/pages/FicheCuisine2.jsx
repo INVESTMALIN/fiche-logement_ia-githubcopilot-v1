@@ -344,7 +344,7 @@ export default function FicheCuisine2() {
                   fieldPath="section_cuisine_2.photos_tiroirs_placards"
                   label="Photos des tiroirs et placards de cuisine (ustensiles, vaisselle, rangement)"
                   multiple={true}
-                  maxFiles={12}
+                  maxFiles={30}
                 />
               </div>
 

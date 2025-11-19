@@ -285,7 +285,7 @@ export default function FicheGestionLinge() {
                     fieldPath="section_gestion_linge.photos_linge"
                     label="Photos du linge"
                     multiple={true}
-                    maxFiles={12}
+                    maxFiles={30}
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     Appuyez pour prendre des photos ou accéder à la pellicule
