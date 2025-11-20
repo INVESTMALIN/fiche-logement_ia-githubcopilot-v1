@@ -55,12 +55,6 @@ const renderHeader = (doc, type, metadata) => {
   doc.text(title, LAYOUT.marginLeft, yPos)
   yPos += 10
 
-  // Sous-titre Letahost
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(COLORS.gray)
-  doc.text('Letahost - Conciergerie de luxe', LAYOUT.marginLeft, yPos)
-  yPos += 8
 
   // Ligne de séparation
   doc.setDrawColor(219, 174, 97)
@@ -155,32 +149,50 @@ const renderHeader = (doc, type, metadata) => {
   return yPos
 }
 
-// RENDER : Contenu SIMPLE (pas de formatage complexe)
-// RENDER : Contenu avec détection titres Annonce + Guide
+// RENDER : Contenu avec détection mixte (Majuscules OU Deux points)
 const renderContent = (doc, content, yPos) => {
-  const lines = content.split('\n').filter(line => line.trim())
-
-  lines.forEach((line) => {
+  const lines = content.split('\n')
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    // Reset page break check
     yPos = checkPageBreak(doc, yPos, 10)
     
     const trimmedLine = line.trim()
     
-    // Détecter les titres
-    const isSectionTitle = trimmedLine.includes('SECTION')
-    const isUppercaseTitle = trimmedLine === trimmedLine.toUpperCase() && 
-                             trimmedLine.length > 3 && 
-                             trimmedLine.length < 100
+    // On ignore les lignes vides ou les séparateurs simples
+    if (!trimmedLine || trimmedLine === '-') {
+      continue
+    }
+
+    // --- LOGIQUE DE DÉTECTION ---
+
+    // 1. Nettoyage pour vérification majuscules (on enlève les tirets, puces et espaces au début)
+    // Ex: "- ANALYSE DU TRANSCRIPT" devient "ANALYSE DU TRANSCRIPT"
+    const cleanText = trimmedLine.replace(/^[-•\s]+/, '')
+
+    // 2. Détection TITRE GUIDE (Ancienne logique : tout en majuscules)
+    // On vérifie qu'il y a des lettres et que c'est égal à sa version majuscule
+    const hasLetters = /[a-zA-Z]/.test(cleanText)
+    const isUppercase = hasLetters && (cleanText === cleanText.toUpperCase()) && cleanText.length > 3
+
+    // 3. Détection TITRE ANNONCE (Nouvelle logique : finit par deux points)
+    const endsWithColon = trimmedLine.endsWith(':') || trimmedLine.endsWith(':\u00a0')
     
-    if (isSectionTitle) {
-      // TITRE SECTION (Annonce) : gras orange
+    // Titre détecté si l'une des deux conditions est vraie
+    // On ajoute une limite de longueur (100 chars) pour éviter de mettre en gras tout un paragraphe qui finirait par :
+    const isTitle = (isUppercase || endsWithColon) && trimmedLine.length < 100
+
+    // --- APPLICATION DU STYLE ---
+
+    if (isTitle) {
+      // TITRE (Guide ou Annonce) : Gras, Orange
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(11)
-      doc.setTextColor(COLORS.primaryDark)
-    } else if (isUppercaseTitle) {
-      // TITRE MAJUSCULES (Guide) : gras noir
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(11)
-      doc.setTextColor(COLORS.primaryDark)
+      doc.setFontSize(12) 
+      doc.setTextColor(COLORS.primaryDark) // Orange Letahost
+      
+      // Petit espace avant le titre
+      yPos += 4 
     } else {
       // TEXTE NORMAL
       doc.setFont('helvetica', 'normal')
@@ -188,7 +200,7 @@ const renderContent = (doc, content, yPos) => {
       doc.setTextColor(COLORS.dark)
     }
     
-    // Wrapper le texte manuellement
+    // --- WRAPPING DU TEXTE ---
     const words = trimmedLine.split(' ')
     let currentLine = ''
     
@@ -198,7 +210,7 @@ const renderContent = (doc, content, yPos) => {
       
       if (testWidth > LAYOUT.contentWidth && currentLine) {
         doc.text(currentLine, LAYOUT.marginLeft, yPos)
-        yPos += 6
+        yPos += 5 // Hauteur de ligne
         yPos = checkPageBreak(doc, yPos, 6)
         currentLine = word
       } else {
@@ -208,11 +220,18 @@ const renderContent = (doc, content, yPos) => {
     
     if (currentLine) {
       doc.text(currentLine, LAYOUT.marginLeft, yPos)
-      yPos += 6
+      yPos += 5
     }
     
-    yPos += 1
-  })
+    // --- ESPACEMENT APRÈS ---
+    if (isTitle) {
+      yPos += 2 // Espace après titre
+    } else {
+      yPos += 1.5 // Espace après paragraphe
+    }
+    
+    yPos = checkPageBreak(doc, yPos, 6)
+  }
 
   return yPos
 }
