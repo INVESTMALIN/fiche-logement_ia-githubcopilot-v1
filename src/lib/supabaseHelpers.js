@@ -5,11 +5,11 @@ import { supabase, safeSupabaseQuery } from './supabaseClient'
 export const mapFormDataToSupabase = (formData) => {
   console.log('🔍 formData.guide_acces_pdf_url:', formData.guide_acces_pdf_url)
   console.log('🔍 formData.annonce_pdf_url:', formData.annonce_pdf_url)
-  
+
   return {
     nom: formData.nom || 'Nouvelle fiche',
     statut: formData.statut || 'Brouillon',
-    
+
     // Section Propriétaire
     proprietaire_prenom: formData.section_proprietaire?.prenom || null,
     proprietaire_nom: formData.section_proprietaire?.nom || null,
@@ -18,7 +18,7 @@ export const mapFormDataToSupabase = (formData) => {
     proprietaire_adresse_complement: formData.section_proprietaire?.adresse?.complement || null,
     proprietaire_adresse_ville: formData.section_proprietaire?.adresse?.ville || null,
     proprietaire_adresse_code_postal: formData.section_proprietaire?.adresse?.codePostal || null,
-    
+
     // Section Logement - CORRIGÉ POUR LES NOUVEAUX CHAMPS
     // ✅ NOUVEAUX champs Monday (priorité)
     logement_type_propriete: formData.section_logement?.type_propriete || null,
@@ -71,7 +71,7 @@ export const mapFormDataToSupabase = (formData) => {
     clefs_precision: formData.section_clefs?.clefs?.precision || null,
     clefs_prestataire: formData.section_clefs?.clefs?.prestataire ?? null,
     clefs_details: formData.section_clefs?.clefs?.details || null,
-    
+
     // Section Airbnb
     airbnb_annonce_active: formData.section_airbnb?.annonce_active,
     airbnb_url: formData.section_airbnb?.url_annonce || null,
@@ -79,7 +79,7 @@ export const mapFormDataToSupabase = (formData) => {
     airbnb_email: formData.section_airbnb?.email_compte || null,
     airbnb_mot_passe: formData.section_airbnb?.mot_passe || null,
     airbnb_explication_refus: formData.section_airbnb?.explication_refus || null,
-    
+
     // Section Booking
     booking_annonce_active: formData.section_booking?.annonce_active,
     booking_url: formData.section_booking?.url_annonce || null,
@@ -87,14 +87,14 @@ export const mapFormDataToSupabase = (formData) => {
     booking_email: formData.section_booking?.email_compte || null,
     booking_mot_passe: formData.section_booking?.mot_passe || null,
     booking_explication_refus: formData.section_booking?.explication_refus || null,
-    
+
     // 🎯 Section Réglementation
     reglementation_ville_changement_usage: formData.section_reglementation?.ville_changement_usage || null,
     reglementation_date_expiration_changement: formData.section_reglementation?.date_expiration_changement || null,
     reglementation_numero_declaration: formData.section_reglementation?.numero_declaration || null,
     reglementation_ville_declaration_simple: formData.section_reglementation?.ville_declaration_simple || null,
     reglementation_details: formData.section_reglementation?.details_reglementation || null,
-    
+
     // Documents checklist
     reglementation_documents_carte_identite: formData.section_reglementation?.documents?.carte_identite ?? null,
     reglementation_documents_rib: formData.section_reglementation?.documents?.rib ?? null,
@@ -110,7 +110,7 @@ export const mapFormDataToSupabase = (formData) => {
     exigences_precisions_exigences: formData.section_exigences?.precisions_exigences || null,
     exigences_animaux_acceptes: formData.section_exigences?.animaux_acceptes ?? null,
     exigences_animaux_commentaire: formData.section_exigences?.animaux_commentaire ?? "",
-    
+
     // Section Avis
     // 🎬 Évaluation environnement
     avis_video_globale_validation: formData.section_avis?.video_globale_validation ?? null,
@@ -296,6 +296,8 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_tv: formData.section_equipements?.tv ?? null,
     equipements_climatisation: formData.section_equipements?.climatisation ?? null,
     equipements_chauffage: formData.section_equipements?.chauffage ?? null,
+    equipements_ventilateur: formData.section_equipements?.ventilateur ?? null,
+    equipements_seche_serviettes: formData.section_equipements?.seche_serviettes ?? null,
     equipements_lave_linge: formData.section_equipements?.lave_linge ?? null,
     equipements_seche_linge: formData.section_equipements?.seche_linge ?? null,
     equipements_fer_repasser: formData.section_equipements?.fer_repasser ?? null,
@@ -312,6 +314,8 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_fetes_autorisees: formData.section_equipements?.fetes_autorisees ?? null,
     equipements_fumeurs_acceptes: formData.section_equipements?.fumeurs_acceptes ?? null,
 
+    // Wifi
+    equipements_wifi: formData.section_equipements?.wifi ?? null,
     equipements_wifi_statut: formData.section_equipements?.wifi_statut || null,
     equipements_wifi_details: formData.section_equipements?.wifi_details || null,
     equipements_wifi_nom_reseau: formData.section_equipements?.wifi_nom_reseau || null,
@@ -326,7 +330,7 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_parking_payant_type: formData.section_equipements?.parking_payant_type || null,
     equipements_parking_payant_details: formData.section_equipements?.parking_payant_details || null,
 
-    // 🆕 TV
+    // TV
     equipements_tv_type: formData.section_equipements?.tv_type || null,
     equipements_tv_taille: formData.section_equipements?.tv_taille || null,
     equipements_tv_type_autre_details: formData.section_equipements?.tv_type_autre_details || null,
@@ -335,41 +339,62 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_tv_consoles: formData.section_equipements?.tv_consoles || [],
     equipements_tv_console_video: formData.section_equipements?.tv_console_video || [],
 
-    // 🆕 CLIMATISATION
+    // CLIMATISATION
     equipements_climatisation_type: formData.section_equipements?.climatisation_type || [],
     equipements_climatisation_instructions: formData.section_equipements?.climatisation_instructions || null,
     equipements_climatisation_video: formData.section_equipements?.climatisation_video || [],
 
-    // 🆕 CHAUFFAGE
-    equipements_chauffage_type: formData.section_equipements?.chauffage_type || null,
+    // CHAUFFAGE
+    equipements_chauffage_types: formData.section_equipements?.chauffage_types || [],  // ✅ À GARDER
     equipements_chauffage_instructions: formData.section_equipements?.chauffage_instructions || null,
     equipements_chauffage_video: formData.section_equipements?.chauffage_video || [],
 
-    // 🆕 LAVE-LINGE
+    // VENTILATEUR
+    equipements_ventilateur_types: formData.section_equipements?.ventilateur_types || [],
+    equipements_ventilateur_nombre: formData.section_equipements?.ventilateur_nombre || null,
+    equipements_ventilateur_emplacement: formData.section_equipements?.ventilateur_emplacement || null,
+    equipements_ventilateur_photos: formData.section_equipements?.ventilateur_photos || [],
+    equipements_ventilateur_videos: formData.section_equipements?.ventilateur_videos || [],
+
+    // SÈCHE SERVIETTES
+    equipements_seche_serviettes_photos: formData.section_equipements?.seche_serviettes_photos || [],
+    equipements_seche_serviettes_videos: formData.section_equipements?.seche_serviettes_videos || [],
+
+    // LAVE-LINGE
     equipements_lave_linge_prix: formData.section_equipements?.lave_linge_prix || null,
     equipements_lave_linge_emplacement: formData.section_equipements?.lave_linge_emplacement || null,
     equipements_lave_linge_instructions: formData.section_equipements?.lave_linge_instructions || null,
     equipements_lave_linge_video: formData.section_equipements?.lave_linge_video || [],
 
-    // 🆕 SÈCHE-LINGE
+    // SÈCHE-LINGE
     equipements_seche_linge_prix: formData.section_equipements?.seche_linge_prix || null,
     equipements_seche_linge_emplacement: formData.section_equipements?.seche_linge_emplacement || null,
     equipements_seche_linge_instructions: formData.section_equipements?.seche_linge_instructions || null,
     equipements_seche_linge_video: formData.section_equipements?.seche_linge_video || [],
 
-    // 🆕 PARKING (ajouts aux champs existants)
+    // PARKING (ajouts aux champs existants)
     equipements_parking_photos: formData.section_equipements?.parking_photos || [],
     equipements_parking_videos: formData.section_equipements?.parking_videos || [],
 
-    // 🆕 PIANO
+    // PIANO
     equipements_piano_marque: formData.section_equipements?.piano_marque || null,
     equipements_piano_type: formData.section_equipements?.piano_type || null,
 
-    // 🆕 PMR
+    // PMR
     equipements_pmr_details: formData.section_equipements?.pmr_details || null,
 
-    // 🆕 ANIMAUX
+    // ANIMAUX
     equipements_animaux_commentaire: formData.section_equipements?.animaux_commentaire || null,
+
+    // EQUIPEMENT MÉNAGE
+    equipements_menage_aspirateur_types: formData.section_equipements?.menage_aspirateur_types || [],
+    equipements_menage_aspirateur_photos: formData.section_equipements?.menage_aspirateur_photos || [],
+    equipements_menage_serpillere_types: formData.section_equipements?.menage_serpillere_types || [],
+    equipements_menage_serpillere_photos: formData.section_equipements?.menage_serpillere_photos || [],
+    equipements_menage_balais_photos: formData.section_equipements?.menage_balais_photos || [],
+    equipements_menage_balayette_photos: formData.section_equipements?.menage_balayette_photos || [],
+    equipements_menage_autres_elements: formData.section_equipements?.menage_autres_elements || null,
+    equipements_menage_autres_elements_photos: formData.section_equipements?.menage_autres_elements_photos || [],
 
     // Section Consommables
     consommables_fournis_par_prestataire: formData.section_consommables?.fournis_par_prestataire ?? null,
@@ -424,12 +449,11 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_1_autre_type_lit: formData.section_chambres?.chambre_1?.autre_type_lit || null,
     chambres_chambre_1_equipements_draps_fournis: formData.section_chambres?.chambre_1?.equipements_draps_fournis ?? null,
     chambres_chambre_1_equipements_climatisation: formData.section_chambres?.chambre_1?.equipements_climatisation ?? null,
-    chambres_chambre_1_equipements_ventilateur_plafond: formData.section_chambres?.chambre_1?.equipements_ventilateur_plafond ?? null,
     chambres_chambre_1_equipements_espace_rangement: formData.section_chambres?.chambre_1?.equipements_espace_rangement ?? null,
     chambres_chambre_1_equipements_lit_bebe_60_120: formData.section_chambres?.chambre_1?.equipements_lit_bebe_60_120 ?? null,
     chambres_chambre_1_equipements_stores_manuels: formData.section_chambres?.chambre_1?.equipements_stores_manuels ?? null,
     chambres_chambre_1_equipements_volets: formData.section_chambres?.chambre_1?.equipements_volets ?? null,
-    chambres_chambre_1_equipements_stores_electriques: formData.section_chambres?.chambre_1?.equipements_stores_electriques ?? null,    chambres_chambre_1_equipements_television: formData.section_chambres?.chambre_1?.equipements_television ?? null,
+    chambres_chambre_1_equipements_stores_electriques: formData.section_chambres?.chambre_1?.equipements_stores_electriques ?? null, chambres_chambre_1_equipements_television: formData.section_chambres?.chambre_1?.equipements_television ?? null,
     chambres_chambre_1_equipements_oreillers_couvertures_sup: formData.section_chambres?.chambre_1?.equipements_oreillers_couvertures_sup ?? null,
     chambres_chambre_1_equipements_chauffage: formData.section_chambres?.chambre_1?.equipements_chauffage ?? null,
     chambres_chambre_1_equipements_cintres: formData.section_chambres?.chambre_1?.equipements_cintres ?? null,
@@ -456,7 +480,6 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_2_autre_type_lit: formData.section_chambres?.chambre_2?.autre_type_lit || null,
     chambres_chambre_2_equipements_draps_fournis: formData.section_chambres?.chambre_2?.equipements_draps_fournis ?? null,
     chambres_chambre_2_equipements_climatisation: formData.section_chambres?.chambre_2?.equipements_climatisation ?? null,
-    chambres_chambre_2_equipements_ventilateur_plafond: formData.section_chambres?.chambre_2?.equipements_ventilateur_plafond ?? null,
     chambres_chambre_2_equipements_espace_rangement: formData.section_chambres?.chambre_2?.equipements_espace_rangement ?? null,
     chambres_chambre_2_equipements_lit_bebe_60_120: formData.section_chambres?.chambre_2?.equipements_lit_bebe_60_120 ?? null,
     chambres_chambre_2_equipements_stores_manuels: formData.section_chambres?.chambre_2?.equipements_stores_manuels ?? null,
@@ -489,12 +512,11 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_3_autre_type_lit: formData.section_chambres?.chambre_3?.autre_type_lit || null,
     chambres_chambre_3_equipements_draps_fournis: formData.section_chambres?.chambre_3?.equipements_draps_fournis ?? null,
     chambres_chambre_3_equipements_climatisation: formData.section_chambres?.chambre_3?.equipements_climatisation ?? null,
-    chambres_chambre_3_equipements_ventilateur_plafond: formData.section_chambres?.chambre_3?.equipements_ventilateur_plafond ?? null,
     chambres_chambre_3_equipements_espace_rangement: formData.section_chambres?.chambre_3?.equipements_espace_rangement ?? null,
     chambres_chambre_3_equipements_lit_bebe_60_120: formData.section_chambres?.chambre_3?.equipements_lit_bebe_60_120 ?? null,
     chambres_chambre_3_equipements_stores_manuels: formData.section_chambres?.chambre_3?.equipements_stores_manuels ?? null,
     chambres_chambre_3_equipements_volets: formData.section_chambres?.chambre_3?.equipements_volets ?? null,
-    chambres_chambre_3_equipements_stores_electriques: formData.section_chambres?.chambre_3?.equipements_stores_electriques ?? null,    chambres_chambre_3_equipements_television: formData.section_chambres?.chambre_3?.equipements_television ?? null,
+    chambres_chambre_3_equipements_stores_electriques: formData.section_chambres?.chambre_3?.equipements_stores_electriques ?? null, chambres_chambre_3_equipements_television: formData.section_chambres?.chambre_3?.equipements_television ?? null,
     chambres_chambre_3_equipements_oreillers_couvertures_sup: formData.section_chambres?.chambre_3?.equipements_oreillers_couvertures_sup ?? null,
     chambres_chambre_3_equipements_chauffage: formData.section_chambres?.chambre_3?.equipements_chauffage ?? null,
     chambres_chambre_3_equipements_cintres: formData.section_chambres?.chambre_3?.equipements_cintres ?? null,
@@ -521,12 +543,11 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_4_autre_type_lit: formData.section_chambres?.chambre_4?.autre_type_lit || null,
     chambres_chambre_4_equipements_draps_fournis: formData.section_chambres?.chambre_4?.equipements_draps_fournis ?? null,
     chambres_chambre_4_equipements_climatisation: formData.section_chambres?.chambre_4?.equipements_climatisation ?? null,
-    chambres_chambre_4_equipements_ventilateur_plafond: formData.section_chambres?.chambre_4?.equipements_ventilateur_plafond ?? null,
     chambres_chambre_4_equipements_espace_rangement: formData.section_chambres?.chambre_4?.equipements_espace_rangement ?? null,
     chambres_chambre_4_equipements_lit_bebe_60_120: formData.section_chambres?.chambre_4?.equipements_lit_bebe_60_120 ?? null,
     chambres_chambre_4_equipements_stores_manuels: formData.section_chambres?.chambre_4?.equipements_stores_manuels ?? null,
     chambres_chambre_4_equipements_volets: formData.section_chambres?.chambre_4?.equipements_volets ?? null,
-    chambres_chambre_4_equipements_stores_electriques: formData.section_chambres?.chambre_4?.equipements_stores_electriques ?? null,    chambres_chambre_4_equipements_television: formData.section_chambres?.chambre_4?.equipements_television ?? null,
+    chambres_chambre_4_equipements_stores_electriques: formData.section_chambres?.chambre_4?.equipements_stores_electriques ?? null, chambres_chambre_4_equipements_television: formData.section_chambres?.chambre_4?.equipements_television ?? null,
     chambres_chambre_4_equipements_oreillers_couvertures_sup: formData.section_chambres?.chambre_4?.equipements_oreillers_couvertures_sup ?? null,
     chambres_chambre_4_equipements_chauffage: formData.section_chambres?.chambre_4?.equipements_chauffage ?? null,
     chambres_chambre_4_equipements_cintres: formData.section_chambres?.chambre_4?.equipements_cintres ?? null,
@@ -553,12 +574,11 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_5_autre_type_lit: formData.section_chambres?.chambre_5?.autre_type_lit || null,
     chambres_chambre_5_equipements_draps_fournis: formData.section_chambres?.chambre_5?.equipements_draps_fournis ?? null,
     chambres_chambre_5_equipements_climatisation: formData.section_chambres?.chambre_5?.equipements_climatisation ?? null,
-    chambres_chambre_5_equipements_ventilateur_plafond: formData.section_chambres?.chambre_5?.equipements_ventilateur_plafond ?? null,
     chambres_chambre_5_equipements_espace_rangement: formData.section_chambres?.chambre_5?.equipements_espace_rangement ?? null,
     chambres_chambre_5_equipements_lit_bebe_60_120: formData.section_chambres?.chambre_5?.equipements_lit_bebe_60_120 ?? null,
     chambres_chambre_5_equipements_stores_manuels: formData.section_chambres?.chambre_5?.equipements_stores_manuels ?? null,
     chambres_chambre_5_equipements_volets: formData.section_chambres?.chambre_5?.equipements_volets ?? null,
-    chambres_chambre_5_equipements_stores_electriques: formData.section_chambres?.chambre_5?.equipements_stores_electriques ?? null,    chambres_chambre_5_equipements_television: formData.section_chambres?.chambre_5?.equipements_television ?? null,
+    chambres_chambre_5_equipements_stores_electriques: formData.section_chambres?.chambre_5?.equipements_stores_electriques ?? null, chambres_chambre_5_equipements_television: formData.section_chambres?.chambre_5?.equipements_television ?? null,
     chambres_chambre_5_equipements_oreillers_couvertures_sup: formData.section_chambres?.chambre_5?.equipements_oreillers_couvertures_sup ?? null,
     chambres_chambre_5_equipements_chauffage: formData.section_chambres?.chambre_5?.equipements_chauffage ?? null,
     chambres_chambre_5_equipements_cintres: formData.section_chambres?.chambre_5?.equipements_cintres ?? null,
@@ -585,12 +605,11 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_6_autre_type_lit: formData.section_chambres?.chambre_6?.autre_type_lit || null,
     chambres_chambre_6_equipements_draps_fournis: formData.section_chambres?.chambre_6?.equipements_draps_fournis ?? null,
     chambres_chambre_6_equipements_climatisation: formData.section_chambres?.chambre_6?.equipements_climatisation ?? null,
-    chambres_chambre_6_equipements_ventilateur_plafond: formData.section_chambres?.chambre_6?.equipements_ventilateur_plafond ?? null,
     chambres_chambre_6_equipements_espace_rangement: formData.section_chambres?.chambre_6?.equipements_espace_rangement ?? null,
     chambres_chambre_6_equipements_lit_bebe_60_120: formData.section_chambres?.chambre_6?.equipements_lit_bebe_60_120 ?? null,
     chambres_chambre_6_equipements_stores_manuels: formData.section_chambres?.chambre_6?.equipements_stores_manuels ?? null,
     chambres_chambre_6_equipements_volets: formData.section_chambres?.chambre_6?.equipements_volets ?? null,
-    chambres_chambre_6_equipements_stores_electriques: formData.section_chambres?.chambre_6?.equipements_stores_electriques ?? null,    chambres_chambre_6_equipements_television: formData.section_chambres?.chambre_6?.equipements_television ?? null,
+    chambres_chambre_6_equipements_stores_electriques: formData.section_chambres?.chambre_6?.equipements_stores_electriques ?? null, chambres_chambre_6_equipements_television: formData.section_chambres?.chambre_6?.equipements_television ?? null,
     chambres_chambre_6_equipements_oreillers_couvertures_sup: formData.section_chambres?.chambre_6?.equipements_oreillers_couvertures_sup ?? null,
     chambres_chambre_6_equipements_chauffage: formData.section_chambres?.chambre_6?.equipements_chauffage ?? null,
     chambres_chambre_6_equipements_cintres: formData.section_chambres?.chambre_6?.equipements_cintres ?? null,
@@ -615,7 +634,6 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_1_equipements_bidet: formData.section_salle_de_bains?.salle_de_bain_1?.equipements_bidet ?? null,
     salle_de_bains_salle_de_bain_1_equipements_chauffage: formData.section_salle_de_bains?.salle_de_bain_1?.equipements_chauffage ?? null,
     salle_de_bains_salle_de_bain_1_equipements_lave_linge: formData.section_salle_de_bains?.salle_de_bain_1?.equipements_lave_linge ?? null,
-    salle_de_bains_salle_de_bain_1_equipements_seche_serviette: formData.section_salle_de_bains?.salle_de_bain_1?.equipements_seche_serviette ?? null,
     salle_de_bains_salle_de_bain_1_equipements_seche_cheveux: formData.section_salle_de_bains?.salle_de_bain_1?.equipements_seche_cheveux ?? null,
     salle_de_bains_salle_de_bain_1_equipements_autre: formData.section_salle_de_bains?.salle_de_bain_1?.equipements_autre ?? null,
     salle_de_bains_salle_de_bain_1_equipements_autre_details: formData.section_salle_de_bains?.salle_de_bain_1?.equipements_autre_details || null,
@@ -635,7 +653,6 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_2_equipements_bidet: formData.section_salle_de_bains?.salle_de_bain_2?.equipements_bidet ?? null,
     salle_de_bains_salle_de_bain_2_equipements_chauffage: formData.section_salle_de_bains?.salle_de_bain_2?.equipements_chauffage ?? null,
     salle_de_bains_salle_de_bain_2_equipements_lave_linge: formData.section_salle_de_bains?.salle_de_bain_2?.equipements_lave_linge ?? null,
-    salle_de_bains_salle_de_bain_2_equipements_seche_serviette: formData.section_salle_de_bains?.salle_de_bain_2?.equipements_seche_serviette ?? null,
     salle_de_bains_salle_de_bain_2_equipements_seche_cheveux: formData.section_salle_de_bains?.salle_de_bain_2?.equipements_seche_cheveux ?? null,
     salle_de_bains_salle_de_bain_2_equipements_autre: formData.section_salle_de_bains?.salle_de_bain_2?.equipements_autre ?? null,
     salle_de_bains_salle_de_bain_2_equipements_autre_details: formData.section_salle_de_bains?.salle_de_bain_2?.equipements_autre_details || null,
@@ -655,7 +672,6 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_3_equipements_bidet: formData.section_salle_de_bains?.salle_de_bain_3?.equipements_bidet ?? null,
     salle_de_bains_salle_de_bain_3_equipements_chauffage: formData.section_salle_de_bains?.salle_de_bain_3?.equipements_chauffage ?? null,
     salle_de_bains_salle_de_bain_3_equipements_lave_linge: formData.section_salle_de_bains?.salle_de_bain_3?.equipements_lave_linge ?? null,
-    salle_de_bains_salle_de_bain_3_equipements_seche_serviette: formData.section_salle_de_bains?.salle_de_bain_3?.equipements_seche_serviette ?? null,
     salle_de_bains_salle_de_bain_3_equipements_seche_cheveux: formData.section_salle_de_bains?.salle_de_bain_3?.equipements_seche_cheveux ?? null,
     salle_de_bains_salle_de_bain_3_equipements_autre: formData.section_salle_de_bains?.salle_de_bain_3?.equipements_autre ?? null,
     salle_de_bains_salle_de_bain_3_equipements_autre_details: formData.section_salle_de_bains?.salle_de_bain_3?.equipements_autre_details || null,
@@ -675,7 +691,6 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_4_equipements_bidet: formData.section_salle_de_bains?.salle_de_bain_4?.equipements_bidet ?? null,
     salle_de_bains_salle_de_bain_4_equipements_chauffage: formData.section_salle_de_bains?.salle_de_bain_4?.equipements_chauffage ?? null,
     salle_de_bains_salle_de_bain_4_equipements_lave_linge: formData.section_salle_de_bains?.salle_de_bain_4?.equipements_lave_linge ?? null,
-    salle_de_bains_salle_de_bain_4_equipements_seche_serviette: formData.section_salle_de_bains?.salle_de_bain_4?.equipements_seche_serviette ?? null,
     salle_de_bains_salle_de_bain_4_equipements_seche_cheveux: formData.section_salle_de_bains?.salle_de_bain_4?.equipements_seche_cheveux ?? null,
     salle_de_bains_salle_de_bain_4_equipements_autre: formData.section_salle_de_bains?.salle_de_bain_4?.equipements_autre ?? null,
     salle_de_bains_salle_de_bain_4_equipements_autre_details: formData.section_salle_de_bains?.salle_de_bain_4?.equipements_autre_details || null,
@@ -695,7 +710,6 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_5_equipements_bidet: formData.section_salle_de_bains?.salle_de_bain_5?.equipements_bidet ?? null,
     salle_de_bains_salle_de_bain_5_equipements_chauffage: formData.section_salle_de_bains?.salle_de_bain_5?.equipements_chauffage ?? null,
     salle_de_bains_salle_de_bain_5_equipements_lave_linge: formData.section_salle_de_bains?.salle_de_bain_5?.equipements_lave_linge ?? null,
-    salle_de_bains_salle_de_bain_5_equipements_seche_serviette: formData.section_salle_de_bains?.salle_de_bain_5?.equipements_seche_serviette ?? null,
     salle_de_bains_salle_de_bain_5_equipements_seche_cheveux: formData.section_salle_de_bains?.salle_de_bain_5?.equipements_seche_cheveux ?? null,
     salle_de_bains_salle_de_bain_5_equipements_autre: formData.section_salle_de_bains?.salle_de_bain_5?.equipements_autre ?? null,
     salle_de_bains_salle_de_bain_5_equipements_autre_details: formData.section_salle_de_bains?.salle_de_bain_5?.equipements_autre_details || null,
@@ -715,7 +729,6 @@ export const mapFormDataToSupabase = (formData) => {
     salle_de_bains_salle_de_bain_6_equipements_bidet: formData.section_salle_de_bains?.salle_de_bain_6?.equipements_bidet ?? null,
     salle_de_bains_salle_de_bain_6_equipements_chauffage: formData.section_salle_de_bains?.salle_de_bain_6?.equipements_chauffage ?? null,
     salle_de_bains_salle_de_bain_6_equipements_lave_linge: formData.section_salle_de_bains?.salle_de_bain_6?.equipements_lave_linge ?? null,
-    salle_de_bains_salle_de_bain_6_equipements_seche_serviette: formData.section_salle_de_bains?.salle_de_bain_6?.equipements_seche_serviette ?? null,
     salle_de_bains_salle_de_bain_6_equipements_seche_cheveux: formData.section_salle_de_bains?.salle_de_bain_6?.equipements_seche_cheveux ?? null,
     salle_de_bains_salle_de_bain_6_equipements_autre: formData.section_salle_de_bains?.salle_de_bain_6?.equipements_autre ?? null,
     salle_de_bains_salle_de_bain_6_equipements_autre_details: formData.section_salle_de_bains?.salle_de_bain_6?.equipements_autre_details || null,
@@ -743,6 +756,7 @@ export const mapFormDataToSupabase = (formData) => {
     cuisine_1_equipements_lave_linge: formData.section_cuisine_1?.equipements_lave_linge ?? null,
     cuisine_1_equipements_autre: formData.section_cuisine_1?.equipements_autre ?? null,
     cuisine_1_equipements_autre_details: formData.section_cuisine_1?.equipements_autre_details || null,
+    cuisine_1_equipements_hotte: formData.section_cuisine_1?.equipements_hotte ?? null,
 
     // RÉFRIGÉRATEUR - Champs conditionnels
     cuisine_1_refrigerateur_marque: formData.section_cuisine_1?.refrigerateur_marque || null,
@@ -814,6 +828,10 @@ export const mapFormDataToSupabase = (formData) => {
     cuisine_1_grille_pain_instructions: formData.section_cuisine_1?.grille_pain_instructions || null,
     cuisine_1_grille_pain_video: formData.section_cuisine_1?.grille_pain_video ?? [],
 
+    // HOTTE - Champs conditionnels
+    cuisine_1_hotte_instructions: formData.section_cuisine_1?.hotte_instructions || null,
+    cuisine_1_hotte_video: formData.section_cuisine_1?.hotte_video ?? [],
+
     // BLENDER - Champs conditionnels
     cuisine_1_blender_instructions: formData.section_cuisine_1?.blender_instructions || null,
     cuisine_1_blender_video: formData.section_cuisine_1?.blender_video ?? [],
@@ -825,7 +843,7 @@ export const mapFormDataToSupabase = (formData) => {
     // MACHINE À PAIN - Champs conditionnels
     cuisine_1_machine_pain_instructions: formData.section_cuisine_1?.machine_pain_instructions || null,
     cuisine_1_machine_pain_video: formData.section_cuisine_1?.machine_pain_video ?? [],
-   
+
     // 🍳 CUISINE 1 - Éléments abîmés (2 champs)
     cuisine_1_elements_abimes: formData.section_cuisine_1?.elements_abimes ?? null,
     cuisine_1_elements_abimes_photos: formData.section_cuisine_1?.elements_abimes_photos || [],
@@ -937,11 +955,11 @@ export const mapFormDataToSupabase = (formData) => {
     // 🛋️ SALON - Éléments abîmés (2 champs)
     salon_sam_salon_elements_abimes: formData.section_salon_sam?.salon_elements_abimes ?? null,
     salon_sam_salon_elements_abimes_photos: formData.section_salon_sam?.salon_elements_abimes_photos || [],
-    
+
     // 🍽️ SALLE À MANGER - Éléments abîmés (2 champs)
     salon_sam_salle_manger_elements_abimes: formData.section_salon_sam?.salle_manger_elements_abimes ?? null,
     salon_sam_salle_manger_elements_abimes_photos: formData.section_salon_sam?.salle_manger_elements_abimes_photos || [],
-    
+
     // Section Équipements Spécifiques et Extérieurs
     // CHAMPS RACINES
     equip_spe_ext_dispose_exterieur: formData.section_equip_spe_exterieur?.dispose_exterieur ?? null,
@@ -1011,10 +1029,10 @@ export const mapFormDataToSupabase = (formData) => {
 
     equip_spe_ext_garage_elements_abimes: formData.section_equip_spe_exterieur?.garage_elements_abimes ?? null,
     equip_spe_ext_garage_elements_abimes_photos: formData.section_equip_spe_exterieur?.garage_elements_abimes_photos || [],
-    
+
     equip_spe_ext_buanderie_elements_abimes: formData.section_equip_spe_exterieur?.buanderie_elements_abimes ?? null,
     equip_spe_ext_buanderie_elements_abimes_photos: formData.section_equip_spe_exterieur?.buanderie_elements_abimes_photos || [],
-    
+
     equip_spe_ext_autres_pieces_elements_abimes: formData.section_equip_spe_exterieur?.autres_pieces_elements_abimes ?? null,
     equip_spe_ext_autres_pieces_elements_abimes_photos: formData.section_equip_spe_exterieur?.autres_pieces_elements_abimes_photos || [],
 
@@ -1050,13 +1068,13 @@ export const mapFormDataToSupabase = (formData) => {
     // Section Guide d'accès
     guide_acces_photos_etapes: formData.section_guide_acces?.photos_etapes || [],
     guide_acces_video_acces: formData.section_guide_acces?.video_acces || [],
-    
+
     // PDF URLs - Assistants IA
     guide_acces_pdf_url: formData.guide_acces_pdf_url || null,
     annonce_pdf_url: formData.annonce_pdf_url || null,
     // guide_acces_last_generated_at: NE PAS MAPPER (géré par triggerAssistantPdfWebhook)
     // annonce_last_generated_at: NE PAS MAPPER (géré par triggerAssistantPdfWebhook)
-  
+
     // Section Sécurité
     securite_equipements: formData.section_securite?.equipements || [],
     securite_alarme_desarmement: formData.section_securite?.alarme_desarmement || null,
@@ -1068,7 +1086,7 @@ export const mapFormDataToSupabase = (formData) => {
 
     updated_at: new Date().toISOString()
 
-    
+
   }
 }
 
@@ -1081,7 +1099,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
     statut: supabaseData.statut,
     created_at: supabaseData.created_at,
     updated_at: supabaseData.updated_at,
-    
+
     section_proprietaire: {
       prenom: supabaseData.proprietaire_prenom || "",
       nom: supabaseData.proprietaire_nom || "",
@@ -1093,7 +1111,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         codePostal: supabaseData.proprietaire_adresse_code_postal || ""
       }
     },
-    
+
     section_logement: {
       // Nouveaux champs Monday (direct dans section_logement)
       type_propriete: supabaseData.logement_type_propriete || "",
@@ -1103,7 +1121,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       nombre_personnes_max: supabaseData.logement_nombre_personnes_max || "",
       nombre_lits: supabaseData.logement_nombre_lits || "",
       type_autre_precision: supabaseData.logement_type_autre_precision || "",
-      
+
       // Section appartement conditionnelle
       appartement: {
         nom_residence: supabaseData.logement_appartement_nom_residence || "",
@@ -1112,7 +1130,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         etage: supabaseData.logement_appartement_etage || "",
         numero_porte: supabaseData.logement_appartement_numero_porte || ""
       },
-      
+
       // Anciens champs (garde compatibilité)
       type: supabaseData.logement_type || "",
       adresse: {
@@ -1131,7 +1149,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       },
       acces: supabaseData.logement_acces || ""
     },
-    
+
     section_clefs: {
       boiteType: supabaseData.clefs_boite_type || "",
       emplacementBoite: supabaseData.clefs_emplacement_boite || "",
@@ -1166,7 +1184,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         details: supabaseData.clefs_details || ""
       }
     },
-    
+
     section_airbnb: {
       annonce_active: supabaseData.airbnb_annonce_active ?? null,
       url_annonce: supabaseData.airbnb_url || "",
@@ -1175,7 +1193,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       mot_passe: supabaseData.airbnb_mot_passe || "",
       explication_refus: supabaseData.airbnb_explication_refus || ""
     },
-    
+
     section_booking: {
       annonce_active: supabaseData.booking_annonce_active ?? null,
       url_annonce: supabaseData.booking_url || "",
@@ -1184,7 +1202,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       mot_passe: supabaseData.booking_mot_passe || "",
       explication_refus: supabaseData.booking_explication_refus || ""
     },
-    
+
     // 🎯 Section Réglementation
     section_reglementation: {
       ville_changement_usage: supabaseData.reglementation_ville_changement_usage || "",
@@ -1192,7 +1210,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       numero_declaration: supabaseData.reglementation_numero_declaration || "",
       ville_declaration_simple: supabaseData.reglementation_ville_declaration_simple || "",
       details_reglementation: supabaseData.reglementation_details || "",
-      
+
       // Documents checklist
       documents: {
         carte_identite: supabaseData.reglementation_documents_carte_identite ?? false,
@@ -1203,7 +1221,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         acte_propriete: supabaseData.reglementation_documents_acte_propriete ?? false
       }
     },
-    
+
     // Sections vides pour l'instant
     section_exigences: {
       nombre_nuits_minimum: supabaseData.exigences_nombre_nuits_minimum?.toString() || "",
@@ -1214,7 +1232,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       animaux_commentaire: supabaseData.exigences_animaux_commentaire || "",
     },
 
-    section_avis: {     
+    section_avis: {
 
       // 🎬 Évaluation environnement
       video_globale_validation: supabaseData.avis_video_globale_validation ?? null,
@@ -1251,7 +1269,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         design_moderne: supabaseData.avis_atouts_design_moderne ?? null,
         terrasse_balcon: supabaseData.avis_atouts_terrasse_balcon ?? null,
         piscine: supabaseData.avis_atouts_piscine ?? null,
-        
+
         // ✅ NOUVEAUX ATOUTS - À AJOUTER
         rustique: supabaseData.avis_atouts_rustique ?? null,
         convivial: supabaseData.avis_atouts_convivial ?? null,
@@ -1285,10 +1303,10 @@ export const mapSupabaseToFormData = (supabaseData) => {
         table_ping_pong: supabaseData.avis_atouts_table_ping_pong ?? null,
         autres_atouts: supabaseData.avis_atouts_autres_atouts ?? null
       },
-      
+
       atouts_logement_autre: supabaseData.avis_atouts_logement_autre || "",
       autres_caracteristiques: supabaseData.avis_autres_caracteristiques || "",
-      
+
       types_voyageurs: {
         duo_amoureux: supabaseData.avis_voyageurs_duo_amoureux ?? null,
         nomades_numeriques: supabaseData.avis_voyageurs_nomades_numeriques ?? null,
@@ -1305,7 +1323,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
     section_gestion_linge: {
       // Question principale
       dispose_de_linge: supabaseData.linge_dispose_de_linge ?? null,
-      
+
       // Inventaire 90x200
       inventaire_90x200: {
         couettes: supabaseData.linge_90x200_couettes?.toString() || "",
@@ -1321,7 +1339,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         plaids: supabaseData.linge_90x200_plaids?.toString() || "",
         oreillers_decoratifs: supabaseData.linge_90x200_oreillers_decoratifs?.toString() || ""
       },
-      
+
       // Inventaire 140x200
       inventaire_140x200: {
         couettes: supabaseData.linge_140x200_couettes?.toString() || "",
@@ -1337,7 +1355,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         plaids: supabaseData.linge_140x200_plaids?.toString() || "",
         oreillers_decoratifs: supabaseData.linge_140x200_oreillers_decoratifs?.toString() || ""
       },
-      
+
       // Inventaire 160x200
       inventaire_160x200: {
         couettes: supabaseData.linge_160x200_couettes?.toString() || "",
@@ -1353,7 +1371,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         plaids: supabaseData.linge_160x200_plaids?.toString() || "",
         oreillers_decoratifs: supabaseData.linge_160x200_oreillers_decoratifs?.toString() || ""
       },
-      
+
       // Inventaire 180x200
       inventaire_180x200: {
         couettes: supabaseData.linge_180x200_couettes?.toString() || "",
@@ -1369,7 +1387,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         plaids: supabaseData.linge_180x200_plaids?.toString() || "",
         oreillers_decoratifs: supabaseData.linge_180x200_oreillers_decoratifs?.toString() || ""
       },
-      
+
       // Inventaire Autres
       inventaire_autres: {
         couettes: supabaseData.linge_autres_couettes?.toString() || "",
@@ -1385,7 +1403,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         plaids: supabaseData.linge_autres_plaids?.toString() || "",
         oreillers_decoratifs: supabaseData.linge_autres_oreillers_decoratifs?.toString() || ""
       },
-      
+
       // État du linge
       etat_neuf: supabaseData.linge_etat_neuf ?? null,
       etat_usage: supabaseData.linge_etat_usage ?? null,
@@ -1393,7 +1411,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       etat_sale: supabaseData.linge_etat_sale ?? null,
       etat_tache: supabaseData.linge_etat_tache ?? null,
       etat_informations: supabaseData.linge_etat_informations || "",
-      
+
       // Photos et emplacement
       photos_linge: supabaseData.linge_photos_linge || [],
       emplacement_description: supabaseData.linge_emplacement_description || "",
@@ -1415,11 +1433,13 @@ export const mapSupabaseToFormData = (supabaseData) => {
       chauffage_eau_emplacement: supabaseData.equipements_chauffage_eau_emplacement || "",
       chauffage_eau_photos: supabaseData.equipements_chauffage_eau_photos || [],
       video_systeme_chauffage: supabaseData.equipements_video_systeme_chauffage ?? [],
-      
+
       // Équipements checklist
       tv: supabaseData.equipements_tv ?? null,
       climatisation: supabaseData.equipements_climatisation ?? null,
       chauffage: supabaseData.equipements_chauffage ?? null,
+      ventilateur: supabaseData.equipements_ventilateur ?? null,
+      seche_serviettes: supabaseData.equipements_seche_serviettes ?? null,
       lave_linge: supabaseData.equipements_lave_linge ?? null,
       seche_linge: supabaseData.equipements_seche_linge ?? null,
       fer_repasser: supabaseData.equipements_fer_repasser ?? null,
@@ -1436,21 +1456,32 @@ export const mapSupabaseToFormData = (supabaseData) => {
       fetes_autorisees: supabaseData.equipements_fetes_autorisees ?? null,
       fumeurs_acceptes: supabaseData.equipements_fumeurs_acceptes ?? null,
 
+      // WiFi
       wifi: supabaseData.equipements_wifi ?? null,
       wifi_statut: supabaseData.equipements_wifi_statut || null,
       wifi_details: supabaseData.equipements_wifi_details || "",
       wifi_nom_reseau: supabaseData.equipements_wifi_nom_reseau || "",
       wifi_mot_de_passe: supabaseData.equipements_wifi_mot_de_passe || "",
       wifi_routeur_photo: supabaseData.equipements_wifi_routeur_photo || [],
-      
+
+      // EQUIPEMENT MÉNAGE
+      menage_aspirateur_types: supabaseData.equipements_menage_aspirateur_types || [],
+      menage_aspirateur_photos: supabaseData.equipements_menage_aspirateur_photos || [],
+      menage_serpillere_types: supabaseData.equipements_menage_serpillere_types || [],
+      menage_serpillere_photos: supabaseData.equipements_menage_serpillere_photos || [],
+      menage_balais_photos: supabaseData.equipements_menage_balais_photos || [],
+      menage_balayette_photos: supabaseData.equipements_menage_balayette_photos || [],
+      menage_autres_elements: supabaseData.equipements_menage_autres_elements || "",
+      menage_autres_elements_photos: supabaseData.equipements_menage_autres_elements_photos || [],
+
       // Parking
       parking_type: supabaseData.equipements_parking_type || "",
       parking_rue_details: supabaseData.equipements_parking_rue_details || "",
       parking_sur_place_types: supabaseData.equipements_parking_sur_place_types || [],
       parking_sur_place_details: supabaseData.equipements_parking_sur_place_details || "",
-      parking_payant_type: supabaseData.equipements_parking_payant_type || "",      parking_payant_details: supabaseData.equipements_parking_payant_details || "",
+      parking_payant_type: supabaseData.equipements_parking_payant_type || "", parking_payant_details: supabaseData.equipements_parking_payant_details || "",
 
-      // 🆕 TV
+      // TV
       tv_type: supabaseData.equipements_tv_type || "",
       tv_taille: supabaseData.equipements_tv_taille || "",
       tv_type_autre_details: supabaseData.equipements_tv_type_autre_details || "",
@@ -1458,48 +1489,59 @@ export const mapSupabaseToFormData = (supabaseData) => {
       tv_services: supabaseData.equipements_tv_services || [],
       tv_consoles: supabaseData.equipements_tv_consoles || [],
       tv_console_video: supabaseData.equipements_tv_console_video || [],
-      
-      // 🆕 CLIMATISATION
+
+      // CLIMATISATION
       climatisation_type: supabaseData.equipements_climatisation_type || [],
       climatisation_instructions: supabaseData.equipements_climatisation_instructions || "",
       climatisation_video: supabaseData.equipements_climatisation_video || [],
-      
-      // 🆕 CHAUFFAGE
-      chauffage_type: supabaseData.equipements_chauffage_type || "",
+
+      // CHAUFFAGE
+      chauffage_type: supabaseData.equipements_chauffage_types || [],
       chauffage_instructions: supabaseData.equipements_chauffage_instructions || "",
       chauffage_video: supabaseData.equipements_chauffage_video || [],
-      
-      // 🆕 LAVE-LINGE
+
+      // VENTILATEUR
+      ventilateur_types: supabaseData.equipements_ventilateur_types || [],
+      ventilateur_nombre: supabaseData.equipements_ventilateur_nombre || null,
+      ventilateur_emplacement: supabaseData.equipements_ventilateur_emplacement || null,
+      ventilateur_photos: supabaseData.equipements_ventilateur_photos || [],
+      ventilateur_videos: supabaseData.equipements_ventilateur_videos || [],
+
+      // SÈCHE SERVIETTES
+      seche_serviettes_photos: supabaseData.equipements_seche_serviettes_photos || [],
+      seche_serviettes_videos: supabaseData.equipements_seche_serviettes_videos || [],
+
+      // LAVE-LINGE
       lave_linge_prix: supabaseData.equipements_lave_linge_prix || "",
       lave_linge_emplacement: supabaseData.equipements_lave_linge_emplacement || "",
       lave_linge_instructions: supabaseData.equipements_lave_linge_instructions || "",
       lave_linge_video: supabaseData.equipements_lave_linge_video || [],
-      
-      // 🆕 SÈCHE-LINGE
+
+      // SÈCHE-LINGE
       seche_linge_prix: supabaseData.equipements_seche_linge_prix || "",
       seche_linge_emplacement: supabaseData.equipements_seche_linge_emplacement || "",
       seche_linge_instructions: supabaseData.equipements_seche_linge_instructions || "",
       seche_linge_video: supabaseData.equipements_seche_linge_video || [],
-      
-      // 🆕 PARKING
+
+      // PARKING
       parking_photos: supabaseData.equipements_parking_photos || [],
       parking_videos: supabaseData.equipements_parking_videos || [],
-      
-      // 🆕 PIANO
+
+      // PIANO
       piano_marque: supabaseData.equipements_piano_marque || "",
       piano_type: supabaseData.equipements_piano_type || "",
-      
-      // 🆕 PMR
+
+      // PMR
       pmr_details: supabaseData.equipements_pmr_details || "",
-      
-      // 🆕 ANIMAUX
+
+      // ANIMAUX
       animaux_commentaire: supabaseData.equipements_animaux_commentaire || ""
     },
 
     section_consommables: {
       // Question principale
       fournis_par_prestataire: supabaseData.consommables_fournis_par_prestataire ?? null,
-      
+
       // Consommables optionnels "sur demande"
       gel_douche: supabaseData.consommables_gel_douche ?? null,
       shampoing: supabaseData.consommables_shampoing ?? null,
@@ -1507,7 +1549,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       pastilles_lave_vaisselle: supabaseData.consommables_pastilles_lave_vaisselle ?? null,
       autre_consommable: supabaseData.consommables_autre_consommable ?? null,
       autre_consommable_details: supabaseData.consommables_autre_consommable_details || "",
-      
+
       // Type café/cafetière
       cafe_nespresso: supabaseData.consommables_cafe_nespresso ?? null,
       cafe_tassimo: supabaseData.consommables_cafe_tassimo ?? null,
@@ -1556,12 +1598,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
         autre_type_lit: supabaseData.chambres_chambre_1_autre_type_lit || "",
         equipements_draps_fournis: supabaseData.chambres_chambre_1_equipements_draps_fournis ?? null,
         equipements_climatisation: supabaseData.chambres_chambre_1_equipements_climatisation ?? null,
-        equipements_ventilateur_plafond: supabaseData.chambres_chambre_1_equipements_ventilateur_plafond ?? null,
         equipements_espace_rangement: supabaseData.chambres_chambre_1_equipements_espace_rangement ?? null,
         equipements_lit_bebe_60_120: supabaseData.chambres_chambre_1_equipements_lit_bebe_60_120 ?? null,
         equipements_stores_manuels: supabaseData.chambres_chambre_1_equipements_stores_manuels ?? null,
         equipements_volets: supabaseData.chambres_chambre_1_equipements_volets ?? null,
-        equipements_stores_electriques: supabaseData.chambres_chambre_1_equipements_stores_electriques ?? null,        equipements_television: supabaseData.chambres_chambre_1_equipements_television ?? null,
+        equipements_stores_electriques: supabaseData.chambres_chambre_1_equipements_stores_electriques ?? null, equipements_television: supabaseData.chambres_chambre_1_equipements_television ?? null,
         equipements_oreillers_couvertures_sup: supabaseData.chambres_chambre_1_equipements_oreillers_couvertures_sup ?? null,
         equipements_chauffage: supabaseData.chambres_chambre_1_equipements_chauffage ?? null,
         equipements_cintres: supabaseData.chambres_chambre_1_equipements_cintres ?? null,
@@ -1575,7 +1616,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         elements_abimes: supabaseData.chambres_chambre_1_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_1_elements_abimes_photos || []
       },
-      
+
       chambre_2: {
         nom_description: supabaseData.chambres_chambre_2_nom_description || "",
         lit_simple_90_190: supabaseData.chambres_chambre_2_lit_simple_90_190 || 0,
@@ -1589,12 +1630,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
         autre_type_lit: supabaseData.chambres_chambre_2_autre_type_lit || "",
         equipements_draps_fournis: supabaseData.chambres_chambre_2_equipements_draps_fournis ?? null,
         equipements_climatisation: supabaseData.chambres_chambre_2_equipements_climatisation ?? null,
-        equipements_ventilateur_plafond: supabaseData.chambres_chambre_2_equipements_ventilateur_plafond ?? null,
         equipements_espace_rangement: supabaseData.chambres_chambre_2_equipements_espace_rangement ?? null,
         equipements_lit_bebe_60_120: supabaseData.chambres_chambre_2_equipements_lit_bebe_60_120 ?? null,
         equipements_stores_manuels: supabaseData.chambres_chambre_2_equipements_stores_manuels ?? null,
         equipements_volets: supabaseData.chambres_chambre_2_equipements_volets ?? null,
-        equipements_stores_electriques: supabaseData.chambres_chambre_2_equipements_stores_electriques ?? null,        equipements_television: supabaseData.chambres_chambre_2_equipements_television ?? null,
+        equipements_stores_electriques: supabaseData.chambres_chambre_2_equipements_stores_electriques ?? null, equipements_television: supabaseData.chambres_chambre_2_equipements_television ?? null,
         equipements_oreillers_couvertures_sup: supabaseData.chambres_chambre_2_equipements_oreillers_couvertures_sup ?? null,
         equipements_chauffage: supabaseData.chambres_chambre_2_equipements_chauffage ?? null,
         equipements_cintres: supabaseData.chambres_chambre_2_equipements_cintres ?? null,
@@ -1608,7 +1648,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         elements_abimes: supabaseData.chambres_chambre_2_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_2_elements_abimes_photos || []
       },
-      
+
       chambre_3: {
         nom_description: supabaseData.chambres_chambre_3_nom_description || "",
         lit_simple_90_190: supabaseData.chambres_chambre_3_lit_simple_90_190 || 0,
@@ -1622,12 +1662,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
         autre_type_lit: supabaseData.chambres_chambre_3_autre_type_lit || "",
         equipements_draps_fournis: supabaseData.chambres_chambre_3_equipements_draps_fournis ?? null,
         equipements_climatisation: supabaseData.chambres_chambre_3_equipements_climatisation ?? null,
-        equipements_ventilateur_plafond: supabaseData.chambres_chambre_3_equipements_ventilateur_plafond ?? null,
         equipements_espace_rangement: supabaseData.chambres_chambre_3_equipements_espace_rangement ?? null,
         equipements_lit_bebe_60_120: supabaseData.chambres_chambre_3_equipements_lit_bebe_60_120 ?? null,
         equipements_stores_manuels: supabaseData.chambres_chambre_3_equipements_stores_manuels ?? null,
         equipements_volets: supabaseData.chambres_chambre_3_equipements_volets ?? null,
-        equipements_stores_electriques: supabaseData.chambres_chambre_3_equipements_stores_electriques ?? null,        equipements_television: supabaseData.chambres_chambre_3_equipements_television ?? null,
+        equipements_stores_electriques: supabaseData.chambres_chambre_3_equipements_stores_electriques ?? null, equipements_television: supabaseData.chambres_chambre_3_equipements_television ?? null,
         equipements_oreillers_couvertures_sup: supabaseData.chambres_chambre_3_equipements_oreillers_couvertures_sup ?? null,
         equipements_chauffage: supabaseData.chambres_chambre_3_equipements_chauffage ?? null,
         equipements_cintres: supabaseData.chambres_chambre_3_equipements_cintres ?? null,
@@ -1641,7 +1680,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         elements_abimes: supabaseData.chambres_chambre_3_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_3_elements_abimes_photos || []
       },
-      
+
       chambre_4: {
         nom_description: supabaseData.chambres_chambre_4_nom_description || "",
         lit_simple_90_190: supabaseData.chambres_chambre_4_lit_simple_90_190 || 0,
@@ -1655,12 +1694,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
         autre_type_lit: supabaseData.chambres_chambre_4_autre_type_lit || "",
         equipements_draps_fournis: supabaseData.chambres_chambre_4_equipements_draps_fournis ?? null,
         equipements_climatisation: supabaseData.chambres_chambre_4_equipements_climatisation ?? null,
-        equipements_ventilateur_plafond: supabaseData.chambres_chambre_4_equipements_ventilateur_plafond ?? null,
         equipements_espace_rangement: supabaseData.chambres_chambre_4_equipements_espace_rangement ?? null,
         equipements_lit_bebe_60_120: supabaseData.chambres_chambre_4_equipements_lit_bebe_60_120 ?? null,
         equipements_stores_manuels: supabaseData.chambres_chambre_4_equipements_stores_manuels ?? null,
         equipements_volets: supabaseData.chambres_chambre_4_equipements_volets ?? null,
-        equipements_stores_electriques: supabaseData.chambres_chambre_4_equipements_stores_electriques ?? null,        equipements_television: supabaseData.chambres_chambre_4_equipements_television ?? null,
+        equipements_stores_electriques: supabaseData.chambres_chambre_4_equipements_stores_electriques ?? null, equipements_television: supabaseData.chambres_chambre_4_equipements_television ?? null,
         equipements_oreillers_couvertures_sup: supabaseData.chambres_chambre_4_equipements_oreillers_couvertures_sup ?? null,
         equipements_chauffage: supabaseData.chambres_chambre_4_equipements_chauffage ?? null,
         equipements_cintres: supabaseData.chambres_chambre_4_equipements_cintres ?? null,
@@ -1674,7 +1712,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         elements_abimes: supabaseData.chambres_chambre_4_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_4_elements_abimes_photos || []
       },
-      
+
       chambre_5: {
         nom_description: supabaseData.chambres_chambre_5_nom_description || "",
         lit_simple_90_190: supabaseData.chambres_chambre_5_lit_simple_90_190 || 0,
@@ -1688,12 +1726,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
         autre_type_lit: supabaseData.chambres_chambre_5_autre_type_lit || "",
         equipements_draps_fournis: supabaseData.chambres_chambre_5_equipements_draps_fournis ?? null,
         equipements_climatisation: supabaseData.chambres_chambre_5_equipements_climatisation ?? null,
-        equipements_ventilateur_plafond: supabaseData.chambres_chambre_5_equipements_ventilateur_plafond ?? null,
         equipements_espace_rangement: supabaseData.chambres_chambre_5_equipements_espace_rangement ?? null,
         equipements_lit_bebe_60_120: supabaseData.chambres_chambre_5_equipements_lit_bebe_60_120 ?? null,
         equipements_stores_manuels: supabaseData.chambres_chambre_5_equipements_stores_manuels ?? null,
         equipements_volets: supabaseData.chambres_chambre_5_equipements_volets ?? null,
-        equipements_stores_electriques: supabaseData.chambres_chambre_5_equipements_stores_electriques ?? null,        equipements_television: supabaseData.chambres_chambre_5_equipements_television ?? null,
+        equipements_stores_electriques: supabaseData.chambres_chambre_5_equipements_stores_electriques ?? null, equipements_television: supabaseData.chambres_chambre_5_equipements_television ?? null,
         equipements_oreillers_couvertures_sup: supabaseData.chambres_chambre_5_equipements_oreillers_couvertures_sup ?? null,
         equipements_chauffage: supabaseData.chambres_chambre_5_equipements_chauffage ?? null,
         equipements_cintres: supabaseData.chambres_chambre_5_equipements_cintres ?? null,
@@ -1707,7 +1744,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         elements_abimes: supabaseData.chambres_chambre_5_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_5_elements_abimes_photos || []
       },
-      
+
       chambre_6: {
         nom_description: supabaseData.chambres_chambre_6_nom_description || "",
         lit_simple_90_190: supabaseData.chambres_chambre_6_lit_simple_90_190 || 0,
@@ -1721,12 +1758,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
         autre_type_lit: supabaseData.chambres_chambre_6_autre_type_lit || "",
         equipements_draps_fournis: supabaseData.chambres_chambre_6_equipements_draps_fournis ?? null,
         equipements_climatisation: supabaseData.chambres_chambre_6_equipements_climatisation ?? null,
-        equipements_ventilateur_plafond: supabaseData.chambres_chambre_6_equipements_ventilateur_plafond ?? null,
         equipements_espace_rangement: supabaseData.chambres_chambre_6_equipements_espace_rangement ?? null,
         equipements_lit_bebe_60_120: supabaseData.chambres_chambre_6_equipements_lit_bebe_60_120 ?? null,
         equipements_stores_manuels: supabaseData.chambres_chambre_6_equipements_stores_manuels ?? null,
         equipements_volets: supabaseData.chambres_chambre_6_equipements_volets ?? null,
-        equipements_stores_electriques: supabaseData.chambres_chambre_6_equipements_stores_electriques ?? null,        equipements_television: supabaseData.chambres_chambre_6_equipements_television ?? null,
+        equipements_stores_electriques: supabaseData.chambres_chambre_6_equipements_stores_electriques ?? null, equipements_television: supabaseData.chambres_chambre_6_equipements_television ?? null,
         equipements_oreillers_couvertures_sup: supabaseData.chambres_chambre_6_equipements_oreillers_couvertures_sup ?? null,
         equipements_chauffage: supabaseData.chambres_chambre_6_equipements_chauffage ?? null,
         equipements_cintres: supabaseData.chambres_chambre_6_equipements_cintres ?? null,
@@ -1752,7 +1788,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_bidet: supabaseData.salle_de_bains_salle_de_bain_1_equipements_bidet ?? null,
         equipements_chauffage: supabaseData.salle_de_bains_salle_de_bain_1_equipements_chauffage ?? null,
         equipements_lave_linge: supabaseData.salle_de_bains_salle_de_bain_1_equipements_lave_linge ?? null,
-        equipements_seche_serviette: supabaseData.salle_de_bains_salle_de_bain_1_equipements_seche_serviette ?? null,
         equipements_seche_cheveux: supabaseData.salle_de_bains_salle_de_bain_1_equipements_seche_cheveux ?? null,
         equipements_autre: supabaseData.salle_de_bains_salle_de_bain_1_equipements_autre ?? null,
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_1_equipements_autre_details || "",
@@ -1762,7 +1797,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         elements_abimes: supabaseData.salle_de_bains_salle_de_bain_1_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_1_elements_abimes_photos || []
       },
-      
+
       salle_de_bain_2: {
         nom_description: supabaseData.salle_de_bains_salle_de_bain_2_nom_description || "",
         equipements_douche: supabaseData.salle_de_bains_salle_de_bain_2_equipements_douche ?? null,
@@ -1773,7 +1808,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_bidet: supabaseData.salle_de_bains_salle_de_bain_2_equipements_bidet ?? null,
         equipements_chauffage: supabaseData.salle_de_bains_salle_de_bain_2_equipements_chauffage ?? null,
         equipements_lave_linge: supabaseData.salle_de_bains_salle_de_bain_2_equipements_lave_linge ?? null,
-        equipements_seche_serviette: supabaseData.salle_de_bains_salle_de_bain_2_equipements_seche_serviette ?? null,
         equipements_seche_cheveux: supabaseData.salle_de_bains_salle_de_bain_2_equipements_seche_cheveux ?? null,
         equipements_autre: supabaseData.salle_de_bains_salle_de_bain_2_equipements_autre ?? null,
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_2_equipements_autre_details || "",
@@ -1783,7 +1817,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         elements_abimes: supabaseData.salle_de_bains_salle_de_bain_2_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_2_elements_abimes_photos || []
       },
-      
+
       salle_de_bain_3: {
         nom_description: supabaseData.salle_de_bains_salle_de_bain_3_nom_description || "",
         equipements_douche: supabaseData.salle_de_bains_salle_de_bain_3_equipements_douche ?? null,
@@ -1794,7 +1828,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_bidet: supabaseData.salle_de_bains_salle_de_bain_3_equipements_bidet ?? null,
         equipements_chauffage: supabaseData.salle_de_bains_salle_de_bain_3_equipements_chauffage ?? null,
         equipements_lave_linge: supabaseData.salle_de_bains_salle_de_bain_3_equipements_lave_linge ?? null,
-        equipements_seche_serviette: supabaseData.salle_de_bains_salle_de_bain_3_equipements_seche_serviette ?? null,
         equipements_seche_cheveux: supabaseData.salle_de_bains_salle_de_bain_3_equipements_seche_cheveux ?? null,
         equipements_autre: supabaseData.salle_de_bains_salle_de_bain_3_equipements_autre ?? null,
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_3_equipements_autre_details || "",
@@ -1804,7 +1837,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         elements_abimes: supabaseData.salle_de_bains_salle_de_bain_3_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_3_elements_abimes_photos || []
       },
-      
+
       salle_de_bain_4: {
         nom_description: supabaseData.salle_de_bains_salle_de_bain_4_nom_description || "",
         equipements_douche: supabaseData.salle_de_bains_salle_de_bain_4_equipements_douche ?? null,
@@ -1815,7 +1848,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_bidet: supabaseData.salle_de_bains_salle_de_bain_4_equipements_bidet ?? null,
         equipements_chauffage: supabaseData.salle_de_bains_salle_de_bain_4_equipements_chauffage ?? null,
         equipements_lave_linge: supabaseData.salle_de_bains_salle_de_bain_4_equipements_lave_linge ?? null,
-        equipements_seche_serviette: supabaseData.salle_de_bains_salle_de_bain_4_equipements_seche_serviette ?? null,
         equipements_seche_cheveux: supabaseData.salle_de_bains_salle_de_bain_4_equipements_seche_cheveux ?? null,
         equipements_autre: supabaseData.salle_de_bains_salle_de_bain_4_equipements_autre ?? null,
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_4_equipements_autre_details || "",
@@ -1825,7 +1857,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         elements_abimes: supabaseData.salle_de_bains_salle_de_bain_4_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_4_elements_abimes_photos || []
       },
-      
+
       salle_de_bain_5: {
         nom_description: supabaseData.salle_de_bains_salle_de_bain_5_nom_description || "",
         equipements_douche: supabaseData.salle_de_bains_salle_de_bain_5_equipements_douche ?? null,
@@ -1836,7 +1868,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_bidet: supabaseData.salle_de_bains_salle_de_bain_5_equipements_bidet ?? null,
         equipements_chauffage: supabaseData.salle_de_bains_salle_de_bain_5_equipements_chauffage ?? null,
         equipements_lave_linge: supabaseData.salle_de_bains_salle_de_bain_5_equipements_lave_linge ?? null,
-        equipements_seche_serviette: supabaseData.salle_de_bains_salle_de_bain_5_equipements_seche_serviette ?? null,
         equipements_seche_cheveux: supabaseData.salle_de_bains_salle_de_bain_5_equipements_seche_cheveux ?? null,
         equipements_autre: supabaseData.salle_de_bains_salle_de_bain_5_equipements_autre ?? null,
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_5_equipements_autre_details || "",
@@ -1846,7 +1877,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         elements_abimes: supabaseData.salle_de_bains_salle_de_bain_5_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.salle_de_bains_salle_de_bain_5_elements_abimes_photos || []
       },
-      
+
       salle_de_bain_6: {
         nom_description: supabaseData.salle_de_bains_salle_de_bain_6_nom_description || "",
         equipements_douche: supabaseData.salle_de_bains_salle_de_bain_6_equipements_douche ?? null,
@@ -1857,7 +1888,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_bidet: supabaseData.salle_de_bains_salle_de_bain_6_equipements_bidet ?? null,
         equipements_chauffage: supabaseData.salle_de_bains_salle_de_bain_6_equipements_chauffage ?? null,
         equipements_lave_linge: supabaseData.salle_de_bains_salle_de_bain_6_equipements_lave_linge ?? null,
-        equipements_seche_serviette: supabaseData.salle_de_bains_salle_de_bain_6_equipements_seche_serviette ?? null,
         equipements_seche_cheveux: supabaseData.salle_de_bains_salle_de_bain_6_equipements_seche_cheveux ?? null,
         equipements_autre: supabaseData.salle_de_bains_salle_de_bain_6_equipements_autre ?? null,
         equipements_autre_details: supabaseData.salle_de_bains_salle_de_bain_6_equipements_autre_details || "",
@@ -1887,20 +1917,21 @@ export const mapSupabaseToFormData = (supabaseData) => {
       equipements_lave_linge: supabaseData.cuisine_1_equipements_lave_linge ?? null,
       equipements_autre: supabaseData.cuisine_1_equipements_autre ?? null,
       equipements_autre_details: supabaseData.cuisine_1_equipements_autre_details || "",
-    
+      equipements_hotte: supabaseData.cuisine_1_equipements_hotte ?? null,
+
       // RÉFRIGÉRATEUR - Champs conditionnels
       refrigerateur_marque: supabaseData.cuisine_1_refrigerateur_marque || "",
       refrigerateur_instructions: supabaseData.cuisine_1_refrigerateur_instructions || "",
       refrigerateur_video: supabaseData.cuisine_1_refrigerateur_video ?? [],
-    
+
       // CONGÉLATEUR - Champs conditionnels
       congelateur_instructions: supabaseData.cuisine_1_congelateur_instructions || "",
       congelateur_video: supabaseData.cuisine_1_congelateur_video ?? [],
-    
+
       // MINI RÉFRIGÉRATEUR - Champs conditionnels
       mini_refrigerateur_instructions: supabaseData.cuisine_1_mini_refrigerateur_instructions || "",
       mini_refrigerateur_video: supabaseData.cuisine_1_mini_refrigerateur_video ?? [],
-    
+
       // CUISINIÈRE - Champs conditionnels
       cuisiniere_marque: supabaseData.cuisine_1_cuisiniere_marque || "",
       cuisiniere_type: supabaseData.cuisine_1_cuisiniere_type || "",
@@ -1908,7 +1939,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       cuisiniere_instructions: supabaseData.cuisine_1_cuisiniere_instructions || "",
       cuisiniere_photo: supabaseData.cuisine_1_cuisiniere_photo || [],
       cuisiniere_video: supabaseData.cuisine_1_cuisiniere_video ?? [],
-    
+
       // PLAQUE DE CUISSON - Champs conditionnels
       plaque_cuisson_marque: supabaseData.cuisine_1_plaque_cuisson_marque || "",
       plaque_cuisson_type: supabaseData.cuisine_1_plaque_cuisson_type || "",
@@ -1916,24 +1947,24 @@ export const mapSupabaseToFormData = (supabaseData) => {
       plaque_cuisson_instructions: supabaseData.cuisine_1_plaque_cuisson_instructions || "",
       plaque_cuisson_photo: supabaseData.cuisine_1_plaque_cuisson_photo || [],
       plaque_cuisson_video: supabaseData.cuisine_1_plaque_cuisson_video ?? [],
-    
+
       // FOUR - Champs conditionnels
       four_marque: supabaseData.cuisine_1_four_marque || "",
       four_type: supabaseData.cuisine_1_four_type || "",
       four_instructions: supabaseData.cuisine_1_four_instructions || "",
       four_photo: supabaseData.cuisine_1_four_photo || [],
       four_video: supabaseData.cuisine_1_four_video ?? [],
-    
+
       // FOUR À MICRO-ONDES - Champs conditionnels
       micro_ondes_instructions: supabaseData.cuisine_1_micro_ondes_instructions || "",
       micro_ondes_photo: supabaseData.cuisine_1_micro_ondes_photo || [],
       micro_ondes_video: supabaseData.cuisine_1_micro_ondes_video ?? [],
-    
+
       // LAVE-VAISSELLE - Champs conditionnels
       lave_vaisselle_instructions: supabaseData.cuisine_1_lave_vaisselle_instructions || "",
       lave_vaisselle_photo: supabaseData.cuisine_1_lave_vaisselle_photo || [],
       lave_vaisselle_video: supabaseData.cuisine_1_lave_vaisselle_video ?? [],
-    
+
       // CAFETIÈRE - Champs conditionnels
       cafetiere_marque: supabaseData.cuisine_1_cafetiere_marque || "",
       cafetiere_type_filtre: supabaseData.cuisine_1_cafetiere_type_filtre ?? null,
@@ -1949,30 +1980,34 @@ export const mapSupabaseToFormData = (supabaseData) => {
       cafetiere_video: supabaseData.cuisine_1_cafetiere_video ?? [],
       cafetiere_cafe_fourni: supabaseData.cuisine_1_cafetiere_cafe_fourni || "",
       cafetiere_marque_cafe: supabaseData.cuisine_1_cafetiere_marque_cafe || "",
-    
+
       // BOUILLOIRE ÉLECTRIQUE - Champs conditionnels
       bouilloire_instructions: supabaseData.cuisine_1_bouilloire_instructions || "",
       bouilloire_video: supabaseData.cuisine_1_bouilloire_video ?? [],
-    
+
       // GRILLE-PAIN - Champs conditionnels
       grille_pain_instructions: supabaseData.cuisine_1_grille_pain_instructions || "",
       grille_pain_video: supabaseData.cuisine_1_grille_pain_video ?? [],
-    
+
+      // HOTTE - Champs conditionnels
+      hotte_instructions: supabaseData.cuisine_1_hotte_instructions || "",
+      hotte_video: supabaseData.cuisine_1_hotte_video ?? [],
+
       // BLENDER - Champs conditionnels
       blender_instructions: supabaseData.cuisine_1_blender_instructions || "",
       blender_video: supabaseData.cuisine_1_blender_video ?? [],
-    
+
       // CUISEUR À RIZ - Champs conditionnels
       cuiseur_riz_instructions: supabaseData.cuisine_1_cuiseur_riz_instructions || "",
       cuiseur_riz_video: supabaseData.cuisine_1_cuiseur_riz_video ?? [],
-    
+
       // MACHINE À PAIN - Champs conditionnels
       machine_pain_instructions: supabaseData.cuisine_1_machine_pain_instructions || "",
       machine_pain_video: supabaseData.cuisine_1_machine_pain_video ?? [],
 
       // 🆕 ÉLÉMENTS ABÎMÉS
       elements_abimes: supabaseData.cuisine_1_elements_abimes ?? null,
-      elements_abimes_photos: supabaseData.cuisine_1_elements_abimes_photos || []      
+      elements_abimes_photos: supabaseData.cuisine_1_elements_abimes_photos || []
     },
 
     section_cuisine_2: {
@@ -1981,7 +2016,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       vaisselle_assiettes_dessert: supabaseData.cuisine_2_vaisselle_assiettes_dessert || 0,
       vaisselle_assiettes_creuses: supabaseData.cuisine_2_vaisselle_assiettes_creuses || 0,
       vaisselle_bols: supabaseData.cuisine_2_vaisselle_bols || 0,
-      
+
       // COUVERTS (11 compteurs)
       couverts_verres_eau: supabaseData.cuisine_2_couverts_verres_eau || 0,
       couverts_verres_vin: supabaseData.cuisine_2_couverts_verres_vin || 0,
@@ -1994,7 +2029,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       couverts_cuilleres_soupe: supabaseData.cuisine_2_couverts_cuilleres_soupe || 0,
       couverts_cuilleres_cafe: supabaseData.cuisine_2_couverts_cuilleres_cafe || 0,
       couverts_cuilleres_dessert: supabaseData.cuisine_2_couverts_cuilleres_dessert || 0,
-      
+
       // USTENSILES DE CUISINE (26 compteurs)
       ustensiles_poeles_differentes_tailles: supabaseData.cuisine_2_ustensiles_poeles_differentes_tailles || 0,
       ustensiles_casseroles_differentes_tailles: supabaseData.cuisine_2_ustensiles_casseroles_differentes_tailles || 0,
@@ -2022,7 +2057,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       ustensiles_verre_mesureur: supabaseData.cuisine_2_ustensiles_verre_mesureur || 0,
       ustensiles_presse_agrume_manuel: supabaseData.cuisine_2_ustensiles_presse_agrume_manuel || 0,
       ustensiles_pichet: supabaseData.cuisine_2_ustensiles_pichet || 0,
-      
+
       // PLATS ET RÉCIPIENTS (11 compteurs)
       plats_dessous_plat: supabaseData.cuisine_2_plats_dessous_plat || 0,
       plats_plateau: supabaseData.cuisine_2_plats_plateau || 0,
@@ -2035,7 +2070,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       plats_ustensiles_barbecue: supabaseData.cuisine_2_plats_ustensiles_barbecue || 0,
       plats_gants_cuisine: supabaseData.cuisine_2_plats_gants_cuisine || 0,
       plats_maniques: supabaseData.cuisine_2_plats_maniques || 0,
-      
+
       // CHAMPS COMPLÉMENTAIRES
       autres_ustensiles: supabaseData.cuisine_2_autres_ustensiles || "",
       quantite_suffisante: supabaseData.cuisine_2_quantite_suffisante ?? null,
@@ -2047,7 +2082,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
     section_salon_sam: {
       // Description générale (obligatoire)
       description_generale: supabaseData.salon_sam_description_generale || "",
-      
+
       // Équipements (checkboxes + autre)
       equipements_table_manger: supabaseData.salon_sam_equipements_table_manger ?? null,
       equipements_chaises: supabaseData.salon_sam_equipements_chaises ?? null,
@@ -2067,26 +2102,26 @@ export const mapSupabaseToFormData = (supabaseData) => {
       equipements_stores_electriques: supabaseData.salon_sam_equipements_stores_electriques ?? null,
       equipements_autre: supabaseData.salon_sam_equipements_autre ?? null,
       equipements_autre_details: supabaseData.salon_sam_equipements_autre_details || "",
-      
+
       // Cheminée type (conditionnel)
       cheminee_type: supabaseData.salon_sam_cheminee_type || "",
-      
+
       // Autres équipements détails (obligatoire)
       autres_equipements_details: supabaseData.salon_sam_autres_equipements_details || "",
-      
+
       // Photos
       photos_salon_sam: supabaseData.salon_sam_photos_salon_sam || [],
-      
+
       // Nombre places table (obligatoire)
       nombre_places_table: supabaseData.salon_sam_nombre_places_table?.toString() || "",
 
-       // 🆕 ÉLÉMENTS ABÎMÉS - SALON
-       salon_elements_abimes: supabaseData.salon_sam_salon_elements_abimes ?? null,
-       salon_elements_abimes_photos: supabaseData.salon_sam_salon_elements_abimes_photos || [],
-       
-       // 🆕 ÉLÉMENTS ABÎMÉS - SALLE À MANGER  
-       salle_manger_elements_abimes: supabaseData.salon_sam_salle_manger_elements_abimes ?? null,
-       salle_manger_elements_abimes_photos: supabaseData.salon_sam_salle_manger_elements_abimes_photos || []     
+      // 🆕 ÉLÉMENTS ABÎMÉS - SALON
+      salon_elements_abimes: supabaseData.salon_sam_salon_elements_abimes ?? null,
+      salon_elements_abimes_photos: supabaseData.salon_sam_salon_elements_abimes_photos || [],
+
+      // 🆕 ÉLÉMENTS ABÎMÉS - SALLE À MANGER  
+      salle_manger_elements_abimes: supabaseData.salon_sam_salle_manger_elements_abimes ?? null,
+      salle_manger_elements_abimes_photos: supabaseData.salon_sam_salle_manger_elements_abimes_photos || []
     },
 
     section_equip_spe_exterieur: {
@@ -2095,7 +2130,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       dispose_piscine: supabaseData.equip_spe_ext_dispose_piscine ?? null,
       dispose_jacuzzi: supabaseData.equip_spe_ext_dispose_jacuzzi ?? null,
       dispose_cuisine_exterieure: supabaseData.equip_spe_ext_dispose_cuisine_exterieure ?? null,
-      
+
       // BRANCHE EXTÉRIEUR
       exterieur_type_espace: supabaseData.equip_spe_ext_exterieur_type_espace || [],
       exterieur_description_generale: supabaseData.equip_spe_ext_exterieur_description_generale || "",
@@ -2111,14 +2146,14 @@ export const mapSupabaseToFormData = (supabaseData) => {
       exterieur_acces: supabaseData.equip_spe_ext_exterieur_acces || "",
       exterieur_type_acces: supabaseData.equip_spe_ext_exterieur_type_acces || "",
       exterieur_type_acces_autre_details: supabaseData.equip_spe_ext_exterieur_type_acces_autre_details || "",
-      
+
       // SOUS-BRANCHE BARBECUE
       barbecue_instructions: supabaseData.equip_spe_ext_barbecue_instructions || "",
       barbecue_type: supabaseData.equip_spe_ext_barbecue_type || "",
       barbecue_combustible_fourni: supabaseData.equip_spe_ext_barbecue_combustible_fourni ?? null,
       barbecue_ustensiles_fournis: supabaseData.equip_spe_ext_barbecue_ustensiles_fournis ?? null,
       barbecue_photos: supabaseData.equip_spe_ext_barbecue_photos || [],
-      
+
       // BRANCHE PISCINE
       piscine_type: supabaseData.equip_spe_ext_piscine_type || "",
       piscine_acces: supabaseData.equip_spe_ext_piscine_acces || "",
@@ -2135,7 +2170,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       piscine_entretien_qui: supabaseData.equip_spe_ext_piscine_entretien_qui || "",
       piscine_regles_utilisation: supabaseData.equip_spe_ext_piscine_regles_utilisation || "",
       piscine_video: supabaseData.equip_spe_ext_piscine_video ?? null,
-      
+
       // BRANCHE JACUZZI
       jacuzzi_acces: supabaseData.equip_spe_ext_jacuzzi_acces || "",
       jacuzzi_entretien_prestataire: supabaseData.equip_spe_ext_jacuzzi_entretien_prestataire ?? null,
@@ -2146,7 +2181,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       jacuzzi_instructions: supabaseData.equip_spe_ext_jacuzzi_instructions || "",
       jacuzzi_heures_utilisation: supabaseData.equip_spe_ext_jacuzzi_heures_utilisation || "",
       jacuzzi_photos: supabaseData.equip_spe_ext_jacuzzi_photos || [],
-      
+
       // BRANCHE CUISINE EXTÉRIEURE
       cuisine_ext_entretien_prestataire: supabaseData.equip_spe_ext_cuisine_ext_entretien_prestataire ?? null,
       cuisine_ext_entretien_frequence: supabaseData.equip_spe_ext_cuisine_ext_entretien_frequence || "",
@@ -2224,9 +2259,9 @@ export const saveFiche = async (formData, userId) => {
   try {
     const supabaseData = mapFormDataToSupabase(formData)
     supabaseData.user_id = userId
-    
+
     let result
-    
+
     if (formData.id) {
       // Mise à jour d'une fiche existante
       result = await safeSupabaseQuery(
@@ -2247,11 +2282,11 @@ export const saveFiche = async (formData, userId) => {
           .single()
       )
     }
-    
+
     if (result.error) {
       throw result.error
     }
-    
+
     return {
       success: true,
       data: mapSupabaseToFormData(result.data),
@@ -2277,11 +2312,11 @@ export const loadFiche = async (ficheId) => {
         .eq('id', ficheId)
         .single()
     )
-    
+
     if (result.error) {
       throw result.error
     }
-    
+
     return {
       success: true,
       data: mapSupabaseToFormData(result.data),
@@ -2307,11 +2342,11 @@ export const getUserFiches = async (userId) => {
         .eq('user_id', userId)
         .order('updated_at', { ascending: false })
     )
-    
+
     if (result.error) {
       throw result.error
     }
-    
+
     return {
       success: true,
       data: result.data || [],
@@ -2334,21 +2369,21 @@ export const getAllFiches = async (includeArchived = false) => {
     let query = supabase
       .from('fiches')
       .select('id, nom, statut, created_at, updated_at, user_id, pdf_logement_url, pdf_menage_url')
-    
+
     // Filtrer les fiches archivées si demandé
     if (!includeArchived) {
       query = query.neq('statut', 'Archivé')
     }
-    
+
     // Ordonner par date de mise à jour décroissante
     query = query.order('updated_at', { ascending: false })
-    
+
     const { data, error } = await query
-    
+
     if (error) {
       throw error
     }
-    
+
     // Pour l'instant, on retourne les fiches sans info créateur
     // On ajoutera ça plus tard quand on aura configuré les foreign keys
     return {
@@ -2384,9 +2419,9 @@ export const deleteFiche = async (ficheId) => {
     // 2. Supprimer le dossier photos complet du storage (RÉCURSIF)
     if (ficheData.user_id && ficheData.logement_numero_bien) {
       const basePath = `user-${ficheData.user_id}/fiche-${ficheData.logement_numero_bien}`
-      
+
       console.log(`🗑️ Suppression récursive dossier: ${basePath}`)
-      
+
       // Fonction récursive pour lister tous les fichiers
       const getAllFilesRecursive = async (path = basePath, allFiles = []) => {
         const { data: items, error } = await supabase.storage
@@ -2400,7 +2435,7 @@ export const deleteFiche = async (ficheId) => {
 
         for (const item of items || []) {
           const fullPath = `${path}/${item.name}`
-          
+
           if (item.metadata === null) {
             // C'est un dossier, lister récursivement
             await getAllFilesRecursive(fullPath, allFiles)
@@ -2409,16 +2444,16 @@ export const deleteFiche = async (ficheId) => {
             allFiles.push(fullPath)
           }
         }
-        
+
         return allFiles
       }
 
       // Récupérer tous les fichiers récursivement
       const allFiles = await getAllFilesRecursive()
-      
+
       if (allFiles.length > 0) {
         console.log(`📁 ${allFiles.length} fichiers trouvés:`, allFiles)
-        
+
         // Supprimer tous les fichiers
         const { error: deleteError } = await supabase.storage
           .from('fiche-photos')
@@ -2440,11 +2475,11 @@ export const deleteFiche = async (ficheId) => {
       .from('fiches')
       .delete()
       .eq('id', ficheId)
-    
+
     if (error) {
       throw error
     }
-    
+
     return {
       success: true,
       message: 'Fiche et photos supprimées avec succès'
@@ -2465,10 +2500,10 @@ export const deleteFiche = async (ficheId) => {
 export const updateFicheStatut = async (ficheId, newStatut) => {
   try {
     console.log(`Mise à jour statut fiche ${ficheId} vers "${newStatut}"`)
-    
+
     const { data, error } = await supabase
       .from('fiches')
-      .update({ 
+      .update({
         statut: newStatut,
         updated_at: new Date().toISOString()
       })
@@ -2478,26 +2513,26 @@ export const updateFicheStatut = async (ficheId, newStatut) => {
 
     if (error) {
       console.error('Erreur Supabase updateFicheStatut:', error)
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error.message,
         message: `Impossible de ${newStatut === 'Archivé' ? 'archiver' : 'modifier'} la fiche`
       }
     }
 
-    const action = newStatut === 'Archivé' ? 'archivée' : 
-                   newStatut === 'Complété' ? 'finalisée' : 
-                   newStatut === 'Brouillon' ? 'restaurée' : 'mise à jour'
+    const action = newStatut === 'Archivé' ? 'archivée' :
+      newStatut === 'Complété' ? 'finalisée' :
+        newStatut === 'Brouillon' ? 'restaurée' : 'mise à jour'
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data,
       message: `Fiche ${action} avec succès`
     }
   } catch (e) {
     console.error('Erreur updateFicheStatut:', e.message)
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: e.message,
       message: 'Erreur de connexion'
     }
@@ -2518,19 +2553,19 @@ export const checkExistingFiche = async (numeroBien, userId) => {
       .neq('statut', 'Archivé')  // Ignorer les fiches archivées
       .order('updated_at', { ascending: false })
       .limit(1)
-    
+
     if (error) {
       console.error('Erreur check doublon:', error)
       return { exists: false }
     }
-    
+
     if (data && data.length > 0) {
-      return { 
-        exists: true, 
-        fiche: data[0] 
+      return {
+        exists: true,
+        fiche: data[0]
       }
     }
-    
+
     return { exists: false }
   } catch (error) {
     console.error('Erreur check doublon:', error)

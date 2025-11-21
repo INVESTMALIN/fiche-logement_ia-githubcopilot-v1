@@ -376,7 +376,7 @@ DECLARE
   media_part2 jsonb;
   media_part3 jsonb;
   media_part4 jsonb;
-  media_part5 jsonb; -- nouveaux équipements
+  media_part5 jsonb;
   media_final jsonb;
 BEGIN
   IF NEW.statut = 'Complété' AND OLD.statut IS DISTINCT FROM 'Complété' THEN
@@ -436,6 +436,7 @@ BEGIN
       'cuisine1_micro_ondes_photo', NEW.cuisine_1_micro_ondes_photo,
       'cuisine1_lave_vaisselle_photo', NEW.cuisine_1_lave_vaisselle_photo,
       'cuisine1_cafetiere_photo', NEW.cuisine_1_cafetiere_photo,
+      'cuisine1_hotte_video', NEW.cuisine_1_hotte_video,
       'cuisine2_photos_tiroirs_placards', NEW.cuisine_2_photos_tiroirs_placards,
       'salon_sam_photos', NEW.salon_sam_photos_salon_sam,
       'exterieur_photos_espaces', NEW.equip_spe_ext_exterieur_photos,
@@ -507,7 +508,23 @@ BEGIN
 
       -- Parking
       'equipements_parking_photos', NEW.equipements_parking_photos,
-      'equipements_parking_videos', NEW.equipements_parking_videos
+      'equipements_parking_videos', NEW.equipements_parking_videos,
+
+
+      'equipements_ventilateur_photos', NEW.equipements_ventilateur_photos,
+      'equipements_ventilateur_videos', NEW.equipements_ventilateur_videos,
+
+      -- sèche-serviette
+      'equipements_seche_serviettes_photos', NEW.equipements_seche_serviettes_photos,
+      'equipements_seche_serviettes_videos', NEW.equipements_seche_serviettes_videos,
+
+      -- ménage
+      'equipements_menage_aspirateur_photos', NEW.equipements_menage_aspirateur_photos,
+      'equipements_menage_serpillere_photos', NEW.equipements_menage_serpillere_photos,
+      'equipements_menage_balais_photos', NEW.equipements_menage_balais_photos,
+      'equipements_menage_balayette_photos', NEW.equipements_menage_balayette_photos,
+      'equipements_menage_autres_elements_photos', NEW.equipements_menage_autres_elements_photos
+
     );
 
     -- Fusion complète

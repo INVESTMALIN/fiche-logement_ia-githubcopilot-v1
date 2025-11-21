@@ -308,7 +308,6 @@ export default function FicheChambre() {
   const equipements = [
     { key: 'equipements_draps_fournis', label: 'Draps fournis' },
     { key: 'equipements_climatisation', label: 'Climatisation' },
-    { key: 'equipements_ventilateur_plafond', label: 'Ventilateur de plafond' },
     { key: 'equipements_espace_rangement', label: 'Espace de rangement pour les vêtements (placard, armoire)' },
     { key: 'equipements_lit_bebe_60_120', label: 'Lit pour bébé (60 × 120 cm)' },
     { key: 'equipements_stores_manuels', label: 'Stores manuels' },

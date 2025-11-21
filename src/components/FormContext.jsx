@@ -14,7 +14,7 @@ const initialFormData = {
   updated_at: null,
   nom: "Nouvelle fiche",
   statut: "Brouillon",
-  
+
   section_proprietaire: {
     prenom: "",
     nom: "",
@@ -35,7 +35,7 @@ const initialFormData = {
     nombre_personnes_max: "",     // nombreDe depuis Monday
     nombre_lits: "",              // lits depuis Monday (valeur brute)
     type_autre_precision: "",     // Si type = "Autre"
-    
+
     // Structure appartement conditionnelle
     appartement: {
       nom_residence: "",
@@ -44,7 +44,7 @@ const initialFormData = {
       etage: "",
       numero_porte: ""
     },
-    
+
     // Legacy - à garder pour compatibilité existante
     type: "",
     adresse: {
@@ -68,14 +68,14 @@ const initialFormData = {
     boiteType: "",                    // TEXT
     emplacementBoite: "",             // TEXT
     emplacementPhoto: [],             // ARRAY
-    
+
     // TTlock (conditionnel)
     ttlock: {
       masterpinConciergerie: "",      // TEXT
       codeProprietaire: "",           // TEXT
       codeMenage: ""                  // TEXT
     },
-    
+
     // Igloohome (conditionnel)  
     igloohome: {
       masterpinConciergerie: "",      // TEXT
@@ -83,27 +83,27 @@ const initialFormData = {
       codeProprietaire: "",           // TEXT
       codeMenage: ""                  // TEXT
     },
-    
+
     // Masterlock (conditionnel)
     masterlock: {
       code: ""                        // TEXT
     },
-    
+
     // Interphone
     interphone: null,                 // BOOLEAN
     interphoneDetails: "",            // TEXT
     interphonePhoto: [],              // ARRAY
-    
+
     // Tempo-gâche  
     tempoGache: null,                 // BOOLEAN
     tempoGacheDetails: "",            // TEXT
     tempoGachePhoto: [],              // ARRAY
-    
+
     // Digicode
     digicode: null,                   // BOOLEAN
     digicodeDetails: "",              // TEXT
     digicodePhoto: [],                // ARRAY
-    
+
     // Clefs (existant)
     clefs: {
       photos: [],                     // ARRAY
@@ -134,20 +134,20 @@ const initialFormData = {
   },
 
   section_reglementation: {
-  ville_changement_usage: "",
-  date_expiration_changement: "",
-  numero_declaration: "",
-  ville_declaration_simple: "",
-  details_reglementation: "",
-  documents: {
-    carte_identite: false,
-    rib: false,
-    cerfa: false,
-    assurance_pno: false,
-    rcp: false,
-    acte_propriete: false
-  }
-},
+    ville_changement_usage: "",
+    date_expiration_changement: "",
+    numero_declaration: "",
+    ville_declaration_simple: "",
+    details_reglementation: "",
+    documents: {
+      carte_identite: false,
+      rib: false,
+      cerfa: false,
+      assurance_pno: false,
+      rcp: false,
+      acte_propriete: false
+    }
+  },
 
   section_exigences: {
     nombre_nuits_minimum: "",
@@ -155,36 +155,36 @@ const initialFormData = {
     dates_bloquees: "",
     precisions_exigences: "",
     animaux_acceptes: null,
-    animaux_commentaire: ""  
+    animaux_commentaire: ""
   },
 
-  section_avis: {    
-      // 🎬 1. ÉVALUATION ENVIRONNEMENT
-  video_globale_validation: null,              // Radio: true/false/null
-  video_globale_videos: [],                    // Array pour les vidéos uploadées
-  
-  // 🏘️ 2. ÉVALUATION QUARTIER  
-  quartier_types: [],                          // Array checkboxes (choix multiples)
-  quartier_securite: null,                     // Radio: "Sécurisé"/"Quartier modéré"/"Zone à risques"/null
-  quartier_perturbations: null,                // Radio: "Pas d'élément"/"Élément perturbateur"/null
-  quartier_perturbations_details: "",          // Textarea conditionnel (si perturbations = "Élément perturbateur")
-  
-  // 🏢 3. ÉVALUATION IMMEUBLE
-  immeuble_etat_general: null,                 // Radio: "Bon état"/"État correct"/"Mauvais état"/null
-  immeuble_proprete: null,                     // Radio: "Propre"/"Sale"/null
-  immeuble_accessibilite: null,                // Radio: "Très accessible"/"Modérément accessible"/"Inaccessible"/null
-  immeuble_niveau_sonore: null,                // Radio: "Très calme"/"Relativement calme"/"Très bruyant"/null
-  
-  // 🏠 4. ÉVALUATION LOGEMENT
-  logement_etat_general: null,                 // Radio: "Excellent"/"Bon"/"Moyen"/"Dégradé"/"Très mauvais"/null
-  logement_etat_details: "",                   // Textarea conditionnel (si état = "Dégradé" ou "Très mauvais")
-  logement_proprete: null,                     // Radio: "Propre"/"Correct"/"Sale"/null
-  logement_proprete_details: "",               // Textarea conditionnel (si propreté = "Sale")
-  logement_ambiance: [],                       // Array checkboxes (choix multiples)
-  logement_absence_decoration_details: "",     // Textarea conditionnel (si ambiance contient "Absence de décoration")
-  logement_decoration_personnalisee_details: "", // Textarea conditionnel (si ambiance contient "Décoration très personnalisée")
-  logement_vis_a_vis: null,                    // Radio: "Vue dégagée"/"Vis-à-vis partielle"/"Vis-à-vis direct"/null
-  logement_vis_a_vis_photos: [],               // Array photos
+  section_avis: {
+    // 🎬 1. ÉVALUATION ENVIRONNEMENT
+    video_globale_validation: null,              // Radio: true/false/null
+    video_globale_videos: [],                    // Array pour les vidéos uploadées
+
+    // 🏘️ 2. ÉVALUATION QUARTIER  
+    quartier_types: [],                          // Array checkboxes (choix multiples)
+    quartier_securite: null,                     // Radio: "Sécurisé"/"Quartier modéré"/"Zone à risques"/null
+    quartier_perturbations: null,                // Radio: "Pas d'élément"/"Élément perturbateur"/null
+    quartier_perturbations_details: "",          // Textarea conditionnel (si perturbations = "Élément perturbateur")
+
+    // 🏢 3. ÉVALUATION IMMEUBLE
+    immeuble_etat_general: null,                 // Radio: "Bon état"/"État correct"/"Mauvais état"/null
+    immeuble_proprete: null,                     // Radio: "Propre"/"Sale"/null
+    immeuble_accessibilite: null,                // Radio: "Très accessible"/"Modérément accessible"/"Inaccessible"/null
+    immeuble_niveau_sonore: null,                // Radio: "Très calme"/"Relativement calme"/"Très bruyant"/null
+
+    // 🏠 4. ÉVALUATION LOGEMENT
+    logement_etat_general: null,                 // Radio: "Excellent"/"Bon"/"Moyen"/"Dégradé"/"Très mauvais"/null
+    logement_etat_details: "",                   // Textarea conditionnel (si état = "Dégradé" ou "Très mauvais")
+    logement_proprete: null,                     // Radio: "Propre"/"Correct"/"Sale"/null
+    logement_proprete_details: "",               // Textarea conditionnel (si propreté = "Sale")
+    logement_ambiance: [],                       // Array checkboxes (choix multiples)
+    logement_absence_decoration_details: "",     // Textarea conditionnel (si ambiance contient "Absence de décoration")
+    logement_decoration_personnalisee_details: "", // Textarea conditionnel (si ambiance contient "Décoration très personnalisée")
+    logement_vis_a_vis: null,                    // Radio: "Vue dégagée"/"Vis-à-vis partielle"/"Vis-à-vis direct"/null
+    logement_vis_a_vis_photos: [],               // Array photos
 
     atouts_logement: {
       lumineux: null,
@@ -226,7 +226,7 @@ const initialFormData = {
       table_ping_pong: null,
       autres_atouts: null
     },
-    
+
     atouts_logement_autre: "",
     autres_caracteristiques: "",
     types_voyageurs: {
@@ -241,11 +241,11 @@ const initialFormData = {
     types_voyageurs_autre: "",
     explication_adaptation: "",
   },
-  
+
   section_gestion_linge: {
     // Question principale
     dispose_de_linge: null,
-    
+
     // Inventaire 90x200 (lit simple)
     inventaire_90x200: {
       couettes: "",
@@ -261,7 +261,7 @@ const initialFormData = {
       plaids: "",
       oreillers_decoratifs: ""
     },
-    
+
     // Inventaire 140x200 (lit standard)
     inventaire_140x200: {
       couettes: "",
@@ -277,7 +277,7 @@ const initialFormData = {
       plaids: "",
       oreillers_decoratifs: ""
     },
-    
+
     // Inventaire 160x200 (lit queen size)
     inventaire_160x200: {
       couettes: "",
@@ -293,7 +293,7 @@ const initialFormData = {
       plaids: "",
       oreillers_decoratifs: ""
     },
-    
+
     // Inventaire 180x200 (lit king size)
     inventaire_180x200: {
       couettes: "",
@@ -309,7 +309,7 @@ const initialFormData = {
       plaids: "",
       oreillers_decoratifs: ""
     },
-    
+
     // Inventaire Autres/hors catégorie
     inventaire_autres: {
       couettes: "",
@@ -325,7 +325,7 @@ const initialFormData = {
       plaids: "",
       oreillers_decoratifs: ""
     },
-    
+
     // État du linge (checkboxes)
     etat_neuf: null,
     etat_usage: null,
@@ -333,7 +333,7 @@ const initialFormData = {
     etat_sale: null,
     etat_tache: null,
     etat_informations: "",
-    
+
     // Photos et emplacement
     photos_linge: [],
     emplacement_description: "",
@@ -341,101 +341,124 @@ const initialFormData = {
     emplacement_code_cadenas: ""
   },
   section_equipements: {
-  // Équipements techniques essentiels
-  video_acces_poubelle: [],
-  poubelle_emplacement: "",
-  poubelle_ramassage: "",
-  poubelle_photos: [],
-  disjoncteur_emplacement: "",
-  disjoncteur_photos: [],
-  vanne_eau_emplacement: "",
-  vanne_arret_photos: [],
-  systeme_chauffage_eau: "",
-  chauffage_eau_emplacement: "",
-  chauffage_eau_photos: [],
-  video_systeme_chauffage: [],
-  
-  // WiFi
-  wifi_statut: "",
-  wifi_details: "",
-  wifi_nom_reseau: "",
-  wifi_mot_de_passe: "",
-  wifi_routeur_photo: [],
-  
-  // Parking
-  parking_type: "",
-  parking_rue_details: "",
-  parking_sur_place_types: [],
-  parking_sur_place_details: "",
-  parking_payant_type: "",
-  parking_payant_details: "",
-  
-  // Checkboxes équipements
-  climatisation: null,
-  lave_linge: null,
-  seche_linge: null,
-  parking_equipement: null,
-  tourne_disque: null,
-  coffre_fort: null,
-  ascenseur: null,
-  animaux_acceptes: null,
-  fetes_autorisees: null,
-  tv: null,
-  chauffage: null,
-  fer_repasser: null,
-  etendoir: null,
-  piano: null,
-  cinema: null,
-  compacteur_dechets: null,
-  accessible_mobilite_reduite: null,
-  fumeurs_acceptes: null,
-  tv_type: "",                          // Menu déroulant
-  tv_taille: "",                        // Texte libre
-  tv_type_autre_details: "",            // Conditionnel si "Autre"
-  tv_video: [],                         // PhotoUpload vidéo
-  tv_services: [],                      // Array checkboxes
-  tv_consoles: [],                      // Array checkboxes (si Console coché)
-  tv_console_video: [],                 // PhotoUpload vidéo (si Console coché)
-  climatisation_type: [],               // Menu déroulant
-  climatisation_instructions: "",       // Text
-  climatisation_video: [],              // PhotoUpload vidéo
-  chauffage_type: "",                   // Menu déroulant (obligatoire)
-  chauffage_instructions: "",           // Textarea
-  chauffage_video: [],                  // PhotoUpload vidéo
-  lave_linge_prix: "",                  // Radio (compris/supplément)
-  lave_linge_emplacement: "",           // Radio (logement/immeuble)
-  lave_linge_instructions: "",          // Textarea
-  lave_linge_video: [],                 // PhotoUpload vidéo
-  seche_linge_prix: "",                 // Radio
-  seche_linge_emplacement: "",          // Radio
-  seche_linge_instructions: "",         // Textarea
-  seche_linge_video: [],                // PhotoUpload vidéo
-  parking_photo: [],                    // PhotoUpload photo
-  parking_video: [],                    // PhotoUpload vidéo
-  piano_marque: "",                     // Texte libre
-  piano_type: "",                       // Radio (queue/numérique/droit)
-  pmr_details: "",                      // Textarea (obligatoire)
-  animaux_commentaire: ""               // Textarea
-},
+    // Équipements techniques essentiels
+    video_acces_poubelle: [],
+    poubelle_emplacement: "",
+    poubelle_ramassage: "",
+    poubelle_photos: [],
+    disjoncteur_emplacement: "",
+    disjoncteur_photos: [],
+    vanne_eau_emplacement: "",
+    vanne_arret_photos: [],
+    systeme_chauffage_eau: "",
+    chauffage_eau_emplacement: "",
+    chauffage_eau_photos: [],
+    video_systeme_chauffage: [],
+
+    // WiFi
+    wifi_statut: "",
+    wifi_details: "",
+    wifi_nom_reseau: "",
+    wifi_mot_de_passe: "",
+    wifi_routeur_photo: [],
+
+    // Parking
+    parking_type: "",
+    parking_rue_details: "",
+    parking_sur_place_types: [],
+    parking_sur_place_details: "",
+    parking_payant_type: "",
+    parking_payant_details: "",
+
+    // Checkboxes équipements
+    climatisation: null,
+    lave_linge: null,
+    seche_linge: null,
+    parking_equipement: null,
+    tourne_disque: null,
+    coffre_fort: null,
+    ascenseur: null,
+    animaux_acceptes: null,
+    fetes_autorisees: null,
+    tv: null,
+    chauffage: null,
+    ventilateur: null,
+    seche_serviettes: null,
+    fer_repasser: null,
+    etendoir: null,
+    piano: null,
+    cinema: null,
+    compacteur_dechets: null,
+    accessible_mobilite_reduite: null,
+    fumeurs_acceptes: null,
+    tv_type: "",                           // Menu déroulant
+    tv_taille: "",                         // Texte libre
+    tv_type_autre_details: "",             // Conditionnel si "Autre"
+    tv_video: [],                          // PhotoUpload vidéo
+    tv_services: [],                       // Array checkboxes
+    tv_consoles: [],                       // Array checkboxes (si Console coché)
+    tv_console_video: [],                  // PhotoUpload vidéo (si Console coché)
+    climatisation_type: [],                // Array checkboxes (sélection multiple)
+    climatisation_instructions: "",        // Text
+    climatisation_video: [],               // PhotoUpload vidéo
+    chauffage_type: [],                    // Array checkboxes (sélection multiple)
+    chauffage_instructions: "",            // Textarea
+    chauffage_video: [],                   // PhotoUpload vidéo
+    chauffage_types: [],                   // Array checkboxes (sélection multiple)
+    chauffage_instructions: "",            // Textarea
+    chauffage_video: [],                   // PhotoUpload vidéo
+    ventilateur_types: [],                 // Array checkboxes (3 options)
+    ventilateur_nombre: "",                // Number input
+    ventilateur_emplacement: "",           // Textarea
+    ventilateur_photos: [],                // PhotoUpload photos
+    ventilateur_videos: [],                // PhotoUpload vidéos
+    seche_serviettes_photos: [],           // PhotoUpload photos
+    seche_serviettes_videos: [],           // PhotoUpload vidéos
+    lave_linge_prix: "",                   // Radio (compris/supplément)
+    lave_linge_emplacement: "",            // Radio (logement/immeuble)
+    lave_linge_instructions: "",           // Textarea
+    lave_linge_video: [],                  // PhotoUpload vidéo
+    seche_linge_prix: "",                  // Radio
+    seche_linge_emplacement: "",           // Radio
+    seche_linge_instructions: "",          // Textarea
+    seche_linge_video: [],                 // PhotoUpload vidéo
+    parking_photo: [],                     // PhotoUpload photo
+    parking_video: [],                     // PhotoUpload vidéo
+    piano_marque: "",                      // Texte libre
+    piano_type: "",                        // Radio (queue/numérique/droit)
+    pmr_details: "",                       // Textarea (obligatoire)
+    animaux_commentaire: "",               // Textarea
+
+    // ÉQUIPEMENT MÉNAGE
+    menage_aspirateur_types: [],
+    menage_aspirateur_photos: [],
+    menage_serpillere_types: [],
+    menage_serpillere_photos: [],
+    menage_balais_photos: [],
+    menage_balayette_photos: [],
+    menage_autres_elements: "",
+    menage_autres_elements_photos: [],
+    lave_linge_prix: ""
+  },
   section_consommables: {
     // Question principale
     fournis_par_prestataire: null,
-    
-    gel_douche: null,               
-    shampoing: null,                
-    apres_shampoing: null,          
-    pastilles_lave_vaisselle: null, 
-    autre_consommable: null,        
-    autre_consommable_details: "", 
-    
-    cafe_nespresso: null,      
-    cafe_tassimo: null,        
-    cafe_moulu: null,  
-    cafe_senseo: null,  
-    cafe_soluble: null,    
-    cafe_grain: null,              
-    cafe_autre: null, 
-    cafe_autre_details: ""          
+
+    gel_douche: null,
+    shampoing: null,
+    apres_shampoing: null,
+    pastilles_lave_vaisselle: null,
+    autre_consommable: null,
+    autre_consommable_details: "",
+
+    cafe_nespresso: null,
+    cafe_tassimo: null,
+    cafe_moulu: null,
+    cafe_senseo: null,
+    cafe_soluble: null,
+    cafe_grain: null,
+    cafe_autre: null,
+    cafe_autre_details: ""
   },
 
   section_visite: {
@@ -456,18 +479,18 @@ const initialFormData = {
     pieces_jardin: null,
     pieces_autre: null,
     pieces_autre_details: "",
-    
+
     // Conditionnel chambre
     nombre_chambres: "",        // "1", "2", "3", "4", "5", "6"
     nombre_salles_bains: "",        // "1", "2", "3", "4", "5", "6"
-    
+
     // Vidéo visite
     video_visite: [],
   },
   section_chambres: {
     chambre_1: {
       nom_description: "",
-      
+
       // Compteurs lits (8 types)
       lit_simple_90_190: 0,
       lit_double_140_190: 0,
@@ -477,13 +500,12 @@ const initialFormData = {
       canape_lit_double: 0,
       lits_superposes_90_190: 0,
       lit_gigogne: 0,
-      
+
       autre_type_lit: "",
-      
+
       // Équipements (15 checkboxes + autre avec détails)
       equipements_draps_fournis: null,
       equipements_climatisation: null,
-      equipements_ventilateur_plafond: null,
       equipements_espace_rangement: null,
       equipements_lit_bebe_60_120: null,
       equipements_stores_manuels: null,
@@ -498,13 +520,13 @@ const initialFormData = {
       equipements_systeme_audio: null,
       equipements_coffre_fort: null,
       equipements_autre: null,
-      equipements_autre_details: "",    
+      equipements_autre_details: "",
       photos_chambre: [],
       // 🆕 ÉLÉMENTS ABÎMÉS
       elements_abimes: null,            // Boolean: true/false/null
       elements_abimes_photos: []        // Array: URLs photos
     },
-    
+
     chambre_2: {
       nom_description: "",
       lit_simple_90_190: 0,
@@ -518,7 +540,6 @@ const initialFormData = {
       autre_type_lit: "",
       equipements_draps_fournis: null,
       equipements_climatisation: null,
-      equipements_ventilateur_plafond: null,
       equipements_espace_rangement: null,
       equipements_lit_bebe_60_120: null,
       equipements_stores: null,
@@ -537,7 +558,7 @@ const initialFormData = {
       elements_abimes: null,            // Boolean: true/false/null
       elements_abimes_photos: []        // Array: URLs photos
     },
-    
+
     chambre_3: {
       nom_description: "",
       lit_simple_90_190: 0,
@@ -551,7 +572,6 @@ const initialFormData = {
       autre_type_lit: "",
       equipements_draps_fournis: null,
       equipements_climatisation: null,
-      equipements_ventilateur_plafond: null,
       equipements_espace_rangement: null,
       equipements_lit_bebe_60_120: null,
       equipements_stores: null,
@@ -570,7 +590,7 @@ const initialFormData = {
       elements_abimes: null,            // Boolean: true/false/null
       elements_abimes_photos: []        // Array: URLs photos
     },
-    
+
     chambre_4: {
       nom_description: "",
       lit_simple_90_190: 0,
@@ -584,7 +604,6 @@ const initialFormData = {
       autre_type_lit: "",
       equipements_draps_fournis: null,
       equipements_climatisation: null,
-      equipements_ventilateur_plafond: null,
       equipements_espace_rangement: null,
       equipements_lit_bebe_60_120: null,
       equipements_stores: null,
@@ -603,7 +622,7 @@ const initialFormData = {
       elements_abimes: null,            // Boolean: true/false/null
       elements_abimes_photos: []        // Array: URLs photos
     },
-    
+
     chambre_5: {
       nom_description: "",
       lit_simple_90_190: 0,
@@ -617,7 +636,6 @@ const initialFormData = {
       autre_type_lit: "",
       equipements_draps_fournis: null,
       equipements_climatisation: null,
-      equipements_ventilateur_plafond: null,
       equipements_espace_rangement: null,
       equipements_lit_bebe_60_120: null,
       equipements_stores: null,
@@ -636,7 +654,7 @@ const initialFormData = {
       elements_abimes: null,            // Boolean: true/false/null
       elements_abimes_photos: []        // Array: URLs photos
     },
-    
+
     chambre_6: {
       nom_description: "",
       lit_simple_90_190: 0,
@@ -650,7 +668,6 @@ const initialFormData = {
       autre_type_lit: "",
       equipements_draps_fournis: null,
       equipements_climatisation: null,
-      equipements_ventilateur_plafond: null,
       equipements_espace_rangement: null,
       equipements_lit_bebe_60_120: null,
       equipements_stores: null,
@@ -674,7 +691,7 @@ const initialFormData = {
   section_salle_de_bains: {
     salle_de_bain_1: {
       nom_description: "",
-      
+
       // Équipements (11 checkboxes + autre avec détails)
       equipements_douche: null,
       equipements_baignoire: null,
@@ -684,20 +701,19 @@ const initialFormData = {
       equipements_bidet: null,
       equipements_chauffage: null,
       equipements_lave_linge: null,
-      equipements_seche_serviette: null,
       equipements_seche_cheveux: null,
       equipements_autre: null,
       equipements_autre_details: "",
       // WC séparé (conditionnel si equipements_wc = true)
-      wc_separe: null,      
+      wc_separe: null,
       // Accès (obligatoire)
-      acces: "",      
+      acces: "",
       photos_salle_de_bain: [],
       // 🆕 ÉLÉMENTS ABÎMÉS
       elements_abimes: null,            // Boolean: true/false/null
       elements_abimes_photos: []        // Array: URLs photos
     },
-    
+
     salle_de_bain_2: {
       nom_description: "",
       equipements_douche: null,
@@ -708,7 +724,6 @@ const initialFormData = {
       equipements_bidet: null,
       equipements_chauffage: null,
       equipements_lave_linge: null,
-      equipements_seche_serviette: null,
       equipements_seche_cheveux: null,
       equipements_autre: null,
       equipements_autre_details: "",
@@ -719,7 +734,7 @@ const initialFormData = {
       elements_abimes: null,            // Boolean: true/false/null
       elements_abimes_photos: []        // Array: URLs photos
     },
-    
+
     salle_de_bain_3: {
       nom_description: "",
       equipements_douche: null,
@@ -730,7 +745,6 @@ const initialFormData = {
       equipements_bidet: null,
       equipements_chauffage: null,
       equipements_lave_linge: null,
-      equipements_seche_serviette: null,
       equipements_seche_cheveux: null,
       equipements_autre: null,
       equipements_autre_details: "",
@@ -741,7 +755,7 @@ const initialFormData = {
       elements_abimes: null,            // Boolean: true/false/null
       elements_abimes_photos: []        // Array: URLs photos
     },
-    
+
     salle_de_bain_4: {
       nom_description: "",
       equipements_douche: null,
@@ -752,7 +766,6 @@ const initialFormData = {
       equipements_bidet: null,
       equipements_chauffage: null,
       equipements_lave_linge: null,
-      equipements_seche_serviette: null,
       equipements_seche_cheveux: null,
       equipements_autre: null,
       equipements_autre_details: "",
@@ -763,7 +776,7 @@ const initialFormData = {
       elements_abimes: null,            // Boolean: true/false/null
       elements_abimes_photos: []        // Array: URLs photos
     },
-    
+
     salle_de_bain_5: {
       nom_description: "",
       equipements_douche: null,
@@ -774,7 +787,6 @@ const initialFormData = {
       equipements_bidet: null,
       equipements_chauffage: null,
       equipements_lave_linge: null,
-      equipements_seche_serviette: null,
       equipements_seche_cheveux: null,
       equipements_autre: null,
       equipements_autre_details: "",
@@ -785,7 +797,7 @@ const initialFormData = {
       elements_abimes: null,            // Boolean: true/false/null
       elements_abimes_photos: []        // Array: URLs photos
     },
-    
+
     salle_de_bain_6: {
       nom_description: "",
       equipements_douche: null,
@@ -796,7 +808,6 @@ const initialFormData = {
       equipements_bidet: null,
       equipements_chauffage: null,
       equipements_lave_linge: null,
-      equipements_seche_serviette: null,
       equipements_seche_cheveux: null,
       equipements_autre: null,
       equipements_autre_details: "",
@@ -825,22 +836,23 @@ const initialFormData = {
     equipements_cuiseur_riz: null,
     equipements_machine_pain: null,
     equipements_lave_linge: null,
+    equipements_hotte: null,
     equipements_autre: null,
     equipements_autre_details: "",
-  
+
     // RÉFRIGÉRATEUR - Champs conditionnels
     refrigerateur_marque: "",                    // OBLIGATOIRE *
     refrigerateur_instructions: "",
     refrigerateur_video: [],
-  
+
     // CONGÉLATEUR - Champs conditionnels
     congelateur_instructions: "",
     congelateur_video: [],
-  
+
     // MINI RÉFRIGÉRATEUR - Champs conditionnels
     mini_refrigerateur_instructions: "",
     mini_refrigerateur_video: [],
-  
+
     // CUISINIÈRE - Champs conditionnels
     cuisiniere_marque: "",                      // OBLIGATOIRE *
     cuisiniere_type: "",                        // Select: Électrique/Gaz/Induction/À bois
@@ -848,7 +860,7 @@ const initialFormData = {
     cuisiniere_instructions: "",
     cuisiniere_photo: [],                       // Array photos
     cuisiniere_video: [],
-  
+
     // PLAQUE DE CUISSON - Champs conditionnels
     plaque_cuisson_marque: "",                  // OBLIGATOIRE *
     plaque_cuisson_type: "",                    // Select: Électrique/Gaz/Induction
@@ -856,26 +868,27 @@ const initialFormData = {
     plaque_cuisson_instructions: "",
     plaque_cuisson_photo: [],                   // Array photos
     plaque_cuisson_video: [],
-  
+
     // FOUR - Champs conditionnels
     four_marque: "",                            // OBLIGATOIRE *
     four_type: "",                              // Select: Simple/Double
     four_instructions: "",
     four_photo: [],                             // Array photos
     four_video: [],
-  
+
     // FOUR À MICRO-ONDES - Champs conditionnels
     micro_ondes_instructions: "",
     micro_ondes_photo: [],                      // Array photos
     micro_ondes_video: [],
-  
+
     // LAVE-VAISSELLE - Champs conditionnels
     lave_vaisselle_instructions: "",
     lave_vaisselle_photo: [],                   // Array photos
     lave_vaisselle_video: [],
-  
+
     // CAFETIÈRE - Champs conditionnels
-    cafetiere_marque: "",                       // OBLIGATOIRE *
+    cafetiere_marque: "",
+
     // Types de cafetière (checkboxes multiples)
     cafetiere_type_filtre: null,
     cafetiere_type_expresso: null,
@@ -890,23 +903,27 @@ const initialFormData = {
     cafetiere_video: [],
     cafetiere_cafe_fourni: "",                  // Radio: Non/Oui par le propriétaire/Oui par la fée du logis
     cafetiere_marque_cafe: "",
-  
+
     // BOUILLOIRE ÉLECTRIQUE - Champs conditionnels
     bouilloire_instructions: "",
     bouilloire_video: [],
-  
+
     // GRILLE-PAIN - Champs conditionnels
     grille_pain_instructions: "",
     grille_pain_video: [],
-  
+
+    // HOTTE - Champs conditionnels
+    hotte_instructions: "",
+    hotte_video: [],
+
     // BLENDER - Champs conditionnels
     blender_instructions: "",
     blender_video: [],
-  
+
     // CUISEUR À RIZ - Champs conditionnels
     cuiseur_riz_instructions: "",
     cuiseur_riz_video: [],
-  
+
     // MACHINE À PAIN - Champs conditionnels
     machine_pain_instructions: "",
     machine_pain_video: [],
@@ -916,247 +933,247 @@ const initialFormData = {
     elements_abimes_photos: []          // Array: URLs photos 
   },
 
-  
-  // 🍽 SECTION CUISINE 2 - À ajouter dans FormContext.jsx
-// Remplacer la ligne : section_cuisine_2: {},
 
-section_cuisine_2: {
-  // VAISSELLE (4 compteurs)
-  vaisselle_assiettes_plates: 0,
-  vaisselle_assiettes_dessert: 0,
-  vaisselle_assiettes_creuses: 0,
-  vaisselle_bols: 0,
-  
-  // COUVERTS (11 compteurs)
-  couverts_verres_eau: 0,
-  couverts_verres_vin: 0,
-  couverts_tasses: 0,
-  couverts_flutes_champagne: 0,
-  couverts_mugs: 0,
-  couverts_couteaux_table: 0,
-  couverts_fourchettes: 0,
-  couverts_couteaux_steak: 0,
-  couverts_cuilleres_soupe: 0,
-  couverts_cuilleres_cafe: 0,
-  couverts_cuilleres_dessert: 0,
-  
-  // USTENSILES DE CUISINE (26 compteurs)
-  ustensiles_poeles_differentes_tailles: 0,
-  ustensiles_casseroles_differentes_tailles: 0,
-  ustensiles_faitouts: 0,
-  ustensiles_wok: 0,
-  ustensiles_cocotte_minute: 0,
-  ustensiles_couvercle_anti_eclaboussures: 0,
-  ustensiles_robot_cuisine: 0,
-  ustensiles_batteur_electrique: 0,
-  ustensiles_couteaux_cuisine: 0,
-  ustensiles_spatules: 0,
-  ustensiles_ecumoire: 0,
-  ustensiles_ouvre_boite: 0,
-  ustensiles_rape: 0,
-  ustensiles_tire_bouchon: 0,
-  ustensiles_econome: 0,
-  ustensiles_passoire: 0,
-  ustensiles_planche_decouper: 0,
-  ustensiles_rouleau_patisserie: 0,
-  ustensiles_ciseaux_cuisine: 0,
-  ustensiles_balance_cuisine: 0,
-  ustensiles_bac_glacon: 0,
-  ustensiles_pince_cuisine: 0,
-  ustensiles_couteau_huitre: 0,
-  ustensiles_verre_mesureur: 0,
-  ustensiles_presse_agrume_manuel: 0,
-  ustensiles_pichet: 0,
-  
-  // PLATS ET RÉCIPIENTS (11 compteurs)
-  plats_dessous_plat: 0,
-  plats_plateau: 0,
-  plats_saladiers: 0,
-  plats_a_four: 0,
-  plats_carafes: 0,
-  plats_moules: 0,
-  plats_theiere: 0,
-  plats_cafetiere_piston_filtre: 0,
-  plats_ustensiles_barbecue: 0,
-  plats_gants_cuisine: 0,
-  plats_maniques: 0,
-  
-  // CHAMPS COMPLÉMENTAIRES
-  autres_ustensiles: "",                              // Texte libre
-  quantite_suffisante: null,                          // Radio: true/false/null  
-  quantite_insuffisante_details: "",                  // Conditionnel si quantite_suffisante = false
-  casseroles_poeles_testees: null,                    // Radio: true/false/null
-  photos_tiroirs_placards: []                         // Array photos
-},
+  // 🍽 SECTION CUISINE 2 - À ajouter dans FormContext.jsx
+  // Remplacer la ligne : section_cuisine_2: {},
+
+  section_cuisine_2: {
+    // VAISSELLE (4 compteurs)
+    vaisselle_assiettes_plates: 0,
+    vaisselle_assiettes_dessert: 0,
+    vaisselle_assiettes_creuses: 0,
+    vaisselle_bols: 0,
+
+    // COUVERTS (11 compteurs)
+    couverts_verres_eau: 0,
+    couverts_verres_vin: 0,
+    couverts_tasses: 0,
+    couverts_flutes_champagne: 0,
+    couverts_mugs: 0,
+    couverts_couteaux_table: 0,
+    couverts_fourchettes: 0,
+    couverts_couteaux_steak: 0,
+    couverts_cuilleres_soupe: 0,
+    couverts_cuilleres_cafe: 0,
+    couverts_cuilleres_dessert: 0,
+
+    // USTENSILES DE CUISINE (26 compteurs)
+    ustensiles_poeles_differentes_tailles: 0,
+    ustensiles_casseroles_differentes_tailles: 0,
+    ustensiles_faitouts: 0,
+    ustensiles_wok: 0,
+    ustensiles_cocotte_minute: 0,
+    ustensiles_couvercle_anti_eclaboussures: 0,
+    ustensiles_robot_cuisine: 0,
+    ustensiles_batteur_electrique: 0,
+    ustensiles_couteaux_cuisine: 0,
+    ustensiles_spatules: 0,
+    ustensiles_ecumoire: 0,
+    ustensiles_ouvre_boite: 0,
+    ustensiles_rape: 0,
+    ustensiles_tire_bouchon: 0,
+    ustensiles_econome: 0,
+    ustensiles_passoire: 0,
+    ustensiles_planche_decouper: 0,
+    ustensiles_rouleau_patisserie: 0,
+    ustensiles_ciseaux_cuisine: 0,
+    ustensiles_balance_cuisine: 0,
+    ustensiles_bac_glacon: 0,
+    ustensiles_pince_cuisine: 0,
+    ustensiles_couteau_huitre: 0,
+    ustensiles_verre_mesureur: 0,
+    ustensiles_presse_agrume_manuel: 0,
+    ustensiles_pichet: 0,
+
+    // PLATS ET RÉCIPIENTS (11 compteurs)
+    plats_dessous_plat: 0,
+    plats_plateau: 0,
+    plats_saladiers: 0,
+    plats_a_four: 0,
+    plats_carafes: 0,
+    plats_moules: 0,
+    plats_theiere: 0,
+    plats_cafetiere_piston_filtre: 0,
+    plats_ustensiles_barbecue: 0,
+    plats_gants_cuisine: 0,
+    plats_maniques: 0,
+
+    // CHAMPS COMPLÉMENTAIRES
+    autres_ustensiles: "",                              // Texte libre
+    quantite_suffisante: null,                          // Radio: true/false/null  
+    quantite_insuffisante_details: "",                  // Conditionnel si quantite_suffisante = false
+    casseroles_poeles_testees: null,                    // Radio: true/false/null
+    photos_tiroirs_placards: []                         // Array photos
+  },
 
   // 🛋️ SECTION SALON / SAM - À ajouter dans FormContext.jsx
-// Remplacer la ligne : section_salon_sam: {},
+  // Remplacer la ligne : section_salon_sam: {},
 
-section_salon_sam: {
-  // Description générale (obligatoire)
-  description_generale: "",
-  
-  // Équipements (13 checkboxes + autre)
-  equipements_table_manger: null,
-  equipements_chaises: null,
-  equipements_canape: null,
-  equipements_canape_lit: null,
-  equipements_fauteuils: null,
-  equipements_table_basse: null,
-  equipements_television: null,
-  equipements_cheminee: null,
-  equipements_jeux_societe: null,
-  equipements_livres_magazines: null,
-  equipements_livres_jouets_enfants: null,
-  equipements_climatisation: null,
-  equipements_chauffage: null,
-  equipements_stores_manuels: null,
-  equipements_volets: null,
-  equipements_stores_electriques: null,
-  equipements_autre: null,
-  equipements_autre_details: "",
-  
-  // Cheminée type (conditionnel si cheminee cochée)
-  cheminee_type: "",                    // Radio: Électrique/Éthanol/Gaz/Poêle à granulés/Bois/Décorative
-  
-  // Autres équipements (obligatoire)
-  autres_equipements_details: "",
-  
-  // Photos
-  photos_salon_sam: [],
-  
-  // Nombre places table (obligatoire)
-  nombre_places_table: "",               // Number input
-  // 🆕 ÉLÉMENTS ABÎMÉS - SALON
-  salon_elements_abimes: null,        // Boolean: true/false/null
-  salon_elements_abimes_photos: [],   // Array: URLs photos
-  
-  // 🆕 ÉLÉMENTS ABÎMÉS - SALLE À MANGER
-  salle_manger_elements_abimes: null,        // Boolean: true/false/null  
-  salle_manger_elements_abimes_photos: []    // Array: URLs photos
-},
+  section_salon_sam: {
+    // Description générale (obligatoire)
+    description_generale: "",
+
+    // Équipements (13 checkboxes + autre)
+    equipements_table_manger: null,
+    equipements_chaises: null,
+    equipements_canape: null,
+    equipements_canape_lit: null,
+    equipements_fauteuils: null,
+    equipements_table_basse: null,
+    equipements_television: null,
+    equipements_cheminee: null,
+    equipements_jeux_societe: null,
+    equipements_livres_magazines: null,
+    equipements_livres_jouets_enfants: null,
+    equipements_climatisation: null,
+    equipements_chauffage: null,
+    equipements_stores_manuels: null,
+    equipements_volets: null,
+    equipements_stores_electriques: null,
+    equipements_autre: null,
+    equipements_autre_details: "",
+
+    // Cheminée type (conditionnel si cheminee cochée)
+    cheminee_type: "",                    // Radio: Électrique/Éthanol/Gaz/Poêle à granulés/Bois/Décorative
+
+    // Autres équipements (obligatoire)
+    autres_equipements_details: "",
+
+    // Photos
+    photos_salon_sam: [],
+
+    // Nombre places table (obligatoire)
+    nombre_places_table: "",               // Number input
+    // 🆕 ÉLÉMENTS ABÎMÉS - SALON
+    salon_elements_abimes: null,        // Boolean: true/false/null
+    salon_elements_abimes_photos: [],   // Array: URLs photos
+
+    // 🆕 ÉLÉMENTS ABÎMÉS - SALLE À MANGER
+    salle_manger_elements_abimes: null,        // Boolean: true/false/null  
+    salle_manger_elements_abimes_photos: []    // Array: URLs photos
+  },
 
   // 🏗️ ÉTAPE 3 - Mise à jour FormContext.jsx
-// Remplacer la ligne : section_equip_spe_exterieur: {},
+  // Remplacer la ligne : section_equip_spe_exterieur: {},
 
-section_equip_spe_exterieur: {
-  // CHAMPS RACINES (toujours visibles)
-  dispose_exterieur: null,                    // Radio: true/false/null
-  dispose_piscine: null,                      // Radio: true/false/null  
-  dispose_jacuzzi: null,                      // Radio: true/false/null
-  dispose_cuisine_exterieure: null,          // Radio: true/false/null
-  
-  // BRANCHE EXTÉRIEUR (si dispose_exterieur = true)
-  exterieur_type_espace: [],                 // Array checkboxes: ["Balcon", "Terrasse", "Jardin", "Patio", "Aucun"]
-  exterieur_description_generale: "",        // Textarea
-  exterieur_entretien_prestataire: null,     // Radio: true/false/null
-  exterieur_entretien_frequence: "",         // Text (conditionnel si entretien = true)
-  exterieur_entretien_type_prestation: "",   // Text (conditionnel si entretien = true)
-  exterieur_entretien_qui: "",               // Text (conditionnel si entretien = false)
-  exterieur_equipements: [],                 // Array 14 checkboxes + autre
-  exterieur_equipements_autre_details: "",   // Text (conditionnel si "Autre" coché)
-  exterieur_nombre_chaises_longues: null,    // Number (conditionnel si "Chaises longues" coché)
-  exterieur_nombre_parasols: null,           // Number (conditionnel si "Parasol" coché)
-  exterieur_photos: [],                      // Array photos
-  exterieur_acces: "",                       // Textarea
-  exterieur_type_acces: "",                  // Radio: Privé/Partagé logements/Partagé voisinage/Autre
-  exterieur_type_acces_autre_details: "",    // Text (conditionnel si "Autre")
-  
-  // SOUS-BRANCHE BARBECUE (si "Barbecue" dans exterieur_equipements)
-  barbecue_instructions: "",                 // Textarea
-  barbecue_type: "",                         // Text
-  barbecue_combustible_fourni: null,         // Radio: true/false/null
-  barbecue_ustensiles_fournis: null,         // Radio: true/false/null
-  barbecue_photos: [],                       // Array photos
-  
-  // BRANCHE PISCINE (si dispose_piscine = true)
-  piscine_type: "",                          // Radio: Privée/Publique
-  piscine_acces: "",                         // Radio: Intérieur/Extérieur
-  piscine_dimensions: "",                    // Text
-  piscine_disponibilite: "",                 // Radio: Toute l'année/Certaines périodes
-  piscine_periode_disponibilite: "",         // Text (conditionnel)
-  piscine_heures: "",                        // Radio: 24h/24 ou spécifiques
-  piscine_horaires_ouverture: "",            // Text (conditionnel)
-  piscine_caracteristiques: [],              // Array checkboxes (9 options)
-  piscine_periode_chauffage: "",             // Text (conditionnel si "Chauffée")
-  piscine_entretien_prestataire: null,       // Radio: true/false/null
-  piscine_entretien_frequence: "",           // Text (conditionnel)
-  piscine_entretien_type_prestation: "",     // Text (conditionnel)
-  piscine_entretien_qui: "",                 // Text (conditionnel)
-  piscine_regles_utilisation: "",            // Textarea
-  piscine_video: [],                         // Array vidéos
-  
-  // BRANCHE JACUZZI (si dispose_jacuzzi = true)
-  jacuzzi_acces: "",                         // Radio: Intérieur/Extérieur
-  jacuzzi_entretien_prestataire: null,       // Radio: true/false/null
-  jacuzzi_entretien_frequence: "",           // Text (conditionnel)
-  jacuzzi_entretien_type_prestation: "",     // Text (conditionnel)
-  jacuzzi_entretien_qui: "",                 // Text (conditionnel)
-  jacuzzi_taille: "",                        // Text
-  jacuzzi_instructions: "",                  // Textarea
-  jacuzzi_heures_utilisation: "",            // Text
-  jacuzzi_photos: [],                        // Array photos
-  
-  // BRANCHE CUISINE EXTÉRIEURE (si dispose_cuisine_exterieure = true)
-  cuisine_ext_entretien_prestataire: null,   // Radio: true/false/null
-  cuisine_ext_entretien_frequence: "",       // Text (conditionnel)
-  cuisine_ext_entretien_type_prestation: "", // Text (conditionnel)
-  cuisine_ext_entretien_qui: "",             // Text (conditionnel)
-  cuisine_ext_superficie: "",               // Text
-  cuisine_ext_type: "",                     // Radio: Privée/Publique
-  cuisine_ext_caracteristiques: [],         // Array checkboxes: ["Four", "Évier"]
-  
-  // 🆕 ÉLÉMENTS ABÎMÉS - GARAGE
-  garage_elements_abimes: null,       // Boolean: true/false/null
-  garage_elements_abimes_photos: [],  // Array: URLs photos
-  
-  // 🆕 ÉLÉMENTS ABÎMÉS - BUANDERIE
-  buanderie_elements_abimes: null,       // Boolean: true/false/null
-  buanderie_elements_abimes_photos: [],  // Array: URLs photos
-  
-  // 🆕 ÉLÉMENTS ABÎMÉS - AUTRES PIÈCES
-  autres_pieces_elements_abimes: null,       // Boolean: true/false/null
-  autres_pieces_elements_abimes_photos: []  // Array: URLs photos
-},
+  section_equip_spe_exterieur: {
+    // CHAMPS RACINES (toujours visibles)
+    dispose_exterieur: null,                    // Radio: true/false/null
+    dispose_piscine: null,                      // Radio: true/false/null  
+    dispose_jacuzzi: null,                      // Radio: true/false/null
+    dispose_cuisine_exterieure: null,          // Radio: true/false/null
 
-section_communs: {
-  dispose_espaces_communs: null,           // Radio: true/false/null
-  description_generale: "",                // Textarea
-  entretien_prestataire: null,            // Radio: true/false/null  
-  entretien_frequence: "",                // Text (conditionnel si entretien = true)
-  entretien_qui: "",                      // Text (conditionnel si entretien = false)
-  photos_espaces_communs: []              // Array photos
-},
+    // BRANCHE EXTÉRIEUR (si dispose_exterieur = true)
+    exterieur_type_espace: [],                 // Array checkboxes: ["Balcon", "Terrasse", "Jardin", "Patio", "Aucun"]
+    exterieur_description_generale: "",        // Textarea
+    exterieur_entretien_prestataire: null,     // Radio: true/false/null
+    exterieur_entretien_frequence: "",         // Text (conditionnel si entretien = true)
+    exterieur_entretien_type_prestation: "",   // Text (conditionnel si entretien = true)
+    exterieur_entretien_qui: "",               // Text (conditionnel si entretien = false)
+    exterieur_equipements: [],                 // Array 14 checkboxes + autre
+    exterieur_equipements_autre_details: "",   // Text (conditionnel si "Autre" coché)
+    exterieur_nombre_chaises_longues: null,    // Number (conditionnel si "Chaises longues" coché)
+    exterieur_nombre_parasols: null,           // Number (conditionnel si "Parasol" coché)
+    exterieur_photos: [],                      // Array photos
+    exterieur_acces: "",                       // Textarea
+    exterieur_type_acces: "",                  // Radio: Privé/Partagé logements/Partagé voisinage/Autre
+    exterieur_type_acces_autre_details: "",    // Text (conditionnel si "Autre")
 
-section_teletravail: {
-  equipements: [],
-  equipements_autre_details: ""
-},
+    // SOUS-BRANCHE BARBECUE (si "Barbecue" dans exterieur_equipements)
+    barbecue_instructions: "",                 // Textarea
+    barbecue_type: "",                         // Text
+    barbecue_combustible_fourni: null,         // Radio: true/false/null
+    barbecue_ustensiles_fournis: null,         // Radio: true/false/null
+    barbecue_photos: [],                       // Array photos
 
-section_bebe: {
-  equipements: [],
-  lit_bebe_type: "",
-  lit_parapluie_disponibilite: "",
-  lit_stores_occultants: null,
-  chaise_haute_type: "",
-  chaise_haute_disponibilite: "",
-  chaise_haute_caracteristiques: [],
-  chaise_haute_prix: "",
-  jouets_tranches_age: [],
-  equipements_autre_details: "",
-  photos_equipements_bebe: []
-},
+    // BRANCHE PISCINE (si dispose_piscine = true)
+    piscine_type: "",                          // Radio: Privée/Publique
+    piscine_acces: "",                         // Radio: Intérieur/Extérieur
+    piscine_dimensions: "",                    // Text
+    piscine_disponibilite: "",                 // Radio: Toute l'année/Certaines périodes
+    piscine_periode_disponibilite: "",         // Text (conditionnel)
+    piscine_heures: "",                        // Radio: 24h/24 ou spécifiques
+    piscine_horaires_ouverture: "",            // Text (conditionnel)
+    piscine_caracteristiques: [],              // Array checkboxes (9 options)
+    piscine_periode_chauffage: "",             // Text (conditionnel si "Chauffée")
+    piscine_entretien_prestataire: null,       // Radio: true/false/null
+    piscine_entretien_frequence: "",           // Text (conditionnel)
+    piscine_entretien_type_prestation: "",     // Text (conditionnel)
+    piscine_entretien_qui: "",                 // Text (conditionnel)
+    piscine_regles_utilisation: "",            // Textarea
+    piscine_video: [],                         // Array vidéos
 
-section_guide_acces: {
-  photos_etapes: [],
-  video_acces: []
-},
+    // BRANCHE JACUZZI (si dispose_jacuzzi = true)
+    jacuzzi_acces: "",                         // Radio: Intérieur/Extérieur
+    jacuzzi_entretien_prestataire: null,       // Radio: true/false/null
+    jacuzzi_entretien_frequence: "",           // Text (conditionnel)
+    jacuzzi_entretien_type_prestation: "",     // Text (conditionnel)
+    jacuzzi_entretien_qui: "",                 // Text (conditionnel)
+    jacuzzi_taille: "",                        // Text
+    jacuzzi_instructions: "",                  // Textarea
+    jacuzzi_heures_utilisation: "",            // Text
+    jacuzzi_photos: [],                        // Array photos
 
-section_securite: {
-  equipements: [],
-  alarme_desarmement: "",
-  photos_equipements_securite: []
-}
+    // BRANCHE CUISINE EXTÉRIEURE (si dispose_cuisine_exterieure = true)
+    cuisine_ext_entretien_prestataire: null,   // Radio: true/false/null
+    cuisine_ext_entretien_frequence: "",       // Text (conditionnel)
+    cuisine_ext_entretien_type_prestation: "", // Text (conditionnel)
+    cuisine_ext_entretien_qui: "",             // Text (conditionnel)
+    cuisine_ext_superficie: "",               // Text
+    cuisine_ext_type: "",                     // Radio: Privée/Publique
+    cuisine_ext_caracteristiques: [],         // Array checkboxes: ["Four", "Évier"]
+
+    // 🆕 ÉLÉMENTS ABÎMÉS - GARAGE
+    garage_elements_abimes: null,       // Boolean: true/false/null
+    garage_elements_abimes_photos: [],  // Array: URLs photos
+
+    // 🆕 ÉLÉMENTS ABÎMÉS - BUANDERIE
+    buanderie_elements_abimes: null,       // Boolean: true/false/null
+    buanderie_elements_abimes_photos: [],  // Array: URLs photos
+
+    // 🆕 ÉLÉMENTS ABÎMÉS - AUTRES PIÈCES
+    autres_pieces_elements_abimes: null,       // Boolean: true/false/null
+    autres_pieces_elements_abimes_photos: []  // Array: URLs photos
+  },
+
+  section_communs: {
+    dispose_espaces_communs: null,           // Radio: true/false/null
+    description_generale: "",                // Textarea
+    entretien_prestataire: null,            // Radio: true/false/null  
+    entretien_frequence: "",                // Text (conditionnel si entretien = true)
+    entretien_qui: "",                      // Text (conditionnel si entretien = false)
+    photos_espaces_communs: []              // Array photos
+  },
+
+  section_teletravail: {
+    equipements: [],
+    equipements_autre_details: ""
+  },
+
+  section_bebe: {
+    equipements: [],
+    lit_bebe_type: "",
+    lit_parapluie_disponibilite: "",
+    lit_stores_occultants: null,
+    chaise_haute_type: "",
+    chaise_haute_disponibilite: "",
+    chaise_haute_caracteristiques: [],
+    chaise_haute_prix: "",
+    jouets_tranches_age: [],
+    equipements_autre_details: "",
+    photos_equipements_bebe: []
+  },
+
+  section_guide_acces: {
+    photos_etapes: [],
+    video_acces: []
+  },
+
+  section_securite: {
+    equipements: [],
+    alarme_desarmement: "",
+    photos_equipements_securite: []
+  }
 }
 
 export function FormProvider({ children }) {
@@ -1165,10 +1182,10 @@ export function FormProvider({ children }) {
   const { user, loading: authLoading } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState(initialFormData)
-  const [saveStatus, setSaveStatus] = useState({ 
-    saving: false, 
-    saved: false, 
-    error: null 
+  const [saveStatus, setSaveStatus] = useState({
+    saving: false,
+    saved: false,
+    error: null
   })
   const [hasManuallyNamedFiche, setHasManuallyNamedFiche] = useState(false)
 
@@ -1195,7 +1212,7 @@ export function FormProvider({ children }) {
   const generateFicheName = (data) => {
     // Simple : utiliser le numéro de bien qui vient de Monday
     const numeroBien = data.section_logement?.numero_bien;
-    
+
     if (numeroBien) return `Bien ${numeroBien}`;
     return "Nouvelle fiche";
   };
@@ -1203,23 +1220,23 @@ export function FormProvider({ children }) {
   // 🎯 FONCTION: Parser les paramètres Monday
   const parseMondayParams = useCallback((queryParams) => {
     const mondayData = {}
-    
+
     // 👤 Section Propriétaire
     const fullName = queryParams.get('fullName') || queryParams.get('nom')
     const email = queryParams.get('email')
     const adresseRue = queryParams.get('adresse[addr_line1]')
     const adresseVille = queryParams.get('adresse[city]')
     const adressePostal = queryParams.get('adresse[postal]')
-    
+
 
     if (fullName || email || adresseRue || adresseVille || adressePostal) {
       mondayData.section_proprietaire = {}
-      
+
       // Splitter fullName en prénom + nom
       if (fullName) {
         const decoded = decodeURIComponent(fullName)
         const parts = decoded.trim().split(' ')
-        
+
         // Premier mot = prénom, reste = nom de famille
         if (parts.length > 1) {
           mondayData.section_proprietaire.prenom = parts[0]
@@ -1229,10 +1246,10 @@ export function FormProvider({ children }) {
           mondayData.section_proprietaire.nom = decoded
         }
       }
-      
+
       if (email) mondayData.section_proprietaire.email = decodeURIComponent(email)
-        
-      
+
+
       if (adresseRue || adresseVille || adressePostal) {
         mondayData.section_proprietaire.adresse = {}
         if (adresseRue) mondayData.section_proprietaire.adresse.rue = decodeURIComponent(adresseRue)
@@ -1240,29 +1257,29 @@ export function FormProvider({ children }) {
         if (adressePostal) mondayData.section_proprietaire.adresse.codePostal = decodeURIComponent(adressePostal)
       }
     }
-    
+
     // 🏠 Section Logement
     const numeroDu = queryParams.get('numeroDu')
     const nombreDe = queryParams.get('nombreDe')
     const m2 = queryParams.get('m2')
     const lits = queryParams.get('lits')
-    
+
     if (numeroDu || nombreDe || m2 || lits) {
       mondayData.section_logement = {}
-      
+
       if (numeroDu) mondayData.section_logement.numero_bien = decodeURIComponent(numeroDu)
       if (nombreDe) mondayData.section_logement.nombre_personnes_max = decodeURIComponent(nombreDe)
       if (m2) mondayData.section_logement.surface = decodeURIComponent(m2)
       if (lits) mondayData.section_logement.nombre_lits = decodeURIComponent(lits)
     }
-    
+
     return mondayData
   }, [])
 
   // 🎯 FONCTION: Appliquer données Monday au formData
   const applyMondayData = useCallback((currentFormData, mondayData) => {
     const newFormData = { ...currentFormData }
-    
+
     // Merge sections en préservant les données existantes
     Object.entries(mondayData).forEach(([sectionName, sectionData]) => {
       if (sectionName === 'section_proprietaire' && sectionData.adresse) {
@@ -1283,10 +1300,10 @@ export function FormProvider({ children }) {
         }
       }
     })
-    
+
     // Mettre à jour timestamp
     newFormData.updated_at = new Date().toISOString()
-    
+
     return newFormData
   }, [])
 
@@ -1294,19 +1311,19 @@ export function FormProvider({ children }) {
   const applyMondayDataFromURL = useCallback((searchParams) => {
     const params = new URLSearchParams(searchParams)
     const mondayData = parseMondayParams(params)
-    
+
     if (Object.keys(mondayData).length > 0) {
       console.log('🎯 Application données Monday depuis URL:', mondayData)
-      
+
       const newFormData = applyMondayData(formData, mondayData)
       setFormData(newFormData)
-      
+
       // Smart naming avec nouvelles données
       const generatedName = generateFicheName(newFormData)
       if (generatedName !== "Nouvelle fiche") {
         setFormData(prev => ({ ...prev, nom: generatedName }))
       }
-      
+
       console.log('✅ Pré-population Monday terminée')
     }
   }, [formData, parseMondayParams, applyMondayData])
@@ -1331,7 +1348,7 @@ export function FormProvider({ children }) {
     setSaveStatus({ saving: true, saved: false, error: null });
     try {
       const result = await loadFiche(ficheId)
-      
+
       if (result.success) {
         setFormData(result.data)
         setCurrentStep(0)
@@ -1371,30 +1388,30 @@ export function FormProvider({ children }) {
 
     // 🎯 PRIORITÉ 1: Traiter params Monday en attente APRÈS LOGIN
     if (user && pendingMondayParamsInStorage) {
-        console.log('✅ Utilisateur connecté ET Monday params en attente. Application des données.');
-        localStorage.removeItem('pendingMondayParams');
-        const mondayData = parseMondayParams(new URLSearchParams(pendingMondayParamsInStorage));
-        const newFormDataAfterMonday = applyMondayData(formData, mondayData);
-        // 🎯 AJOUTER CETTE LIGNE ICI :
-        newFormDataAfterMonday.user_id = user.id;
-        
-        setFormData(newFormDataAfterMonday);
+      console.log('✅ Utilisateur connecté ET Monday params en attente. Application des données.');
+      localStorage.removeItem('pendingMondayParams');
+      const mondayData = parseMondayParams(new URLSearchParams(pendingMondayParamsInStorage));
+      const newFormDataAfterMonday = applyMondayData(formData, mondayData);
+      // 🎯 AJOUTER CETTE LIGNE ICI :
+      newFormDataAfterMonday.user_id = user.id;
 
-        // Smart naming
-        const generatedName = generateFicheName(newFormDataAfterMonday);
-        if (generatedName !== "Nouvelle fiche") {
-            setHasManuallyNamedFiche(false);
-            setFormData(prev => ({ ...prev, nom: generatedName }));
-        }
-        return; // STOP - Données appliquées
+      setFormData(newFormDataAfterMonday);
+
+      // Smart naming
+      const generatedName = generateFicheName(newFormDataAfterMonday);
+      if (generatedName !== "Nouvelle fiche") {
+        setHasManuallyNamedFiche(false);
+        setFormData(prev => ({ ...prev, nom: generatedName }));
+      }
+      return; // STOP - Données appliquées
     }
 
     // 🎯 PRIORITÉ 2: Redirection login si params Monday + pas connecté
     if (mondayParamsPresentInURL && !ficheId && !authLoading && !user) {
-        console.log('🔐 Utilisateur non connecté, sauvegarde params Monday pour après login.');
-        localStorage.setItem('pendingMondayParams', location.search);
-        navigate('/login', { replace: true });
-        return; // STOP - Redirection en cours
+      console.log('🔐 Utilisateur non connecté, sauvegarde params Monday pour après login.');
+      localStorage.setItem('pendingMondayParams', location.search);
+      navigate('/login', { replace: true });
+      return; // STOP - Redirection en cours
     }
 
     // 🎯 PRIORITÉ 3: Application directe si connecté + params Monday
@@ -1406,19 +1423,19 @@ export function FormProvider({ children }) {
 
       const generatedName = generateFicheName(newFormDataAfterMonday);
       if (generatedName !== "Nouvelle fiche") {
-          // 🆕 VÉRIFICATION DUPLICATE
-          checkForDuplicate(generatedName).then(isDuplicate => {
-              if (!isDuplicate) {
-                  // Pas de duplicate, application normale
-                  setFormData(newFormDataAfterMonday);
-                  setHasManuallyNamedFiche(false);
-                  setFormData(prev => ({ ...prev, nom: generatedName }));
-              }
-              // Si duplicate, le modal s'affiche automatiquement via setDuplicateAlert
-          });
+        // 🆕 VÉRIFICATION DUPLICATE
+        checkForDuplicate(generatedName).then(isDuplicate => {
+          if (!isDuplicate) {
+            // Pas de duplicate, application normale
+            setFormData(newFormDataAfterMonday);
+            setHasManuallyNamedFiche(false);
+            setFormData(prev => ({ ...prev, nom: generatedName }));
+          }
+          // Si duplicate, le modal s'affiche automatiquement via setDuplicateAlert
+        });
       } else {
-          // Pas de nom généré, application directe
-          setFormData(newFormDataAfterMonday);
+        // Pas de nom généré, application directe
+        setFormData(newFormDataAfterMonday);
       }
       return; // STOP - Données appliquées ou en cours de vérification
     }
@@ -1436,12 +1453,12 @@ export function FormProvider({ children }) {
         }
       });
       return; // STOP - Chargement en cours
-    } 
-    
+    }
+
     // 🎯 PRIORITÉ 5: Reset pour nouvelle fiche vide
     if (!ficheId && !mondayParamsPresentInURL && formData.id !== null) {
-        console.log('🔄 Réinitialisation du formulaire pour une nouvelle fiche vide.');
-        resetForm();
+      console.log('🔄 Réinitialisation du formulaire pour une nouvelle fiche vide.');
+      resetForm();
     }
 
   }, [
@@ -1504,7 +1521,7 @@ export function FormProvider({ children }) {
       const newData = { ...prev }
       const keys = fieldPath.split('.')
       let current = newData
-      
+
       for (let i = 0; i < keys.length - 1; i++) {
         if (current[keys[i]] === undefined || current[keys[i]] === null) {
           current[keys[i]] = {}
@@ -1515,9 +1532,9 @@ export function FormProvider({ children }) {
         }
         current = current[keys[i]]
       }
-      
+
       current[keys[keys.length - 1]] = value
-      
+
       if (fieldPath === 'nom') {
         setHasManuallyNamedFiche(value !== "Nouvelle fiche");
       } else if (!hasManuallyNamedFiche) {
@@ -1528,7 +1545,7 @@ export function FormProvider({ children }) {
       }
 
       newData.updated_at = new Date().toISOString()
-      
+
       return newData
     })
   }
@@ -1540,7 +1557,7 @@ export function FormProvider({ children }) {
   const getField = (fieldPath) => {
     const keys = fieldPath.split('.')
     let current = formData
-    
+
     for (const key of keys) {
       if (current && typeof current === 'object' && key in current) {
         current = current[key]
@@ -1548,7 +1565,7 @@ export function FormProvider({ children }) {
         return ""
       }
     }
-    
+
     return current !== null && current !== undefined ? current : ""
   }
 
@@ -1557,7 +1574,7 @@ export function FormProvider({ children }) {
       setSaveStatus({ saving: false, saved: false, error: 'Utilisateur non connecté' });
       return { success: false, error: 'Utilisateur non connecté' };
     }
-  
+
     // 🚨 VALIDATION CRITIQUE - Numéro de bien obligatoire
     const numeroBien = formData.section_logement?.numero_bien
     if (!numeroBien || numeroBien.trim() === '') {
@@ -1568,9 +1585,9 @@ export function FormProvider({ children }) {
       })
       return { success: false, error: 'Numéro de bien obligatoire' }
     }
-  
+
     setSaveStatus({ saving: true, saved: false, error: null });
-    
+
     try {
       const dataToSave = {
         ...formData,
@@ -1578,13 +1595,13 @@ export function FormProvider({ children }) {
         user_id: user.id,  // FORCE TOUJOURS
         updated_at: new Date().toISOString()
       };
-  
+
       // DEBUG
       console.log('🔍 AVANT SAVE - user_id:', dataToSave.user_id);
       console.log('🔍 AVANT SAVE - user email:', user?.email);
-  
+
       const result = await saveFiche(dataToSave, user.id);
-      
+
       if (result.success) {
         setFormData(result.data);
         setSaveStatus({ saving: false, saved: true, error: null });
@@ -1607,24 +1624,24 @@ export function FormProvider({ children }) {
   useEffect(() => {
     // Ne rien faire si pas d'utilisateur
     if (!user?.id) return
-    
+
     // Ne rien faire si c'est une mise à jour interne (pas utilisateur)
     if (!isUserChangeRef.current) return
-    
+
     // Ne rien faire si déjà en train de sauvegarder
     if (saveStatus.saving) return
-    
+
     // Anti-spam : minimum 1.5s entre deux sauvegardes
     const now = Date.now()
     if (now - lastSaveRef.current < 1500) return
-    
+
     // Debounce de 5 secondes
     const timeout = setTimeout(async () => {
       isUserChangeRef.current = false // Reset le flag avant de sauvegarder
       lastSaveRef.current = Date.now()
       await handleSave()
     }, 5000)
-    
+
     return () => clearTimeout(timeout)
   }, [formData, user?.id, saveStatus.saving, handleSave])
 
@@ -1637,7 +1654,7 @@ export function FormProvider({ children }) {
     try {
       const updatedData = { ...formData, statut: newStatut };
       const result = await saveFiche(updatedData);
-      
+
       if (result.success) {
         setFormData(result.data);
         return { success: true, data: result.data };
@@ -1648,7 +1665,7 @@ export function FormProvider({ children }) {
       return { success: false, error: error.message || 'Erreur de connexion' };
     }
   };
-  
+
   const finaliserFiche = () => updateStatut('Complété');
   const archiverFiche = () => updateStatut('Archivé');
 
@@ -1657,7 +1674,7 @@ export function FormProvider({ children }) {
       console.error('❌ Impossible de déclencher webhook PDF : pas d\'ID fiche')
       return { success: false, error: 'Pas d\'ID fiche disponible' }
     }
-  
+
     try {
       console.log('🔄 Déclenchement webhook PDF...', {
         fiche: formData.id,
@@ -1672,9 +1689,9 @@ export function FormProvider({ children }) {
         pdf_last_generated_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
-      
+
       console.log('🔍 Données envoyées à Supabase:', updateData)
-  
+
       // UPDATE des colonnes PDF en base → déclenche automatiquement le trigger
       const { data, error } = await supabase
         .from('fiches')
@@ -1686,85 +1703,85 @@ export function FormProvider({ children }) {
         })
         .eq('id', formData.id)
         .select()
-  
+
       if (error) {
         console.error('❌ Erreur UPDATE PDF:', error)
         return { success: false, error: error.message }
       }
-  
+
       if (!data || data.length === 0) {
         console.error('❌ Aucune fiche mise à jour')
         return { success: false, error: 'Fiche non trouvée' }
       }
-  
+
       console.log('✅ Webhook PDF déclenché avec succès!')
       return { success: true, data: data[0] }
-  
+
     } catch (error) {
       console.error('❌ Erreur triggerPdfWebhook:', error)
       return { success: false, error: error.message || 'Erreur inconnue' }
     }
-  }  
+  }
 
   const triggerAssistantPdfWebhook = async (guideAccesUrl, annonceUrl) => {
-  if (!formData.id) {
-    console.error('❌ Impossible de déclencher webhook Assistant PDF : pas d\'ID fiche')
-    return { success: false, error: 'Pas d\'ID fiche disponible' }
+    if (!formData.id) {
+      console.error('❌ Impossible de déclencher webhook Assistant PDF : pas d\'ID fiche')
+      return { success: false, error: 'Pas d\'ID fiche disponible' }
+    }
+
+    try {
+      console.log('🔄 Déclenchement webhook Assistant PDF...', {
+        fiche: formData.id,
+        guideAccesUrl,
+        annonceUrl
+      })
+
+      const updateData = {}
+
+      if (guideAccesUrl) {
+        updateData.guide_acces_pdf_url = guideAccesUrl
+        updateData.guide_acces_last_generated_at = new Date().toISOString()
+      }
+
+      if (annonceUrl) {
+        updateData.annonce_pdf_url = annonceUrl
+        updateData.annonce_last_generated_at = new Date().toISOString()
+      }
+
+      updateData.updated_at = new Date().toISOString()
+
+      console.log('🔍 Données envoyées à Supabase:', updateData)
+
+      const { data, error } = await supabase
+        .from('fiches')
+        .update(updateData)
+        .eq('id', formData.id)
+        .select()
+
+      if (error) {
+        console.error('❌ Erreur UPDATE Assistant PDF:', error)
+        return { success: false, error: error.message }
+      }
+
+      if (!data || data.length === 0) {
+        console.error('❌ Aucune fiche mise à jour')
+        return { success: false, error: 'Fiche non trouvée' }
+      }
+
+      console.log('✅ Webhook Assistant PDF déclenché avec succès!')
+      return { success: true, data: data[0] }
+
+    } catch (error) {
+      console.error('❌ Erreur triggerAssistantPdfWebhook:', error)
+      return { success: false, error: error.message || 'Erreur inconnue' }
+    }
   }
-
-  try {
-    console.log('🔄 Déclenchement webhook Assistant PDF...', {
-      fiche: formData.id,
-      guideAccesUrl,
-      annonceUrl
-    })
-
-    const updateData = {}
-    
-    if (guideAccesUrl) {
-      updateData.guide_acces_pdf_url = guideAccesUrl
-      updateData.guide_acces_last_generated_at = new Date().toISOString()
-    }
-    
-    if (annonceUrl) {
-      updateData.annonce_pdf_url = annonceUrl
-      updateData.annonce_last_generated_at = new Date().toISOString()
-    }
-    
-    updateData.updated_at = new Date().toISOString()
-    
-    console.log('🔍 Données envoyées à Supabase:', updateData)
-
-    const { data, error } = await supabase
-      .from('fiches')
-      .update(updateData)
-      .eq('id', formData.id)
-      .select()
-
-    if (error) {
-      console.error('❌ Erreur UPDATE Assistant PDF:', error)
-      return { success: false, error: error.message }
-    }
-
-    if (!data || data.length === 0) {
-      console.error('❌ Aucune fiche mise à jour')
-      return { success: false, error: 'Fiche non trouvée' }
-    }
-
-    console.log('✅ Webhook Assistant PDF déclenché avec succès!')
-    return { success: true, data: data[0] }
-
-  } catch (error) {
-    console.error('❌ Erreur triggerAssistantPdfWebhook:', error)
-    return { success: false, error: error.message || 'Erreur inconnue' }
-  }
-}
 
   const getFormDataPreview = () => {
     return {
       currentSection: getCurrentSection(),
-      completedSections: Object.keys(formData).filter(key => 
-        key.startsWith('section_') && 
+      completedSections: Object.keys(formData).filter(key =>
+        key.startsWith('section_') &&
         Object.values(formData[key]).some(val => val !== "" && val !== null)
       ),
       formData
@@ -1826,34 +1843,34 @@ export function FormProvider({ children }) {
     }
     setDuplicateAlert(null)
   }, [duplicateAlert, navigate])
-  
+
   const handleCreateNew = useCallback(() => {
     setDuplicateAlert(null)
     // Continue avec la nouvelle fiche (ne fait rien d'autre)
   }, [])
-  
+
   const handleCancelDuplicate = useCallback(() => {
     setDuplicateAlert(null)
     navigate('/')
   }, [navigate])
 
   return (
-    <FormContext.Provider value={{ 
-      currentStep, 
-      totalSteps, 
+    <FormContext.Provider value={{
+      currentStep,
+      totalSteps,
       sections,
-      next, 
-      back, 
-      goTo, 
+      next,
+      back,
+      goTo,
       getCurrentSection,
-      
+
       formData,
       updateSection,
       updateField,
       getSection,
       getField,
       resetForm,
-      
+
       handleSave,
       handleLoad,
       saveStatus,
@@ -1862,10 +1879,10 @@ export function FormProvider({ children }) {
       archiverFiche,
       triggerPdfWebhook,
       triggerAssistantPdfWebhook,
-      
+
       getFormDataPreview,
       getMondayDebugInfo,
-      
+
       // 🆕 AJOUT FONCTIONS DUPLICATE
       duplicateAlert,
       handleOpenExisting,

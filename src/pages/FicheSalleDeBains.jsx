@@ -8,20 +8,20 @@ import PhotoUpload from '../components/PhotoUpload'
 
 
 // ✅ COMPOSANT ACCORDEON SORTI EN DEHORS - FIX DU PROBLÈME FOCUS !
-const AccordeonSalleDeBain = ({ 
-  salleKey, 
-  numeroAffiche, 
-  formDataSallesDeBains, 
-  accordeonsOuverts, 
-  toggleAccordeon, 
-  handleInputChange, 
-  handleCheckboxChange, 
-  handleRadioChange, 
-  equipements 
+const AccordeonSalleDeBain = ({
+  salleKey,
+  numeroAffiche,
+  formDataSallesDeBains,
+  accordeonsOuverts,
+  toggleAccordeon,
+  handleInputChange,
+  handleCheckboxChange,
+  handleRadioChange,
+  equipements
 }) => {
   const isOpen = accordeonsOuverts[salleKey]
   const salleData = formDataSallesDeBains[salleKey] || {}
-  
+
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
       {/* Header accordéon */}
@@ -44,7 +44,7 @@ const AccordeonSalleDeBain = ({
       {/* Contenu accordéon */}
       {isOpen && (
         <div className="p-6 space-y-6">
-          
+
           {/* 1. Nom ou description */}
           <div>
             <label className="block font-semibold mb-2">
@@ -64,7 +64,7 @@ const AccordeonSalleDeBain = ({
             <label className="block font-semibold mb-3">
               Salle de bain {numeroAffiche} – Équipements <span className="text-red-500">*</span>
             </label>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {equipements.map(({ key, label }) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
@@ -159,7 +159,7 @@ const AccordeonSalleDeBain = ({
 
           {/* 4. Photos - Salle de bains */}
           <div>
-            <PhotoUpload 
+            <PhotoUpload
               fieldPath={`section_salle_de_bains.${salleKey}.photos_salle_de_bain`}
               label={`Salle de bain ${numeroAffiche} - Photos`}
               multiple={true}
@@ -173,10 +173,10 @@ const AccordeonSalleDeBain = ({
               Photos de tous les éléments abîmés, cassés ou détériorés dans la salle de bain et WC {numeroAffiche}
             </label>
             <p className="text-sm text-gray-600 mb-4">
-              Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+              Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus,
               tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
             </p>
-            
+
             <div className="flex gap-6">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -189,7 +189,7 @@ const AccordeonSalleDeBain = ({
                 />
                 <span>Oui</span>
               </label>
-              
+
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -205,11 +205,11 @@ const AccordeonSalleDeBain = ({
                 <span>Non</span>
               </label>
             </div>
-            
+
             {/* Upload conditionnel avec fond bleu clair */}
             {salleData.elements_abimes === true && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <PhotoUpload 
+                <PhotoUpload
                   fieldPath={`section_salle_de_bains.${salleKey}.elements_abimes_photos`}
                   label={`Photos des éléments abîmés de la salle de bain ${numeroAffiche}`}
                   multiple={true}
@@ -230,11 +230,11 @@ const AccordeonSalleDeBain = ({
 // COMPOSANT PRINCIPAL FICHE SALLE DE BAINS
 export default function FicheSalleDeBains() {
   const { next, back, goTo, currentStep, totalSteps, getField, updateField, handleSave, saveStatus } = useForm()
-  
+
   // Récupérer le nombre de salles de bains depuis la section Visite
   const formDataVisite = getField('section_visite')
   const nombreSallesDeBains = parseInt(formDataVisite.nombre_salles_bains) || 0
-  
+
   // Récupérer les données salles de bains
   const formDataSallesDeBains = getField('section_salle_de_bains')
 
@@ -294,9 +294,9 @@ export default function FicheSalleDeBains() {
         <ProgressBar />
         <div className="flex-1 p-6 bg-gray-100">
           <h1 className="text-2xl font-bold mb-6">Salle de bains</h1>
-          
+
           <div className="bg-white p-6 rounded-lg shadow space-y-6">
-            
+
             {/* Vérification nombre de salles de bains */}
             {nombreSallesDeBains === 0 ? (
               <div className="text-center py-8">
@@ -309,8 +309,8 @@ export default function FicheSalleDeBains() {
                 <p className="text-gray-600 mb-4">
                   Vous devez d'abord indiquer le nombre de salles de bains dans la section "Visite" pour configurer les détails des salles de bains.
                 </p>
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onClick={() => goTo(11)} // "Visite" est à l'index 11
                 >
                   Retourner à la section Visite
@@ -328,7 +328,7 @@ export default function FicheSalleDeBains() {
                 {Array.from({ length: nombreSallesDeBains }, (_, index) => {
                   const salleKey = `salle_de_bain_${index + 1}`
                   const numeroAffiche = index + 1
-                  
+
                   return (
                     <AccordeonSalleDeBain
                       key={salleKey}
@@ -346,9 +346,9 @@ export default function FicheSalleDeBains() {
                 })}
               </div>
             )}
-            
+
           </div>
-          
+
           {/* Indicateur de sauvegarde */}
           {saveStatus.saving && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
@@ -368,23 +368,23 @@ export default function FicheSalleDeBains() {
 
           {/* Boutons de navigation */}
           <div className="mt-6 flex justify-between">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={back}
               disabled={currentStep === 0}
             >
               Retour
             </Button>
             <div className="flex gap-3">
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="secondary"
                 onClick={handleSave}
                 disabled={saveStatus.saving}
               >
                 {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={next}
                 disabled={currentStep === totalSteps - 1}
               >
@@ -392,7 +392,7 @@ export default function FicheSalleDeBains() {
               </Button>
             </div>
           </div>
-          
+
         </div>
         <div className="h-20"></div>
       </div>

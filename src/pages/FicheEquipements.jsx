@@ -9,21 +9,28 @@ import PhotoUpload from '../components/PhotoUpload'
 // Cartes de schéma - définir quels champs nettoyer par branche
 const BRANCH_SCHEMAS = {
   tv: [
-    'tv_type', 'tv_taille', 'tv_type_autre_details', 'tv_video', 
+    'tv_type', 'tv_taille', 'tv_type_autre_details', 'tv_video',
     'tv_services', 'tv_consoles', 'tv_console_video'
   ],
   climatisation: [
     'climatisation_type', 'climatisation_instructions', 'climatisation_video'
   ],
   chauffage: [
-    'chauffage_type', 'chauffage_instructions', 'chauffage_video'
+    'chauffage_types', 'chauffage_instructions', 'chauffage_video'
+  ],
+  ventilateur: [
+    'ventilateur_types', 'ventilateur_nombre', 'ventilateur_emplacement',
+    'ventilateur_photos', 'ventilateur_videos'
+  ],
+  seche_serviettes: [
+    'seche_serviettes_photos', 'seche_serviettes_videos'
   ],
   lave_linge: [
-    'lave_linge_prix', 'lave_linge_emplacement', 
+    'lave_linge_prix', 'lave_linge_emplacement',
     'lave_linge_instructions', 'lave_linge_video'
   ],
   seche_linge: [
-    'seche_linge_prix', 'seche_linge_emplacement', 
+    'seche_linge_prix', 'seche_linge_emplacement',
     'seche_linge_instructions', 'seche_linge_video'
   ],
   parking_equipement: [
@@ -43,15 +50,15 @@ const BRANCH_SCHEMAS = {
 }
 
 export default function FicheEquipements() {
-  const { 
-    next, 
+  const {
+    next,
     back,
     currentStep,
     totalSteps,
-    getField, 
-    updateField, 
-    handleSave, 
-    saveStatus 
+    getField,
+    updateField,
+    handleSave,
+    saveStatus
   } = useForm()
 
   // Récupération des données de la section
@@ -61,12 +68,12 @@ export default function FicheEquipements() {
   const handleInputChange = (field, value) => {
     // Détection si c'est une checkbox d'équipement principale qui passe à false
     const fieldKey = field.split('.').pop()
-    
+
     if (BRANCH_SCHEMAS[fieldKey] && value === false) {
       // C'est une checkbox racine qui est décochée, nettoyer la branche
       const currentData = getField('section_equipements')
       const newData = { ...currentData }
-      
+
       // Nettoyer tous les champs de la branche
       BRANCH_SCHEMAS[fieldKey].forEach(key => {
         if (Array.isArray(newData[key])) {
@@ -77,10 +84,10 @@ export default function FicheEquipements() {
           newData[key] = null
         }
       })
-      
+
       // Remettre explicitement le flag racine à false
       newData[fieldKey] = false
-      
+
       // Une seule mise à jour atomique
       updateField('section_equipements', newData)
     } else {
@@ -92,13 +99,13 @@ export default function FicheEquipements() {
   // 🧹 Handler spécialisé pour le statut WiFi avec nettoyage
   const handleWifiStatutChange = (field, value) => {
     updateField(field, value)
-    
+
     // Nettoyer les identifiants si on quitte "oui"
     if (value !== 'oui') {
       updateField('section_equipements.wifi_nom_reseau', '')
       updateField('section_equipements.wifi_mot_de_passe', '')
     }
-    
+
     // Nettoyer les détails si on quitte "en_cours"
     if (value !== 'en_cours') {
       updateField('section_equipements.wifi_details', '')
@@ -120,7 +127,7 @@ export default function FicheEquipements() {
   // 🧹 Handler spécialisé pour le type de parking avec nettoyage des sous-options
   const handleParkingTypeChange = (field, value) => {
     updateField(field, value)
-    
+
     // Nettoyer les champs des autres types non sélectionnés    
     if (value !== 'rue') {
       updateField('section_equipements.parking_rue_details', '')
@@ -146,10 +153,12 @@ export default function FicheEquipements() {
     { key: 'coffre_fort', label: 'Coffre fort' },
     { key: 'ascenseur', label: 'Ascenseur' },
     { key: 'fetes_autorisees', label: 'Fêtes autorisées' },
-    
+
     // Colonne 2
     { key: 'tv', label: 'TV' },
     { key: 'chauffage', label: 'Chauffage' },
+    { key: 'ventilateur', label: 'Ventilateur' },
+    { key: 'seche_serviettes', label: 'Sèche-serviettes' },
     { key: 'fer_repasser', label: 'Fer à repasser' },
     { key: 'etendoir', label: 'Étendoir' },
     { key: 'piano', label: 'Piano' },
@@ -162,7 +171,7 @@ export default function FicheEquipements() {
   // Types de parking pour GRATUIT SUR PLACE (4 options, checkboxes multiples)
   const typesParkingGratuitOptions = [
     'Parking sous-terrain',
-    'Abri voiture', 
+    'Abri voiture',
     'Stationnement dans une allée privée',
     'Garage individuel'
   ]
@@ -170,29 +179,29 @@ export default function FicheEquipements() {
   // Types de parking pour PAYANT (3 options, radio unique)
   const typesParkingPayantOptions = [
     'Parking sous-terrain',
-    'Abri voiture', 
+    'Abri voiture',
     'Stationnement dans une allée privée'
   ]
 
   return (
     <div className="flex min-h-screen">
       <SidebarMenu />
-      
+
       <div className="flex-1 flex flex-col">
         <ProgressBar />
-        
+
         <div className="flex-1 p-6 bg-gray-100">
           <h1 className="text-2xl font-bold mb-6">Équipements</h1>
-          
+
           <div className="bg-white p-6 rounded-lg shadow space-y-6">
-            
+
             {/* SECTION 1: Équipements techniques essentiels */}
             <div>
               <h2 className="text-lg font-semibold mb-4">Équipements techniques essentiels</h2>
-              
+
               {/* Vidéo accès local poubelle */}
               <div className="mb-4">
-                <PhotoUpload 
+                <PhotoUpload
                   fieldPath="section_equipements.video_acces_poubelle"
                   label="Faire une vidéo de l'accès au local poubelle"
                   multiple={true}
@@ -206,7 +215,7 @@ export default function FicheEquipements() {
                 <label className="block font-semibold mb-2">
                   Emplacement du local poubelle *
                 </label>
-                <textarea 
+                <textarea
                   className="w-full p-3 border rounded h-24"
                   placeholder="Décrivez l'emplacement du local poubelle"
                   value={formData.poubelle_emplacement || ""}
@@ -219,7 +228,7 @@ export default function FicheEquipements() {
                 <label className="block font-semibold mb-2">
                   Programmation du ramassage des déchets *
                 </label>
-                <textarea 
+                <textarea
                   className="w-full p-3 border rounded h-24"
                   placeholder="Décrivez le fonctionnement du ramassage des déchets, les jours de ramassage, etc."
                   value={formData.poubelle_ramassage || ""}
@@ -229,7 +238,7 @@ export default function FicheEquipements() {
 
               {/* Photo Local Poubelle */}
               <div className="mb-4">
-                <PhotoUpload 
+                <PhotoUpload
                   fieldPath="section_equipements.poubelle_photos"
                   label="Photos du local poubelle"
                   multiple={true}
@@ -245,7 +254,7 @@ export default function FicheEquipements() {
                 <label className="block font-semibold mb-2">
                   Emplacement du disjoncteur *
                 </label>
-                <textarea 
+                <textarea
                   className="w-full p-3 border rounded h-24"
                   placeholder="Décrivez l'emplacement du disjoncteur principal"
                   value={formData.disjoncteur_emplacement || ""}
@@ -255,12 +264,12 @@ export default function FicheEquipements() {
 
               {/* Photo Disjoncteur */}
               <div className="mb-4">
-              <PhotoUpload 
-                fieldPath="section_equipements.disjoncteur_photos"
-                label="Photos du disjoncteur"
-                multiple={true}
-                maxFiles={10}
-              />
+                <PhotoUpload
+                  fieldPath="section_equipements.disjoncteur_photos"
+                  label="Photos du disjoncteur"
+                  multiple={true}
+                  maxFiles={10}
+                />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos du disjoncteur
                 </p>
@@ -271,7 +280,7 @@ export default function FicheEquipements() {
                 <label className="block font-semibold mb-2">
                   Emplacement de la vanne d'arrêt d'eau *
                 </label>
-                <textarea 
+                <textarea
                   className="w-full p-3 border rounded h-24"
                   placeholder="Décrivez où se trouve la vanne d'arrêt d'eau principale"
                   value={formData.vanne_eau_emplacement || ""}
@@ -281,12 +290,12 @@ export default function FicheEquipements() {
 
               {/* Photo Vanne d'eau */}
               <div className="mb-4">
-              <PhotoUpload 
-                fieldPath="section_equipements.vanne_arret_photos"
-                label="Photos de la vanne d'arrêt d'eau"
-                multiple={true}
-                maxFiles={10}
-              />
+                <PhotoUpload
+                  fieldPath="section_equipements.vanne_arret_photos"
+                  label="Photos de la vanne d'arrêt d'eau"
+                  multiple={true}
+                  maxFiles={10}
+                />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos de la vanne d'arrêt d'eau
                 </p>
@@ -299,8 +308,8 @@ export default function FicheEquipements() {
                 </label>
                 <div className="flex gap-6">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
+                    <input
+                      type="radio"
                       name="systeme_chauffage_eau"
                       checked={formData.systeme_chauffage_eau === 'Chaudière'}
                       onChange={() => handleInputChange('section_equipements.systeme_chauffage_eau', 'Chaudière')}
@@ -309,8 +318,8 @@ export default function FicheEquipements() {
                     <span>Chaudière</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
+                    <input
+                      type="radio"
                       name="systeme_chauffage_eau"
                       checked={formData.systeme_chauffage_eau === 'Ballon d\'eau chaude'}
                       onChange={() => handleInputChange('section_equipements.systeme_chauffage_eau', 'Ballon d\'eau chaude')}
@@ -326,7 +335,7 @@ export default function FicheEquipements() {
                 <label className="block font-semibold mb-2">
                   Emplacement du système de chauffage d'eau *
                 </label>
-                <textarea 
+                <textarea
                   className="w-full p-3 border rounded h-24"
                   placeholder="Décrivez où se trouve la chaudière ou le ballon d'eau chaude"
                   value={formData.chauffage_eau_emplacement || ""}
@@ -336,12 +345,12 @@ export default function FicheEquipements() {
 
               {/* Photo système chauffage */}
               <div className="mb-4">
-              <PhotoUpload 
-                fieldPath="section_equipements.chauffage_eau_photos"
-                label="Photos du système de chauffage d'eau"
-                multiple={true}
-                maxFiles={10}
-              />
+                <PhotoUpload
+                  fieldPath="section_equipements.chauffage_eau_photos"
+                  label="Photos du système de chauffage d'eau"
+                  multiple={true}
+                  maxFiles={10}
+                />
                 <p className="text-sm text-gray-500 mt-1">
                   Appuyez pour prendre des photos du système de chauffage
                 </p>
@@ -349,7 +358,7 @@ export default function FicheEquipements() {
 
               {/* Vidéo système chauffage */}
               <div className="mb-4">
-                <PhotoUpload 
+                <PhotoUpload
                   fieldPath="section_equipements.video_systeme_chauffage"
                   label="Faire une vidéo du système de chauffage"
                   multiple={true}
@@ -364,12 +373,12 @@ export default function FicheEquipements() {
             <div>
               <div>
                 <h2 className="text-lg font-semibold mb-4">Équipements et commodités</h2>
-                
+
                 {/* Checklist équipements en 2 colonnes */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   {equipements.map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                      <input 
+                      <input
                         type="checkbox"
                         checked={formData[key] === true}
                         onChange={(e) => handleInputChange(`section_equipements.${key}`, e.target.checked)}
@@ -386,7 +395,7 @@ export default function FicheEquipements() {
                 {formData.tv === true && (
                   <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-semibold mb-3 text-gray-800">📺 Télévision</h3>
-                    
+
                     {/* Type de TV */}
                     <div className="mb-4">
                       <label className="block font-medium mb-2">Type de TV *</label>
@@ -521,7 +530,7 @@ export default function FicheEquipements() {
                 {formData.climatisation === true && (
                   <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-semibold mb-3 text-gray-800">❄️ Climatisation</h3>
-                    
+
                     {/* Type de climatisation */}
                     <div className="mb-4">
                       <label className="block font-medium mb-2">Type(s) de climatisation</label>
@@ -580,21 +589,36 @@ export default function FicheEquipements() {
                 {formData.chauffage === true && (
                   <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-semibold mb-3 text-gray-800">🔥 Chauffage</h3>
-                    
-                    {/* Type de chauffage */}
+
+                    {/* Types de chauffage - Sélection multiple */}
                     <div className="mb-4">
-                      <label className="block font-medium mb-2">Type de chauffage *</label>
-                      <select
-                        className="w-full p-3 border rounded"
-                        value={formData.chauffage_type || ""}
-                        onChange={(e) => handleInputChange('section_equipements.chauffage_type', e.target.value)}
-                      >
-                        <option value="">Sélectionnez un type</option>
-                        <option value="Chauffage central">Chauffage central</option>
-                        <option value="Chauffage d'appoint">Chauffage d'appoint</option>
-                        <option value="Chauffage radiant">Chauffage radiant</option>
-                        <option value="Système split sans évacuation">Système split sans évacuation</option>
-                      </select>
+                      <label className="block font-medium mb-2">Types de chauffage *</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {[
+                          'Chauffage central',
+                          'Chauffage d\'appoint',
+                          'Chauffage radiant',
+                          'Système split sans évacuation',
+                          'Chauffage soufflant',
+                          'Chauffage mobile'
+                        ].map((type) => (
+                          <label key={type} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                            <input
+                              type="checkbox"
+                              checked={(formData.chauffage_types || []).includes(type)}
+                              onChange={(e) => {
+                                const currentTypes = formData.chauffage_types || []
+                                const newTypes = e.target.checked
+                                  ? [...currentTypes, type]
+                                  : currentTypes.filter(t => t !== type)
+                                handleInputChange('section_equipements.chauffage_types', newTypes)
+                              }}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className="text-sm">{type}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Instructions d'utilisation */}
@@ -620,12 +644,120 @@ export default function FicheEquipements() {
                 )}
 
                 {/* ============================================
+                    VENTILATEUR - AFFICHAGE CONDITIONNEL
+                    ============================================ */}
+                {formData.ventilateur === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">🌀 Ventilateur et rafraîchisseurs</h3>
+
+                    {/* Types de ventilateur - Sélection multiple */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Types de ventilateur *</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {[
+                          'Ventilateur de plafond',
+                          'Ventilateur Mobile',
+                          'Rafraichisseur d\'air'
+                        ].map((type) => (
+                          <label key={type} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                            <input
+                              type="checkbox"
+                              checked={(formData.ventilateur_types || []).includes(type)}
+                              onChange={(e) => {
+                                const currentTypes = formData.ventilateur_types || []
+                                const newTypes = e.target.checked
+                                  ? [...currentTypes, type]
+                                  : currentTypes.filter(t => t !== type)
+                                handleInputChange('section_equipements.ventilateur_types', newTypes)
+                              }}
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                            <span className="text-sm">{type}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Nombre */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Nombre de ventilateurs</label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="w-full p-3 border rounded"
+                        placeholder="Ex: 2"
+                        value={formData.ventilateur_nombre || ""}
+                        onChange={(e) => handleInputChange('section_equipements.ventilateur_nombre', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Emplacement */}
+                    <div className="mb-4">
+                      <label className="block font-medium mb-2">Emplacement</label>
+                      <textarea
+                        className="w-full p-3 border rounded h-24"
+                        placeholder="Décrivez où se trouvent les ventilateurs..."
+                        value={formData.ventilateur_emplacement || ""}
+                        onChange={(e) => handleInputChange('section_equipements.ventilateur_emplacement', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Photos */}
+                    <div className="mb-4">
+                      <PhotoUpload
+                        fieldPath="section_equipements.ventilateur_photos"
+                        label="Photos des ventilateurs"
+                        multiple={true}
+                        maxFiles={10}
+                      />
+                    </div>
+
+                    {/* Vidéos */}
+                    <PhotoUpload
+                      fieldPath="section_equipements.ventilateur_videos"
+                      label="Vidéos des ventilateurs"
+                      multiple={true}
+                      maxFiles={3}
+                      acceptVideo={true}
+                    />
+                  </div>
+                )}
+
+                {/* ============================================
+    SÈCHE SERVIETTES - AFFICHAGE CONDITIONNEL
+    ============================================ */}
+                {formData.seche_serviettes === true && (
+                  <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <h3 className="font-semibold mb-3 text-gray-800">🔥 Sèche serviettes</h3>
+
+                    {/* Photos */}
+                    <div className="mb-4">
+                      <PhotoUpload
+                        fieldPath="section_equipements.seche_serviettes_photos"
+                        label="Photos du sèche serviettes"
+                        multiple={true}
+                        maxFiles={10}
+                      />
+                    </div>
+
+                    {/* Vidéos */}
+                    <PhotoUpload
+                      fieldPath="section_equipements.seche_serviettes_videos"
+                      label="Vidéos du sèche serviettes"
+                      multiple={true}
+                      maxFiles={3}
+                      acceptVideo={true}
+                    />
+                  </div>
+                )}
+
+                {/* ============================================
                     LAVE-LINGE - AFFICHAGE CONDITIONNEL
                     ============================================ */}
                 {formData.lave_linge === true && (
                   <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-semibold mb-3 text-gray-800">🧺 Lave-linge</h3>
-                    
+
                     {/* Prix */}
                     <div className="mb-4">
                       <label className="block font-medium mb-2">Prix</label>
@@ -708,7 +840,7 @@ export default function FicheEquipements() {
                 {formData.seche_linge === true && (
                   <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-semibold mb-3 text-gray-800">🌀 Sèche-linge</h3>
-                    
+
                     {/* Prix */}
                     <div className="mb-4">
                       <label className="block font-medium mb-2">Prix</label>
@@ -791,7 +923,7 @@ export default function FicheEquipements() {
                 {formData.parking_equipement === true && (
                   <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-semibold mb-3 text-gray-800">🚗 Parking - Photos et Vidéo</h3>
-                    
+
                     {/* Photos de la place */}
                     <div className="mb-4">
                       <PhotoUpload
@@ -821,7 +953,7 @@ export default function FicheEquipements() {
                 {formData.piano === true && (
                   <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-semibold mb-3 text-gray-800">🎹 Piano</h3>
-                    
+
                     {/* Marque */}
                     <div className="mb-4">
                       <label className="block font-medium mb-2">Marque</label>
@@ -879,7 +1011,7 @@ export default function FicheEquipements() {
                 {formData.accessible_mobilite_reduite === true && (
                   <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <h3 className="font-semibold mb-3 text-gray-800">♿ Accessibilité PMR</h3>
-                    
+
                     {/* Détails obligatoires */}
                     <div className="mb-4">
                       <label className="block font-medium mb-2">
@@ -898,12 +1030,12 @@ export default function FicheEquipements() {
                 {/* SECTION Configuration Wi-Fi (EXISTANT - NE PAS TOUCHER) */}
                 <div className="mt-6 mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <h3 className="text-lg font-semibold mb-4 text-blue-800">📶 Configuration Wi-Fi</h3>
-                  
+
                   <div className="mb-4">
                     <label className="block font-semibold mb-3">Statut du WiFi</label>
                     <div className="space-y-4">
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
+                        <input
                           type="radio"
                           name="wifi_statut"
                           value="non"
@@ -915,7 +1047,7 @@ export default function FicheEquipements() {
                       </label>
 
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
+                        <input
                           type="radio"
                           name="wifi_statut"
                           value="en_cours"
@@ -927,7 +1059,7 @@ export default function FicheEquipements() {
                       </label>
 
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
+                        <input
                           type="radio"
                           name="wifi_statut"
                           value="oui"
@@ -936,7 +1068,7 @@ export default function FicheEquipements() {
                           className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
                         />
                         <span>Oui (WiFi disponible et fonctionnel)</span>
-                      </label>                      
+                      </label>
                     </div>
                   </div>
 
@@ -944,7 +1076,7 @@ export default function FicheEquipements() {
                   {formData.wifi_statut === 'en_cours' && (
                     <div className="mt-4">
                       <label className="block font-semibold mb-2">Détails sur l'installation</label>
-                      <textarea 
+                      <textarea
                         className="w-full p-3 border rounded h-24"
                         placeholder="Décrivez la date d'installation du Wi-Fi, comment et par qui..."
                         value={formData.wifi_details || ""}
@@ -953,48 +1085,191 @@ export default function FicheEquipements() {
                     </div>
                   )}
 
-                {/* Champs conditionnels pour WiFi disponible */}
-                {formData.wifi_statut === 'oui' && (
-                  <div className="mt-4 space-y-4 border-l-4 border-green-500 pl-4">
-                    <div>
-                      <label className="block font-semibold mb-2">Nom du réseau WiFi *</label>
-                      <input 
-                        type="text"
-                        className="w-full p-3 border rounded"
-                        placeholder="SSID du réseau WiFi"
-                        value={formData.wifi_nom_reseau || ""}
-                        onChange={(e) => handleInputChange('section_equipements.wifi_nom_reseau', e.target.value)}
-                      />
+                  {/* Champs conditionnels pour WiFi disponible */}
+                  {formData.wifi_statut === 'oui' && (
+                    <div className="mt-4 space-y-4 border-l-4 border-green-500 pl-4">
+                      <div>
+                        <label className="block font-semibold mb-2">Nom du réseau WiFi *</label>
+                        <input
+                          type="text"
+                          className="w-full p-3 border rounded"
+                          placeholder="SSID du réseau WiFi"
+                          value={formData.wifi_nom_reseau || ""}
+                          onChange={(e) => handleInputChange('section_equipements.wifi_nom_reseau', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold mb-2">Mot de passe WiFi *</label>
+                        <input
+                          type="text"
+                          className="w-full p-3 border rounded"
+                          placeholder="Mot de passe du réseau"
+                          value={formData.wifi_mot_de_passe || ""}
+                          onChange={(e) => handleInputChange('section_equipements.wifi_mot_de_passe', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <PhotoUpload
+                          fieldPath="section_equipements.wifi_routeur_photo"
+                          label="Photo du routeur ou des instructions WiFi"
+                          multiple={true}
+                          maxFiles={5}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block font-semibold mb-2">Mot de passe WiFi *</label>
-                      <input 
-                        type="text"
-                        className="w-full p-3 border rounded"
-                        placeholder="Mot de passe du réseau"
-                        value={formData.wifi_mot_de_passe || ""}
-                        onChange={(e) => handleInputChange('section_equipements.wifi_mot_de_passe', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <PhotoUpload 
-                        fieldPath="section_equipements.wifi_routeur_photo"
-                        label="Photo du routeur ou des instructions WiFi"
+                  )}
+                </div>
+
+                {/* ============================================
+    SECTION ÉQUIPEMENT MÉNAGE - TOUJOURS VISIBLE
+    ============================================ */}
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold mb-4 text-gray-800">🧹 Équipement ménage</h2>
+
+                  <div className="space-y-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+
+                    {/* 1. ASPIRATEUR */}
+                    <div className="pb-4 border-b border-gray-300">
+                      <h3 className="font-semibold mb-3 text-gray-700">Aspirateur</h3>
+
+                      {/* Types - Sélection multiple */}
+                      <div className="mb-4">
+                        <label className="block font-medium mb-2">Type(s) d'aspirateur (sélection multiple)</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {[
+                            'Avec fil',
+                            'Sans fil',
+                            'Aspirateur balais',
+                            'Aspirateur classique',
+                            'Aspirateur de chantier'
+                          ].map((type) => (
+                            <label key={type} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                              <input
+                                type="checkbox"
+                                checked={(formData.menage_aspirateur_types || []).includes(type)}
+                                onChange={(e) => {
+                                  const currentTypes = formData.menage_aspirateur_types || []
+                                  const newTypes = e.target.checked
+                                    ? [...currentTypes, type]
+                                    : currentTypes.filter(t => t !== type)
+                                  handleInputChange('section_equipements.menage_aspirateur_types', newTypes)
+                                }}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-sm">{type}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Photos */}
+                      <PhotoUpload
+                        fieldPath="section_equipements.menage_aspirateur_photos"
+                        label="Photos de l'aspirateur"
                         multiple={true}
                         maxFiles={5}
                       />
                     </div>
+
+                    {/* 2. SERPILLÈRE ET SEAU */}
+                    <div className="pb-4 border-b border-gray-300">
+                      <h3 className="font-semibold mb-3 text-gray-700">Serpillère et Seau</h3>
+
+                      {/* Types - Sélection multiple */}
+                      <div className="mb-4">
+                        <label className="block font-medium mb-2">Type(s) de serpillère (sélection multiple)</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {[
+                            'Serpillère espagnole (frange)',
+                            'Serpillère torchon',
+                            'Serpillière MOP plate (microfibres)'
+                          ].map((type) => (
+                            <label key={type} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                              <input
+                                type="checkbox"
+                                checked={(formData.menage_serpillere_types || []).includes(type)}
+                                onChange={(e) => {
+                                  const currentTypes = formData.menage_serpillere_types || []
+                                  const newTypes = e.target.checked
+                                    ? [...currentTypes, type]
+                                    : currentTypes.filter(t => t !== type)
+                                  handleInputChange('section_equipements.menage_serpillere_types', newTypes)
+                                }}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                              />
+                              <span className="text-sm">{type}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Photos */}
+                      <PhotoUpload
+                        fieldPath="section_equipements.menage_serpillere_photos"
+                        label="Photos de la serpillère et du seau"
+                        multiple={true}
+                        maxFiles={5}
+                      />
+                    </div>
+
+                    {/* 3. BALAIS */}
+                    <div className="pb-4 border-b border-gray-300">
+                      <h3 className="font-semibold mb-3 text-gray-700">Balais</h3>
+
+                      <PhotoUpload
+                        fieldPath="section_equipements.menage_balais_photos"
+                        label="Photos du balais"
+                        multiple={true}
+                        maxFiles={5}
+                      />
+                    </div>
+
+                    {/* 4. BALAYETTE */}
+                    <div className="pb-4 border-b border-gray-300">
+                      <h3 className="font-semibold mb-3 text-gray-700">Balayette</h3>
+
+                      <PhotoUpload
+                        fieldPath="section_equipements.menage_balayette_photos"
+                        label="Photos de la balayette"
+                        multiple={true}
+                        maxFiles={5}
+                      />
+                    </div>
+
+                    {/* 5. AUTRES ÉLÉMENTS */}
+                    <div>
+                      <h3 className="font-semibold mb-3 text-gray-700">Autres éléments de nettoyage</h3>
+
+                      {/* Texte libre */}
+                      <div className="mb-4">
+                        <label className="block font-medium mb-2">Description</label>
+                        <textarea
+                          className="w-full p-3 border rounded h-24"
+                          placeholder="Décrivez les autres éléments de nettoyage..."
+                          value={formData.menage_autres_elements || ""}
+                          onChange={(e) => handleInputChange('section_equipements.menage_autres_elements', e.target.value)}
+                        />
+                      </div>
+
+                      {/* Photos */}
+                      <PhotoUpload
+                        fieldPath="section_equipements.menage_autres_elements_photos"
+                        label="Photos des autres éléments"
+                        multiple={true}
+                        maxFiles={10}
+                      />
+                    </div>
+
                   </div>
-                )}
                 </div>
 
-                {/* SECTION PARKING DÉTAILLÉE (EXISTANT - NE PAS TOUCHER) */}
+                {/* SECTION PARKING (EXISTANT - NE PAS TOUCHER) */}
                 <div className="mb-4">
                   <label className="block font-semibold mb-3">Parking *</label>
                   <div className="space-y-1 max-w-lg">
                     <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                      <input 
-                        type="radio" 
+                      <input
+                        type="radio"
                         name="parking_type"
                         checked={formData.parking_type === 'rue'}
                         onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'rue')}
@@ -1003,8 +1278,8 @@ export default function FicheEquipements() {
                       <span className="text-sm">Parking gratuit dans la rue</span>
                     </label>
                     <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                      <input 
-                        type="radio" 
+                      <input
+                        type="radio"
                         name="parking_type"
                         checked={formData.parking_type === 'sur_place'}
                         onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'sur_place')}
@@ -1013,8 +1288,8 @@ export default function FicheEquipements() {
                       <span className="text-sm">Parking gratuit sur place</span>
                     </label>
                     <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                      <input 
-                        type="radio" 
+                      <input
+                        type="radio"
                         name="parking_type"
                         checked={formData.parking_type === 'payant'}
                         onChange={() => handleParkingTypeChange('section_equipements.parking_type', 'payant')}
@@ -1031,7 +1306,7 @@ export default function FicheEquipements() {
                     <label className="block font-semibold mb-2">
                       Parking gratuit dans la rue - Détails *
                     </label>
-                    <textarea 
+                    <textarea
                       className="w-full p-3 border rounded h-32"
                       placeholder={`Fournissez des informations détaillées sur le parking gratuit :
               • Emplacement des places de stationnement (noms des rues spécifiques)
@@ -1055,7 +1330,7 @@ export default function FicheEquipements() {
                       <div className="space-y-2">
                         {typesParkingGratuitOptions.map(option => (
                           <label key={option} className="flex items-center gap-2 cursor-pointer">
-                            <input 
+                            <input
                               type="checkbox"
                               checked={(formData.parking_sur_place_types || []).includes(option)}
                               onChange={(e) => handleCheckboxArrayChange('section_equipements.parking_sur_place_types', option, e.target.checked)}
@@ -1070,7 +1345,7 @@ export default function FicheEquipements() {
                       <label className="block font-semibold mb-2">
                         Parking gratuit sur place - Détails *
                       </label>
-                      <textarea 
+                      <textarea
                         className="w-full p-3 border rounded h-32"
                         placeholder={`Fournissez des informations détaillées sur le parking gratuit...`}
                         value={formData.parking_sur_place_details || ""}
@@ -1087,7 +1362,7 @@ export default function FicheEquipements() {
                       <div className="space-y-2">
                         {typesParkingPayantOptions.map(option => (
                           <label key={option} className="flex items-center gap-2 cursor-pointer">
-                            <input 
+                            <input
                               type="radio"
                               name="parking_payant_type"
                               checked={formData.parking_payant_type === option}
@@ -1103,7 +1378,7 @@ export default function FicheEquipements() {
                       <label className="block font-semibold mb-2">
                         Parking - Stationnement payant - Détails *
                       </label>
-                      <textarea 
+                      <textarea
                         className="w-full p-3 border rounded h-32"
                         placeholder={`Fournissez des informations détaillées sur le parking payant...`}
                         value={formData.parking_payant_details || ""}
@@ -1114,51 +1389,51 @@ export default function FicheEquipements() {
                 )}
               </div>
             </div>
-        
+
           </div>
           {/* Indicateur de sauvegarde */}
           {saveStatus.saving && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                ⏳ Sauvegarde en cours...
-              </div>
-            )}
-            {saveStatus.saved && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                ✅ Sauvegardé avec succès !
-              </div>
-            )}
-            {saveStatus.error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                ❌ {saveStatus.error}
-              </div>
-            )}
-
-            {/* Boutons de navigation */}
-            <div className="mt-6 flex justify-between">
-              <Button 
-                variant="ghost" 
-                onClick={back} 
-                disabled={currentStep === 0}
-              >
-                Retour
-              </Button>
-              <div className="flex gap-3">
-                <Button 
-                  variant="secondary" 
-                  onClick={handleSave}
-                  disabled={saveStatus.saving}
-                >
-                  {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
-                </Button>
-                <Button 
-                  variant="primary" 
-                  onClick={next}
-                  disabled={currentStep === totalSteps - 1}
-                >
-                  Suivant
-                </Button>
-              </div>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              ⏳ Sauvegarde en cours...
             </div>
+          )}
+          {saveStatus.saved && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+              ✅ Sauvegardé avec succès !
+            </div>
+          )}
+          {saveStatus.error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              ❌ {saveStatus.error}
+            </div>
+          )}
+
+          {/* Boutons de navigation */}
+          <div className="mt-6 flex justify-between">
+            <Button
+              variant="ghost"
+              onClick={back}
+              disabled={currentStep === 0}
+            >
+              Retour
+            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={handleSave}
+                disabled={saveStatus.saving}
+              >
+                {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={next}
+                disabled={currentStep === totalSteps - 1}
+              >
+                Suivant
+              </Button>
+            </div>
+          </div>
 
         </div>
         <div className="h-20"></div>
