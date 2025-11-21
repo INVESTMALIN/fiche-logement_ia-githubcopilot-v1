@@ -7,25 +7,25 @@ import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 
 // ✅ COMPOSANT ACCORDEON SORTI EN DEHORS
-const AccordeonChambre = ({ 
-  chambreKey, 
-  numeroAffiche, 
-  formDataChambres, 
-  accordeonsOuverts, 
-  toggleAccordeon, 
-  handleInputChange, 
-  handleCheckboxChange, 
-  handleCounterChange, 
-  typesLits, 
-  equipements 
+const AccordeonChambre = ({
+  chambreKey,
+  numeroAffiche,
+  formDataChambres,
+  accordeonsOuverts,
+  toggleAccordeon,
+  handleInputChange,
+  handleCheckboxChange,
+  handleCounterChange,
+  typesLits,
+  equipements
 }) => {
   const isOpen = accordeonsOuverts[chambreKey]
   const chambreData = formDataChambres[chambreKey] || {}
-  
+
   // Composant Counter pour les lits (gardé à l'intérieur car il utilise des props locales)
   const Counter = ({ litType, label }) => {
     const value = formDataChambres[chambreKey]?.[litType] || 0
-    
+
     return (
       <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
         <span className="text-sm font-medium">{label}</span>
@@ -50,7 +50,7 @@ const AccordeonChambre = ({
       </div>
     )
   }
-  
+
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
       {/* Header accordéon */}
@@ -75,7 +75,7 @@ const AccordeonChambre = ({
       {/* Contenu accordéon */}
       {isOpen && (
         <div className="p-6 space-y-6">
-          
+
           {/* 1. Nom ou description */}
           <div>
             <label className="block font-semibold mb-2">
@@ -93,9 +93,9 @@ const AccordeonChambre = ({
           {/* 2. Nombre de lits avec avertissement */}
           <div>
             <label className="block font-semibold mb-3">
-              Nombre de lits
+              Nombre de lits*
             </label>
-            
+
             {/* Avertissement */}
             <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-400 text-red-700">
               <p className="font-medium">
@@ -138,7 +138,7 @@ const AccordeonChambre = ({
             <label className="block font-semibold mb-3">
               Équipements dans la chambre
             </label>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {equipements.map(({ key, label }) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
@@ -169,7 +169,7 @@ const AccordeonChambre = ({
 
           {/* 5. Photos chambre */}
           <div>
-            <PhotoUpload 
+            <PhotoUpload
               fieldPath={`section_chambres.${chambreKey}.photos_chambre`}
               label="Photos de la chambre avec tous les équipements"
               multiple={true}
@@ -183,10 +183,10 @@ const AccordeonChambre = ({
               Photos de tous les éléments abîmés, cassés ou détériorés dans la chambre {numeroAffiche}
             </label>
             <p className="text-sm text-gray-600 mb-4">
-              Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+              Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus,
               tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
             </p>
-            
+
             <div className="flex gap-6">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -199,7 +199,7 @@ const AccordeonChambre = ({
                 />
                 <span>Oui</span>
               </label>
-              
+
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -215,11 +215,11 @@ const AccordeonChambre = ({
                 <span>Non</span>
               </label>
             </div>
-            
+
             {/* Upload conditionnel avec fond bleu clair */}
             {chambreData.elements_abimes === true && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <PhotoUpload 
+                <PhotoUpload
                   fieldPath={`section_chambres.${chambreKey}.elements_abimes_photos`}
                   label={`Photos des éléments abîmés de la chambre ${numeroAffiche}`}
                   multiple={true}
@@ -244,16 +244,16 @@ export default function FicheChambre() {
   // Récupérer le nombre de chambres depuis la section Visite
   const formDataVisite = getField('section_visite')
   const nombreChambres = parseInt(formDataVisite.nombre_chambres) || 0
-  
+
   // Récupérer la typologie depuis la section Logement
   const formDataLogement = getField('section_logement')
   const typologie = formDataLogement.typologie
-  
+
   // 🔥 LOGIQUE STUDIO : Si Studio, forcer l'affichage d'1 "espace nuit"
   const isStudio = typologie === "Studio"
   const chambresAffichees = isStudio && nombreChambres === 0 ? 1 : nombreChambres
   const labelChambre = isStudio && nombreChambres === 0 ? "Espace nuit" : "Chambre"
-  
+
   // Récupérer les données chambres
   const formDataChambres = getField('section_chambres')
 
@@ -325,28 +325,28 @@ export default function FicheChambre() {
     { key: 'equipements_autre', label: 'Autre (veuillez préciser)' }
   ]
 
-   return (
+  return (
     <div className="flex min-h-screen">
       <SidebarMenu />
-      
+
       <div className="flex-1 flex flex-col">
         <ProgressBar />
-        
+
         <div className="flex-1 p-6 bg-gray-100">
           <h1 className="text-2xl font-bold mb-6">
             {isStudio && nombreChambres === 0 ? "Espace nuit" : "Chambres"}
           </h1>
-          
+
           <div className="bg-white p-6 rounded-lg shadow">
-            
+
             {/* Vérification nombre de chambres avec logique Studio */}
             {chambresAffichees === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-600 mb-4">
                   Aucune chambre configurée. Veuillez d'abord indiquer le nombre de chambres dans la section Visite.
                 </p>
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onClick={() => {
                     // Naviguer vers la section Visite (index 11)
                     const sections = ["Propriétaire", "Logement", "Clefs", "Airbnb", "Booking", "Réglementation", "Exigences", "Avis", "Gestion Linge", "Équipements", "Consommables", "Visite"]
@@ -381,7 +381,7 @@ export default function FicheChambre() {
                   const chambreKey = `chambre_${index + 1}`
                   const numeroAffiche = index + 1
                   const labelAccordeon = isStudio && nombreChambres === 0 ? "Espace nuit" : numeroAffiche
-                  
+
                   return (
                     <AccordeonChambre
                       key={chambreKey}
@@ -401,50 +401,50 @@ export default function FicheChambre() {
               </div>
             )}
           </div>
-                  
+
           {/* Indicateur de sauvegarde */}
           {saveStatus.saving && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                ⏳ Sauvegarde en cours...
-              </div>
-            )}
-            {saveStatus.saved && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                ✅ Sauvegardé avec succès !
-              </div>
-            )}
-            {saveStatus.error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                ❌ {saveStatus.error}
-              </div>
-            )}
-
-            {/* Boutons de navigation */}
-            <div className="mt-6 flex justify-between">
-              <Button 
-                variant="ghost" 
-                onClick={back} 
-                disabled={currentStep === 0}
-              >
-                Retour
-              </Button>
-              <div className="flex gap-3">
-                <Button 
-                  variant="secondary"
-                  onClick={handleSave}
-                  disabled={saveStatus.saving}
-                >
-                  {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
-                </Button>
-                <Button 
-                  variant="primary" 
-                  onClick={next}
-                  disabled={currentStep === totalSteps - 1}
-                >
-                  Suivant
-                </Button>
-              </div>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              ⏳ Sauvegarde en cours...
             </div>
+          )}
+          {saveStatus.saved && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+              ✅ Sauvegardé avec succès !
+            </div>
+          )}
+          {saveStatus.error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              ❌ {saveStatus.error}
+            </div>
+          )}
+
+          {/* Boutons de navigation */}
+          <div className="mt-6 flex justify-between">
+            <Button
+              variant="ghost"
+              onClick={back}
+              disabled={currentStep === 0}
+            >
+              Retour
+            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={handleSave}
+                disabled={saveStatus.saving}
+              >
+                {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={next}
+                disabled={currentStep === totalSteps - 1}
+              >
+                Suivant
+              </Button>
+            </div>
+          </div>
         </div>
         <div className="h-20"></div>
       </div>

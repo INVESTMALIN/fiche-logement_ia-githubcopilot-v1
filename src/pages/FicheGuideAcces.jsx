@@ -72,15 +72,15 @@ const prepareGuideAccesContext = (formData) => {
 }
 
 export default function FicheGuideAcces() {
-  const { 
-    next, 
+  const {
+    next,
     back,
     currentStep,
     totalSteps,
     formData,
-    getField, 
-    updateField, 
-    handleSave, 
+    getField,
+    updateField,
+    handleSave,
     saveStatus,
     triggerAssistantPdfWebhook
   } = useForm()
@@ -94,7 +94,7 @@ export default function FicheGuideAcces() {
   const [validating, setValidating] = useState(false)
   const [validated, setValidated] = useState(false)
   const sessionIdRef = useRef(null)
-  const messagesEndRef = useRef(null) 
+  const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -128,7 +128,7 @@ export default function FicheGuideAcces() {
     try {
       // ÉTAPE 1 : Extraction audio via backend Railway
       console.log('🎵 Extraction audio en cours...')
-      
+
       const extractResponse = await fetch('https://video-compressor-production.up.railway.app/extract-audio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -181,15 +181,15 @@ export default function FicheGuideAcces() {
       const data = Array.isArray(guideData) ? guideData[0] : guideData
       // Aller chercher dans data.data.output si ça existe
       const guide = data.data?.output || data.output || data.response || 'Guide généré (format non reconnu)'
-      
+
       setMessages([{ role: 'assistant', content: guide }])
       console.log('✅ Guide généré avec succès')
 
     } catch (err) {
       console.error('❌ Erreur:', err)
-      
+
       let errorMessage = 'Une erreur est survenue lors de la génération du guide.'
-      
+
       if (err.message.includes('extraction audio')) {
         errorMessage = 'Impossible d\'extraire l\'audio de la vidéo. Vérifiez que la vidéo est valide.'
       } else if (err.message.includes('génération guide')) {
@@ -197,7 +197,7 @@ export default function FicheGuideAcces() {
       } else if (err.message.includes('Failed to fetch')) {
         errorMessage = 'Problème de connexion réseau. Vérifiez votre connexion internet.'
       }
-      
+
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -238,7 +238,7 @@ export default function FicheGuideAcces() {
       const guideData = JSON.parse(responseText)
       const data = Array.isArray(guideData) ? guideData[0] : guideData
       const guide = data.data?.output || data.output || data.response || 'Réponse non reconnue'
-      
+
       setMessages(prev => [...prev, { role: 'assistant', content: guide }])
 
     } catch (err) {
@@ -251,7 +251,7 @@ export default function FicheGuideAcces() {
 
   const handleValidateGuide = async () => {
     const lastMessage = messages[messages.length - 1]
-    
+
     if (!lastMessage || lastMessage.role !== 'assistant') {
       console.error('Aucun guide à valider')
       return
@@ -261,7 +261,7 @@ export default function FicheGuideAcces() {
 
     try {
       console.log('📄 Validation du guide...')
-      
+
       const metadata = {
         numero_bien: formData.section_logement?.numero_bien || 'N/A',
         type_propriete: formData.section_logement?.type_propriete || 'Non spécifié',
@@ -311,31 +311,31 @@ export default function FicheGuideAcces() {
   }
 
   const handleCopyGuide = () => {
-      const lastMessage = messages[messages.length - 1]
-      if (!lastMessage) return
-      
-      navigator.clipboard.writeText(lastMessage.content)
-        .then(() => {
-          setCopied(true)
-          setTimeout(() => setCopied(false), 2000)
-        })
-        .catch(() => {
-          setError('Impossible de copier le texte.')
-        })
-    }
+    const lastMessage = messages[messages.length - 1]
+    if (!lastMessage) return
+
+    navigator.clipboard.writeText(lastMessage.content)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      })
+      .catch(() => {
+        setError('Impossible de copier le texte.')
+      })
+  }
 
   return (
     <div className="flex min-h-screen">
       <SidebarMenu />
-      
+
       <div className="flex-1 flex flex-col">
         <ProgressBar />
-        
+
         <div className="flex-1 p-6 bg-gray-100">
           <h1 className="text-2xl font-bold mb-6">Guide d'accès</h1>
-          
+
           <div className="bg-white p-6 rounded-lg shadow space-y-6">
-            
+
             {/* Introduction */}
             <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
               <h3 className="font-semibold text-blue-800 mb-2">
@@ -348,7 +348,7 @@ export default function FicheGuideAcces() {
 
             {/* Upload Photos étapes */}
             <div>
-              <PhotoUpload 
+              <PhotoUpload
                 fieldPath="section_guide_acces.photos_etapes"
                 label="Fournir plusieurs photos étape par étape pour le carrousel photo"
                 multiple={true}
@@ -377,7 +377,7 @@ export default function FicheGuideAcces() {
                 </div>
               </div>
 
-              <PhotoUpload 
+              <PhotoUpload
                 fieldPath="section_guide_acces.video_acces"
                 label="Vidéo pour le Guide d'accès (depuis un emplacement identifiable)"
                 multiple={true}
@@ -438,7 +438,7 @@ export default function FicheGuideAcces() {
                         {messages.length === 0 ? 'Génération en cours...' : 'Envoi en cours...'}
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
-                        {messages.length === 0 
+                        {messages.length === 0
                           ? 'La vidéo est en cours d\'analyse pour générer le guide d\'accès'
                           : 'Envoi de votre message à l\'assistant'
                         }
@@ -480,11 +480,10 @@ export default function FicheGuideAcces() {
                           className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                           <div
-                            className={`max-w-[80%] rounded-lg p-3 ${
-                              msg.role === 'user'
+                            className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user'
                                 ? 'bg-purple-600 text-white'
                                 : 'bg-gray-100 text-gray-900'
-                            }`}
+                              }`}
                           >
                             <p className="text-sm whitespace-pre-wrap leading-relaxed">
                               {msg.content}
@@ -504,7 +503,7 @@ export default function FicheGuideAcces() {
                           <div className="flex-1 text-sm text-blue-800">
                             <p className="font-medium mb-1">Validation du guide</p>
                             <p className="text-blue-700">
-                              Cliquez sur "Valider ce guide" pour générer un PDF professionnel et l'enregistrer. 
+                              Cliquez sur "Valider ce guide" pour générer un PDF professionnel et l'enregistrer.
                               Ce PDF sera automatiquement envoyé vers Monday à chaque validation.
                             </p>
                           </div>
@@ -617,8 +616,8 @@ export default function FicheGuideAcces() {
 
           {/* Boutons navigation */}
           <div className="mt-6 flex justify-between">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={back}
               disabled={currentStep === 0}
             >
@@ -626,7 +625,7 @@ export default function FicheGuideAcces() {
             </Button>
 
             <div className="flex gap-3">
-              <Button 
+              <Button
                 variant="secondary"
                 onClick={handleSave}
                 disabled={saveStatus.saving}
@@ -634,7 +633,7 @@ export default function FicheGuideAcces() {
                 {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
 
-              <Button 
+              <Button
                 variant="primary"
                 onClick={next}
                 disabled={currentStep >= totalSteps - 1}
@@ -645,7 +644,7 @@ export default function FicheGuideAcces() {
           </div>
 
         </div>
-        <div className="h-20"></div>   
+        <div className="h-20"></div>
       </div>
     </div>
   )
