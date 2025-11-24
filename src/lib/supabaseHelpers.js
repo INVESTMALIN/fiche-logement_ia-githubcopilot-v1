@@ -453,7 +453,8 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_1_equipements_lit_bebe_60_120: formData.section_chambres?.chambre_1?.equipements_lit_bebe_60_120 ?? null,
     chambres_chambre_1_equipements_stores_manuels: formData.section_chambres?.chambre_1?.equipements_stores_manuels ?? null,
     chambres_chambre_1_equipements_volets: formData.section_chambres?.chambre_1?.equipements_volets ?? null,
-    chambres_chambre_1_equipements_stores_electriques: formData.section_chambres?.chambre_1?.equipements_stores_electriques ?? null, chambres_chambre_1_equipements_television: formData.section_chambres?.chambre_1?.equipements_television ?? null,
+    chambres_chambre_1_equipements_stores_electriques: formData.section_chambres?.chambre_1?.equipements_stores_electriques ?? null,
+    chambres_chambre_1_equipements_television: formData.section_chambres?.chambre_1?.equipements_television ?? null,
     chambres_chambre_1_equipements_oreillers_couvertures_sup: formData.section_chambres?.chambre_1?.equipements_oreillers_couvertures_sup ?? null,
     chambres_chambre_1_equipements_chauffage: formData.section_chambres?.chambre_1?.equipements_chauffage ?? null,
     chambres_chambre_1_equipements_cintres: formData.section_chambres?.chambre_1?.equipements_cintres ?? null,
@@ -2257,8 +2258,14 @@ export const mapSupabaseToFormData = (supabaseData) => {
 // 💾 Sauvegarder une fiche
 export const saveFiche = async (formData, userId) => {
   try {
+    console.log('🔍 [saveFiche] Début - formData.user_id:', formData.user_id)
+    console.log('🔍 [saveFiche] userId passé en param:', userId)
+
     const supabaseData = mapFormDataToSupabase(formData)
     supabaseData.user_id = userId
+
+    console.log('🔍 [saveFiche] Après mapping - supabaseData.user_id:', supabaseData.user_id)
+    console.log('🔍 [saveFiche] Type opération:', formData.id ? 'UPDATE' : 'INSERT')
 
     let result
 
@@ -2284,8 +2291,11 @@ export const saveFiche = async (formData, userId) => {
     }
 
     if (result.error) {
+      console.error('🔍 [saveFiche] ERREUR Supabase:', result.error)
       throw result.error
     }
+
+    console.log('🔍 [saveFiche] Succès - result.data.user_id:', result.data.user_id)
 
     return {
       success: true,
@@ -2293,7 +2303,7 @@ export const saveFiche = async (formData, userId) => {
       message: 'Fiche sauvegardée avec succès'
     }
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde:', error)
+    console.error('❌ [saveFiche] Erreur lors de la sauvegarde:', error)
     return {
       success: false,
       error: error.message,

@@ -510,7 +510,7 @@ BEGIN
       'equipements_parking_photos', NEW.equipements_parking_photos,
       'equipements_parking_videos', NEW.equipements_parking_videos,
 
-
+      -- Ventilateur
       'equipements_ventilateur_photos', NEW.equipements_ventilateur_photos,
       'equipements_ventilateur_videos', NEW.equipements_ventilateur_videos,
 

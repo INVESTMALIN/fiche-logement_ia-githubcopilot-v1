@@ -1570,6 +1570,12 @@ export function FormProvider({ children }) {
   }
 
   const handleSave = async (customData = {}) => {
+
+    // DEBUG
+    console.log('🔍 [SAVE] Début save - user_id:', user.id)
+    console.log('🔍 [SAVE] Fiche ID:', formData.id)
+    console.log('🔍 [SAVE] Stack trace:', new Error().stack)
+
     if (!user?.id) {
       setSaveStatus({ saving: false, saved: false, error: 'Utilisateur non connecté' });
       return { success: false, error: 'Utilisateur non connecté' };
