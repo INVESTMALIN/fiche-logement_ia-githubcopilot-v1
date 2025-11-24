@@ -2256,13 +2256,20 @@ export const mapSupabaseToFormData = (supabaseData) => {
 }
 
 // 💾 Sauvegarder une fiche
-export const saveFiche = async (formData, userId) => {
+export const saveFiche = async (formData, userId = null) => {
   try {
     console.log('🔍 [saveFiche] Début - formData.user_id:', formData.user_id)
     console.log('🔍 [saveFiche] userId passé en param:', userId)
 
     const supabaseData = mapFormDataToSupabase(formData)
-    supabaseData.user_id = userId
+
+    // 🔥 NE FORCER user_id QUE lors de la CRÉATION
+    if (!formData.id && userId) {
+      supabaseData.user_id = userId
+      console.log('🔍 [saveFiche] CRÉATION - user_id assigné:', userId)
+    } else {
+      console.log('🔍 [saveFiche] UPDATE - user_id NON modifié')
+    }
 
     console.log('🔍 [saveFiche] Après mapping - supabaseData.user_id:', supabaseData.user_id)
     console.log('🔍 [saveFiche] Type opération:', formData.id ? 'UPDATE' : 'INSERT')
@@ -2270,7 +2277,7 @@ export const saveFiche = async (formData, userId) => {
     let result
 
     if (formData.id) {
-      // Mise à jour d'une fiche existante
+      // UPDATE
       result = await safeSupabaseQuery(
         supabase
           .from('fiches')
@@ -2280,7 +2287,7 @@ export const saveFiche = async (formData, userId) => {
           .single()
       )
     } else {
-      // Création d'une nouvelle fiche
+      // INSERT
       result = await safeSupabaseQuery(
         supabase
           .from('fiches')

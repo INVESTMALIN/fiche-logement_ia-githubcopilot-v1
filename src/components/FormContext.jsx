@@ -1595,12 +1595,19 @@ export function FormProvider({ children }) {
     setSaveStatus({ saving: true, saved: false, error: null });
 
     try {
-      const dataToSave = {
-        ...formData,
-        ...customData,
-        user_id: user.id,  // FORCE TOUJOURS
-        updated_at: new Date().toISOString()
-      };
+      const dataToSave = formData.id
+        ? {
+          ...formData,
+          ...customData,
+          updated_at: new Date().toISOString()
+          // PAS de user_id lors d'un UPDATE !
+        }
+        : {
+          ...formData,
+          ...customData,
+          user_id: user.id,  // user_id SEULEMENT à la création
+          updated_at: new Date().toISOString()
+        };
 
       // DEBUG
       console.log('🔍 AVANT SAVE - user_id:', dataToSave.user_id);
