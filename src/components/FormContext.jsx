@@ -403,9 +403,7 @@ const initialFormData = {
     climatisation_video: [],               // PhotoUpload vidéo
     chauffage_type: [],                    // Array checkboxes (sélection multiple)
     chauffage_instructions: "",            // Textarea
-    chauffage_video: [],                   // PhotoUpload vidéo
     chauffage_types: [],                   // Array checkboxes (sélection multiple)
-    chauffage_instructions: "",            // Textarea
     chauffage_video: [],                   // PhotoUpload vidéo
     ventilateur_types: [],                 // Array checkboxes (3 options)
     ventilateur_nombre: "",                // Number input
@@ -437,8 +435,7 @@ const initialFormData = {
     menage_balais_photos: [],
     menage_balayette_photos: [],
     menage_autres_elements: "",
-    menage_autres_elements_photos: [],
-    lave_linge_prix: ""
+    menage_autres_elements_photos: []
   },
   section_consommables: {
     // Question principale
