@@ -53,11 +53,11 @@ function ModernDropdown({ items, onSelect, fiche }) {
 
       {/* Menu dropdown avec position intelligente */}
       {isOpen && (
-        <div 
+        <div
           className="absolute right-0 mt-1 bg-white rounded-xl shadow-xl border border-gray-200 min-w-48 py-2 z-[999]"
           style={{
             // Si on est dans les 200px du bas, ouvrir vers le haut
-            ...(window.innerHeight - dropdownRef.current?.getBoundingClientRect().bottom < 200 
+            ...(window.innerHeight - dropdownRef.current?.getBoundingClientRect().bottom < 200
               ? { bottom: '100%', marginBottom: '4px', marginTop: '0' }
               : { top: '100%', marginTop: '4px' }
             ),
@@ -110,7 +110,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
         .eq('id', user.id)
 
       if (error) throw error
-      
+
       console.log('Utilisateur modifié avec succès')
       onSuccess()
     } catch (error) {
@@ -126,7 +126,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Modifier l'utilisateur
         </h3>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
@@ -137,7 +137,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
             <input
@@ -147,7 +147,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
@@ -158,7 +158,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
             />
             <p className="text-xs text-gray-500 mt-1">L'email ne peut pas être modifié</p>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
             <select
@@ -205,7 +205,7 @@ function NewUserModal({ onClose, onSuccess }) {
   })
   const [loading, setLoading] = useState(false)
 
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -221,21 +221,21 @@ function NewUserModal({ onClose, onSuccess }) {
 
       // 2. Créer le profil dans la table profiles
       // 2. Créer le profil dans la table profiles (avec upsert)
-const { error: profileError } = await supabase
-.from('profiles')
-.upsert({
-  id: authData.user.id,
-  email: formData.email,
-  prenom: formData.prenom,
-  nom: formData.nom,
-  role: formData.role,
-  active: true
-})
-
-if (profileError) throw profileError
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: authData.user.id,
+          email: formData.email,
+          prenom: formData.prenom,
+          nom: formData.nom,
+          role: formData.role,
+          active: true
+        })
 
       if (profileError) throw profileError
-      
+
+      if (profileError) throw profileError
+
       console.log('Nouvel utilisateur créé avec succès')
       onSuccess()
       onClose()
@@ -253,7 +253,7 @@ if (profileError) throw profileError
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Nouvel utilisateur
         </h3>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
@@ -265,7 +265,7 @@ if (profileError) throw profileError
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
             <input
@@ -276,7 +276,7 @@ if (profileError) throw profileError
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
@@ -287,7 +287,7 @@ if (profileError) throw profileError
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe temporaire</label>
             <input
@@ -299,7 +299,7 @@ if (profileError) throw profileError
               minLength={6}
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
             <select
@@ -354,7 +354,7 @@ export default function AdminConsole() {
   const [users, setUsers] = useState([])
   const [fiches, setFiches] = useState([])
   const [loading, setLoading] = useState(true)
-  
+
   // State pour le modal de prévisualisation
   const [previewModal, setPreviewModal] = useState({
     isOpen: false,
@@ -485,7 +485,7 @@ export default function AdminConsole() {
       case 'edit':
         navigate(`/fiche?id=${fiche.id}`)
         break
-        
+
       case 'archive':
         const archiveResult = await archiveFiche(fiche.id)
         if (archiveResult.success) {
@@ -495,7 +495,7 @@ export default function AdminConsole() {
           console.error('Erreur archivage:', archiveResult.error)
         }
         break
-        
+
       case 'unarchive':
         const unarchiveResult = await unarchiveFiche(fiche.id)
         if (unarchiveResult.success) {
@@ -505,11 +505,11 @@ export default function AdminConsole() {
           console.error('Erreur restauration:', unarchiveResult.error)
         }
         break
-        
+
       case 'delete':
         setDeleteConfirm(fiche)
         break
-        
+
       default:
         console.warn('Action inconnue:', action.id)
     }
@@ -517,20 +517,25 @@ export default function AdminConsole() {
 
   // Calculer les compteurs pour les onglets
   const tabs = [
-    { 
-      id: 'users', 
-      label: 'Utilisateurs', 
-      count: users.length 
+    {
+      id: 'users',
+      label: 'Utilisateurs',
+      count: users.length
     },
-    { 
-      id: 'fiches', 
-      label: 'Toutes les fiches', 
-      count: fiches.length 
+    {
+      id: 'fiches',
+      label: 'Fiches',
+      count: fiches.length
     },
-    { 
-      id: 'stats', 
-      label: 'Statistiques', 
-      count: null 
+    {
+      id: 'stats',
+      label: 'Statistiques',
+      count: null
+    },
+    {
+      id: 'historique',
+      label: 'Historique',
+      count: null
     }
   ]
 
@@ -555,7 +560,7 @@ export default function AdminConsole() {
               <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Console Administration</h1>
               <p className="text-base sm:text-lg opacity-90">Gestion globale - Accès Super Admin</p>
             </div>
-            
+
             {/* Boutons empilés sur mobile, côte à côte sur desktop */}
             <div className="flex flex-col sm:flex-row gap-3">
               <button
@@ -586,11 +591,10 @@ export default function AdminConsole() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
+                  ? 'border-red-500 text-red-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 {tab.label}
                 {tab.count !== null && (
@@ -609,23 +613,26 @@ export default function AdminConsole() {
         {activeTab === 'users' && (
           <UsersTab users={users} onRefresh={loadData} />
         )}
-        
+
         {activeTab === 'fiches' && (
-          <FichesTab 
-            fiches={fiches} 
-            users={users} 
-            onRefresh={loadData} 
+          <FichesTab
+            fiches={fiches}
+            users={users}
+            onRefresh={loadData}
             onPreviewFiche={handlePreviewFiche}
             onReassignFiche={handleReassignFiche}
             onMenuAction={handleMenuAction}
           />
         )}
-        
+
         {activeTab === 'stats' && (
           <StatsTab users={users} fiches={fiches} />
         )}
-      </div>
 
+        {activeTab === 'historique' && (
+          <HistoriqueTab />
+        )}
+      </div>
       {/* Modal de prévisualisation des fiches */}
       <FichePreviewModal
         fiche={previewModal.fiche}
@@ -651,7 +658,7 @@ export default function AdminConsole() {
               Supprimer la fiche ?
             </h3>
             <p className="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer la fiche "<strong>{deleteConfirm.nom}</strong>" ? 
+              Êtes-vous sûr de vouloir supprimer la fiche "<strong>{deleteConfirm.nom}</strong>" ?
               Cette action est irréversible.
             </p>
             <div className="flex gap-3 justify-end">
@@ -664,7 +671,7 @@ export default function AdminConsole() {
               <button
                 onClick={async () => {
                   setDeleting(true) // 🆕 Début du loading
-                  try {        
+                  try {
                     const result = await deleteFiche(deleteConfirm.id)
                     if (result.success) {
                       console.log('Fiche supprimée avec succès')
@@ -680,11 +687,10 @@ export default function AdminConsole() {
                   }
                 }}
                 disabled={deleting}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                  deleting
-                    ? 'bg-red-400 cursor-not-allowed text-white'
-                    : 'bg-red-600 hover:bg-red-700 text-white'
-                }`}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${deleting
+                  ? 'bg-red-400 cursor-not-allowed text-white'
+                  : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
               >
                 {deleting && (
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
@@ -719,7 +725,7 @@ function UsersTab({ users, onRefresh }) {
         .eq('id', user.id)
 
       if (error) throw error
-      
+
       console.log(`Utilisateur ${newStatus ? 'activé' : 'désactivé'} avec succès`)
       onRefresh()
     } catch (error) {
@@ -740,7 +746,7 @@ function UsersTab({ users, onRefresh }) {
             <h2 className="text-xl font-semibold">Gestion utilisateurs</h2>
             <p className="text-gray-600 mt-1">Administration des comptes</p>
           </div>
-          <button 
+          <button
             onClick={handleNewUser}
             className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium"
           >
@@ -748,7 +754,7 @@ function UsersTab({ users, onRefresh }) {
           </button>
         </div>
       </div>
-      
+
       <div className="overflow-x-auto overflow-y-visible">
         <table className="w-full">
           <thead className="bg-gray-50">
@@ -784,7 +790,7 @@ function UsersTab({ users, onRefresh }) {
                     </div>
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900">
-                        {user.prenom && user.nom ? 
+                        {user.prenom && user.nom ?
                           `${user.prenom} ${user.nom}`.trim() : 'Non renseigné'}
                       </div>
                     </div>
@@ -794,13 +800,12 @@ function UsersTab({ users, onRefresh }) {
                   {user.email}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.role === 'super_admin' ? 'bg-red-100 text-red-800' :
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.role === 'super_admin' ? 'bg-red-100 text-red-800' :
                     user.role === 'admin' ? 'bg-blue-100 text-blue-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
+                      'bg-green-100 text-green-800'
+                    }`}>
                     {user.role === 'super_admin' ? 'Super Admin' :
-                     user.role === 'admin' ? 'Admin' : 'Coordinateur'}
+                      user.role === 'admin' ? 'Admin' : 'Coordinateur'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -808,19 +813,18 @@ function UsersTab({ users, onRefresh }) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center gap-3">
-                    <button 
+                    <button
                       onClick={() => handleEditUser(user)}
                       className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1 rounded-lg transition-colors font-medium"
                     >
                       Modifier
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleToggleUser(user)}
-                      className={`px-3 py-1 rounded-lg font-medium transition-colors ${
-                        user.active === false 
-                          ? 'text-green-600 hover:text-green-700 hover:bg-green-50' 
-                          : 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                      }`}
+                      className={`px-3 py-1 rounded-lg font-medium transition-colors ${user.active === false
+                        ? 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                        : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                        }`}
                     >
                       {user.active === false ? 'Activer' : 'Désactiver'}
                     </button>
@@ -834,7 +838,7 @@ function UsersTab({ users, onRefresh }) {
 
       {/* Modal Modifier Utilisateur */}
       {editModal.isOpen && (
-        <EditUserModal 
+        <EditUserModal
           user={editModal.user}
           onClose={() => setEditModal({ isOpen: false, user: null })}
           onSuccess={() => {
@@ -846,7 +850,7 @@ function UsersTab({ users, onRefresh }) {
 
       {/* Modal Nouvel Utilisateur */}
       {newUserModal && (
-        <NewUserModal 
+        <NewUserModal
           onClose={() => setNewUserModal(false)}
           onSuccess={() => {
             onRefresh()
@@ -861,14 +865,14 @@ function UsersTab({ users, onRefresh }) {
 // Composant Toutes les Fiches avec design moderne
 function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, onMenuAction }) {
   const [searchTerm, setSearchTerm] = useState("") // ✅ NOUVEAU
-  
+
   // ✅ NOUVEAU : Filtrer les fiches selon la recherche
-  const filteredFiches = fiches.filter(fiche => 
+  const filteredFiches = fiches.filter(fiche =>
     fiche.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (fiche.creator?.prenom && `${fiche.creator.prenom} ${fiche.creator.nom}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (fiche.creator?.email && fiche.creator.email.toLowerCase().includes(searchTerm.toLowerCase()))
   )
-  
+
   // Générer les items du dropdown
   const getDropdownItems = (fiche) => {
     const items = [
@@ -923,25 +927,25 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-6 border-b">
-      <div>
-  <h2 className="text-xl font-semibold">Fiches logement</h2>
-  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
-    <p className="text-gray-600">{filteredFiches.length} fiche(s) {searchTerm && `sur ${fiches.length}`}</p>
-    
-    <div className="relative">
-      <input
-        type="text"
-        placeholder="Rechercher..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full sm:w-64 px-3 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-      />
-      <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-    </div>
-  </div>
-</div>
+        <div>
+          <h2 className="text-xl font-semibold">Fiches logement</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4">
+            <p className="text-gray-600">{filteredFiches.length} fiche(s) {searchTerm && `sur ${fiches.length}`}</p>
+
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full sm:w-64 px-3 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            </div>
+          </div>
+        </div>
       </div>
-      
+
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50">
@@ -970,17 +974,16 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
                   <div className="text-sm font-medium text-gray-900">{fiche.nom}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {fiche.creator ? 
+                  {fiche.creator ?
                     `${fiche.creator.prenom} ${fiche.creator.nom}`.trim() || fiche.creator.email :
                     'Utilisateur supprimé'
                   }
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    fiche.statut === 'Complété' ? 'bg-green-100 text-green-800' :
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${fiche.statut === 'Complété' ? 'bg-green-100 text-green-800' :
                     fiche.statut === 'Archivé' ? 'bg-gray-100 text-gray-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
                     {fiche.statut}
                   </span>
                 </td>
@@ -990,14 +993,14 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center gap-2">
                     {/* Bouton Voir moderne */}
-                    <button 
+                    <button
                       onClick={() => onPreviewFiche(fiche)}
                       className="inline-flex items-center gap-2 px-3 py-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     >
                       <Eye size={16} />
                       <span className="font-medium">Voir</span>
                     </button>
-                    
+
                     {/* Dropdown moderne */}
                     <ModernDropdown
                       items={getDropdownItems(fiche)}
@@ -1015,66 +1018,566 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
   )
 }
 
-// Composant Statistiques
+// Composant graphique d'activité avec périodes multiples
+function ActivityChart({ fiches, period }) {
+  let data = []
+  let maxCount = 1
+
+  if (period === '7days') {
+    // Vue par jour (7 derniers jours)
+    data = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date()
+      date.setDate(date.getDate() - (6 - i))
+      return {
+        label: date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+        date: date.toISOString().split('T')[0],
+        count: 0
+      }
+    })
+
+    fiches.forEach(fiche => {
+      if (fiche.created_at) {
+        const ficheDate = new Date(fiche.created_at).toISOString().split('T')[0]
+        const dayEntry = data.find(d => d.date === ficheDate)
+        if (dayEntry) dayEntry.count++
+      }
+    })
+  }
+  else if (period === '30days') {
+    // Vue par semaine (4 dernières semaines)
+    data = Array.from({ length: 4 }, (_, i) => {
+      const endDate = new Date()
+      endDate.setDate(endDate.getDate() - (i * 7))
+      const startDate = new Date(endDate)
+      startDate.setDate(startDate.getDate() - 6)
+
+      return {
+        label: `S${4 - i}`,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        count: 0
+      }
+    }).reverse()
+
+    fiches.forEach(fiche => {
+      if (fiche.created_at) {
+        const ficheDate = new Date(fiche.created_at).toISOString().split('T')[0]
+        data.forEach(week => {
+          if (ficheDate >= week.startDate && ficheDate <= week.endDate) {
+            week.count++
+          }
+        })
+      }
+    })
+  }
+  else if (period === '3months') {
+    // Vue par mois (3 derniers mois)
+    data = Array.from({ length: 3 }, (_, i) => {
+      const date = new Date()
+      date.setMonth(date.getMonth() - (2 - i))
+      return {
+        label: date.toLocaleDateString('fr-FR', { month: 'short' }),
+        month: date.getMonth(),
+        year: date.getFullYear(),
+        count: 0
+      }
+    })
+
+    fiches.forEach(fiche => {
+      if (fiche.created_at) {
+        const ficheDate = new Date(fiche.created_at)
+        const monthEntry = data.find(d =>
+          d.month === ficheDate.getMonth() && d.year === ficheDate.getFullYear()
+        )
+        if (monthEntry) monthEntry.count++
+      }
+    })
+  }
+
+  maxCount = Math.max(...data.map(d => d.count), 1)
+
+  return (
+    <div className="space-y-2">
+      {data.map((item, index) => (
+        <div key={index} className="flex items-center gap-3">
+          <span className="text-sm text-gray-600 w-16">{item.label}</span>
+          <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
+            <div
+              className="bg-blue-500 h-full rounded-full transition-all duration-300 flex items-center justify-end pr-2"
+              style={{ width: `${(item.count / maxCount) * 100}%` }}
+            >
+              {item.count > 0 && (
+                <span className="text-xs text-white font-semibold">{item.count}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Composant Statistiques amélioré
 function StatsTab({ users, fiches }) {
+  const [activityPeriod, setActivityPeriod] = useState('7days')
+  // Stats utilisateurs
   const coordCount = users.filter(u => u.role === 'coordinateur').length
   const adminCount = users.filter(u => u.role === 'admin').length
   const superAdminCount = users.filter(u => u.role === 'super_admin').length
-  
+
+  // Stats fiches par statut
   const brouillonCount = fiches.filter(f => f.statut === 'Brouillon').length
   const completeCount = fiches.filter(f => f.statut === 'Complété').length
   const archiveCount = fiches.filter(f => f.statut === 'Archivé').length
 
+  // Taux de completion
+  const totalNonArchived = brouillonCount + completeCount
+  const completionRate = totalNonArchived > 0 ? Math.round((completeCount / totalNonArchived) * 100) : 0
+
+  // Fiches par coordinateur (top 5)
+  const fichesByCoord = {}
+  fiches.forEach(fiche => {
+    if (fiche.creator) {
+      const key = fiche.creator.id
+      if (!fichesByCoord[key]) {
+        fichesByCoord[key] = {
+          name: fiche.creator.prenom && fiche.creator.nom
+            ? `${fiche.creator.prenom} ${fiche.creator.nom}`
+            : fiche.creator.email,
+          count: 0,
+          completed: 0,
+          draft: 0
+        }
+      }
+      fichesByCoord[key].count++
+      if (fiche.statut === 'Complété') fichesByCoord[key].completed++
+      if (fiche.statut === 'Brouillon') fichesByCoord[key].draft++
+    }
+  })
+
+  const topCoordinators = Object.values(fichesByCoord)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+
+  // Activité récente (7 derniers jours)
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() - (6 - i))
+    return {
+      date: date.toISOString().split('T')[0],
+      label: date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+      count: 0
+    }
+  })
+
+  fiches.forEach(fiche => {
+    if (fiche.created_at) {
+      const ficheDate = new Date(fiche.created_at).toISOString().split('T')[0]
+      const dayEntry = last7Days.find(d => d.date === ficheDate)
+      if (dayEntry) dayEntry.count++
+    }
+  })
+
+  const maxDayCount = Math.max(...last7Days.map(d => d.count), 1)
+
+  // Fiches archivées anciennes (potentiellement oubliées)
+  const oldArchivedFiches = fiches
+    .filter(f => f.statut === 'Archivé' && f.updated_at)
+    .sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at))
+    .slice(0, 5)
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Stats Utilisateurs */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">👥 Utilisateurs</h3>
-        <div className="space-y-3">
-          <div className="flex justify-between">
-            <span>Coordinateurs</span>
-            <span className="font-semibold text-green-600">{coordCount}</span>
+    <div className="space-y-6">
+      {/* Ligne 1 : Vue d'ensemble */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Total fiches */}
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm font-medium">Total Fiches</p>
+              <p className="text-3xl font-bold mt-1">{fiches.length}</p>
+            </div>
+            <div className="bg-white bg-opacity-20 rounded-full p-3">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span>Admins</span>
-            <span className="font-semibold text-blue-600">{adminCount}</span>
+        </div>
+
+        {/* Brouillons */}
+        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg shadow p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-yellow-100 text-sm font-medium">Brouillons</p>
+              <p className="text-3xl font-bold mt-1">{brouillonCount}</p>
+            </div>
+            <div className="bg-white bg-opacity-20 rounded-full p-3">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span>Super Admins</span>
-            <span className="font-semibold text-red-600">{superAdminCount}</span>
+        </div>
+
+        {/* Complétées */}
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm font-medium">Complétées</p>
+              <p className="text-3xl font-bold mt-1">{completeCount}</p>
+            </div>
+            <div className="bg-white bg-opacity-20 rounded-full p-3">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
-          <div className="border-t pt-3 mt-3">
-            <div className="flex justify-between font-semibold">
-              <span>Total</span>
-              <span className="text-gray-900">{users.length}</span>
+        </div>
+
+        {/* Taux de complétion */}
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm font-medium">Taux de complétion</p>
+              <p className="text-3xl font-bold mt-1">{completionRate}%</p>
+            </div>
+            <div className="bg-white bg-opacity-20 rounded-full p-3">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats Fiches */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">📋 Fiches Logement</h3>
-        <div className="space-y-3">
-          <div className="flex justify-between">
-            <span>Brouillons</span>
-            <span className="font-semibold text-yellow-600">{brouillonCount}</span>
+      {/* Ligne 2 : Graphiques et détails */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+
+        {/* Activité avec sélecteur de période */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <span>📊</span>
+              Créations de fiches
+            </h3>
+
+            {/* Sélecteur de période */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActivityPeriod('7days')}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${activityPeriod === '7days'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+              >
+                7j
+              </button>
+              <button
+                onClick={() => setActivityPeriod('30days')}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${activityPeriod === '30days'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+              >
+                30j
+              </button>
+              <button
+                onClick={() => setActivityPeriod('3months')}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${activityPeriod === '3months'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+              >
+                3m
+              </button>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span>Complétées</span>
-            <span className="font-semibold text-green-600">{completeCount}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Archivées</span>
-            <span className="font-semibold text-gray-600">{archiveCount}</span>
-          </div>
-          <div className="border-t pt-3 mt-3">
-            <div className="flex justify-between font-semibold">
-              <span>Total</span>
-              <span className="text-gray-900">{fiches.length}</span>
+
+          <ActivityChart fiches={fiches} period={activityPeriod} />
+        </div>
+
+        {/* Top coordinateurs */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span>👥</span>
+            Top coordinateurs
+          </h3>
+          {topCoordinators.length > 0 ? (
+            <div className="space-y-3">
+              {topCoordinators.map((coord, index) => (
+                <div key={index} className="border-l-4 border-red-500 pl-3 py-2 bg-gray-50 rounded">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-medium text-gray-900">{coord.name}</span>
+                    <span className="text-lg font-bold text-gray-900">{coord.count}</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      {coord.completed} complétées
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                      {coord.draft} brouillons
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8">Aucune fiche créée</p>
+          )}
+        </div>
+      </div>
+
+      {/* Ligne 3 : Détails supplémentaires */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Utilisateurs par rôle */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span>🔐</span>
+            Répartition utilisateurs
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <span className="text-gray-700">Coordinateurs</span>
+              <span className="font-bold text-green-600 text-xl">{coordCount}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+              <span className="text-gray-700">Admins</span>
+              <span className="font-bold text-blue-600 text-xl">{adminCount}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+              <span className="text-gray-700">Super Admins</span>
+              <span className="font-bold text-red-600 text-xl">{superAdminCount}</span>
+            </div>
+            <div className="border-t pt-3 mt-3">
+              <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                <span className="font-semibold text-gray-900">Total</span>
+                <span className="font-bold text-gray-900 text-xl">{users.length}</span>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Fiches archivées anciennes */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span>📦</span>
+            Fiches archivées anciennes
+          </h3>
+          {oldArchivedFiches.length > 0 ? (
+            <div className="space-y-2">
+              {oldArchivedFiches.map((fiche, index) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                  <span className="text-gray-900 font-medium truncate flex-1">{fiche.nom}</span>
+                  <span className="text-gray-500 text-xs ml-2">
+                    {new Date(fiche.updated_at).toLocaleDateString('fr-FR')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8">Aucune fiche archivée</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Composant Historique avec recherche par numéro de bien
+function HistoriqueTab() {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [history, setHistory] = useState([])
+  const [profiles, setProfiles] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
+
+  // Charger les profils au montage du composant
+  useEffect(() => {
+    loadProfiles()
+  }, [])
+
+  const loadProfiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, prenom, nom, email')
+
+      if (error) throw error
+      setProfiles(data || [])
+    } catch (error) {
+      console.error('Erreur chargement profils:', error)
+    }
+  }
+
+  // Helper pour trouver le nom d'un user
+  const getUserName = (userId) => {
+    if (!userId) return 'Système'
+    const profile = profiles.find(p => p.id === userId)
+    if (!profile) return 'Inconnu'
+    return profile.prenom && profile.nom
+      ? `${profile.prenom} ${profile.nom}`
+      : profile.email
+  }
+
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) return
+
+    setLoading(true)
+    setSearched(true)
+
+    try {
+      const { data, error } = await supabase
+        .from('fiches_history')
+        .select('*')
+        .eq('numero_bien', searchTerm.trim())
+        .order('changed_at', { ascending: false })
+
+      if (error) throw error
+      setHistory(data || [])
+    } catch (error) {
+      console.error('Erreur recherche historique:', error)
+      setHistory([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow">
+      <div className="p-6 border-b">
+        <h2 className="text-xl font-semibold mb-4">Historique des fiches</h2>
+        <p className="text-gray-600 mb-4">
+          Recherchez l'historique complet d'une fiche par son <span className="font-semibold">Numéro de bien</span>
+        </p>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <p className="text-sm text-blue-800">
+            ℹ️ Système actif depuis le 27 novembre 2025. Les événements antérieurs ne sont pas affichés.
+          </p>
+        </div>
+
+        {/* Barre de recherche */}
+        <div className="flex gap-3">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            placeholder="Numéro de bien (ex: 1410)"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+          />
+          <button
+            onClick={handleSearch}
+            disabled={loading || !searchTerm.trim()}
+            className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Recherche...' : 'Rechercher'}
+          </button>
+        </div>
+      </div>
+
+      {/* Résultats */}
+      <div className="p-6">
+        {!searched && (
+          <p className="text-gray-500 text-center py-8">
+            Entrez un numéro de bien pour voir son historique
+          </p>
+        )}
+
+        {searched && history.length === 0 && (
+          <p className="text-gray-500 text-center py-8">
+            Aucun historique trouvé pour ce numéro de bien
+          </p>
+        )}
+
+        {history.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600 mb-4">
+              {history.length} événement{history.length > 1 ? 's' : ''} trouvé{history.length > 1 ? 's' : ''}
+            </p>
+
+            {/* Timeline verticale (ordre inversé : plus récent en haut) */}
+            <div className="relative pl-8">
+              {/* Ligne verticale */}
+              <div className="absolute left-[15px] top-0 bottom-0 w-0.5 bg-gray-200"></div>
+
+              {history.map((event, index) => {
+                // Déterminer la couleur selon l'action
+                let color = 'bg-gray-400'
+                let icon = '●'
+
+                if (event.action === 'created') {
+                  color = 'bg-green-500'
+                  icon = '✨'
+                } else if (event.action === 'deleted') {
+                  color = 'bg-red-500'
+                  icon = '🗑️'
+                } else if (event.action === 'user_changed') {
+                  color = 'bg-purple-500'
+                  icon = '👤'
+                } else if (event.action === 'status_changed') {
+                  color = 'bg-blue-500'
+                  icon = '📋'
+                } else if (event.action === 'nom_changed') {
+                  color = 'bg-yellow-500'
+                  icon = '✏️'
+                } else if (event.action === 'numero_bien_changed') {
+                  color = 'bg-orange-500'
+                  icon = '⚠️'
+                }
+
+                return (
+                  <div key={event.id} className="relative pb-8 last:pb-0">
+                    {/* Point plus petit sur la timeline */}
+                    <div className={`absolute left-[-19px] w-4 h-4 ${color} rounded-full shadow-md z-10 border-2 border-white`}></div>
+
+                    {/* Contenu de l'événement */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow ml-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-gray-900">{event.fiche_nom}</span>
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                              {event.numero_bien}
+                            </span>
+                          </div>
+
+                          <div className="text-sm text-gray-700 mb-2">
+                            {event.action === 'created' && `${icon} Création de la fiche`}
+                            {event.action === 'deleted' && `${icon} Suppression de la fiche`}
+                            {event.action === 'user_changed' && `${icon} Réassignation`}
+                            {event.action === 'status_changed' && `${icon} Changement de statut: ${event.old_value} → ${event.new_value}`}
+                            {event.action === 'nom_changed' && `${icon} Renommage: ${event.old_value} → ${event.new_value}`}
+                            {event.action === 'numero_bien_changed' && `${icon} Numéro modifié: ${event.old_value} → ${event.new_value}`}
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              {getUserName(event.changed_by)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {new Date(event.changed_at).toLocaleDateString('fr-FR')} à {new Date(event.changed_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
