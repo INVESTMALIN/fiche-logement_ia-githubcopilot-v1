@@ -28,6 +28,9 @@ export const mapFormDataToSupabase = (formData) => {
     logement_nombre_personnes_max: formData.section_logement?.nombre_personnes_max || null,
     logement_nombre_lits: formData.section_logement?.nombre_lits || null,
     logement_type_autre_precision: formData.section_logement?.type_autre_precision || null,
+    logement_type_niveau: formData.section_logement?.type_niveau || null,
+    logement_nombre_etages: formData.section_logement?.nombre_etages || null,
+    logement_classement: formData.section_logement?.classement || null,
 
     // Section appartement
     logement_appartement_nom_residence: formData.section_logement?.appartement?.nom_residence || null,
@@ -1122,6 +1125,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
       nombre_personnes_max: supabaseData.logement_nombre_personnes_max || "",
       nombre_lits: supabaseData.logement_nombre_lits || "",
       type_autre_precision: supabaseData.logement_type_autre_precision || "",
+      type_niveau: supabaseData.logement_type_niveau || "",
+      nombre_etages: supabaseData.logement_nombre_etages || "",
+      classement: supabaseData.logement_classement || "",
 
       // Section appartement conditionnelle
       appartement: {

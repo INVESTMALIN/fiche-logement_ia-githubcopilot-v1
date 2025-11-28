@@ -35,6 +35,9 @@ const initialFormData = {
     nombre_personnes_max: "",     // nombreDe depuis Monday
     nombre_lits: "",              // lits depuis Monday (valeur brute)
     type_autre_precision: "",     // Si type = "Autre"
+    type_niveau: "",              // Si type = "Maison ou Villa"
+    nombre_etages: "",            // Si type = "Maison ou Villa"
+    classement: "",
 
     // Structure appartement conditionnelle
     appartement: {
