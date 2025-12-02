@@ -8,15 +8,15 @@ import PhotoUpload from '../components/PhotoUpload'
 
 
 export default function FicheClefs() {
-  const { 
-    next, 
-    back, 
-    currentStep, 
-    totalSteps, 
-    getField, 
-    updateField, 
-    handleSave, 
-    saveStatus 
+  const {
+    next,
+    back,
+    currentStep,
+    totalSteps,
+    getField,
+    updateField,
+    handleSave,
+    saveStatus
   } = useForm()
 
   // Récupération des données de la section
@@ -34,19 +34,19 @@ export default function FicheClefs() {
   return (
     <div className="flex min-h-screen">
       <SidebarMenu />
-      
+
       <div className="flex-1 flex flex-col">
         <ProgressBar />
-        
+
         <div className="flex-1 p-6 bg-gray-100 pb-24">
           <div className="bg-white p-6 rounded-lg shadow">
             <h1 className="text-2xl font-bold mb-6">Gestion des clés et accès</h1>
-            
+
             {/* Type de boîte à clés */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Type de boîte à clés *</label>
               <div className="flex flex-col gap-2">
-                {["TTlock", "Igloohome", "Masterlock"].map(type => (
+                {["TTlock", "Igloohome", "Masterlock", "Serrure connectée"].map(type => (
                   <label key={type} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
@@ -66,7 +66,7 @@ export default function FicheClefs() {
             {/* Emplacement de la boîte à clés */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Emplacement de la boîte à clés *</label>
-              <textarea 
+              <textarea
                 placeholder="Décrivez précisément où se trouve la boîte à clés (ex: à côté de la porte d'entrée, sur la droite)"
                 className="w-full p-3 border rounded h-20 resize-none"
                 value={formData.emplacementBoite}
@@ -76,7 +76,7 @@ export default function FicheClefs() {
 
             {/* Photo de l'emplacement */}
             <div className="mb-6">
-              <PhotoUpload 
+              <PhotoUpload
                 fieldPath="section_clefs.emplacementPhoto"
                 label="Photo de l'emplacement"
                 multiple={true}
@@ -92,8 +92,8 @@ export default function FicheClefs() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block font-semibold mb-2">Code Masterpin conciergerie *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="ex: 2863"
                       className="w-full p-2 border rounded"
                       value={formData.ttlock?.masterpinConciergerie || ''}
@@ -102,8 +102,8 @@ export default function FicheClefs() {
                   </div>
                   <div>
                     <label className="block font-semibold mb-2">Code Propriétaire *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="ex: 1234"
                       className="w-full p-2 border rounded"
                       value={formData.ttlock?.codeProprietaire || ''}
@@ -112,8 +112,8 @@ export default function FicheClefs() {
                   </div>
                   <div>
                     <label className="block font-semibold mb-2">Code Ménage *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="ex: 5678"
                       className="w-full p-2 border rounded"
                       value={formData.ttlock?.codeMenage || ''}
@@ -130,8 +130,8 @@ export default function FicheClefs() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-semibold mb-2">Masterpin conciergerie *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="ex: 2863"
                       className="w-full p-2 border rounded"
                       value={formData.igloohome?.masterpinConciergerie || ''}
@@ -140,8 +140,8 @@ export default function FicheClefs() {
                   </div>
                   <div>
                     <label className="block font-semibold mb-2">Code Voyageur *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="ex: 1111"
                       className="w-full p-2 border rounded"
                       value={formData.igloohome?.codeVoyageur || ''}
@@ -150,8 +150,8 @@ export default function FicheClefs() {
                   </div>
                   <div>
                     <label className="block font-semibold mb-2">Code Propriétaire *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="ex: 1234"
                       className="w-full p-2 border rounded"
                       value={formData.igloohome?.codeProprietaire || ''}
@@ -160,8 +160,8 @@ export default function FicheClefs() {
                   </div>
                   <div>
                     <label className="block font-semibold mb-2">Code Ménage *</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="ex: 5678"
                       className="w-full p-2 border rounded"
                       value={formData.igloohome?.codeMenage || ''}
@@ -177,8 +177,8 @@ export default function FicheClefs() {
                 <h3 className="font-semibold text-orange-800 mb-4">Configuration Masterlock</h3>
                 <div>
                   <label className="block font-semibold mb-2">Code de la boîte à clés *</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="ex: 2863"
                     className="w-full p-2 border rounded max-w-md"
                     value={formData.masterlock?.code || ''}
@@ -193,9 +193,9 @@ export default function FicheClefs() {
               <label className="block font-semibold mb-3">Logement équipé d'un interphone ? *</label>
               <div className="flex flex-col gap-2">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="interphone" 
+                  <input
+                    type="radio"
+                    name="interphone"
                     value="true"
                     checked={formData.interphone === true}
                     onChange={(e) => handleRadioChange('section_clefs.interphone', e.target.value)}
@@ -204,9 +204,9 @@ export default function FicheClefs() {
                   <span>Oui</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="interphone" 
+                  <input
+                    type="radio"
+                    name="interphone"
                     value="false"
                     checked={formData.interphone === false}
                     onChange={(e) => handleRadioChange('section_clefs.interphone', e.target.value)}
@@ -222,7 +222,7 @@ export default function FicheClefs() {
               <div className="mb-6 pl-6 border-l-4 border-blue-500 space-y-4">
                 <div>
                   <label className="block font-semibold mb-2">Instructions pour l'interphone</label>
-                  <textarea 
+                  <textarea
                     placeholder="S'il existe un code d'accès, notez-le ici et expliquez comment l'utiliser. S'il n'y a pas de code, précisez à quel nom il faut sonner. Ajoutez toute instruction spéciale."
                     className="w-full p-3 border rounded h-24 resize-none"
                     value={formData.interphoneDetails}
@@ -230,12 +230,12 @@ export default function FicheClefs() {
                   />
                 </div>
                 <div>
-                <PhotoUpload 
-                  fieldPath="section_clefs.interphonePhoto"
-                  label="Photo de l'interphone"
-                  multiple={true}
-                  maxFiles={10}
-                />
+                  <PhotoUpload
+                    fieldPath="section_clefs.interphonePhoto"
+                    label="Photo de l'interphone"
+                    multiple={true}
+                    maxFiles={10}
+                  />
                 </div>
               </div>
             )}
@@ -245,9 +245,9 @@ export default function FicheClefs() {
               <label className="block font-semibold mb-3">Logement équipé d'un tempo-gâche ? *</label>
               <div className="flex flex-col gap-2">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="tempoGache" 
+                  <input
+                    type="radio"
+                    name="tempoGache"
                     value="true"
                     checked={formData.tempoGache === true}
                     onChange={(e) => handleRadioChange('section_clefs.tempoGache', e.target.value)}
@@ -256,9 +256,9 @@ export default function FicheClefs() {
                   <span>Oui</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="tempoGache" 
+                  <input
+                    type="radio"
+                    name="tempoGache"
                     value="false"
                     checked={formData.tempoGache === false}
                     onChange={(e) => handleRadioChange('section_clefs.tempoGache', e.target.value)}
@@ -274,7 +274,7 @@ export default function FicheClefs() {
               <div className="mb-6 pl-6 border-l-4 border-green-500 space-y-4">
                 <div>
                   <label className="block font-semibold mb-2">Instructions pour le tempo-gâche</label>
-                  <textarea 
+                  <textarea
                     placeholder="Expliquez comment utiliser le tempo-gâche, le délai d'ouverture, les codes nécessaires, etc."
                     className="w-full p-3 border rounded h-20 resize-none"
                     value={formData.tempoGacheDetails}
@@ -282,24 +282,24 @@ export default function FicheClefs() {
                   />
                 </div>
                 <div>
-                <PhotoUpload 
-                  fieldPath="section_clefs.tempoGachePhoto"
-                  label="Photo du tempo-gâche"
-                  multiple={true}
-                  maxFiles={10}
-                />
+                  <PhotoUpload
+                    fieldPath="section_clefs.tempoGachePhoto"
+                    label="Photo du tempo-gâche"
+                    multiple={true}
+                    maxFiles={10}
+                  />
                 </div>
               </div>
             )}
 
-           {/* Digicode */}
+            {/* Digicode */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Logement équipé d'un digicode ? *</label>
               <div className="flex flex-col gap-2">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="digicode" 
+                  <input
+                    type="radio"
+                    name="digicode"
                     value="true"
                     checked={formData.digicode === true}
                     onChange={(e) => handleRadioChange('section_clefs.digicode', e.target.value)}
@@ -308,9 +308,9 @@ export default function FicheClefs() {
                   <span>Oui</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="digicode" 
+                  <input
+                    type="radio"
+                    name="digicode"
                     value="false"
                     checked={formData.digicode === false}
                     onChange={(e) => handleRadioChange('section_clefs.digicode', e.target.value)}
@@ -326,7 +326,7 @@ export default function FicheClefs() {
               <div className="mb-6 pl-6 border-l-4 border-purple-500 space-y-4">
                 <div>
                   <label className="block font-semibold mb-2">Code et instructions du digicode</label>
-                  <textarea 
+                  <textarea
                     placeholder="Indiquez le code du digicode et expliquez comment l'utiliser (ex: tapez le code puis #, attendez le bip, etc.)"
                     className="w-full p-3 border rounded h-20 resize-none"
                     value={formData.digicodeDetails}
@@ -334,12 +334,12 @@ export default function FicheClefs() {
                   />
                 </div>
                 <div>
-                <PhotoUpload 
-                  fieldPath="section_clefs.digicodePhoto"
-                  label="Photo du digicode"
-                  multiple={true}
-                  maxFiles={10}
-                />
+                  <PhotoUpload
+                    fieldPath="section_clefs.digicodePhoto"
+                    label="Photo du digicode"
+                    multiple={true}
+                    maxFiles={10}
+                  />
                 </div>
               </div>
             )}
@@ -347,21 +347,21 @@ export default function FicheClefs() {
             {/* Section Clefs physiques */}
             <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
               <h3 className="font-semibold text-gray-800 mb-4">Clefs physiques - 3 JEUX DE CLEFS OBLIGATOIRES</h3>
-              
+
               <div className="space-y-4">
                 <div>
-                <PhotoUpload 
-                  fieldPath="section_clefs.clefs.photos"
-                  label="Photos des clefs"
-                  multiple={true}
-                  maxFiles={10}
-                  acceptVideo={false}
-                />
+                  <PhotoUpload
+                    fieldPath="section_clefs.clefs.photos"
+                    label="Photos des clefs"
+                    multiple={true}
+                    maxFiles={10}
+                    acceptVideo={false}
+                  />
                 </div>
 
                 <div>
                   <label className="block font-semibold mb-2">Précisions sur les clefs</label>
-                  <textarea 
+                  <textarea
                     placeholder="Décrivez les clefs : nombre total, types (porte d'entrée, boîte aux lettres, cave, etc.), particularités..."
                     className="w-full p-3 border rounded h-20 resize-none"
                     value={formData.clefs?.precision || ''}
@@ -373,9 +373,9 @@ export default function FicheClefs() {
                   <label className="block font-semibold mb-3">Le prestataire a-t-il reçu les clefs ?</label>
                   <div className="flex flex-col gap-2">
                     <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="radio" 
-                        name="clefs_prestataire" 
+                      <input
+                        type="radio"
+                        name="clefs_prestataire"
                         value="true"
                         checked={formData.clefs?.prestataire === true}
                         onChange={(e) => handleRadioChange('section_clefs.clefs.prestataire', e.target.value)}
@@ -384,9 +384,9 @@ export default function FicheClefs() {
                       <span>Oui</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="radio" 
-                        name="clefs_prestataire" 
+                      <input
+                        type="radio"
+                        name="clefs_prestataire"
                         value="false"
                         checked={formData.clefs?.prestataire === false}
                         onChange={(e) => handleRadioChange('section_clefs.clefs.prestataire', e.target.value)}
@@ -399,7 +399,7 @@ export default function FicheClefs() {
 
                 <div>
                   <label className="block font-semibold mb-2">Détails sur la remise des clefs</label>
-                  <textarea 
+                  <textarea
                     placeholder="Le prestataire a-t-il reçu les clés en mains propres ? Où sont stockées les clés ? Quel type de clef ? Précisions complémentaires..."
                     className="w-full p-3 border rounded h-20 resize-none"
                     value={formData.clefs?.details || ''}
@@ -410,7 +410,7 @@ export default function FicheClefs() {
             </div>
 
             {/* Indicateur de sauvegarde */}
-          {saveStatus.saving && (
+            {saveStatus.saving && (
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
                 ⏳ Sauvegarde en cours...
               </div>
@@ -429,23 +429,23 @@ export default function FicheClefs() {
 
           {/* Boutons de navigation - PATTERN EXACT OBLIGATOIRE */}
           <div className="mt-6 flex justify-between">
-            <Button 
-              variant="ghost" 
-              onClick={back} 
+            <Button
+              variant="ghost"
+              onClick={back}
               disabled={currentStep === 0}
             >
               Retour
             </Button>
             <div className="flex gap-3">
-              <Button 
+              <Button
                 variant="secondary"
                 onClick={handleSave}
                 disabled={saveStatus.saving}
               >
                 {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={next}
                 disabled={currentStep === totalSteps - 1}
               >

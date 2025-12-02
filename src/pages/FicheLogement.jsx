@@ -19,7 +19,6 @@ export default function FicheLogement() {
   const autresTypes = [
     "Chambres d'hôtes",
     "Auberges de jeunesse",
-    "Lofts",
     "Studios",
     "Bungalows",
     "Chalets",
@@ -99,6 +98,7 @@ export default function FicheLogement() {
                   <option value="Villa">Villa</option>
                   <option value="Studio">Studio</option>
                   <option value="Loft">Loft</option>
+                  <option value="Duplex">Duplex</option>
                   <option value="Autre">Autre</option>
                 </select>
 
