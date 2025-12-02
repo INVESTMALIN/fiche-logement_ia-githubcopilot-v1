@@ -110,7 +110,7 @@ export async function createChecklistFromFiche(ficheId) {
       .from('checklists')
       .insert({
         fiche_id: ficheId,
-        numero_bien: fiche.numero_bien || 'N/A',
+        numero_bien: fiche.logement_numero_bien || 'N/A',
         template_id: template.id,
         status: 'draft'
       })
