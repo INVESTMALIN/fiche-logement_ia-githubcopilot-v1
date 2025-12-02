@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import { createChecklistFromFiche } from '../lib/checklistHelpers'
 
 const FormContext = createContext()
 
@@ -1670,6 +1671,15 @@ export function FormProvider({ children }) {
 
       if (result.success) {
         setFormData(result.data);
+            // Si finalisation (statut = Complété), créer la checklist ménage
+            if (newStatut === 'Complété') {
+              const { data: checklistId, error: checklistError } = await createChecklistFromFiche(result.data.id);
+              if (checklistError) {
+                console.error('❌ Erreur création checklist:', checklistError);
+              } else {
+                console.log('✅ Checklist ménage créée:', checklistId);
+              }
+            }
         return { success: true, data: result.data };
       } else {
         return { success: false, error: result.message };
