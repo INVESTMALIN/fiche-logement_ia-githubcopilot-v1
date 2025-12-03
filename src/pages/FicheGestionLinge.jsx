@@ -185,6 +185,19 @@ export default function FicheGestionLinge() {
               <>
                 {/* Inventaire par tailles - Sections collapsibles */}
                 <div>
+                  <div className="bg-orange-100 border-l-4 border-orange-500 p-4 mb-4">
+                    <div className="flex items-start">
+                      <span className="text-2xl mr-3">⚠️</span>
+                      <div>
+                        <p className="font-semibold text-orange-800">
+                          Attention : L'inventaire du linge est obligatoire
+                        </p>
+                        <p className="text-sm text-orange-700 mt-1">
+                          Veuillez compléter les sections ci-dessous avant de finaliser la fiche.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                   <h2 className="text-lg font-semibold mb-4">
                     Inventaire - Veuillez indiquer les quantités par taille de lit
                   </h2>
@@ -295,7 +308,7 @@ export default function FicheGestionLinge() {
                 {/* Emplacement du stock - Description */}
                 <div>
                   <label className="block font-semibold mb-2">
-                    Linge - Emplacement du stock - Description
+                    Linge - Emplacement du stock - Description *
                   </label>
                   <textarea 
                     className="w-full p-3 border rounded h-24"

@@ -325,6 +325,11 @@ export const CONDITIONAL_REQUIRED_FIELDS = {
             field: 'section_gestion_linge.emplacement_code_cadenas',
             condition: (formData) => formData.section_gestion_linge?.dispose_de_linge === true,
             message: 'L\'emplacement et le code du cadenas pour le linge sont obligatoires'
+        },
+        {
+            field: 'section_gestion_linge.emplacement_description',
+            condition: (formData) => formData.section_gestion_linge?.dispose_de_linge === true,
+            message: 'La description de l\'emplacement du stock de linge est obligatoire'
         }
     ],
 
@@ -451,6 +456,67 @@ export const CONDITIONAL_REQUIRED_FIELDS = {
 // ========================================
 
 export const SPECIAL_VALIDATIONS = {
+
+    // Validation linge inventaire : au moins UN compteur > 0
+    validateLingeInventaire: (formData) => {
+        const errors = []
+        const linge = formData.section_gestion_linge
+
+        // Si pas de linge, pas de validation
+        if (!linge || linge.dispose_de_linge !== true) return errors
+
+        // Toutes les clés d'inventaire possibles
+        const inventaireKeys = [
+            'inventaire_90x200',
+            'inventaire_140x200',
+            'inventaire_160x200',
+            'inventaire_180x200',
+            'inventaire_autres'
+        ]
+
+        // Types de linge dans chaque inventaire
+        const lingeTypes = [
+            'couettes',
+            'oreillers',
+            'draps_housses',
+            'housses_couette',
+            'protections_matelas',
+            'taies_oreillers',  // ← avec S
+            'draps_bain',
+            'petites_serviettes',
+            'tapis_bain',
+            'torchons',
+            'plaids',
+            'oreillers_decoratifs'
+        ]
+
+        // Vérifier s'il y a AU MOINS un compteur > 0
+        let hasInventaire = false
+
+        for (const invKey of inventaireKeys) {
+            const inventaire = linge[invKey]
+            if (inventaire) {
+                for (const type of lingeTypes) {
+                    const value = parseInt(inventaire[type]) || 0
+                    if (value > 0) {
+                        hasInventaire = true
+                        break
+                    }
+                }
+            }
+            if (hasInventaire) break
+        }
+
+        if (!hasInventaire) {
+            errors.push({
+                section: 'linge',
+                field: 'section_gestion_linge.inventaire',
+                message: 'Vous devez remplir l\'inventaire du linge'
+            })
+        }
+
+        return errors
+    },
 
     // Validation visite : au moins UNE pièce cochée
     validateVisite: (formData) => {
@@ -754,13 +820,14 @@ export const validateRequiredFields = (formData) => {
     })
 
     // 3. VALIDATIONS SPÉCIALES
+    const lingeErrors = SPECIAL_VALIDATIONS.validateLingeInventaire(formData)
     const visiteErrors = SPECIAL_VALIDATIONS.validateVisite(formData)
     const chambreErrors = SPECIAL_VALIDATIONS.validateChambres(formData)
     const salleErrors = SPECIAL_VALIDATIONS.validateSallesDeBains(formData)
     const cuisineErrors = SPECIAL_VALIDATIONS.validateCuisine(formData)
     const salonErrors = SPECIAL_VALIDATIONS.validateSalon(formData)
         // Fusionner les erreurs spéciales
-        ;[...visiteErrors, ...chambreErrors, ...salleErrors, ...cuisineErrors, ...salonErrors].forEach(error => {
+        ;[...lingeErrors, ...visiteErrors, ...chambreErrors, ...salleErrors, ...cuisineErrors, ...salonErrors].forEach(error => {
             if (!errors[error.section]) errors[error.section] = []
             errors[error.section].push({
                 field: error.field,
