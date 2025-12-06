@@ -570,17 +570,23 @@ export const SPECIAL_VALIDATIONS = {
             'lit_gigogne'
         ]
 
-        // Pour un Studio/T1, vérifier l'espace nuit
+        // Pour un Studio/T1, vérifier l'espace nuit (chambre_1)
         if (isStudio && nombreChambres === 0) {
             const espaceNuit = chambres.chambre_1
             if (espaceNuit) {
-                const hasLits = typesLits.some(type => (espaceNuit[type] || 0) > 0)
-                if (!hasLits) {
-                    errors.push({
-                        section: 'chambres',
-                        field: 'section_chambres.chambre_1',
-                        message: 'L\'espace nuit doit avoir au moins un type de lit renseigné'
-                    })
+                // Si "autre_type_lit" est rempli, skip la validation des compteurs
+                if (espaceNuit.autre_type_lit && espaceNuit.autre_type_lit.trim() !== "") {
+                    // OK, pas besoin de compteurs
+                } else {
+                    // Sinon vérifier qu'au moins un compteur > 0
+                    const hasLits = typesLits.some(type => (espaceNuit[type] || 0) > 0)
+                    if (!hasLits) {
+                        errors.push({
+                            section: 'chambres',
+                            field: 'section_chambres.chambre_1',
+                            message: 'L\'espace nuit doit avoir au moins un type de lit renseigné'
+                        })
+                    }
                 }
             }
         } else {
@@ -590,6 +596,13 @@ export const SPECIAL_VALIDATIONS = {
                 const chambreData = chambres[chambreKey]
 
                 if (chambreData) {
+                    // Si "autre_type_lit" est rempli, skip la validation des compteurs
+                    if (chambreData.autre_type_lit && chambreData.autre_type_lit.trim() !== "") {
+                        // OK, pas besoin de compteurs
+                        continue
+                    }
+
+                    // Sinon vérifier qu'au moins un compteur > 0
                     const hasLits = typesLits.some(type => (chambreData[type] || 0) > 0)
                     if (!hasLits) {
                         errors.push({
