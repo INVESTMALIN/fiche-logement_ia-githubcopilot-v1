@@ -348,7 +348,7 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_climatisation_video: formData.section_equipements?.climatisation_video || [],
 
     // CHAUFFAGE
-    equipements_chauffage_types: formData.section_equipements?.chauffage_types || [],  // ✅ À GARDER
+    equipements_chauffage_types: formData.section_equipements?.chauffage_types || [],
     equipements_chauffage_instructions: formData.section_equipements?.chauffage_instructions || null,
     equipements_chauffage_video: formData.section_equipements?.chauffage_video || [],
 
@@ -946,6 +946,9 @@ export const mapFormDataToSupabase = (formData) => {
 
     // Cheminée type (conditionnel)
     salon_sam_cheminee_type: formData.section_salon_sam?.cheminee_type || null,
+
+    // Canapé-lit - Vidéo (conditionnel)
+    salon_sam_canape_lit_video: formData.section_salon_sam?.canape_lit_video || [],
 
     // Autres équipements détails (obligatoire)
     salon_sam_autres_equipements_details: formData.section_salon_sam?.autres_equipements_details || null,
@@ -2113,6 +2116,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
       // Cheminée type (conditionnel)
       cheminee_type: supabaseData.salon_sam_cheminee_type || "",
 
+      // CANAPÉ-LIT - Vidéo (conditionnel)
+      canape_lit_video: supabaseData.salon_sam_canape_lit_video || [],
+
       // Autres équipements détails (obligatoire)
       autres_equipements_details: supabaseData.salon_sam_autres_equipements_details || "",
 
@@ -2122,11 +2128,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
       // Nombre places table (obligatoire)
       nombre_places_table: supabaseData.salon_sam_nombre_places_table?.toString() || "",
 
-      // 🆕 ÉLÉMENTS ABÎMÉS - SALON
+      // ÉLÉMENTS ABÎMÉS - SALON
       salon_elements_abimes: supabaseData.salon_sam_salon_elements_abimes ?? null,
       salon_elements_abimes_photos: supabaseData.salon_sam_salon_elements_abimes_photos || [],
 
-      // 🆕 ÉLÉMENTS ABÎMÉS - SALLE À MANGER  
+      // ÉLÉMENTS ABÎMÉS - SALLE À MANGER  
       salle_manger_elements_abimes: supabaseData.salon_sam_salle_manger_elements_abimes ?? null,
       salle_manger_elements_abimes_photos: supabaseData.salon_sam_salle_manger_elements_abimes_photos || []
     },

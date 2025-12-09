@@ -1,5 +1,6 @@
 // src/components/fiche/MiniDashboard.jsx
 import { detectAlertes, generateApercu } from '../lib/AlerteDetector.js'
+import { CheckCircle, Home, AlertTriangle } from 'lucide-react'
 
 // Fonction simple pour calculer seulement la conformité
 const calculateConformity = (formData) => {
@@ -122,7 +123,7 @@ export default function MiniDashboard({ formData }) {
       <div className="bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-200 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-lg">🎯</span>
+            <CheckCircle className="w-5 h-5 text-white" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Conformité & Recommandations</h3>
@@ -209,7 +210,7 @@ export default function MiniDashboard({ formData }) {
       <div className="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-lg">📊</span>
+            <Home className="w-5 h-5 text-white" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Aperçu du logement</h3>
@@ -267,7 +268,7 @@ export default function MiniDashboard({ formData }) {
         <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-lg">🚨</span>
+              <AlertTriangle className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Points d'attention</h3>

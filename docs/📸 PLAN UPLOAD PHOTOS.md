@@ -97,12 +97,12 @@ DECLARE
   media_part2 jsonb;
   media_part3 jsonb;
   media_part4 jsonb;
-  media_part5 jsonb; -- nouveaux équipements
+  media_part5 jsonb;
   media_final jsonb;
 BEGIN
   IF NEW.statut = 'Complété' AND OLD.statut IS DISTINCT FROM 'Complété' THEN
 
-    -- PARTIE 1 : Clefs + Equipements + Linge + Chambres (ajout WiFi routeur)
+    -- PARTIE 1 : Clefs + Equipements + Linge + Chambres (21 champs - AJOUT wifi_routeur_photo)
     media_part1 := jsonb_build_object(
       'clefs_emplacement_photo', NEW.clefs_emplacement_photo,
       'clefs_interphone_photo', NEW.clefs_interphone_photo,
@@ -115,7 +115,7 @@ BEGIN
       'equipements_chauffage_eau_photos', NEW.equipements_chauffage_eau_photos,
       'equipements_video_acces_poubelle', NEW.equipements_video_acces_poubelle,
       'equipements_video_systeme_chauffage', NEW.equipements_video_systeme_chauffage,
-      'equipements_wifi_routeur_photo', NEW.equipements_wifi_routeur_photo,  -- ✅ NOUVEAU
+      'equipements_wifi_routeur_photo', NEW.equipements_wifi_routeur_photo,
       'linge_photos_linge', NEW.linge_photos_linge,
       'linge_emplacement_photos', NEW.linge_emplacement_photos,
       'chambres_chambre_1_photos', NEW.chambres_chambre_1_photos_chambre,
@@ -150,7 +150,7 @@ BEGIN
       'cuisine1_machine_pain_video', NEW.cuisine_1_machine_pain_video
     );
 
-    -- PARTIE 3 : Cuisine photos + Autres sections (18 champs)
+    -- PARTIE 3 : Cuisine photos + Autres sections
     media_part3 := jsonb_build_object(
       'cuisine1_cuisiniere_photo', NEW.cuisine_1_cuisiniere_photo,
       'cuisine1_plaque_cuisson_photo', NEW.cuisine_1_plaque_cuisson_photo,
@@ -158,8 +158,10 @@ BEGIN
       'cuisine1_micro_ondes_photo', NEW.cuisine_1_micro_ondes_photo,
       'cuisine1_lave_vaisselle_photo', NEW.cuisine_1_lave_vaisselle_photo,
       'cuisine1_cafetiere_photo', NEW.cuisine_1_cafetiere_photo,
+      'cuisine1_hotte_video', NEW.cuisine_1_hotte_video,
       'cuisine2_photos_tiroirs_placards', NEW.cuisine_2_photos_tiroirs_placards,
       'salon_sam_photos', NEW.salon_sam_photos_salon_sam,
+      'salon_sam_canape_lit_video', NEW.salon_sam_canape_lit_video,
       'exterieur_photos_espaces', NEW.equip_spe_ext_exterieur_photos,
       'jacuzzi_photos_jacuzzi', NEW.equip_spe_ext_jacuzzi_photos,
       'barbecue_photos', NEW.equip_spe_ext_barbecue_photos,
@@ -231,7 +233,22 @@ BEGIN
       'equipements_parking_photos', NEW.equipements_parking_photos,
       'equipements_parking_videos', NEW.equipements_parking_videos,
 
-      -- Télétravail (nouveaux)
+      -- Ventilateur
+      'equipements_ventilateur_photos', NEW.equipements_ventilateur_photos,
+      'equipements_ventilateur_videos', NEW.equipements_ventilateur_videos,
+
+      -- Sèche-serviette
+      'equipements_seche_serviettes_photos', NEW.equipements_seche_serviettes_photos,
+      'equipements_seche_serviettes_videos', NEW.equipements_seche_serviettes_videos,
+
+      -- Ménage
+      'equipements_menage_aspirateur_photos', NEW.equipements_menage_aspirateur_photos,
+      'equipements_menage_serpillere_photos', NEW.equipements_menage_serpillere_photos,
+      'equipements_menage_balais_photos', NEW.equipements_menage_balais_photos,
+      'equipements_menage_balayette_photos', NEW.equipements_menage_balayette_photos,
+      'equipements_menage_autres_elements_photos', NEW.equipements_menage_autres_elements_photos,
+
+      -- Télétravail
       'teletravail_speedtest_photos', NEW.teletravail_speedtest_photos,
       'teletravail_espace_travail_photos', NEW.teletravail_espace_travail_photos
     );

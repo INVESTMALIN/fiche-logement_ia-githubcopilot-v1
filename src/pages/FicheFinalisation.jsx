@@ -8,7 +8,7 @@ import Button from '../components/Button'
 import PDFUpload from '../components/PDFUpload'
 import MiniDashboard from '../components/MiniDashboard'
 import { prepareForN8nWebhook } from '../lib/PdfFormatter'
-import { CheckCircle, PenTool, Send, Bot, Copy, AlertCircle, Sparkles, Loader2, Check } from 'lucide-react'
+import { CheckCircle, PenTool, Send, Bot, Copy, AlertCircle, Sparkles, Loader2, Check, FileText, FileEdit, Ban } from 'lucide-react'
 import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
 import { supabase } from '../lib/supabaseClient'
 import { validateRequiredFields } from '../lib/validationConfig'
@@ -246,16 +246,19 @@ export default function FicheFinalisation() {
             <div className="mb-8">
               <MiniDashboard formData={formData} />
             </div>
+            
 
-            {/* GÉNÉRATION PDF */}
-            <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">📄 Génération des fiches PDF</h2>
-                <p className="text-gray-600">
-                  Générez les fiches logement et ménage au format PDF.
-                  Elles seront automatiquement synchronisées avec le Drive et Monday.
-                </p>
-              </div>
+{/* GÉNÉRATION PDF */}
+<div className="bg-white rounded-xl shadow-sm p-8 mb-6">
+  <div className="flex items-center gap-3 mb-6">
+    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+      <FileText className="w-5 h-5 text-white" />
+    </div>
+    <div>
+      <h3 className="text-lg font-semibold text-gray-900">Génération des fiches PDF</h3>
+      <p className="text-sm text-gray-600">Créez automatiquement vos documents logement et ménage</p>
+    </div>
+  </div>
 
               <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
                 <PDFUpload
@@ -282,11 +285,16 @@ export default function FicheFinalisation() {
                       />
                     </svg>
                   </div>
-                  <div className="text-sm text-blue-700 leading-relaxed space-y-1">
-                    <p>1. Cliquez sur <span className="font-semibold">"Générer la Fiche logement"</span>.</p>
-                    <p>Les deux Fiches (logement + ménage) seront générées et synchronisées automatiquement avec le Drive et dans Monday <span className="font-semibold">autant de fois que nécessaire</span>.</p>
-                    <p>2. Cliquez ensuite sur <span className="font-semibold">"Finaliser la fiche"</span> ci-dessous pour compléter cette fiche et synchroniser les photos/vidéos avec le Drive. <strong>⚠️ Attention, cette action est définitive</strong>.</p>
-                  </div>
+                    <div className="text-sm text-blue-700 leading-relaxed space-y-2">
+                      <ul className="ml-4 space-y-1">
+                        <li>• <strong>Fiche Logement</strong> : disponible au téléchargement ci-dessous</li>
+                        <li>• <strong>Fiche Ménage</strong> : générée en parallèle</li>
+                      </ul>
+                      <p className="mt-2">
+                        Les deux fiches remontent automatiquement sur le <strong>Drive</strong> et dans <strong>Monday</strong> à chaque génération. 
+                        <span className="inline-block ml-1">♻️ Vous pouvez régénérer autant de fois que nécessaire.</span>
+                      </p>
+                    </div>
                 </div>
               </div>
             </div>
@@ -303,24 +311,6 @@ export default function FicheFinalisation() {
                 </div>
               </div>
 
-              {/* 🚀 Badge Beta + New */}
-              <div className="mb-6 flex items-start gap-3 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl">
-                <div className="flex-shrink-0 mt-0.5">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
-                    <Sparkles className="w-3 h-3" />
-                    BETA
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-purple-900 leading-relaxed">
-                    Cette fonctionnalité beta est disponible et s'améliore continuellement grâce à vos retours. N'hésitez pas à l'essayer !
-                    <span className="ml-2 px-2.5 py-0.5 bg-green-500 text-white text-xs font-semibold rounded-full animate-pulse">
-                      NEW
-                    </span>
-                  </p>
-                </div>
-              </div>
-
               {/* Bouton générer (seulement si pas encore de messages) */}
               {chatMessages.length === 0 && !annonceLoading && (
                 <button
@@ -332,6 +322,22 @@ export default function FicheFinalisation() {
                   Générer l'annonce
                 </button>
               )}
+
+              <div className="mt-4 mb-6 p-4 bg-blue-50 border-l-4 border-blue-400">
+                <div className="text-sm text-blue-700 leading-relaxed space-y-2">
+                  <p>
+                    Utilisez l'assistant IA pour <span className="font-semibold">générer le contenu de votre annonce</span> automatiquement.
+                  </p>
+                  <ul className="ml-4 space-y-1">
+                    <li>• Décrivez vos attentes ou affinez le contenu généré</li>
+                    <li>• Cliquez sur <strong>"Valider cette annonce"</strong> une fois satisfait</li>
+                  </ul>
+                  <p className="mt-2">
+                    L'annonce validée remonte automatiquement dans <strong>Monday</strong>, colonne <em>"Contenu pour création d'annonce"</em>. 
+                    <span className="inline-block ml-1">♻️ Vous pouvez régénérer et valider autant de fois que nécessaire.</span>
+                  </p>
+                </div>
+              </div>
 
               {/* Loading state */}
               {annonceLoading && (
@@ -379,17 +385,6 @@ export default function FicheFinalisation() {
                   {/* Zone d'actions : Copier + Valider */}
                   {chatMessages[chatMessages.length - 1]?.role === 'assistant' && (
                     <div className="space-y-3">
-                      {/* Note d'information validation */}
-                      <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1 text-sm text-blue-800">
-                          <p className="font-medium mb-1">Validation de l'annonce</p>
-                          <p className="text-blue-700">
-                            Cliquez sur "Valider cette annonce" pour générer un PDF professionnel et l'enregistrer.
-                            Ce PDF sera automatiquement envoyé vers Monday à chaque validation.
-                          </p>
-                        </div>
-                      </div>
 
                       {/* Boutons Copier + Valider (côte à côte) */}
                       <div className="flex gap-3">
@@ -478,6 +473,93 @@ export default function FicheFinalisation() {
                 </div>
               )}
             </div>
+            
+
+            {/* SECTION PRÉ-VALIDATION - Après MiniDashboard */}
+            <div className="mb-8 space-y-4">
+              
+              {/* 1. Alerte si Brouillon */}
+              {formData.statut === 'Brouillon' && (
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <FileEdit className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                      Cette fiche est en brouillon
+                    </h3>
+                    <p className="text-sm text-blue-800 mb-2">
+                      Pensez à la <strong>Finaliser</strong> une fois toutes les sections complétées pour déclencher 
+                      la synchronisation des photos/vidéos vers Google Drive.
+                    </p>
+                    <p className="text-sm text-blue-800">
+                      <AlertCircle className="w-4 h-4 inline-block mr-1" />
+                      <strong>Cette synchronisation se fait une seule fois et est définitive.</strong> Si vous devez ajouter des photos après la finalisation, 
+                      vous pourrez les ajouter dans la Fiche logement, mais il faudra les transférer manuellement dans le Drive.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              )}
+
+              {/* 2. Compteur de validation */}
+              {(() => {
+                const errors = validateRequiredFields(formData)
+                const totalErrors = Object.values(errors).reduce((sum, sectionErrors) => sum + sectionErrors.length, 0)
+                const sectionsWithErrors = Object.keys(errors).length
+
+                if (totalErrors === 0) {
+                  return (
+                    <div className="bg-green-50 border-2 border-green-300 rounded-xl p-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <CheckCircle className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-green-900">
+                            Tous les champs obligatoires sont remplis
+                          </h3>
+                          <p className="text-sm text-green-800">
+                            Vous pouvez finaliser la fiche en toute sécurité.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                } else {
+                  return (
+                    <div className="bg-orange-50 border-2 border-orange-300 rounded-xl p-6">
+                      <div className="flex items-start gap-4">
+<div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
+  <AlertCircle className="w-6 h-6 text-white" />
+</div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-orange-900 mb-2">
+                            Il manque encore {totalErrors} champ{totalErrors > 1 ? 's' : ''} obligatoire{totalErrors > 1 ? 's' : ''}
+                          </h3>
+                          <p className="text-sm text-orange-800 mb-3">
+                            {sectionsWithErrors} section{sectionsWithErrors > 1 ? 's' : ''} concernée{sectionsWithErrors > 1 ? 's' : ''}.
+                            Vous ne pourrez pas finaliser tant que ces champs ne sont pas complétés.
+                          </p>
+                          <button
+                            onClick={() => {
+                              setValidationErrors(errors)
+                              setShowValidationErrors(true)
+                              setTimeout(() => errorBlockRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+                            }}
+                            className="text-sm font-medium text-orange-900 hover:text-orange-700 underline"
+                          >
+                            Voir le détail des champs manquants →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+              })()}
+              
+            </div>
 
             {/* Messages sauvegarde */}
             {saveStatus.saving && (
@@ -500,10 +582,10 @@ export default function FicheFinalisation() {
             {showValidationErrors && Object.keys(validationErrors).length > 0 && (
               <div className="mb-6 p-6 bg-red-50 border-2 border-red-300 rounded-lg">
                 <div className="flex items-start gap-3 mb-4">
-                  <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
+                  <Ban className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
                   <div className="flex-1">
                     <h3 ref={errorBlockRef} className="text-lg font-bold text-red-900 mb-2">
-                      ⚠️ Impossible de finaliser la fiche
+                      Impossible de finaliser la fiche
                     </h3>
                     <p className="text-sm text-red-700 mb-4">
                       Certains champs obligatoires ne sont pas remplis. Veuillez compléter les sections suivantes :

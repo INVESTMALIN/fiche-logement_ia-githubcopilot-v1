@@ -151,10 +151,23 @@ export default function FicheSalonSam() {
               </div>
             )}
 
+            {/* 3bis. Canapé-lit - Vidéo (conditionnel) */}
+            {formData.equipements_canape_lit === true && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <PhotoUpload 
+                  fieldPath="section_salon_sam.canape_lit_video"
+                  label="Vidéo du canapé-lit (ouverture/fermeture)"
+                  multiple={true}
+                  maxFiles={3}
+                  acceptVideo={true}
+                />
+              </div>
+            )}
+
             {/* 4. Autres équipements ou détails */}
             <div>
               <label className="block font-semibold mb-2">
-                Autres équipements ou détails <span className="text-red-500">*</span>
+                Autres équipements ou détails
               </label>
               <textarea
                 placeholder="Indiquez tout autre équipement ou détail pertinent concernant le salon et la salle à manger."

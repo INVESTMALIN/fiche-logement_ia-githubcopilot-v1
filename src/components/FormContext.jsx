@@ -1035,7 +1035,10 @@ const initialFormData = {
     equipements_autre_details: "",
 
     // Cheminée type (conditionnel si cheminee cochée)
-    cheminee_type: "",                    // Radio: Électrique/Éthanol/Gaz/Poêle à granulés/Bois/Décorative
+    cheminee_type: "",                    // Radio
+
+    // CANAPÉ-LIT - Vidéo (conditionnel)
+    canape_lit_video: [],                 // Array: URLs vidéos
 
     // Autres équipements (obligatoire)
     autres_equipements_details: "",

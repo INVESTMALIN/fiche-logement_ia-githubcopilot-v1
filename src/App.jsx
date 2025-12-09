@@ -18,7 +18,11 @@ import PrintPDFMenage from './pages/PrintPDFMenage'
 import DuplicateAlertModal from './components/DuplicateAlertModal'
 import HelpButton from './components/HelpButton'
 
+
+// Test page for Guide Agent et API Loomky
 import TestGuideAgent from './pages/TestGuideAgent'
+import SimulationLoomky from './pages/SimulationLoomky'
+
 
 
 export default function App() {
@@ -45,7 +49,16 @@ export default function App() {
                 <TestGuideAgent />
               </ProtectedRoute>
             } 
-          />        
+          />    
+
+          <Route 
+            path="/simulation-loomky" 
+            element={
+              <ProtectedRoute>
+                <SimulationLoomky />
+              </ProtectedRoute>
+            } 
+          /> 
           
           <Route 
             path="/" 
