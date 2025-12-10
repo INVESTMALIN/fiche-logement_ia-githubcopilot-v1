@@ -1506,7 +1506,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       climatisation_video: supabaseData.equipements_climatisation_video || [],
 
       // CHAUFFAGE
-      chauffage_type: supabaseData.equipements_chauffage_types || [],
+      chauffage_types: supabaseData.equipements_chauffage_types || [],
       chauffage_instructions: supabaseData.equipements_chauffage_instructions || "",
       chauffage_video: supabaseData.equipements_chauffage_video || [],
 
