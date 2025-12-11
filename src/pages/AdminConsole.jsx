@@ -866,12 +866,32 @@ function UsersTab({ users, onRefresh }) {
 function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, onMenuAction }) {
   const [searchTerm, setSearchTerm] = useState("") // ✅ NOUVEAU
 
+  // 📄 PAGINATION
+  const [currentPage, setCurrentPage] = useState(1)
+  const fichesPerPage = 50
+
   // ✅ NOUVEAU : Filtrer les fiches selon la recherche
   const filteredFiches = fiches.filter(fiche =>
     fiche.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (fiche.creator?.prenom && `${fiche.creator.prenom} ${fiche.creator.nom}`.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (fiche.creator?.email && fiche.creator.email.toLowerCase().includes(searchTerm.toLowerCase()))
   )
+
+  // 📄 PAGINATION: Calcul des fiches à afficher
+  const indexOfLast = currentPage * fichesPerPage
+  const indexOfFirst = indexOfLast - fichesPerPage
+  const currentFiches = filteredFiches.slice(indexOfFirst, indexOfLast)
+  const totalPages = Math.ceil(filteredFiches.length / fichesPerPage)
+
+  // 📄 PAGINATION: Reset à page 1 quand recherche change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
+
+  // 📄 PAGINATION: Scroll to top sur changement de page
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentPage])
 
   // Générer les items du dropdown
   const getDropdownItems = (fiche) => {
@@ -968,7 +988,7 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredFiches.map(fiche => (
+            {currentFiches.map(fiche => (
               <tr key={fiche.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{fiche.nom}</div>
@@ -1014,6 +1034,41 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
           </tbody>
         </table>
       </div>
+
+      {/* 📄 PAGINATION: Contrôles de navigation */}
+      {filteredFiches.length > 0 && (
+        <div className="p-6 border-t space-y-4">
+          {/* Compteur de fiches */}
+          <div className="text-center text-sm text-gray-600">
+            Affichage de {indexOfFirst + 1}–{Math.min(indexOfLast, filteredFiches.length)} sur {filteredFiches.length} fiches
+          </div>
+
+          {/* Boutons de navigation */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-3">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}
+                className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Précédent
+              </button>
+
+              <span className="px-4 py-2 text-gray-700 font-medium">
+                Page {currentPage} / {totalPages}
+              </span>
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => p + 1)}
+                className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Suivant
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

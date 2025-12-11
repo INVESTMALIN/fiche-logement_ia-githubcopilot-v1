@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
 import { useFiches } from '../hooks/useFiches'
-import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List, UserPen, Share } from 'lucide-react'
+import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List, UserPen, Share, X, Info } from 'lucide-react'
 import DropdownMenu from '../components/DropdownMenu'
 import UserRoleBadge from '../components/UserRoleBadge'
 import ReassignModal from '../components/ReassignModal'
@@ -11,14 +11,14 @@ import { supabase } from '../lib/supabaseClient'
 export default function Dashboard() {
   const navigate = useNavigate()
   const { signOut, userEmail, userRole, isSuperAdmin } = useAuth()
-  const { 
-    fiches, 
-    loading, 
-    error, 
-    refetch, 
-    deleteFiche, 
-    archiveFiche, 
-    unarchiveFiche 
+  const {
+    fiches,
+    loading,
+    error,
+    refetch,
+    deleteFiche,
+    archiveFiche,
+    unarchiveFiche
   } = useFiches()
   const [searchTerm, setSearchTerm] = useState("")
   const [activeFilter, setActiveFilter] = useState("Tous")
@@ -29,6 +29,14 @@ export default function Dashboard() {
     isOpen: false,
     fiche: null
   })
+
+  // 📄 PAGINATION
+  const [currentPage, setCurrentPage] = useState(1)
+  const fichesPerPage = 25
+
+  // 📢 BANDEAU D'ANNONCE
+  const [showAnnouncement, setShowAnnouncement] = useState(false)
+  const ANNOUNCEMENT_KEY = 'announcement_dismissed_2024_12_11' // Changer cette clé pour réafficher l'annonce
 
   // 🆕 AJOUTS RÉAFFECTATION
   const [reassignModal, setReassignModal] = useState({
@@ -59,6 +67,30 @@ export default function Dashboard() {
     loadUsers()
   }, [])
 
+  // � BANDEAU: Vérifier si déjà fermé
+  useEffect(() => {
+    const dismissed = localStorage.getItem(ANNOUNCEMENT_KEY)
+    if (!dismissed) {
+      setShowAnnouncement(true)
+    }
+  }, [])
+
+  // 📢 BANDEAU: Fermer et sauvegarder
+  const handleDismissAnnouncement = () => {
+    localStorage.setItem(ANNOUNCEMENT_KEY, 'true')
+    setShowAnnouncement(false)
+  }
+
+  // �📄 PAGINATION: Reset à page 1 quand recherche/filtre change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, activeFilter])
+
+  // 📄 PAGINATION: Scroll to top sur changement de page
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentPage])
+
   // 🆕 AJOUT FONCTIONS RÉAFFECTATION
   const handleReassignFiche = (fiche) => {
     setReassignModal({
@@ -88,7 +120,7 @@ export default function Dashboard() {
       fiche: fiche
     })
   }
-  
+
   const handleCloseShare = () => {
     setShareModal({
       isOpen: false,
@@ -109,12 +141,12 @@ export default function Dashboard() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteConfirm) return
-  
+
     setDeleting(true) // 🆕 Début du loading
-    
+
     try {
       const result = await deleteFiche(deleteConfirm.id)
-      
+
       if (result.success) {
         console.log('Fiche supprimée avec succès')
       } else {
@@ -138,7 +170,7 @@ export default function Dashboard() {
       case 'edit':
         navigate(`/fiche?id=${fiche.id}`)
         break
-        
+
       case 'archive':
         const archiveResult = await archiveFiche(fiche.id)
         if (archiveResult.success) {
@@ -147,7 +179,7 @@ export default function Dashboard() {
           console.error('Erreur archivage:', archiveResult.error)
         }
         break
-        
+
       case 'unarchive':
         const unarchiveResult = await unarchiveFiche(fiche.id)
         if (unarchiveResult.success) {
@@ -156,7 +188,7 @@ export default function Dashboard() {
           console.error('Erreur restauration:', unarchiveResult.error)
         }
         break
-        
+
       case 'delete':
         setDeleteConfirm(fiche)
         break
@@ -167,9 +199,9 @@ export default function Dashboard() {
         break
 
       case 'share':
-          handleShareFiche(fiche)
-          break
-        
+        handleShareFiche(fiche)
+        break
+
       default:
         console.warn('Action inconnue:', action.id)
     }
@@ -184,7 +216,7 @@ export default function Dashboard() {
         icon: <Edit size={16} />,
         className: 'text-blue-600 hover:bg-blue-50'
       },
-            // 🆕 NOUVEAU : Bouton partage conditionnel
+      // 🆕 NOUVEAU : Bouton partage conditionnel
       ...(fiche.statut === 'Complété' ? [{
         id: 'share',
         label: 'Partager...',
@@ -199,7 +231,7 @@ export default function Dashboard() {
         className: 'text-purple-600 hover:bg-purple-50'
       }
     ]
-  
+
     if (fiche.statut === 'Archivé') {
       const archivedItems = [
         ...baseItems,
@@ -210,7 +242,7 @@ export default function Dashboard() {
           className: 'text-green-600 hover:bg-green-50'
         }
       ]
-  
+
       // 🔐 NOUVEAU : Ajouter "Supprimer" SEULEMENT pour super_admin
       if (userRole === 'super_admin') {
         archivedItems.push({
@@ -220,7 +252,7 @@ export default function Dashboard() {
           danger: true
         })
       }
-  
+
       return archivedItems
     } else {
       const activeItems = [
@@ -232,7 +264,7 @@ export default function Dashboard() {
           className: 'text-orange-600 hover:bg-orange-50'
         }
       ]
-  
+
       // 🔐 NOUVEAU : Ajouter "Supprimer" SEULEMENT pour super_admin
       if (userRole === 'super_admin') {
         activeItems.push({
@@ -242,22 +274,28 @@ export default function Dashboard() {
           danger: true
         })
       }
-  
+
       return activeItems
     }
   }
 
   // Filtres de statut
   const statusFilters = ["Tous", "Complété", "Brouillon", "Archivé"]
-  
+
   // Filtrage par statut et recherche
   const filteredFiches = fiches.filter(fiche => {
     const matchesSearch = fiche.nom.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = activeFilter === "Tous" 
+    const matchesStatus = activeFilter === "Tous"
       ? fiche.statut !== "Archivé"
       : fiche.statut === activeFilter
     return matchesSearch && matchesStatus
   })
+
+  // 📄 PAGINATION: Calcul des fiches à afficher
+  const indexOfLast = currentPage * fichesPerPage
+  const indexOfFirst = indexOfLast - fichesPerPage
+  const currentFiches = filteredFiches.slice(indexOfFirst, indexOfLast)
+  const totalPages = Math.ceil(filteredFiches.length / fichesPerPage)
 
   // Couleurs pour les statuts
   const getStatusColor = (statut) => {
@@ -271,7 +309,7 @@ export default function Dashboard() {
 
   // Helper pour compter les fiches par filtre
   const getFilterCount = (filter) => {
-    return filter === "Tous" 
+    return filter === "Tous"
       ? fiches.filter(f => f.statut !== 'Archivé').length
       : fiches.filter(f => f.statut === filter).length
   }
@@ -300,7 +338,7 @@ export default function Dashboard() {
           </div>
           <p className="text-red-600 font-medium mb-2">Erreur de chargement</p>
           <p className="text-gray-600 text-sm mb-4">{error}</p>
-          <button 
+          <button
             onClick={refetch}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
@@ -320,7 +358,7 @@ export default function Dashboard() {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">Mes fiches logement</h1>
               <p className="text-lg opacity-90">
-              Accès <UserRoleBadge /> : <span className="font-medium">{userEmail}</span>
+                Accès <UserRoleBadge /> : <span className="font-medium">{userEmail}</span>
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -335,7 +373,7 @@ export default function Dashboard() {
               >
                 + Nouvelle fiche
               </button>
-              
+
               <button
                 onClick={handleLogout}
                 className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-6 py-2.5 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto"
@@ -351,7 +389,7 @@ export default function Dashboard() {
                 >
                   Console
                 </button>
-              )}          
+              )}
             </div>
           </div>
         </div>
@@ -359,6 +397,27 @@ export default function Dashboard() {
 
       {/* Contenu principal */}
       <div className="max-w-screen-lg mx-auto p-6 pb-24">
+        {/* 📢 BANDEAU D'ANNONCE */}
+        {showAnnouncement && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+            <Info className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+            <div className="flex-1">
+              <h4 className="font-semibold text-blue-900 mb-1">Nouvelle fonctionnalité : Pagination</h4>
+              <p className="text-sm text-blue-800">
+                Les fiches s'affichent maintenant par tranches de 25 pour améliorer les performances.
+                Utilisez les boutons en bas de page pour naviguer.
+              </p>
+            </div>
+            <button
+              onClick={handleDismissAnnouncement}
+              className="text-blue-600 hover:text-blue-800 transition-colors flex-shrink-0"
+              title="Fermer"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        )}
+
         {/* Onglets de filtrage, recherche ET toggle vue */}
         <div className="mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -368,19 +427,17 @@ export default function Dashboard() {
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                    activeFilter === filter
-                      ? 'text-white shadow-md'
-                      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                  }`}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${activeFilter === filter
+                    ? 'text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
                   style={activeFilter === filter ? {
                     background: `linear-gradient(to right, #dbae61, #c19b4f)`
                   } : {}}
                 >
                   {filter}
-                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                    activeFilter === filter ? 'bg-white bg-opacity-20' : 'bg-gray-100'
-                  }`}>
+                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeFilter === filter ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                    }`}>
                     {getFilterCount(filter)}
                   </span>
                 </button>
@@ -395,7 +452,7 @@ export default function Dashboard() {
                   type="text"
                   placeholder="Rechercher..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:border-transparent text-sm transition-all duration-200"
-                  style={{'--tw-ring-color': '#dbae61'}}
+                  style={{ '--tw-ring-color': '#dbae61' }}
                   onFocus={(e) => e.target.style.boxShadow = `0 0 0 2px #dbae61`}
                   onBlur={(e) => e.target.style.boxShadow = 'none'}
                   value={searchTerm}
@@ -407,22 +464,20 @@ export default function Dashboard() {
               <div className="flex bg-white rounded-lg border border-gray-300 p-1">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'grid' 
-                      ? 'bg-gray-100 text-gray-900' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`p-2 rounded transition-colors ${viewMode === 'grid'
+                    ? 'bg-gray-100 text-gray-900'
+                    : 'text-gray-500 hover:text-gray-700'
+                    }`}
                   title="Vue grille"
                 >
                   <Grid3X3 size={18} />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'list' 
-                      ? 'bg-gray-100 text-gray-900' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`p-2 rounded transition-colors ${viewMode === 'list'
+                    ? 'bg-gray-100 text-gray-900'
+                    : 'text-gray-500 hover:text-gray-700'
+                    }`}
                   title="Vue liste"
                 >
                   <List size={18} />
@@ -435,7 +490,7 @@ export default function Dashboard() {
         {/* Vue Grid */}
         {viewMode === 'grid' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredFiches.map((fiche) => (
+            {currentFiches.map((fiche) => (
               <div
                 key={fiche.id}
                 className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-visible group"
@@ -450,7 +505,7 @@ export default function Dashboard() {
                         {fiche.statut}
                       </span>
                     </div>
-                    
+
                     {/* Menu contextuel */}
                     <DropdownMenu
                       items={getMenuItems(fiche)}
@@ -458,7 +513,7 @@ export default function Dashboard() {
                       triggerClassName="flex-shrink-0"
                     />
                   </div>
-                  
+
                   {/* Informations supplémentaires */}
                   <div className="text-sm text-gray-500 space-y-1">
                     <p>Créée le {new Date(fiche.created_at).toLocaleDateString('fr-FR')}</p>
@@ -475,7 +530,7 @@ export default function Dashboard() {
         {/* Vue List */}
         {viewMode === 'list' && (
           <div className="space-y-2">
-            {filteredFiches.map((fiche) => (
+            {currentFiches.map((fiche) => (
               <div
                 key={fiche.id}
                 className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 overflow-visible"
@@ -487,12 +542,12 @@ export default function Dashboard() {
                       <h3 className="text-base font-semibold text-gray-900 truncate">
                         {fiche.nom}
                       </h3>
-                      
+
                       {/* Statut */}
                       <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(fiche.statut)}`}>
                         {fiche.statut}
                       </span>
-                      
+
                       {/* Dates */}
                       <div className="hidden sm:flex items-center gap-4 text-sm text-gray-500">
                         <span>Créée le {new Date(fiche.created_at).toLocaleDateString('fr-FR')}</span>
@@ -501,7 +556,7 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Menu contextuel */}
                     <DropdownMenu
                       items={getMenuItems(fiche)}
@@ -526,6 +581,41 @@ export default function Dashboard() {
             <p className="text-gray-500 text-lg font-medium">Aucune fiche dans cette section</p>
           </div>
         )}
+
+        {/* 📄 PAGINATION: Contrôles de navigation */}
+        {filteredFiches.length > 0 && (
+          <div className="mt-8 space-y-4">
+            {/* Compteur de fiches */}
+            <div className="text-center text-sm text-gray-600">
+              Affichage de {indexOfFirst + 1}–{Math.min(indexOfLast, filteredFiches.length)} sur {filteredFiches.length} fiches
+            </div>
+
+            {/* Boutons de navigation */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-3">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Précédent
+                </button>
+
+                <span className="px-4 py-2 text-gray-700 font-medium">
+                  Page {currentPage} / {totalPages}
+                </span>
+
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Suivant
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Modal de confirmation de suppression */}
@@ -536,29 +626,27 @@ export default function Dashboard() {
               Supprimer la fiche ?
             </h3>
             <p className="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer la fiche "<strong>{deleteConfirm.nom}</strong>" ? 
+              Êtes-vous sûr de vouloir supprimer la fiche "<strong>{deleteConfirm.nom}</strong>" ?
               Cette action est irréversible.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={handleDeleteCancel}
                 disabled={deleting}
-                className={`px-4 py-2 transition-colors ${
-                  deleting 
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`px-4 py-2 transition-colors ${deleting
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
               >
                 Annuler
               </button>
               <button
                 onClick={handleDeleteConfirm}
                 disabled={deleting}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
-                  deleting
-                    ? 'bg-red-400 cursor-not-allowed text-white'
-                    : 'bg-red-600 hover:bg-red-700 text-white'
-                }`}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${deleting
+                  ? 'bg-red-400 cursor-not-allowed text-white'
+                  : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
               >
                 {deleting && (
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
@@ -586,7 +674,7 @@ export default function Dashboard() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               🔗 Partager la fiche "{shareModal.fiche.nom}"
             </h3>
-            
+
             {/* Vérifier si les PDFs existent */}
             {!shareModal.fiche.pdf_logement_url && !shareModal.fiche.pdf_menage_url ? (
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
@@ -605,9 +693,9 @@ export default function Dashboard() {
                       <span className="font-medium text-gray-900">📄 PDF Logement</span>
                     </div>
                     <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        readOnly 
+                      <input
+                        type="text"
+                        readOnly
                         value={shareModal.fiche.pdf_logement_url}
                         className="flex-1 px-3 py-2 bg-white border rounded text-sm"
                       />
@@ -641,9 +729,9 @@ export default function Dashboard() {
                       <span className="font-medium text-gray-900">🧹 PDF Ménage</span>
                     </div>
                     <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        readOnly 
+                      <input
+                        type="text"
+                        readOnly
                         value={shareModal.fiche.pdf_menage_url}
                         className="flex-1 px-3 py-2 bg-white border rounded text-sm"
                       />
@@ -671,7 +759,7 @@ export default function Dashboard() {
                 )}
               </div>
             )}
-            
+
             {/* Bouton Fermer */}
             <div className="mt-6 flex justify-end">
               <button
