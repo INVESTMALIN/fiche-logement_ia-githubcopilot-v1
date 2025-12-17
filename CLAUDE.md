@@ -32,7 +32,7 @@ npm run preview
 ### Key Components Structure
 
 #### FormContext Pattern
-The entire application revolves around a centralized `FormContext` that manages state for 22 form sections:
+The entire application revolves around a centralized `FormContext` that manages state for 23 form sections (+ 1 section "Finalisation"):
 
 ```javascript
 // Required pattern for all form sections
@@ -113,7 +113,7 @@ return (
 ### Database Architecture
 
 #### Supabase Schema
-The application uses a single "flat table" architecture with 750+ columns in the `fiches` table:
+The application uses a single "flat table" architecture with 950+ columns in the `fiches` table:
 
 - **Metadata**: `id`, `user_id`, `nom`, `statut`, `created_at`, `updated_at`
 - **Naming pattern**: `{section}_{field}` (e.g., `proprietaire_prenom`, `logement_surface`)
@@ -193,16 +193,26 @@ CREATE POLICY "super_admin_all_fiches" ON fiches
 
 ### Automation Integration
 
-#### Make.com Webhook
-When a fiche status changes to "Complété", a SQL trigger sends optimized payload (58 fields vs 750+ columns) to Make.com webhook, which:
-1. Downloads PDFs and media files
+#### Make.com Photo Webhook
+When a fiche status changes to "Complété", a SQL trigger sends optimized payload (100 fields vs 950+ columns) to Make.com webhook, which:
+1. Downloads media files
 2. Organizes them in Google Drive structure
-3. Updates Monday.com project tracking
-4. Triggers cleanup of temporary Supabase storage
 
-### Form Sections (22 total)
+#### Make.com PDF Webhook
+When PDF is generated, a SQL trigger sends payload to Make.com webhook, which:
+1. Downloads both PDF files
+2. Sends them to Monday column
+3. Updates the Google Drive folder with the PDF files
 
-The application manages 22 form sections covering:
+#### Make.com Assistants Webhook
+When n8n assistants is called, a SQL trigger sends the validated output to Make.com webhook, which:
+1. Generates the PDF files
+2. Sends them to Monday column "Guide d'&accès" and "Création d'annonce"
+
+
+### Form Sections (23 total)
+
+The application manages 23 form sections covering:
 - Property details (logement, proprietaire)
 - Access management (clefs, guide_acces)
 - Room inspections (chambres, salle_de_bains, cuisine1, cuisine2)
@@ -238,7 +248,6 @@ All media fields should be arrays (`TEXT[]` in Supabase) and follow the naming p
 
 - `src/components/FormContext.jsx`: Central state management
 - `src/lib/supabaseHelpers.js`: Database mapping logic
-- `src/lib/supabaseClient.js`: Supabase configuration
 - `src/components/PhotoUpload.jsx`: Media upload component
 - `src/hooks/useFiches.js`: Custom hook for fiche operations
 - `docs/🏗️ ARCHITECTURE.md`: Detailed technical architecture

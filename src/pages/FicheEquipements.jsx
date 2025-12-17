@@ -931,7 +931,6 @@ export default function FicheEquipements() {
                         label="Photos de la place de stationnement"
                         multiple={true}
                         maxFiles={10}
-                        capture={true}
                         acceptVideo={false}
                       />
                     </div>

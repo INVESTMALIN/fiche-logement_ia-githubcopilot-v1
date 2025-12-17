@@ -8,9 +8,17 @@ const HISTORY_KEY = 'loomky_test_history'
 
 export default function SimulationLoomky() {
   const { user } = useAuth()
-  
+
+  // === NOUVEAUX ÉTATS POUR AUTH LOOMKY ===
+  const [loomkyEmail, setLoomkyEmail] = useState('')
+  const [loomkyPassword, setLoomkyPassword] = useState('')
+  const [loomkyToken, setLoomkyToken] = useState(null)
+  const [loomkyAuthStatus, setLoomkyAuthStatus] = useState('disconnected') // 'disconnected' | 'connecting' | 'connected' | 'error'
+  const [loomkyAuthError, setLoomkyAuthError] = useState(null)
+  const [loomkyUserInfo, setLoomkyUserInfo] = useState(null)
+
   // === SECTION 1: Configuration API ===
-    const [apiConfig, setApiConfig] = useState({
+  const [apiConfig, setApiConfig] = useState({
     authType: 'none',
     apiKey: '',
     oauthToken: '',
@@ -19,8 +27,8 @@ export default function SimulationLoomky() {
     useSinglePayload: true,
     customHeaders: [],
     queryParams: []
-    })
-  
+  })
+
   // === SECTION 2: Fiches & Payloads ===
   const [fiches, setFiches] = useState([])
   const [selectedFicheId, setSelectedFicheId] = useState('')
@@ -30,7 +38,7 @@ export default function SimulationLoomky() {
   const [editedPayloadHebergement, setEditedPayloadHebergement] = useState('')
   const [editedPayloadChecklist, setEditedPayloadChecklist] = useState('')
   const [loading, setLoading] = useState(false)
-  
+
   // === SECTION 3: Tests & Résultats ===
   const [sending, setSending] = useState(false)
   const [testHistory, setTestHistory] = useState([])
@@ -45,7 +53,7 @@ export default function SimulationLoomky() {
         console.error('Erreur lecture config:', e)
       }
     }
-    
+
     const savedHistory = localStorage.getItem(HISTORY_KEY)
     if (savedHistory) {
       try {
@@ -54,6 +62,20 @@ export default function SimulationLoomky() {
         console.error('Erreur lecture historique:', e)
       }
     }
+
+    // Charger token Loomky si existant
+    const savedToken = localStorage.getItem('loomky_jwt')
+    const savedUserInfo = localStorage.getItem('loomky_user_info')
+    if (savedToken && savedUserInfo) {
+      try {
+        setLoomkyToken(savedToken)
+        setLoomkyUserInfo(JSON.parse(savedUserInfo))
+        setLoomkyAuthStatus('connected')
+      } catch (e) {
+        console.error('Erreur chargement token Loomky:', e)
+      }
+    }
+
   }, [])
 
   // Sauvegarder config
@@ -88,26 +110,77 @@ export default function SimulationLoomky() {
     }
   }, [payloadChecklist])
 
-  // Régénérer le payload combiné quand on switch le mode
-    useEffect(() => {
-    if (apiConfig.useSinglePayload && payloadHebergement && payloadChecklist) {
-        const combined = {
-        hebergement: payloadHebergement,
-        checklist: payloadChecklist
-        }
-        setEditedPayloadHebergement(JSON.stringify(combined, null, 2))
-    } else if (!apiConfig.useSinglePayload && payloadHebergement) {
-        // Remettre juste l'hébergement si on repasse en mode séparé
-        setEditedPayloadHebergement(JSON.stringify(payloadHebergement, null, 2))
-    }
-    }, [apiConfig.useSinglePayload, payloadHebergement, payloadChecklist])
-
   const resetPayloads = () => {
     setSelectedFiche(null)
     setPayloadHebergement(null)
     setPayloadChecklist(null)
     setEditedPayloadHebergement('')
     setEditedPayloadChecklist('')
+  }
+
+  // === CONSTANTE API LOOMKY ===
+  const LOOMKY_BASE_URL = 'https://api.loomky.com'
+
+  // === FONCTION AUTHENTIFICATION LOOMKY ===
+  const handleLoomkyLogin = async () => {
+    if (!loomkyEmail || !loomkyPassword) {
+      alert('⚠️ Veuillez remplir email et mot de passe')
+      return
+    }
+
+    setLoomkyAuthStatus('connecting')
+    setLoomkyAuthError(null)
+
+    try {
+      const response = await fetch(`${LOOMKY_BASE_URL}/v1/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: loomkyEmail,
+          password: loomkyPassword
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || `Erreur ${response.status}`)
+      }
+
+      // Succès : extraire le token et les infos user
+      setLoomkyToken(data.token.token)
+      setLoomkyUserInfo({
+        firstName: data.token.userFirstName,
+        accountName: data.token.accountName,
+        role: data.token.userRole
+      })
+      setLoomkyAuthStatus('connected')
+
+      // Sauvegarder token dans localStorage
+      localStorage.setItem('loomky_jwt', data.token.token)
+      localStorage.setItem('loomky_user_info', JSON.stringify({
+        firstName: data.token.userFirstName,
+        accountName: data.token.accountName,
+        role: data.token.userRole
+      }))
+
+    } catch (error) {
+      console.error('Erreur authentification Loomky:', error)
+      setLoomkyAuthError(error.message)
+      setLoomkyAuthStatus('error')
+    }
+  }
+
+  const handleLoomkyLogout = () => {
+    setLoomkyToken(null)
+    setLoomkyUserInfo(null)
+    setLoomkyAuthStatus('disconnected')
+    setLoomkyAuthError(null)
+    setLoomkyPassword('')
+    localStorage.removeItem('loomky_jwt')
+    localStorage.removeItem('loomky_user_info')
   }
 
   const loadFiches = async () => {
@@ -138,7 +211,7 @@ export default function SimulationLoomky() {
         .single()
 
       if (error) throw error
-      
+
       setSelectedFiche(data)
       generatePayloads(data)
     } catch (error) {
@@ -149,134 +222,145 @@ export default function SimulationLoomky() {
     }
   }
 
-  const generatePayloads = (fiche) => {
-    // Payload Hébergement
-    const hebergement = {
-      numero_bien: fiche.logement_numero_bien || null,
-      nom: fiche.nom || null,
-      type_propriete: fiche.logement_type_propriete || null,
-      surface: fiche.logement_surface || null,
-      
-      adresse: {
-        rue: fiche.logement_adresse_rue || null,
-        complement: fiche.logement_adresse_complement || null,
-        ville: fiche.logement_adresse_ville || null,
-        code_postal: fiche.logement_adresse_code_postal || null
-      },
-      
-      capacite: {
-        nombre_chambres: fiche.logement_nombre_chambres || null,
-        nombre_personnes_max: fiche.logement_nombre_personnes_max || null,
-        nombre_lits: fiche.logement_nombre_lits || null,
-        typologie: fiche.logement_typologie || null
-      },
-      
-      equipements: {
-        wifi: fiche.equipements_wifi_disponible || false,
-        parking: fiche.equipements_parking_disponible || false,
-        lave_linge: fiche.salle_de_bains_salle_de_bain_1_equipements_lave_linge || false,
-        seche_linge: fiche.equipements_seche_linge || false,
-        lave_vaisselle: fiche.cuisine_1_lave_vaisselle || false,
-        jacuzzi: fiche.equip_spe_ext_jacuzzi_disponible || false,
-        piscine: fiche.equip_spe_ext_piscine_disponible || false,
-        barbecue: fiche.equip_spe_ext_barbecue_disponible || false,
-        climatisation: fiche.equipements_climatisation_disponible || false,
-        chauffage: fiche.equipements_chauffage_disponible || false
-      }
-    }
-    
-    // Payload Checklist
-    const checklist = {
-      sections_standard: [
-        {
-          nom: "Entrée",
-          ordre: 1,
-          items: ["Vue d'ensemble entrée (murs + sols)", "Porte d'entrée"]
-        },
-        {
-          nom: "Salon",
-          ordre: 2,
-          items: [
-            "Vue d'ensemble (murs + sols)",
-            "Canapé",
-            "Table basse",
-            "Climatisation / Chauffage",
-            "Télévision + télécommande"
-          ]
-        },
-        {
-          nom: "Salle à manger",
-          ordre: 3,
-          items: [
-            "Vue d'ensemble (murs + sols)",
-            "Table + chaises",
-            "Climatisation / Chauffage"
-          ]
-        },
-        {
-          nom: "Cuisine",
-          ordre: 4,
-          items: [
-            "Vue d'ensemble cuisine",
-            "Plan de travail",
-            "Plaque de cuisson",
-            "Évier",
-            "Hotte",
-            "Frigo",
-            "Congélateur",
-            "Poubelle avec sac propre"
-          ]
-        },
-        {
-          nom: "Chambre",
-          ordre: 5,
-          items: [
-            "Vue d'ensemble",
-            "Lits faits + serviettes",
-            "Dessous de lits",
-            "Climatisation / Chauffage"
-          ]
-        },
-        {
-          nom: "Salle de bain",
-          ordre: 6,
-          items: [
-            "Vue d'ensemble",
-            "Douche / baignoire",
-            "Lavabo + robinet",
-            "Poubelle avec sac propre"
-          ]
-        },
-        {
-          nom: "WC",
-          ordre: 7,
-          items: [
-            "Vue d'ensemble",
-            "Abattant",
-            "Lunette",
-            "Intérieur des WC",
-            "2 rouleaux papier toilette"
-          ]
-        }
+  const buildResolvedChecklists = (fiche) => {
+    const checklists = []
+
+    // === SECTIONS STANDARD (toujours présentes) ===
+
+    // Salon
+    checklists.push({
+      name: "Salon",
+      tasks: [
+        { name: "Vue d'ensemble (murs + sols)", description: "Vérifier la propreté générale" },
+        { name: "Canapé", description: "Nettoyer et aspirer" },
+        { name: "Table basse", description: "Dépoussiérer" }
       ],
-      sections_conditionnelles: []
-    }
-    
-    // Sections conditionnelles
-    if (fiche.equip_spe_ext_jacuzzi_disponible || fiche.equip_spe_ext_piscine_disponible || fiche.equip_spe_ext_barbecue_disponible) {
-      const itemsExt = []
-      if (fiche.equip_spe_ext_jacuzzi_disponible) itemsExt.push("Jacuzzi (nettoyage + fonctionnement)")
-      if (fiche.equip_spe_ext_piscine_disponible) itemsExt.push("Piscine (intérieur + rebords)")
-      if (fiche.equip_spe_ext_barbecue_disponible) itemsExt.push("Barbecue / Plancha")
-      
-      checklist.sections_conditionnelles.push({
-        nom: "Extérieurs",
-        ordre: 10,
-        condition: "jacuzzi || piscine || barbecue",
-        items: itemsExt
+      required: true,
+      beforePhotosRequired: true,
+      afterPhotosRequired: true
+    })
+
+    // Cuisine
+    checklists.push({
+      name: "Cuisine",
+      tasks: [
+        { name: "Plan de travail", description: "Nettoyer et désinfecter" },
+        { name: "Évier", description: "Nettoyer et faire briller" },
+        { name: "Frigo", description: "Nettoyer intérieur et extérieur" },
+        { name: "Poubelle avec sac propre", description: "Vider et mettre un nouveau sac" }
+      ],
+      required: true,
+      beforePhotosRequired: true,
+      afterPhotosRequired: true
+    })
+
+    // === SECTIONS CONDITIONNELLES ===
+
+    // Jacuzzi (si disponible)
+    if (fiche.equip_spe_ext_dispose_jacuzzi) {
+      checklists.push({
+        name: "Jacuzzi",
+        tasks: [
+          { name: "Nettoyage complet", description: "Nettoyer parois et fond" },
+          { name: "Vérification fonctionnement", description: "Tester jets et température" }
+        ],
+        required: true,
+        beforePhotosRequired: true,
+        afterPhotosRequired: true
       })
     }
-    
+
+    // Piscine (si disponible)
+    if (fiche.equip_spe_ext_dispose_piscine) {
+      checklists.push({
+        name: "Piscine",
+        tasks: [
+          { name: "Intérieur piscine", description: "Nettoyer parois et ligne d'eau" },
+          { name: "Rebords", description: "Nettoyer margelles" }
+        ],
+        required: true,
+        beforePhotosRequired: true,
+        afterPhotosRequired: true
+      })
+    }
+
+    return { checklists }
+  }
+
+  const mapTypeToLoomky = (typePropriete) => {
+    switch (typePropriete) {
+      case 'Appartement':
+      case 'Studio':
+      case 'Loft':
+      case 'Duplex':
+        return 'apartment'
+      case 'Maison':
+      case 'Villa':
+        return 'house'
+      case 'Autre':
+      default:
+        return 'other'
+    }
+  }
+
+  const calculateBedCounts = (fiche) => {
+    let simpleBedCount = 0
+    let doubleBedCount = 0
+
+    // Parcourir les 6 chambres possibles
+    for (let i = 1; i <= 6; i++) {
+      // Lits simples
+      simpleBedCount += (fiche[`chambres_chambre_${i}_lit_simple_90_190`] || 0)
+      simpleBedCount += (fiche[`chambres_chambre_${i}_canape_lit_simple`] || 0)
+      simpleBedCount += (fiche[`chambres_chambre_${i}_lits_superposes_90_190`] || 0) * 2 // 2 couchages par superposé
+      simpleBedCount += (fiche[`chambres_chambre_${i}_lit_gigogne`] || 0)
+
+      // Lits doubles
+      doubleBedCount += (fiche[`chambres_chambre_${i}_lit_double_140_190`] || 0)
+      doubleBedCount += (fiche[`chambres_chambre_${i}_lit_queen_160_200`] || 0)
+      doubleBedCount += (fiche[`chambres_chambre_${i}_lit_king_180_200`] || 0)
+      doubleBedCount += (fiche[`chambres_chambre_${i}_canape_lit_double`] || 0)
+    }
+
+    return { simpleBedCount, doubleBedCount }
+  }
+
+  const generatePayloads = (fiche) => {
+    // Payload Hébergement (format Loomky)
+    const hebergement = {
+      name: `${fiche.logement_type_propriete || ''} ${fiche.nom || fiche.logement_numero_bien || ''}`.trim() || "Hébergement sans nom",
+      type: mapTypeToLoomky(fiche.logement_type_propriete),
+      address: {
+        street: fiche.proprietaire_adresse_rue || '',
+        city: fiche.proprietaire_adresse_ville || '',
+        postalCode: fiche.proprietaire_adresse_code_postal || '',
+        country: 'FR'
+      },
+      description: `${fiche.logement_type_propriete || ''} - ${fiche.logement_typologie || ''} à ${fiche.proprietaire_adresse_ville || ''}`.trim(),
+      checkin: {
+        from: "N/A",
+        to: "N/A"
+      },
+      checkout: {
+        from: "N/A",
+        to: "N/A"
+      },
+      surfaceArea: fiche.logement_surface || null,
+      defaultOccupancy: fiche.logement_nombre_personnes_max ? parseInt(fiche.logement_nombre_personnes_max) : null,
+      numberOfRooms: fiche.visite_nombre_chambres ? parseInt(fiche.visite_nombre_chambres) : null,
+      numberOfBathrooms: fiche.visite_nombre_salles_bains ? parseInt(fiche.visite_nombre_salles_bains) : null,
+      defaultRate: null,
+      timezone: "Europe/Paris",
+      ...calculateBedCounts(fiche),
+      coordinates: {
+        latitude: null,
+        longitude: null
+      }
+    }
+
+    // Payload Checklist (avec logique conditionnelle)
+    const checklist = buildResolvedChecklists(fiche)
+
     setPayloadHebergement(hebergement)
     setPayloadChecklist(checklist)
   }
@@ -303,145 +387,138 @@ export default function SimulationLoomky() {
   }
 
   const sendToAPI = async () => {
+    if (!editedPayloadHebergement) {
+      alert('⚠️ Aucun payload à envoyer')
+      return
+    }
+
     setSending(true)
     const results = []
 
     try {
-      const hebergementParsed = validateJSON(editedPayloadHebergement)
-      const checklistParsed = validateJSON(editedPayloadChecklist)
+      // Parse les payloads
+      const payloadHebergement = JSON.parse(editedPayloadHebergement)
+      const payloadChecklist = editedPayloadChecklist ? JSON.parse(editedPayloadChecklist) : null
 
-      if (!hebergementParsed.valid) {
-        alert(`❌ JSON Hébergement invalide: ${hebergementParsed.error}`)
-        setSending(false)
-        return
+      // Construction des headers
+      const headers = {
+        'Content-Type': 'application/json'
       }
 
-      if (!apiConfig.useSinglePayload && !checklistParsed.valid) {
-        alert(`❌ JSON Checklist invalide: ${checklistParsed.error}`)
-        setSending(false)
-        return
+      // Ajouter le token Loomky si disponible (priorité sur les autres auth)
+      if (loomkyToken) {
+        headers['Authorization'] = `Bearer ${loomkyToken}`
+      } else if (apiConfig.authType === 'api_key' && apiConfig.apiKey) {
+        headers['Authorization'] = `Bearer ${apiConfig.apiKey}`
+      } else if (apiConfig.authType === 'oauth' && apiConfig.oauthToken) {
+        headers['Authorization'] = `Bearer ${apiConfig.oauthToken}`
       }
 
-    // Construction des headers
-    const headers = { 'Content-Type': 'application/json' }
+      // Headers personnalisés
+      apiConfig.customHeaders.forEach(h => {
+        if (h.name && h.value) headers[h.name] = h.value
+      })
 
-    // Auth
-    if (apiConfig.authType === 'api_key' && apiConfig.apiKey) {
-    headers['X-API-Key'] = apiConfig.apiKey
-    } else if (apiConfig.authType === 'oauth' && apiConfig.oauthToken) {
-    headers['Authorization'] = `Bearer ${apiConfig.oauthToken}`
-    }
+      // === 1️⃣ ENVOI PROPERTY ===
+      let propertyId = null
 
-    // Headers personnalisés
-    apiConfig.customHeaders.forEach(header => {
-    if (header.name && header.value) {
-        headers[header.name] = header.value
-    }
-    })
+      // POST property
+      const hebergementResponse = await fetch(apiConfig.endpointHebergement || 'https://api.loomky.com/v1/properties', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payloadHebergement.hebergement || payloadHebergement)
+      })
 
-    // Construction de l'URL avec query params
-    const buildUrlWithParams = (baseUrl) => {
-    if (apiConfig.queryParams.length === 0) return baseUrl
-    
-    const params = new URLSearchParams()
-    apiConfig.queryParams.forEach(param => {
-        if (param.name && param.value) {
-        params.append(param.name, param.value)
-        }
-    })
-    
-    return `${baseUrl}?${params.toString()}`
-    }
-
-      // Payload unique
-      if (apiConfig.useSinglePayload) {
-        if (!apiConfig.endpointHebergement) {
-          alert('❌ Endpoint manquant')
-          setSending(false)
-          return
-        }
-
-        const combined = {
-          hebergement: hebergementParsed.data,
-          checklist: checklistParsed.valid ? checklistParsed.data : null
-        }
-
-        const response = await fetch(buildUrlWithParams(apiConfig.endpointHebergement), {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(combined)
-            })
-
-        results.push(await parseResponse(response, 'Payload unique'))
-      } 
-      // 2 payloads séparés
-      else {
-        if (apiConfig.endpointHebergement) {
-          const respHeberg = await fetch(buildUrlWithParams(apiConfig.endpointHebergement), {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(hebergementParsed.data)
-            })
-          results.push(await parseResponse(respHeberg, 'Hébergement'))
-        }
-
-        if (apiConfig.endpointChecklist) {
-          const respChecklist = await fetch(buildUrlWithParams(apiConfig.endpointChecklist), {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(checklistParsed.data)
-            })
-          results.push(await parseResponse(respChecklist, 'Checklist'))
-        }
+      const hebergementText = await hebergementResponse.text()
+      let hebergementData = {}
+      try {
+        hebergementData = JSON.parse(hebergementText)
+      } catch (e) {
+        hebergementData = { _id: 'fake-property-id-for-test', message: hebergementText }
       }
 
-      // Historique
+      results.push({
+        endpoint: 'POST /v1/properties',
+        status: hebergementResponse.status,
+        statusText: hebergementResponse.statusText,
+        ok: hebergementResponse.ok,
+        body: hebergementData,
+        extractedId: hebergementData._id || null,
+        extractedMessage: hebergementData.message || null
+      })
+
+      // Récupérer propertyId
+      // Récupérer propertyId avec guard
+      propertyId = hebergementData._id
+
+      if (!hebergementResponse.ok || !propertyId) {
+        const errorMsg = hebergementData?.message || hebergementResponse.statusText || 'Erreur inconnue'
+        throw new Error(`❌ Création de la propriété Loomky échouée (${hebergementResponse.status}): ${errorMsg}. Les checklists n'ont pas été envoyées.`)
+      }
+
+      // === 2️⃣ ENVOI CHECKLISTS ===
+      if (payloadChecklist?.checklists) {
+        const checklistEndpoint = `${apiConfig.endpointChecklist || 'https://api.loomky.com/v1/properties'}/${propertyId}/cleaning-checklists/bulk`
+
+        const checklistResponse = await fetch(
+          checklistEndpoint,
+          {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify(payloadChecklist)
+          }
+        )
+
+        const checklistText = await checklistResponse.text()
+        let checklistData = null
+        try {
+          checklistData = checklistText ? JSON.parse(checklistText) : null
+        } catch (e) {
+          checklistData = { message: checklistText }
+        }
+
+        results.push({
+          endpoint: `PATCH ${checklistEndpoint}`,
+          status: checklistResponse.status,
+          statusText: checklistResponse.statusText,
+          ok: checklistResponse.ok,
+          body: checklistData,
+          extractedMessage: checklistData.message || null
+        })
+      }
+
+      // Sauvegarder dans l'historique
       const newHistory = [
         {
+          fiche: selectedFiche?.nom || selectedFiche?.logement_numero_bien || 'Fiche test',
           timestamp: new Date().toISOString(),
-          fiche: selectedFiche?.nom || selectedFiche?.logement_numero_bien || 'Sans nom',
           results
         },
         ...testHistory
-      ].slice(0, 5)
-      
+      ].slice(0, 5) // Garder seulement les 5 derniers
+
       setTestHistory(newHistory)
       localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory))
 
+      // Alert succès/erreur
+      const allSuccess = results.every(r => r.ok)
+      if (allSuccess) {
+        alert('✅ Envoi réussi ! Vérifie les résultats ci-dessous.')
+      } else {
+        alert('⚠️ Certains appels ont échoué. Vérifie les détails ci-dessous.')
+      }
+
     } catch (error) {
-      alert(`❌ Erreur: ${error.message}`)
+      console.error('Erreur envoi API:', error)
+      results.push({
+        endpoint: 'Error',
+        error: true,
+        message: error.message
+      })
+      alert(`❌ Erreur : ${error.message}`)
     } finally {
       setSending(false)
     }
-  }
-
-  const parseResponse = async (response, endpoint) => {
-    const result = {
-      endpoint,
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-      timestamp: new Date().toLocaleTimeString('fr-FR')
-    }
-
-    try {
-      const text = await response.text()
-      if (text) {
-        try {
-          const json = JSON.parse(text)
-          result.body = json
-          if (json.id) result.extractedId = json.id
-          if (json.message) result.extractedMessage = json.message
-          if (json.success !== undefined) result.extractedSuccess = json.success
-        } catch {
-          result.body = text
-        }
-      }
-    } catch (e) {
-      result.body = 'Pas de réponse'
-    }
-
-    return result
   }
 
   const clearHistory = () => {
@@ -463,545 +540,540 @@ export default function SimulationLoomky() {
           </p>
         </div>
 
+        {/* SECTION 0: AUTHENTIFICATION LOOMKY */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            1. 🔑 Authentification Loomky
+          </h2>
+
+          {loomkyAuthStatus === 'disconnected' || loomkyAuthStatus === 'error' ? (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Connectez-vous à l'API Loomky pour obtenir votre token JWT
+              </p>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Loomky
+                </label>
+                <input
+                  type="email"
+                  value={loomkyEmail}
+                  onChange={(e) => setLoomkyEmail(e.target.value)}
+                  placeholder="contact@example.fr"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mot de passe
+                </label>
+                <input
+                  type="password"
+                  value={loomkyPassword}
+                  onChange={(e) => setLoomkyPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* Erreur */}
+              {loomkyAuthError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm text-red-800">
+                    ❌ <strong>Erreur :</strong> {loomkyAuthError}
+                  </p>
+                </div>
+              )}
+
+              {/* Bouton connexion */}
+              <button
+                onClick={handleLoomkyLogin}
+                disabled={loomkyAuthStatus === 'connecting'}
+                className={`w-full py-3 rounded-lg font-semibold text-white transition ${loomkyAuthStatus === 'connecting'
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
+                  }`}
+              >
+                {loomkyAuthStatus === 'connecting' ? '⏳ Connexion en cours...' : '🔐 Se connecter à Loomky'}
+              </button>
+            </div>
+          ) : (
+            // État connecté
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-green-900 font-semibold mb-2">
+                  ✅ Connecté à Loomky
+                </p>
+                <div className="text-sm text-green-800 space-y-1">
+                  <p><strong>Nom :</strong> {loomkyUserInfo?.firstName}</p>
+                  <p><strong>Compte :</strong> {loomkyUserInfo?.accountName}</p>
+                  <p><strong>Rôle :</strong> {loomkyUserInfo?.role}</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-xs text-gray-600 mb-2">Token JWT (tronqué) :</p>
+                <code className="text-xs text-gray-800 break-all">
+                  {loomkyToken?.substring(0, 50)}...
+                </code>
+              </div>
+
+              <button
+                onClick={handleLoomkyLogout}
+                className="w-full py-2 rounded-lg font-semibold text-red-600 border border-red-200 hover:bg-red-50 transition"
+              >
+                🚪 Se déconnecter
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* SECTION 1: CONFIG API */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            ⚙️ Configuration API
+            2.⚙️ Configuration API
           </h2>
 
           <div className="space-y-4">
-{/* Type auth - 3 OPTIONS */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-3">
-    Type d'authentification
-  </label>
-  <div className="grid grid-cols-3 gap-4">
-    {/* Carte Pas d'auth */}
-    <button
-      type="button"
-      onClick={() => setApiConfig({ ...apiConfig, authType: 'none' })}
-      className={`relative p-6 rounded-xl border-2 transition-all ${
-        apiConfig.authType === 'none'
-          ? 'border-gray-500 bg-gray-50 shadow-md'
-          : 'border-gray-200 bg-white hover:border-gray-300'
-      }`}
-    >
-      <div className="text-center">
-        <div className={`text-4xl mb-3 ${
-          apiConfig.authType === 'none' ? 'opacity-100' : 'opacity-50'
-        }`}>
-          🚫
-        </div>
-        <h3 className="font-semibold text-gray-900 mb-1">Aucune</h3>
-        <p className="text-xs text-gray-600">
-          Pas d'authentification
-        </p>
-      </div>
-      {apiConfig.authType === 'none' && (
-        <div className="absolute top-3 right-3">
-          <span className="flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
-          </span>
-        </div>
-      )}
-    </button>
-
-    {/* Carte API Key */}
-    <button
-      type="button"
-      onClick={() => setApiConfig({ ...apiConfig, authType: 'api_key' })}
-      className={`relative p-6 rounded-xl border-2 transition-all ${
-        apiConfig.authType === 'api_key'
-          ? 'border-indigo-500 bg-indigo-50 shadow-md'
-          : 'border-gray-200 bg-white hover:border-gray-300'
-      }`}
-    >
-      <div className="text-center">
-        <div className={`text-4xl mb-3 ${
-          apiConfig.authType === 'api_key' ? 'opacity-100' : 'opacity-50'
-        }`}>
-          🔑
-        </div>
-        <h3 className="font-semibold text-gray-900 mb-1">API Key</h3>
-        <p className="text-xs text-gray-600">
-          Header X-API-Key
-        </p>
-      </div>
-      {apiConfig.authType === 'api_key' && (
-        <div className="absolute top-3 right-3">
-          <span className="flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-          </span>
-        </div>
-      )}
-    </button>
-
-    {/* Carte OAuth */}
-    <button
-      type="button"
-      onClick={() => setApiConfig({ ...apiConfig, authType: 'oauth' })}
-      className={`relative p-6 rounded-xl border-2 transition-all ${
-        apiConfig.authType === 'oauth'
-          ? 'border-purple-500 bg-purple-50 shadow-md'
-          : 'border-gray-200 bg-white hover:border-gray-300'
-      }`}
-    >
-      <div className="text-center">
-        <div className={`text-4xl mb-3 ${
-          apiConfig.authType === 'oauth' ? 'opacity-100' : 'opacity-50'
-        }`}>
-          🛡️
-        </div>
-        <h3 className="font-semibold text-gray-900 mb-1">OAuth</h3>
-        <p className="text-xs text-gray-600">
-          Bearer Token
-        </p>
-      </div>
-      {apiConfig.authType === 'oauth' && (
-        <div className="absolute top-3 right-3">
-          <span className="flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
-          </span>
-        </div>
-      )}
-    </button>
-  </div>
-</div>
-
-{/* Champ credentials - CONDITIONNEL selon authType */}
-{apiConfig.authType === 'api_key' && (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-2">
-      Clé API
-    </label>
-    <input
-      type="text"
-      value={apiConfig.apiKey}
-      onChange={(e) => setApiConfig({ ...apiConfig, apiKey: e.target.value })}
-      placeholder="your-api-key"
-      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-    />
-  </div>
-)}
-
-{apiConfig.authType === 'oauth' && (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-2">
-      Token OAuth
-    </label>
-    <input
-      type="text"
-      value={apiConfig.oauthToken}
-      onChange={(e) => setApiConfig({ ...apiConfig, oauthToken: e.target.value })}
-      placeholder="Bearer token"
-      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-    />
-  </div>
-)}
-
-            {/* Mode payload */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={apiConfig.useSinglePayload}
-                  onChange={(e) => setApiConfig({ ...apiConfig, useSinglePayload: e.target.checked })}
-                  className="mr-3 h-5 w-5"
-                />
-                <div>
-                  <span className="text-sm font-medium">Payload unique</span>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Décocher si 2 endpoints séparés
-                  </p>
-                </div>
+            {/* Type auth - 3 OPTIONS */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Type d'authentification (facultatif)
               </label>
+              <div className="grid grid-cols-3 gap-4">
+                {/* Carte Pas d'auth */}
+                <button
+                  type="button"
+                  onClick={() => setApiConfig({ ...apiConfig, authType: 'none' })}
+                  className={`relative p-6 rounded-xl border-2 transition-all ${apiConfig.authType === 'none'
+                    ? 'border-gray-500 bg-gray-50 shadow-md'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                >
+                  <div className="text-center">
+                    <div className={`text-4xl mb-3 ${apiConfig.authType === 'none' ? 'opacity-100' : 'opacity-50'
+                      }`}>
+                      🚫
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-1">Aucune</h3>
+                    <p className="text-xs text-gray-600">
+                      Pas d'authentification
+                    </p>
+                  </div>
+                  {apiConfig.authType === 'none' && (
+                    <div className="absolute top-3 right-3">
+                      <span className="flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
+                      </span>
+                    </div>
+                  )}
+                </button>
+
+                {/* Carte API Key */}
+                <button
+                  type="button"
+                  onClick={() => setApiConfig({ ...apiConfig, authType: 'api_key' })}
+                  className={`relative p-6 rounded-xl border-2 transition-all ${apiConfig.authType === 'api_key'
+                    ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                >
+                  <div className="text-center">
+                    <div className={`text-4xl mb-3 ${apiConfig.authType === 'api_key' ? 'opacity-100' : 'opacity-50'
+                      }`}>
+                      🔑
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-1">API Key</h3>
+                    <p className="text-xs text-gray-600">
+                      Header X-API-Key
+                    </p>
+                  </div>
+                  {apiConfig.authType === 'api_key' && (
+                    <div className="absolute top-3 right-3">
+                      <span className="flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                      </span>
+                    </div>
+                  )}
+                </button>
+
+                {/* Carte OAuth */}
+                <button
+                  type="button"
+                  onClick={() => setApiConfig({ ...apiConfig, authType: 'oauth' })}
+                  className={`relative p-6 rounded-xl border-2 transition-all ${apiConfig.authType === 'oauth'
+                    ? 'border-purple-500 bg-purple-50 shadow-md'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                >
+                  <div className="text-center">
+                    <div className={`text-4xl mb-3 ${apiConfig.authType === 'oauth' ? 'opacity-100' : 'opacity-50'
+                      }`}>
+                      🛡️
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-1">OAuth</h3>
+                    <p className="text-xs text-gray-600">
+                      Bearer Token
+                    </p>
+                  </div>
+                  {apiConfig.authType === 'oauth' && (
+                    <div className="absolute top-3 right-3">
+                      <span className="flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                      </span>
+                    </div>
+                  )}
+                </button>
+              </div>
             </div>
 
-            {/* Endpoints */}
-            {apiConfig.useSinglePayload ? (
+            {/* Champ credentials - CONDITIONNEL selon authType */}
+            {apiConfig.authType === 'api_key' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Endpoint API
+                  Clé API
                 </label>
                 <input
                   type="text"
-                  value={apiConfig.endpointHebergement}
-                  onChange={(e) => setApiConfig({ ...apiConfig, endpointHebergement: e.target.value })}
-                  placeholder="https://api.loomky.com/v1/logements"
+                  value={apiConfig.apiKey}
+                  onChange={(e) => setApiConfig({ ...apiConfig, apiKey: e.target.value })}
+                  placeholder="your-api-key"
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Endpoint Hébergement
-                  </label>
-                  <input
-                    type="text"
-                    value={apiConfig.endpointHebergement}
-                    onChange={(e) => setApiConfig({ ...apiConfig, endpointHebergement: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Endpoint Checklist
-                  </label>
-                  <input
-                    type="text"
-                    value={apiConfig.endpointChecklist}
-                    onChange={(e) => setApiConfig({ ...apiConfig, endpointChecklist: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
+            )}
+
+            {apiConfig.authType === 'oauth' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Token OAuth
+                </label>
+                <input
+                  type="text"
+                  value={apiConfig.oauthToken}
+                  onChange={(e) => setApiConfig({ ...apiConfig, oauthToken: e.target.value })}
+                  placeholder="Bearer token"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                />
               </div>
             )}
-                    {/* Headers personnalisés */}
-                    <div>
-                    <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                        Headers personnalisés
-                        </label>
-                        <button
-                        type="button"
-                        onClick={() => setApiConfig({
-                            ...apiConfig,
-                            customHeaders: [...apiConfig.customHeaders, { name: '', value: '' }]
-                        })}
-                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-                        >
-                        + Ajouter un header
-                        </button>
-                    </div>
-                    
-                    <div className="space-y-2">
-                        {apiConfig.customHeaders.map((header, idx) => (
-                        <div key={idx} className="flex gap-2">
-                            <input
-                            type="text"
-                            placeholder="Name"
-                            value={header.name}
-                            onChange={(e) => {
-                                const newHeaders = [...apiConfig.customHeaders]
-                                newHeaders[idx].name = e.target.value
-                                setApiConfig({ ...apiConfig, customHeaders: newHeaders })
-                            }}
-                            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                            />
-                            <input
-                            type="text"
-                            placeholder="Value"
-                            value={header.value}
-                            onChange={(e) => {
-                                const newHeaders = [...apiConfig.customHeaders]
-                                newHeaders[idx].value = e.target.value
-                                setApiConfig({ ...apiConfig, customHeaders: newHeaders })
-                            }}
-                            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                            />
-                            <button
-                            type="button"
-                            onClick={() => {
-                                const newHeaders = apiConfig.customHeaders.filter((_, i) => i !== idx)
-                                setApiConfig({ ...apiConfig, customHeaders: newHeaders })
-                            }}
-                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                            >
-                            ✕
-                            </button>
-                        </div>
-                        ))}
-                        {apiConfig.customHeaders.length === 0 && (
-                        <p className="text-xs text-gray-500 italic">Aucun header personnalisé</p>
-                        )}
-                    </div>
-                    </div>
 
-                    {/* Query parameters */}
-                    <div>
-                    <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                        Query parameters
-                        </label>
-                        <button
-                        type="button"
-                        onClick={() => setApiConfig({
-                            ...apiConfig,
-                            queryParams: [...apiConfig.queryParams, { name: '', value: '' }]
-                        })}
-                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-                        >
-                        + Ajouter un paramètre
-                        </button>
-                    </div>
-                    
-                    <div className="space-y-2">
-                        {apiConfig.queryParams.map((param, idx) => (
-                        <div key={idx} className="flex gap-2">
-                            <input
-                            type="text"
-                            placeholder="Name"
-                            value={param.name}
-                            onChange={(e) => {
-                                const newParams = [...apiConfig.queryParams]
-                                newParams[idx].name = e.target.value
-                                setApiConfig({ ...apiConfig, queryParams: newParams })
-                            }}
-                            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                            />
-                            <input
-                            type="text"
-                            placeholder="Value"
-                            value={param.value}
-                            onChange={(e) => {
-                                const newParams = [...apiConfig.queryParams]
-                                newParams[idx].value = e.target.value
-                                setApiConfig({ ...apiConfig, queryParams: newParams })
-                            }}
-                            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                            />
-                            <button
-                            type="button"
-                            onClick={() => {
-                                const newParams = apiConfig.queryParams.filter((_, i) => i !== idx)
-                                setApiConfig({ ...apiConfig, queryParams: newParams })
-                            }}
-                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                            >
-                            ✕
-                            </button>
-                        </div>
-                        ))}
-                        {apiConfig.queryParams.length === 0 && (
-                        <p className="text-xs text-gray-500 italic">Aucun paramètre</p>
-                        )}
-                    </div>
-                </div>
+            {/* Endpoint API */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Base URL API Loomky
+              </label>
+              <input
+                type="text"
+                value={apiConfig.endpointHebergement}
+                onChange={(e) => setApiConfig({
+                  ...apiConfig,
+                  endpointHebergement: e.target.value,
+                  endpointChecklist: e.target.value
+                })}
+                placeholder="https://api.loomky.com/v1/properties"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Saisir l'endpoint POST pour créer une propriété. L'endpoint PATCH pour les checklists sera construit automatiquement avec le PropertyId. Cette URL sera utilisée pour POST /properties et PATCH /properties/{'{propertyId}'}/cleaning-checklists/bulk
+              </p>
+            </div>
+
+            {/* Headers personnalisés */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Headers personnalisés
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setApiConfig({
+                    ...apiConfig,
+                    customHeaders: [...apiConfig.customHeaders, { name: '', value: '' }]
+                  })}
+                  className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  + Ajouter un header
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {apiConfig.customHeaders.map((header, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={header.name}
+                      onChange={(e) => {
+                        const newHeaders = [...apiConfig.customHeaders]
+                        newHeaders[idx].name = e.target.value
+                        setApiConfig({ ...apiConfig, customHeaders: newHeaders })
+                      }}
+                      className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Value"
+                      value={header.value}
+                      onChange={(e) => {
+                        const newHeaders = [...apiConfig.customHeaders]
+                        newHeaders[idx].value = e.target.value
+                        setApiConfig({ ...apiConfig, customHeaders: newHeaders })
+                      }}
+                      className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newHeaders = apiConfig.customHeaders.filter((_, i) => i !== idx)
+                        setApiConfig({ ...apiConfig, customHeaders: newHeaders })
+                      }}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                {apiConfig.customHeaders.length === 0 && (
+                  <p className="text-xs text-gray-500 italic">Aucun header personnalisé</p>
+                )}
+              </div>
+            </div>
+
+            {/* Query parameters */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Query parameters
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setApiConfig({
+                    ...apiConfig,
+                    queryParams: [...apiConfig.queryParams, { name: '', value: '' }]
+                  })}
+                  className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  + Ajouter un paramètre
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {apiConfig.queryParams.map((param, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={param.name}
+                      onChange={(e) => {
+                        const newParams = [...apiConfig.queryParams]
+                        newParams[idx].name = e.target.value
+                        setApiConfig({ ...apiConfig, queryParams: newParams })
+                      }}
+                      className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Value"
+                      value={param.value}
+                      onChange={(e) => {
+                        const newParams = [...apiConfig.queryParams]
+                        newParams[idx].value = e.target.value
+                        setApiConfig({ ...apiConfig, queryParams: newParams })
+                      }}
+                      className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newParams = apiConfig.queryParams.filter((_, i) => i !== idx)
+                        setApiConfig({ ...apiConfig, queryParams: newParams })
+                      }}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                {apiConfig.queryParams.length === 0 && (
+                  <p className="text-xs text-gray-500 italic">Aucun paramètre</p>
+                )}
+              </div>
+            </div>
           </div>
-          
+
         </div>
 
 
         {/* SECTION 2: PAYLOADS */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            📝 Sélection Fiche & Payloads
-        </h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            3. 📝 Sélection Fiche
+          </h2>
 
-        {/* Dropdown avec recherche */}
-        <div className="mb-6">
+          {/* Dropdown avec recherche */}
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-            Fiche à tester
+              Fiche à tester
             </label>
-            
+
             <div className="relative">
-            <input
+              <input
                 type="text"
                 placeholder="Rechercher par numéro ou nom..."
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 onFocus={(e) => {
-                e.target.nextElementSibling.classList.remove('hidden')
+                  e.target.nextElementSibling.classList.remove('hidden')
                 }}
                 onBlur={(e) => {
-                setTimeout(() => {
+                  setTimeout(() => {
                     e.target.nextElementSibling.classList.add('hidden')
-                }, 200)
+                  }, 200)
                 }}
                 onChange={(e) => {
-                const search = e.target.value.toLowerCase()
-                const dropdown = e.target.nextElementSibling
-                const options = dropdown.querySelectorAll('[data-fiche-id]')
-                
-                options.forEach(option => {
+                  const search = e.target.value.toLowerCase()
+                  const dropdown = e.target.nextElementSibling
+                  const options = dropdown.querySelectorAll('[data-fiche-id]')
+
+                  options.forEach(option => {
                     const text = option.textContent.toLowerCase()
                     if (text.includes(search)) {
-                    option.classList.remove('hidden')
+                      option.classList.remove('hidden')
                     } else {
-                    option.classList.add('hidden')
+                      option.classList.add('hidden')
                     }
-                })
+                  })
                 }}
-            />
-            
-            <div className="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              />
+
+              <div className="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                 <div
-                className="px-4 py-3 hover:bg-gray-100 cursor-pointer text-gray-500"
-                onClick={() => {
+                  className="px-4 py-3 hover:bg-gray-100 cursor-pointer text-gray-500"
+                  onClick={() => {
                     setSelectedFicheId('')
                     document.querySelector('input[placeholder="Rechercher par numéro ou nom..."]').value = ''
-                }}
+                  }}
                 >
-                -- Aucune sélection --
+                  -- Aucune sélection --
                 </div>
                 {fiches.map(f => (
-                <div
+                  <div
                     key={f.id}
                     data-fiche-id={f.id}
                     className="px-4 py-3 hover:bg-indigo-50 cursor-pointer border-t border-gray-100"
                     onClick={() => {
-                    setSelectedFicheId(f.id)
-                    const input = document.querySelector('input[placeholder="Rechercher par numéro ou nom..."]')
-                    input.value = `${f.logement_numero_bien ? `#${f.logement_numero_bien} - ` : ''}${f.nom || 'Sans nom'}`
-                    input.nextElementSibling.classList.add('hidden')
+                      setSelectedFicheId(f.id)
+                      const input = document.querySelector('input[placeholder="Rechercher par numéro ou nom..."]')
+                      input.value = `${f.logement_numero_bien ? `#${f.logement_numero_bien} - ` : ''}${f.nom || 'Sans nom'}`
+                      input.nextElementSibling.classList.add('hidden')
                     }}
-                >
+                  >
                     <span className="font-medium text-gray-900">
-                    {f.logement_numero_bien && <span className="text-indigo-600">#{f.logement_numero_bien}</span>}
-                    {f.logement_numero_bien && ' - '}
-                    {f.nom || 'Sans nom'}
+                      {f.logement_numero_bien && <span className="text-indigo-600">#{f.logement_numero_bien}</span>}
+                      {f.logement_numero_bien && ' - '}
+                      {f.nom || 'Sans nom'}
                     </span>
                     <span className="text-xs text-gray-500 ml-2">
-                    ({f.statut || 'Brouillon'})
+                      ({f.statut || 'Brouillon'})
                     </span>
-                </div>
+                  </div>
                 ))}
+              </div>
             </div>
-            </div>
-            
-            {selectedFiche && (
-            <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
-                <p className="text-sm text-indigo-900">
-                ✅ Fiche sélectionnée: <strong>#{selectedFiche.logement_numero_bien}</strong> - {selectedFiche.nom}
-                </p>
-            </div>
-            )}
-        </div>
 
-        {selectedFiche && (
+            {selectedFiche && (
+              <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <p className="text-sm text-indigo-900">
+                  ✅ Fiche sélectionnée: <strong>#{selectedFiche.logement_numero_bien}</strong> - {selectedFiche.nom}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {selectedFiche && (
             <div className="space-y-6">
-            {/* CAS 1: Payload unique combiné */}
-            {apiConfig.useSinglePayload ? (
-                <div>
+              {/* Payload Hébergement */}
+              <div>
                 <div className="flex justify-between mb-2">
-                    <h3 className="text-lg font-semibold">🏠 Payload combiné (Hébergement + Ménage)</h3>
-                    <div className="flex gap-2">
+                  <h3 className="text-lg font-semibold">🏠 Payload Hébergement</h3>
+                  <div className="flex gap-2">
                     <button
-                        onClick={() => {
-                        const combined = {
-                            hebergement: payloadHebergement,
-                            checklist: payloadChecklist
-                        }
-                        setEditedPayloadHebergement(JSON.stringify(combined, null, 2))
-                        }}
-                        className="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
+                      onClick={() => handleResetToGenerated('hebergement')}
+                      className="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
                     >
-                        ↻ Reset
+                      ↻ Reset
                     </button>
                     <button
-                        onClick={() => handleCopyPayload(editedPayloadHebergement, 'Combiné')}
-                        className="px-3 py-1 text-sm bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100"
+                      onClick={() => handleCopyPayload(editedPayloadHebergement, 'Hébergement')}
+                      className="px-3 py-1 text-sm bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100"
                     >
-                        📋 Copier
+                      📋 Copier
                     </button>
-                    </div>
+                  </div>
                 </div>
                 <textarea
-                    value={editedPayloadHebergement}
-                    onChange={(e) => setEditedPayloadHebergement(e.target.value)}
-                    className="w-full h-96 px-4 py-3 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500"
+                  value={editedPayloadHebergement}
+                  onChange={(e) => setEditedPayloadHebergement(e.target.value)}
+                  className="w-full h-64 px-4 py-3 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500"
                 />
-                </div>
-            ) : (
-                /* CAS 2: Deux payloads séparés */
-                <>
-                {/* Payload Hébergement */}
-                <div>
-                    <div className="flex justify-between mb-2">
-                    <h3 className="text-lg font-semibold">🏠 Payload Hébergement</h3>
-                    <div className="flex gap-2">
-                        <button
-                        onClick={() => handleResetToGenerated('hebergement')}
-                        className="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
-                        >
-                        ↻ Reset
-                        </button>
-                        <button
-                        onClick={() => handleCopyPayload(editedPayloadHebergement, 'Hébergement')}
-                        className="px-3 py-1 text-sm bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100"
-                        >
-                        📋 Copier
-                        </button>
-                    </div>
-                    </div>
-                    <textarea
-                    value={editedPayloadHebergement}
-                    onChange={(e) => setEditedPayloadHebergement(e.target.value)}
-                    className="w-full h-64 px-4 py-3 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500"
-                    />
-                </div>
+              </div>
 
-                {/* Payload Ménage */}
-                <div>
-                    <div className="flex justify-between mb-2">
-                    <h3 className="text-lg font-semibold">🧹 Payload Ménage</h3>
-                    <div className="flex gap-2">
-                        <button
-                        onClick={() => handleResetToGenerated('checklist')}
-                        className="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
-                        >
-                        ↻ Reset
-                        </button>
-                        <button
-                        onClick={() => handleCopyPayload(editedPayloadChecklist, 'Ménage')}
-                        className="px-3 py-1 text-sm bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100"
-                        >
-                        📋 Copier
-                        </button>
-                    </div>
-                    </div>
-                    <textarea
-                    value={editedPayloadChecklist}
-                    onChange={(e) => setEditedPayloadChecklist(e.target.value)}
-                    className="w-full h-64 px-4 py-3 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500"
-                    />
+              {/* Payload Ménage */}
+              <div>
+                <div className="flex justify-between mb-2">
+                  <h3 className="text-lg font-semibold">🧹 Payload Ménage</h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleResetToGenerated('checklist')}
+                      className="px-3 py-1 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
+                    >
+                      ↻ Reset
+                    </button>
+                    <button
+                      onClick={() => handleCopyPayload(editedPayloadChecklist, 'Ménage')}
+                      className="px-3 py-1 text-sm bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100"
+                    >
+                      📋 Copier
+                    </button>
+                  </div>
                 </div>
-                </>
-            )}
+                <textarea
+                  value={editedPayloadChecklist}
+                  onChange={(e) => setEditedPayloadChecklist(e.target.value)}
+                  className="w-full h-64 px-4 py-3 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
 
-            {/* Stats */}
-            {payloadChecklist && (
-                <div className="grid grid-cols-3 gap-4 p-4 bg-indigo-50 rounded-lg">
-                <div>
-                    <p className="text-sm text-gray-600">Sections standard</p>
-                    <p className="text-2xl font-bold text-indigo-600">
-                    {payloadChecklist.sections_standard?.length || 0}
-                    </p>
+              {/* Stats */}
+              {payloadChecklist && (
+                <div className="p-4 bg-indigo-50 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-2">Total sections générées</p>
+                  <p className="text-2xl font-bold text-indigo-600">
+                    {payloadChecklist.checklists?.length || 0}
+                  </p>
                 </div>
-                <div>
-                    <p className="text-sm text-gray-600">Sections conditionnelles</p>
-                    <p className="text-2xl font-bold text-indigo-600">
-                    {payloadChecklist.sections_conditionnelles?.length || 0}
-                    </p>
-                </div>
-                <div>
-                    <p className="text-sm text-gray-600">Items totaux</p>
-                    <p className="text-2xl font-bold text-indigo-600">
-                    {(payloadChecklist.sections_standard?.reduce((acc, s) => acc + (s.items?.length || 0), 0) || 0) + 
-                    (payloadChecklist.sections_conditionnelles?.reduce((acc, s) => acc + (s.items?.length || 0), 0) || 0)}
-                    </p>
-                </div>
-                </div>
-            )}
+              )}
             </div>
-        )}
+          )}
 
-        {!selectedFiche && (
+          {!selectedFiche && (
             <div className="text-center py-12 text-gray-500">
-            Sélectionnez une fiche pour générer les payloads
+              Sélectionnez une fiche pour générer les payloads
             </div>
-        )}
+          )}
         </div>
 
         {/* SECTION 3: TEST */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            🚀 Test API
+            4. 🚀 Test API
           </h2>
 
           {selectedFiche ? (
@@ -1009,11 +1081,10 @@ export default function SimulationLoomky() {
               <button
                 onClick={sendToAPI}
                 disabled={sending || !editedPayloadHebergement}
-                className={`w-full py-3 rounded-lg font-semibold text-white ${
-                  sending || !editedPayloadHebergement
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
-                }`}
+                className={`w-full py-3 rounded-lg font-semibold text-white ${sending || !editedPayloadHebergement
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+                  }`}
               >
                 {sending ? '⏳ Envoi...' : '🚀 Envoyer'}
               </button>
@@ -1041,9 +1112,8 @@ export default function SimulationLoomky() {
                         {test.results.map((result, ridx) => (
                           <div
                             key={ridx}
-                            className={`p-3 rounded-lg mb-2 ${
-                              result.ok ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-                            }`}
+                            className={`p-3 rounded-lg mb-2 ${result.ok ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                              }`}
                           >
                             <div className="flex justify-between">
                               <span className={`text-sm font-semibold ${result.ok ? 'text-green-900' : 'text-red-900'}`}>
