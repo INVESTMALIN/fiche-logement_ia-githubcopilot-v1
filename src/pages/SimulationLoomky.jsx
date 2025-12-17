@@ -458,7 +458,7 @@ export default function SimulationLoomky() {
 
       // === 2️⃣ ENVOI CHECKLISTS ===
       if (payloadChecklist?.checklists) {
-        const checklistEndpoint = `${apiConfig.endpointChecklist || 'https://api.loomky.com/v1/properties'}/${propertyId}/cleaning-checklists/bulk`
+        const checklistEndpoint = `${apiConfig.endpointChecklist || 'https://api.loomky.com/v1/properties'}/${propertyId}/cleaning-checklists`
 
         const checklistResponse = await fetch(
           checklistEndpoint,
@@ -782,7 +782,7 @@ export default function SimulationLoomky() {
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Saisir l'endpoint POST pour créer une propriété. L'endpoint PATCH pour les checklists sera construit automatiquement avec le PropertyId. Cette URL sera utilisée pour POST /properties et PATCH /properties/{'{propertyId}'}/cleaning-checklists/bulk
+                Saisir l'endpoint POST pour créer une propriété. L'endpoint PATCH pour les checklists sera construit automatiquement avec le PropertyId. Cette URL sera utilisée pour POST /properties et PATCH /properties/{'{propertyId}'}/cleaning-checklists
               </p>
             </div>
 
