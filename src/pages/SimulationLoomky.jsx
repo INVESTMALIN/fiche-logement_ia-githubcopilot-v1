@@ -9,13 +9,8 @@ const HISTORY_KEY = 'loomky_test_history'
 export default function SimulationLoomky() {
   const { user } = useAuth()
 
-  // === NOUVEAUX ÉTATS POUR AUTH LOOMKY ===
-  const [loomkyEmail, setLoomkyEmail] = useState('')
-  const [loomkyPassword, setLoomkyPassword] = useState('')
-  const [loomkyToken, setLoomkyToken] = useState(null)
-  const [loomkyAuthStatus, setLoomkyAuthStatus] = useState('disconnected') // 'disconnected' | 'connecting' | 'connected' | 'error'
-  const [loomkyAuthError, setLoomkyAuthError] = useState(null)
-  const [loomkyUserInfo, setLoomkyUserInfo] = useState(null)
+  // === TOKEN LOOMKY (pré-rempli avec token test) ===
+  const [loomkyToken, setLoomkyToken] = useState('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTQyZTEzNWJmZWM5Njk5ZDQ5MDg3MTQiLCJ1c2VyUm9sZSI6InByb3BlcnR5TWFuYWdlciIsImFjY291bnRJZCI6IjY5NDJlMTM1YmZlYzk2OTlkNDkwODcxMSIsImlhdCI6MTc2NTk5MTEzNH0.uZmiEMYUjcmGr2wpmx5DMrC7M_FEzpgLClNVgGYAEmM')
 
   // === SECTION 1: Configuration API ===
   const [apiConfig, setApiConfig] = useState({
@@ -63,19 +58,6 @@ export default function SimulationLoomky() {
       }
     }
 
-    // Charger token Loomky si existant
-    const savedToken = localStorage.getItem('loomky_jwt')
-    const savedUserInfo = localStorage.getItem('loomky_user_info')
-    if (savedToken && savedUserInfo) {
-      try {
-        setLoomkyToken(savedToken)
-        setLoomkyUserInfo(JSON.parse(savedUserInfo))
-        setLoomkyAuthStatus('connected')
-      } catch (e) {
-        console.error('Erreur chargement token Loomky:', e)
-      }
-    }
-
   }, [])
 
   // Sauvegarder config
@@ -119,69 +101,7 @@ export default function SimulationLoomky() {
   }
 
   // === CONSTANTE API LOOMKY ===
-  const LOOMKY_BASE_URL = 'https://api.loomky.com'
-
-  // === FONCTION AUTHENTIFICATION LOOMKY ===
-  const handleLoomkyLogin = async () => {
-    if (!loomkyEmail || !loomkyPassword) {
-      alert('⚠️ Veuillez remplir email et mot de passe')
-      return
-    }
-
-    setLoomkyAuthStatus('connecting')
-    setLoomkyAuthError(null)
-
-    try {
-      const response = await fetch(`${LOOMKY_BASE_URL}/v1/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: loomkyEmail,
-          password: loomkyPassword
-        })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || `Erreur ${response.status}`)
-      }
-
-      // Succès : extraire le token et les infos user
-      setLoomkyToken(data.token.token)
-      setLoomkyUserInfo({
-        firstName: data.token.userFirstName,
-        accountName: data.token.accountName,
-        role: data.token.userRole
-      })
-      setLoomkyAuthStatus('connected')
-
-      // Sauvegarder token dans localStorage
-      localStorage.setItem('loomky_jwt', data.token.token)
-      localStorage.setItem('loomky_user_info', JSON.stringify({
-        firstName: data.token.userFirstName,
-        accountName: data.token.accountName,
-        role: data.token.userRole
-      }))
-
-    } catch (error) {
-      console.error('Erreur authentification Loomky:', error)
-      setLoomkyAuthError(error.message)
-      setLoomkyAuthStatus('error')
-    }
-  }
-
-  const handleLoomkyLogout = () => {
-    setLoomkyToken(null)
-    setLoomkyUserInfo(null)
-    setLoomkyAuthStatus('disconnected')
-    setLoomkyAuthError(null)
-    setLoomkyPassword('')
-    localStorage.removeItem('loomky_jwt')
-    localStorage.removeItem('loomky_user_info')
-  }
+  const LOOMKY_BASE_URL = 'https://dev.loomky.com'
 
   const loadFiches = async () => {
     setLoading(true)
@@ -235,7 +155,7 @@ export default function SimulationLoomky() {
         { name: "Canapé", description: "Nettoyer et aspirer" },
         { name: "Table basse", description: "Dépoussiérer" }
       ],
-      required: true,
+      isRequired: true,
       beforePhotosRequired: true,
       afterPhotosRequired: true
     })
@@ -249,10 +169,92 @@ export default function SimulationLoomky() {
         { name: "Frigo", description: "Nettoyer intérieur et extérieur" },
         { name: "Poubelle avec sac propre", description: "Vider et mettre un nouveau sac" }
       ],
-      required: true,
+      isRequired: true,
       beforePhotosRequired: true,
       afterPhotosRequired: true
     })
+
+    // === CHAMBRES / ESPACE NUIT ===
+    const isStudio = fiche.logement_type_propriete === "Studio"
+    const nombreChambres = fiche.visite_nombre_chambres ? parseInt(fiche.visite_nombre_chambres) : 0
+
+    if (isStudio) {
+      // Studio → Espace nuit avec tasks adaptées
+      checklists.push({
+        name: "Espace nuit",
+        tasks: [
+          { name: "Vue d'ensemble (murs + sols)", description: "Vérifier la propreté générale" },
+          { name: "Couchage fait + serviettes roulées", description: "1 grande + 1 petite/personne" },
+          { name: "Dessous du couchage", description: "Aspirer sous le canapé-lit/lit" },
+          { name: "Climatisation / Chauffage", description: "Nettoyer et vérifier" }
+        ],
+        required: true,
+        isRequired: true,
+        beforePhotosRequired: true,
+        afterPhotosRequired: true
+      })
+    } else {
+      // Chambres classiques (1 à 6)
+      for (let i = 1; i <= Math.min(nombreChambres, 6); i++) {
+        checklists.push({
+          name: `Chambre ${i}`,
+          tasks: [
+            { name: "Vue d'ensemble (murs + sols)", description: "Vérifier la propreté générale" },
+            { name: "Lits faits + serviettes roulées", description: "1 grande + 1 petite/personne" },
+            { name: "Dessous de lits", description: "Aspirer sous les lits" },
+            { name: "Intérieur placards + commodes", description: "Vérifier propreté" },
+            { name: "Tiroirs tables de chevet", description: "Si présentes, vérifier et nettoyer" },
+            { name: "Climatisation / Chauffage", description: "Nettoyer et vérifier" }
+          ],
+          required: true,
+          isRequired: true,
+          beforePhotosRequired: true,
+          afterPhotosRequired: true
+        })
+      }
+    }
+
+    // === SALLES DE BAIN ===
+    const nombreSDB = fiche.visite_nombre_salles_bains ? parseInt(fiche.visite_nombre_salles_bains) : 1
+
+    for (let i = 1; i <= Math.min(nombreSDB, 6); i++) {
+      // Récupérer le sèche-serviette spécifique à cette SDB
+      const salleKey = `salle_de_bains_salle_de_bain_${i}_equipements_seche_serviette`
+      const hasSecheServiettes = fiche[salleKey] === true
+
+      const tasks = [
+        { name: "Vue d'ensemble (murs + sols)", description: "Vérifier la propreté générale" },
+        { name: "Douche / baignoire", description: "Nettoyer parois et fond" },
+        { name: "Joints + baguettes portes de douche", description: "Nettoyer et vérifier état" },
+        { name: "Parois douche/baignoire", description: "Faire briller" },
+        { name: "Bonde douche", description: "Nettoyer" },
+        { name: "Bonde évier", description: "Nettoyer" },
+        { name: "Lavabo + robinet", description: "Nettoyer et faire briller" },
+        { name: "Intérieur tiroirs/placards + vue sèche-cheveux", description: "Vérifier propreté et présence" },
+        { name: "Tapis de bain", description: "Vérifier état et propreté" },
+        { name: "Poubelle avec sac propre", description: "Vider et mettre sac neuf" }
+      ]
+
+      // Task conditionnelle : Sèche-serviettes (spécifique à cette SDB)
+      if (hasSecheServiettes) {
+        tasks.push({ name: "Sèche-serviettes", description: "Nettoyer et vérifier fonctionnement" })
+      }
+
+      // Toujours finir par Climatisation
+      tasks.push({ name: "Climatisation / Chauffage", description: "Nettoyer et vérifier" })
+
+      // Consommables en dernier
+      tasks.push({ name: "Consommables: 1 savon mains", description: "Vérifier présence" })
+
+      checklists.push({
+        name: `Salle de bain ${i}`,
+        tasks,
+        required: true,
+        isRequired: true,
+        beforePhotosRequired: true,
+        afterPhotosRequired: true
+      })
+    }
 
     // === SECTIONS CONDITIONNELLES ===
 
@@ -264,7 +266,7 @@ export default function SimulationLoomky() {
           { name: "Nettoyage complet", description: "Nettoyer parois et fond" },
           { name: "Vérification fonctionnement", description: "Tester jets et température" }
         ],
-        required: true,
+        isRequired: true,
         beforePhotosRequired: true,
         afterPhotosRequired: true
       })
@@ -278,7 +280,7 @@ export default function SimulationLoomky() {
           { name: "Intérieur piscine", description: "Nettoyer parois et ligne d'eau" },
           { name: "Rebords", description: "Nettoyer margelles" }
         ],
-        required: true,
+        isRequired: true,
         beforePhotosRequired: true,
         afterPhotosRequired: true
       })
@@ -337,24 +339,25 @@ export default function SimulationLoomky() {
         country: 'FR'
       },
       description: `${fiche.logement_type_propriete || ''} - ${fiche.logement_typologie || ''} à ${fiche.proprietaire_adresse_ville || ''}`.trim(),
+      status: "active",
       checkin: {
-        from: "N/A",
-        to: "N/A"
+        from: "15:00",
+        to: "18:00"
       },
       checkout: {
-        from: "N/A",
-        to: "N/A"
+        from: "10:00",
+        to: "11:00"
       },
       surfaceArea: fiche.logement_surface || null,
       defaultOccupancy: fiche.logement_nombre_personnes_max ? parseInt(fiche.logement_nombre_personnes_max) : null,
-      numberOfRooms: fiche.visite_nombre_chambres ? parseInt(fiche.visite_nombre_chambres) : null,
+      numberOfRooms: fiche.visite_nombre_chambres ? parseInt(fiche.visite_nombre_chambres) : 1,
       numberOfBathrooms: fiche.visite_nombre_salles_bains ? parseInt(fiche.visite_nombre_salles_bains) : null,
-      defaultRate: null,
+      defaultRate: 100,
       timezone: "Europe/Paris",
       ...calculateBedCounts(fiche),
       coordinates: {
-        latitude: null,
-        longitude: null
+        latitude: 0,
+        longitude: 0
       }
     }
 
@@ -423,7 +426,7 @@ export default function SimulationLoomky() {
       let propertyId = null
 
       // POST property
-      const hebergementResponse = await fetch(apiConfig.endpointHebergement || 'https://api.loomky.com/v1/properties', {
+      const hebergementResponse = await fetch(apiConfig.endpointHebergement || 'https://dev.loomky.com/v1/properties', {
         method: 'POST',
         headers,
         body: JSON.stringify(payloadHebergement.hebergement || payloadHebergement)
@@ -447,9 +450,8 @@ export default function SimulationLoomky() {
         extractedMessage: hebergementData.message || null
       })
 
-      // Récupérer propertyId
       // Récupérer propertyId avec guard
-      propertyId = hebergementData._id
+      propertyId = hebergementData.property?._id || hebergementData._id
 
       if (!hebergementResponse.ok || !propertyId) {
         const errorMsg = hebergementData?.message || hebergementResponse.statusText || 'Erreur inconnue'
@@ -458,7 +460,7 @@ export default function SimulationLoomky() {
 
       // === 2️⃣ ENVOI CHECKLISTS ===
       if (payloadChecklist?.checklists) {
-        const checklistEndpoint = `${apiConfig.endpointChecklist || 'https://api.loomky.com/v1/properties'}/${propertyId}/cleaning-checklists`
+        const checklistEndpoint = `${apiConfig.endpointChecklist || 'https://dev.loomky.com/v1/properties'}/${propertyId}/cleaning-checklists`
 
         const checklistResponse = await fetch(
           checklistEndpoint,
@@ -483,7 +485,7 @@ export default function SimulationLoomky() {
           statusText: checklistResponse.statusText,
           ok: checklistResponse.ok,
           body: checklistData,
-          extractedMessage: checklistData.message || null
+          extractedMessage: checklistData?.message || null
         })
       }
 
@@ -540,96 +542,26 @@ export default function SimulationLoomky() {
           </p>
         </div>
 
-        {/* SECTION 0: AUTHENTIFICATION LOOMKY */}
+        {/* TOKEN LOOMKY */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            1. 🔑 Authentification Loomky
+            🔑 Token Loomky (Test)
           </h2>
-
-          {loomkyAuthStatus === 'disconnected' || loomkyAuthStatus === 'error' ? (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Connectez-vous à l'API Loomky pour obtenir votre token JWT
-              </p>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Loomky
-                </label>
-                <input
-                  type="email"
-                  value={loomkyEmail}
-                  onChange={(e) => setLoomkyEmail(e.target.value)}
-                  placeholder="contact@example.fr"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mot de passe
-                </label>
-                <input
-                  type="password"
-                  value={loomkyPassword}
-                  onChange={(e) => setLoomkyPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              {/* Erreur */}
-              {loomkyAuthError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-sm text-red-800">
-                    ❌ <strong>Erreur :</strong> {loomkyAuthError}
-                  </p>
-                </div>
-              )}
-
-              {/* Bouton connexion */}
-              <button
-                onClick={handleLoomkyLogin}
-                disabled={loomkyAuthStatus === 'connecting'}
-                className={`w-full py-3 rounded-lg font-semibold text-white transition ${loomkyAuthStatus === 'connecting'
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
-                  }`}
-              >
-                {loomkyAuthStatus === 'connecting' ? '⏳ Connexion en cours...' : '🔐 Se connecter à Loomky'}
-              </button>
-            </div>
-          ) : (
-            // État connecté
-            <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-green-900 font-semibold mb-2">
-                  ✅ Connecté à Loomky
-                </p>
-                <div className="text-sm text-green-800 space-y-1">
-                  <p><strong>Nom :</strong> {loomkyUserInfo?.firstName}</p>
-                  <p><strong>Compte :</strong> {loomkyUserInfo?.accountName}</p>
-                  <p><strong>Rôle :</strong> {loomkyUserInfo?.role}</p>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <p className="text-xs text-gray-600 mb-2">Token JWT (tronqué) :</p>
-                <code className="text-xs text-gray-800 break-all">
-                  {loomkyToken?.substring(0, 50)}...
-                </code>
-              </div>
-
-              <button
-                onClick={handleLoomkyLogout}
-                className="w-full py-2 rounded-lg font-semibold text-red-600 border border-red-200 hover:bg-red-50 transition"
-              >
-                🚪 Se déconnecter
-              </button>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Token d'authentification (pré-rempli)
+            </label>
+            <textarea
+              value={loomkyToken}
+              onChange={(e) => setLoomkyToken(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500"
+              rows="3"
+              placeholder="Token JWT..."
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Token sans expiration fourni par Maxime pour les tests
+            </p>
+          </div>
         </div>
 
         {/* SECTION 1: CONFIG API */}
@@ -778,7 +710,7 @@ export default function SimulationLoomky() {
                   endpointHebergement: e.target.value,
                   endpointChecklist: e.target.value
                 })}
-                placeholder="https://api.loomky.com/v1/properties"
+                placeholder="https://dev.loomky.com/v1/properties"
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
               />
               <p className="text-xs text-gray-500 mt-1">

@@ -703,6 +703,7 @@ const initialFormData = {
       equipements_chauffage: null,
       equipements_lave_linge: null,
       equipements_seche_cheveux: null,
+      equipements_seche_serviette: null,
       equipements_autre: null,
       equipements_autre_details: "",
       // WC séparé (conditionnel si equipements_wc = true)
@@ -726,6 +727,7 @@ const initialFormData = {
       equipements_chauffage: null,
       equipements_lave_linge: null,
       equipements_seche_cheveux: null,
+      equipements_seche_serviette: null,
       equipements_autre: null,
       equipements_autre_details: "",
       wc_separe: null,
@@ -747,6 +749,7 @@ const initialFormData = {
       equipements_chauffage: null,
       equipements_lave_linge: null,
       equipements_seche_cheveux: null,
+      equipements_seche_serviette: null,
       equipements_autre: null,
       equipements_autre_details: "",
       wc_separe: null,
@@ -768,6 +771,7 @@ const initialFormData = {
       equipements_chauffage: null,
       equipements_lave_linge: null,
       equipements_seche_cheveux: null,
+      equipements_seche_serviette: null,
       equipements_autre: null,
       equipements_autre_details: "",
       wc_separe: null,
@@ -789,6 +793,7 @@ const initialFormData = {
       equipements_chauffage: null,
       equipements_lave_linge: null,
       equipements_seche_cheveux: null,
+      equipements_seche_serviette: null,
       equipements_autre: null,
       equipements_autre_details: "",
       wc_separe: null,
@@ -810,6 +815,7 @@ const initialFormData = {
       equipements_chauffage: null,
       equipements_lave_linge: null,
       equipements_seche_cheveux: null,
+      equipements_seche_serviette: null,
       equipements_autre: null,
       equipements_autre_details: "",
       wc_separe: null,
@@ -1674,15 +1680,15 @@ export function FormProvider({ children }) {
 
       if (result.success) {
         setFormData(result.data);
-            // Si finalisation (statut = Complété), créer la checklist ménage
-            if (newStatut === 'Complété') {
-              const { data: checklistId, error: checklistError } = await createChecklistFromFiche(result.data.id);
-              if (checklistError) {
-                console.error('❌ Erreur création checklist:', checklistError);
-              } else {
-                console.log('✅ Checklist ménage créée:', checklistId);
-              }
-            }
+        // Si finalisation (statut = Complété), créer la checklist ménage
+        if (newStatut === 'Complété') {
+          const { data: checklistId, error: checklistError } = await createChecklistFromFiche(result.data.id);
+          if (checklistError) {
+            console.error('❌ Erreur création checklist:', checklistError);
+          } else {
+            console.log('✅ Checklist ménage créée:', checklistId);
+          }
+        }
         return { success: true, data: result.data };
       } else {
         return { success: false, error: result.message };
