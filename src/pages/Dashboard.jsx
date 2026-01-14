@@ -36,7 +36,7 @@ export default function Dashboard() {
 
   // 📢 BANDEAU D'ANNONCE
   const [showAnnouncement, setShowAnnouncement] = useState(false)
-  const ANNOUNCEMENT_KEY = 'announcement_dismissed_2024_12_11' // Changer cette clé pour réafficher l'annonce
+  const ANNOUNCEMENT_KEY = 'announcement_dismissed_2026_01_14' // Changer cette clé pour réafficher l'annonce
 
   // 🆕 AJOUTS RÉAFFECTATION
   const [reassignModal, setReassignModal] = useState({
@@ -402,10 +402,9 @@ export default function Dashboard() {
           <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
             <Info className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
             <div className="flex-1">
-              <h4 className="font-semibold text-blue-900 mb-1">Nouvelle fonctionnalité : Pagination</h4>
+              <h4 className="font-semibold text-blue-900 mb-1">Amélioration des PDF générés</h4>
               <p className="text-sm text-blue-800">
-                Les fiches s'affichent maintenant par tranches de 25 pour améliorer les performances.
-                Utilisez les boutons en bas de page pour naviguer.
+                Bonne nouvelle ! Les PDF des fiches logement et ménage sont désormais optimisés avec du texte sélectionnable. Vous pouvez maintenant copier-coller le contenu directement depuis vos PDF et utiliser la fonction recherche (Ctrl+F).
               </p>
             </div>
             <button
