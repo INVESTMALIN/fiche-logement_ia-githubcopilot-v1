@@ -1063,15 +1063,44 @@ const initialFormData = {
     salle_manger_elements_abimes_photos: []    // Array: URLs photos
   },
 
-  // 🏗️ ÉTAPE 3 - Mise à jour FormContext.jsx
-  // Remplacer la ligne : section_equip_spe_exterieur: {},
-
   section_equip_spe_exterieur: {
     // CHAMPS RACINES (toujours visibles)
     dispose_exterieur: null,                    // Radio: true/false/null
     dispose_piscine: null,                      // Radio: true/false/null  
     dispose_jacuzzi: null,                      // Radio: true/false/null
-    dispose_cuisine_exterieure: null,          // Radio: true/false/null
+    dispose_cuisine_exterieure: null,           // Radio: true/false/null
+    dispose_sauna: null,                        // Radio: true/false/null
+    dispose_hammam: null,                       // Radio: true/false/null
+    dispose_salle_cinema: null,                 // Radio: true/false/null
+    dispose_salle_sport: null,                  // Radio: true/false/null
+    dispose_salle_jeux: null,                   // Radio: true/false/null
+
+    // BRANCHE SALLE DE JEUX (si dispose_salle_jeux = true)
+    salle_jeux_equipements: [],                 // Array checkboxes: ["Billard", "Baby Foot", "Ping Pong"]
+    salle_jeux_billard_instructions: null,      // Textarea (si Billard coché)
+    salle_jeux_baby_foot_instructions: null,    // Textarea (si Baby Foot coché)
+    salle_jeux_ping_pong_instructions: null,    // Textarea (si Ping Pong coché)
+    salle_jeux_photos: [],                      // Array photos
+
+    // BRANCHE SALLE DE CINÉMA (si dispose_salle_cinema = true)
+    salle_cinema_instructions: null,            // Textarea
+    salle_cinema_photos: [],                    // Array photos
+
+    // BRANCHE SALLE DE SPORT (si dispose_salle_sport = true)
+    salle_sport_instructions: null,             // Textarea
+    salle_sport_photos: [],                     // Array photos
+
+    // BRANCHE HAMMAM (si dispose_hammam = true)
+    hammam_acces: null,                         // Radio: Intérieur/Extérieur
+    hammam_entretien_prestataire: null,         // Radio: true/false/null
+    hammam_instructions: null,                  // Textarea
+    hammam_photos: [],                          // Array photos
+
+    // BRANCHE SAUNA (si dispose_sauna = true)
+    sauna_acces: null,                          // Radio: Intérieur/Extérieur
+    sauna_entretien_prestataire: null,          // Radio: true/false/null
+    sauna_instructions: null,                   // Textarea
+    sauna_photos: [],                           // Array photos
 
     // BRANCHE EXTÉRIEUR (si dispose_exterieur = true)
     exterieur_type_espace: [],                 // Array checkboxes: ["Balcon", "Terrasse", "Jardin", "Patio", "Aucun"]

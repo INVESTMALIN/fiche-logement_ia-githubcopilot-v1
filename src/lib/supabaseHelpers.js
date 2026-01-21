@@ -979,6 +979,39 @@ export const mapFormDataToSupabase = (formData) => {
     equip_spe_ext_dispose_piscine: formData.section_equip_spe_exterieur?.dispose_piscine ?? null,
     equip_spe_ext_dispose_jacuzzi: formData.section_equip_spe_exterieur?.dispose_jacuzzi ?? null,
     equip_spe_ext_dispose_cuisine_exterieure: formData.section_equip_spe_exterieur?.dispose_cuisine_exterieure ?? null,
+    equip_spe_ext_dispose_sauna: formData.section_equip_spe_exterieur?.dispose_sauna ?? null,
+    equip_spe_ext_dispose_hammam: formData.section_equip_spe_exterieur?.dispose_hammam ?? null,
+    equip_spe_ext_dispose_salle_cinema: formData.section_equip_spe_exterieur?.dispose_salle_cinema ?? null,
+    equip_spe_ext_dispose_salle_sport: formData.section_equip_spe_exterieur?.dispose_salle_sport ?? null,
+    equip_spe_ext_dispose_salle_jeux: formData.section_equip_spe_exterieur?.dispose_salle_jeux ?? null,
+
+    // BRANCHE SALLE DE JEUX
+    equip_spe_ext_salle_jeux_equipements: formData.section_equip_spe_exterieur?.salle_jeux_equipements || [],
+    equip_spe_ext_salle_jeux_billard_instructions: formData.section_equip_spe_exterieur?.salle_jeux_billard_instructions || null,
+    equip_spe_ext_salle_jeux_baby_foot_instructions: formData.section_equip_spe_exterieur?.salle_jeux_baby_foot_instructions || null,
+    equip_spe_ext_salle_jeux_ping_pong_instructions: formData.section_equip_spe_exterieur?.salle_jeux_ping_pong_instructions || null,
+    equip_spe_ext_salle_jeux_photos: formData.section_equip_spe_exterieur?.salle_jeux_photos || [],
+
+    // BRANCHE SALLE DE CINÉMA
+    equip_spe_ext_salle_cinema_instructions: formData.section_equip_spe_exterieur?.salle_cinema_instructions || null,
+    equip_spe_ext_salle_cinema_photos: formData.section_equip_spe_exterieur?.salle_cinema_photos || [],
+
+    // BRANCHE SALLE DE SPORT
+    equip_spe_ext_salle_sport_instructions: formData.section_equip_spe_exterieur?.salle_sport_instructions || null,
+    equip_spe_ext_salle_sport_photos: formData.section_equip_spe_exterieur?.salle_sport_photos || [],
+
+    // BRANCHE HAMMAM
+    equip_spe_ext_hammam_acces: formData.section_equip_spe_exterieur?.hammam_acces || null,
+    equip_spe_ext_hammam_entretien_prestataire: formData.section_equip_spe_exterieur?.hammam_entretien_prestataire ?? null,
+    equip_spe_ext_hammam_instructions: formData.section_equip_spe_exterieur?.hammam_instructions || null,
+    equip_spe_ext_hammam_photos: formData.section_equip_spe_exterieur?.hammam_photos || [],
+
+    // BRANCHE SAUNA
+    equip_spe_ext_sauna_acces: formData.section_equip_spe_exterieur?.sauna_acces || null,
+    equip_spe_ext_sauna_entretien_prestataire: formData.section_equip_spe_exterieur?.sauna_entretien_prestataire ?? null,
+    equip_spe_ext_sauna_instructions: formData.section_equip_spe_exterieur?.sauna_instructions || null,
+    equip_spe_ext_sauna_photos: formData.section_equip_spe_exterieur?.sauna_photos || [],
+
 
     // BRANCHE EXTÉRIEUR
     equip_spe_ext_exterieur_type_espace: formData.section_equip_spe_exterieur?.exterieur_type_espace || [],
@@ -2155,6 +2188,38 @@ export const mapSupabaseToFormData = (supabaseData) => {
       dispose_piscine: supabaseData.equip_spe_ext_dispose_piscine ?? null,
       dispose_jacuzzi: supabaseData.equip_spe_ext_dispose_jacuzzi ?? null,
       dispose_cuisine_exterieure: supabaseData.equip_spe_ext_dispose_cuisine_exterieure ?? null,
+      dispose_sauna: supabaseData.equip_spe_ext_dispose_sauna ?? null,
+      dispose_hammam: supabaseData.equip_spe_ext_dispose_hammam ?? null,
+      dispose_salle_cinema: supabaseData.equip_spe_ext_dispose_salle_cinema ?? null,
+      dispose_salle_sport: supabaseData.equip_spe_ext_dispose_salle_sport ?? null,
+      dispose_salle_jeux: supabaseData.equip_spe_ext_dispose_salle_jeux ?? null,
+
+      // BRANCHE SALLE DE JEUX
+      salle_jeux_equipements: supabaseData.equip_spe_ext_salle_jeux_equipements || [],
+      salle_jeux_billard_instructions: supabaseData.equip_spe_ext_salle_jeux_billard_instructions || "",
+      salle_jeux_baby_foot_instructions: supabaseData.equip_spe_ext_salle_jeux_baby_foot_instructions || "",
+      salle_jeux_ping_pong_instructions: supabaseData.equip_spe_ext_salle_jeux_ping_pong_instructions || "",
+      salle_jeux_photos: supabaseData.equip_spe_ext_salle_jeux_photos || [],
+
+      // BRANCHE SALLE DE CINÉMA
+      salle_cinema_instructions: supabaseData.equip_spe_ext_salle_cinema_instructions || "",
+      salle_cinema_photos: supabaseData.equip_spe_ext_salle_cinema_photos || [],
+
+      // BRANCHE SALLE DE SPORT
+      salle_sport_instructions: supabaseData.equip_spe_ext_salle_sport_instructions || "",
+      salle_sport_photos: supabaseData.equip_spe_ext_salle_sport_photos || [],
+
+      // BRANCHE HAMMAM
+      hammam_acces: supabaseData.equip_spe_ext_hammam_acces || "",
+      hammam_entretien_prestataire: supabaseData.equip_spe_ext_hammam_entretien_prestataire ?? null,
+      hammam_instructions: supabaseData.equip_spe_ext_hammam_instructions || "",
+      hammam_photos: supabaseData.equip_spe_ext_hammam_photos || [],
+
+      // BRANCHE SAUNA
+      sauna_acces: supabaseData.equip_spe_ext_sauna_acces || "",
+      sauna_entretien_prestataire: supabaseData.equip_spe_ext_sauna_entretien_prestataire ?? null,
+      sauna_instructions: supabaseData.equip_spe_ext_sauna_instructions || "",
+      sauna_photos: supabaseData.equip_spe_ext_sauna_photos || [],
 
       // BRANCHE EXTÉRIEUR
       exterieur_type_espace: supabaseData.equip_spe_ext_exterieur_type_espace || [],

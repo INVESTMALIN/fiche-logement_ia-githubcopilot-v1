@@ -32,6 +32,33 @@ const BRANCH_SCHEMAS = {
     'cuisine_ext_entretien_prestataire', 'cuisine_ext_entretien_frequence',
     'cuisine_ext_entretien_type_prestation', 'cuisine_ext_entretien_qui',
     'cuisine_ext_superficie', 'cuisine_ext_type', 'cuisine_ext_caracteristiques'
+  ],
+  sauna: [
+    'sauna_acces',
+    'sauna_entretien_prestataire',
+    'sauna_instructions',
+    'sauna_photos'
+  ],
+  hammam: [
+    'hammam_acces',
+    'hammam_entretien_prestataire',
+    'hammam_instructions',
+    'hammam_photos'
+  ],
+  salle_cinema: [
+    'salle_cinema_instructions',
+    'salle_cinema_photos'
+  ],
+  salle_sport: [
+    'salle_sport_instructions',
+    'salle_sport_photos'
+  ],
+  salle_jeux: [
+    'salle_jeux_equipements',
+    'salle_jeux_billard_instructions',
+    'salle_jeux_baby_foot_instructions',
+    'salle_jeux_ping_pong_instructions',
+    'salle_jeux_photos'
   ]
 }
 
@@ -40,7 +67,7 @@ const BRANCH_SCHEMAS = {
 const EntretienPattern = ({ prefix, label, formData, getField, handleInputChange, handleRadioChange }) => {
   const entretienField = `${prefix}_entretien_prestataire`
   const entretienValue = formData[entretienField.split('.').pop()]
-  
+
   return (
     <div className="space-y-4">
       <div>
@@ -119,44 +146,49 @@ export default function FicheEquipExterieur() {
   }
 
   const handleRadioChange = (field, value) => {
-  const boolValue = value === 'true' ? true : (value === 'false' ? false : null)
-  
-  // Si on passe à false sur une question racine, nettoyer la branche
-  if (boolValue === false) {
-    const currentData = getField('section_equip_spe_exterieur')
-    const newData = { ...currentData }
-    
-    // Déterminer quelle branche nettoyer
-    let branchToClean = null
-    if (field.includes('dispose_exterieur')) branchToClean = 'exterieur'
-    else if (field.includes('dispose_piscine')) branchToClean = 'piscine'
-    else if (field.includes('dispose_jacuzzi')) branchToClean = 'jacuzzi'
-    else if (field.includes('dispose_cuisine_exterieure')) branchToClean = 'cuisine_ext'
-    
-    if (branchToClean) {
-      // Nettoyer les champs de la branche
-      BRANCH_SCHEMAS[branchToClean].forEach(key => {
-        if (Array.isArray(newData[key])) {
-          newData[key] = []
-        } else if (typeof newData[key] === 'object' && newData[key] !== null) {
-          newData[key] = {}
-        } else {
-          newData[key] = null
-        }
-      })
+    const boolValue = value === 'true' ? true : (value === 'false' ? false : null)
+
+    // Si on passe à false sur une question racine, nettoyer la branche
+    if (boolValue === false) {
+      const currentData = getField('section_equip_spe_exterieur')
+      const newData = { ...currentData }
+
+      // Déterminer quelle branche nettoyer
+      let branchToClean = null
+      if (field.includes('dispose_exterieur')) branchToClean = 'exterieur'
+      else if (field.includes('dispose_piscine')) branchToClean = 'piscine'
+      else if (field.includes('dispose_jacuzzi')) branchToClean = 'jacuzzi'
+      else if (field.includes('dispose_cuisine_exterieure')) branchToClean = 'cuisine_ext'
+      else if (field.includes('dispose_sauna')) branchToClean = 'sauna'
+      else if (field.includes('dispose_hammam')) branchToClean = 'hammam'
+      else if (field.includes('dispose_salle_cinema')) branchToClean = 'salle_cinema'
+      else if (field.includes('dispose_salle_sport')) branchToClean = 'salle_sport'
+      else if (field.includes('dispose_salle_jeux')) branchToClean = 'salle_jeux'
+
+      if (branchToClean) {
+        // Nettoyer les champs de la branche
+        BRANCH_SCHEMAS[branchToClean].forEach(key => {
+          if (Array.isArray(newData[key])) {
+            newData[key] = []
+          } else if (typeof newData[key] === 'object' && newData[key] !== null) {
+            newData[key] = {}
+          } else {
+            newData[key] = null
+          }
+        })
+      }
+
+      // Remettre explicitement le flag racine à false
+      const fieldKey = field.split('.').pop()
+      newData[fieldKey] = false
+
+      // Une seule mise à jour atomique
+      updateField('section_equip_spe_exterieur', newData)
+    } else {
+      // Comportement normal pour les autres cas
+      updateField(field, boolValue)
     }
-    
-    // Remettre explicitement le flag racine à false
-    const fieldKey = field.split('.').pop()
-    newData[fieldKey] = false
-    
-    // Une seule mise à jour atomique
-    updateField('section_equip_spe_exterieur', newData)
-  } else {
-    // Comportement normal pour les autres cas
-    updateField(field, boolValue)
   }
-}
 
   const handleArrayCheckboxChange = (field, option, checked) => {
     const currentArray = formData[field.split('.').pop()] || []
@@ -182,12 +214,12 @@ export default function FicheEquipExterieur() {
         <ProgressBar />
         <div className="flex-1 p-6 bg-gray-100">
           <h1 className="text-2xl font-bold mb-6">Équipements spécifiques et extérieurs</h1>
-          
+
           <div className="bg-white p-6 rounded-lg shadow space-y-8">
-            
+
             {/* CHAMPS RACINES */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
+
               <div>
                 <label className="block font-semibold mb-3">
                   Le logement dispose-t-il d'un extérieur ? *
@@ -291,13 +323,143 @@ export default function FicheEquipExterieur() {
                   </label>
                 </div>
               </div>
+              <div>
+                <label className="block font-semibold mb-3">
+                  Le logement dispose-t-il d'un sauna ? <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={formData.dispose_sauna === true}
+                      onChange={() => handleRadioChange('section_equip_spe_exterieur.dispose_sauna', 'true')}
+                      className="w-4 h-4"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={formData.dispose_sauna === false}
+                      onChange={() => handleRadioChange('section_equip_spe_exterieur.dispose_sauna', 'false')}
+                      className="w-4 h-4"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-3">
+                  Le logement dispose-t-il d'un hammam ? <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={formData.dispose_hammam === true}
+                      onChange={() => handleRadioChange('section_equip_spe_exterieur.dispose_hammam', 'true')}
+                      className="w-4 h-4"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={formData.dispose_hammam === false}
+                      onChange={() => handleRadioChange('section_equip_spe_exterieur.dispose_hammam', 'false')}
+                      className="w-4 h-4"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-3">
+                  Le logement dispose-t-il d'une salle de cinéma ? <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={formData.dispose_salle_cinema === true}
+                      onChange={() => handleRadioChange('section_equip_spe_exterieur.dispose_salle_cinema', 'true')}
+                      className="w-4 h-4"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={formData.dispose_salle_cinema === false}
+                      onChange={() => handleRadioChange('section_equip_spe_exterieur.dispose_salle_cinema', 'false')}
+                      className="w-4 h-4"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-3">
+                  Le logement dispose-t-il d'une salle de sport ? <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={formData.dispose_salle_sport === true}
+                      onChange={() => handleRadioChange('section_equip_spe_exterieur.dispose_salle_sport', 'true')}
+                      className="w-4 h-4"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={formData.dispose_salle_sport === false}
+                      onChange={() => handleRadioChange('section_equip_spe_exterieur.dispose_salle_sport', 'false')}
+                      className="w-4 h-4"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-3">
+                  Le logement dispose-t-il d'une salle de jeux ? <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={formData.dispose_salle_jeux === true}
+                      onChange={() => handleRadioChange('section_equip_spe_exterieur.dispose_salle_jeux', 'true')}
+                      className="w-4 h-4"
+                    />
+                    <span>Oui</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={formData.dispose_salle_jeux === false}
+                      onChange={() => handleRadioChange('section_equip_spe_exterieur.dispose_salle_jeux', 'false')}
+                      className="w-4 h-4"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+              </div>
+
             </div>
 
             {/* BRANCHE EXTÉRIEUR */}
             {formData.dispose_exterieur === true && (
               <div className="border-l-4 border-green-500 pl-6 space-y-6">
                 <h2 className="text-xl font-semibold text-green-700">🌿 Espace extérieur</h2>
-                
                 <div>
                   <label className="block font-semibold mb-3">
                     Quel type d'espace extérieur est disponible ?
@@ -329,8 +491,8 @@ export default function FicheEquipExterieur() {
                   />
                 </div>
 
-                <EntretienPattern 
-                  prefix="section_equip_spe_exterieur.exterieur" 
+                <EntretienPattern
+                  prefix="section_equip_spe_exterieur.exterieur"
                   label="de l'extérieur"
                   formData={formData}
                   getField={getField}
@@ -403,7 +565,7 @@ export default function FicheEquipExterieur() {
                 </div>
 
                 <div>
-                  <PhotoUpload 
+                  <PhotoUpload
                     fieldPath="section_equip_spe_exterieur.exterieur_photos"
                     label="Photos de l'extérieur"
                     multiple={true}
@@ -463,7 +625,7 @@ export default function FicheEquipExterieur() {
                 {(formData.exterieur_equipements || []).includes('Barbecue') && (
                   <div className="border-l-4 border-orange-500 pl-6 space-y-4">
                     <h3 className="text-lg font-semibold text-orange-700">🔥 Section Barbecue</h3>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block font-semibold mb-1">Instructions d'utilisation</label>
@@ -538,7 +700,7 @@ export default function FicheEquipExterieur() {
                     </div>
 
                     <div>
-                      <PhotoUpload 
+                      <PhotoUpload
                         fieldPath="section_equip_spe_exterieur.barbecue_photos"
                         label="Photos du barbecue et des ustensiles"
                         multiple={true}
@@ -554,7 +716,7 @@ export default function FicheEquipExterieur() {
             {formData.dispose_piscine === true && (
               <div className="border-l-4 border-blue-500 pl-6 space-y-6">
                 <h2 className="text-xl font-semibold text-blue-700">🏊‍♂️ Piscine</h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-semibold mb-3">Type</label>
@@ -724,8 +886,8 @@ export default function FicheEquipExterieur() {
                   )}
                 </div>
 
-                <EntretienPattern 
-                  prefix="section_equip_spe_exterieur.piscine" 
+                <EntretienPattern
+                  prefix="section_equip_spe_exterieur.piscine"
                   label="de la piscine"
                   formData={formData}
                   getField={getField}
@@ -744,7 +906,7 @@ export default function FicheEquipExterieur() {
                 </div>
 
                 <div>
-                  <PhotoUpload 
+                  <PhotoUpload
                     fieldPath="section_equip_spe_exterieur.piscine_video"
                     label="Vidéo de la piscine"
                     multiple={true}
@@ -759,7 +921,7 @@ export default function FicheEquipExterieur() {
             {formData.dispose_jacuzzi === true && (
               <div className="border-l-4 border-purple-500 pl-6 space-y-6">
                 <h2 className="text-xl font-semibold text-purple-700">💦 Jacuzzi</h2>
-                
+
                 <div>
                   <label className="block font-semibold mb-3">Accès</label>
                   <div className="flex gap-4">
@@ -784,8 +946,8 @@ export default function FicheEquipExterieur() {
                   </div>
                 </div>
 
-                <EntretienPattern 
-                  prefix="section_equip_spe_exterieur.jacuzzi" 
+                <EntretienPattern
+                  prefix="section_equip_spe_exterieur.jacuzzi"
                   label="du jacuzzi"
                   formData={formData}
                   getField={getField}
@@ -827,7 +989,7 @@ export default function FicheEquipExterieur() {
                 </div>
 
                 <div>
-                  <PhotoUpload 
+                  <PhotoUpload
                     fieldPath="section_equip_spe_exterieur.jacuzzi_photos"
                     label="Photos du Jacuzzi"
                     multiple={true}
@@ -841,9 +1003,9 @@ export default function FicheEquipExterieur() {
             {formData.dispose_cuisine_exterieure === true && (
               <div className="border-l-4 border-yellow-500 pl-6 space-y-6">
                 <h2 className="text-xl font-semibold text-yellow-700">🍳 Cuisine extérieure</h2>
-                
-                <EntretienPattern 
-                  prefix="section_equip_spe_exterieur.cuisine_ext" 
+
+                <EntretienPattern
+                  prefix="section_equip_spe_exterieur.cuisine_ext"
                   label="de la cuisine extérieure"
                   formData={formData}
                   getField={getField}
@@ -906,19 +1068,308 @@ export default function FicheEquipExterieur() {
                 </div>
               </div>
             )}
-{/* 🆕 ÉLÉMENTS ABÎMÉS GARAGE - À ajouter à la fin de la section */}
-<div className="bg-white rounded-xl p-6 shadow mb-6">
+
+            {/* BRANCHE SAUNA */}
+            {formData.dispose_sauna === true && (
+              <div className="border-l-4 border-purple-500 pl-6 space-y-6">
+                <h2 className="text-xl font-semibold text-purple-700">🧖 Sauna</h2>
+
+                <div>
+                  <label className="block font-semibold mb-3">
+                    Accès <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={formData.sauna_acces === 'Intérieur'}
+                        onChange={() => handleInputChange('section_equip_spe_exterieur.sauna_acces', 'Intérieur')}
+                        className="w-4 h-4"
+                      />
+                      <span>Intérieur</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={formData.sauna_acces === 'Extérieur'}
+                        onChange={() => handleInputChange('section_equip_spe_exterieur.sauna_acces', 'Extérieur')}
+                        className="w-4 h-4"
+                      />
+                      <span>Extérieur</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-3">
+                    Le prestataire doit-il gérer l'entretien du sauna ?
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={formData.sauna_entretien_prestataire === true}
+                        onChange={() => handleRadioChange('section_equip_spe_exterieur.sauna_entretien_prestataire', 'true')}
+                        className="w-4 h-4"
+                      />
+                      <span>Oui</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={formData.sauna_entretien_prestataire === false}
+                        onChange={() => handleRadioChange('section_equip_spe_exterieur.sauna_entretien_prestataire', 'false')}
+                        className="w-4 h-4"
+                      />
+                      <span>Non</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">
+                    Instructions d'utilisation
+                  </label>
+                  <textarea
+                    placeholder="Décrivez les instructions pour utiliser le sauna en toute sécurité"
+                    className="w-full p-3 border rounded h-24"
+                    value={getField('section_equip_spe_exterieur.sauna_instructions')}
+                    onChange={(e) => handleInputChange('section_equip_spe_exterieur.sauna_instructions', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <PhotoUpload
+                    fieldPath="section_equip_spe_exterieur.sauna_photos"
+                    label="Photos du sauna"
+                    multiple={true}
+                    maxFiles={10}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* BRANCHE HAMMAM */}
+            {formData.dispose_hammam === true && (
+              <div className="border-l-4 border-indigo-500 pl-6 space-y-6">
+                <h2 className="text-xl font-semibold text-indigo-700">💨 Hammam</h2>
+
+                <div>
+                  <label className="block font-semibold mb-3">
+                    Accès <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={formData.hammam_acces === 'Intérieur'}
+                        onChange={() => handleInputChange('section_equip_spe_exterieur.hammam_acces', 'Intérieur')}
+                        className="w-4 h-4"
+                      />
+                      <span>Intérieur</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={formData.hammam_acces === 'Extérieur'}
+                        onChange={() => handleInputChange('section_equip_spe_exterieur.hammam_acces', 'Extérieur')}
+                        className="w-4 h-4"
+                      />
+                      <span>Extérieur</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-3">
+                    Le prestataire doit-il gérer l'entretien du hammam ?
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={formData.hammam_entretien_prestataire === true}
+                        onChange={() => handleRadioChange('section_equip_spe_exterieur.hammam_entretien_prestataire', 'true')}
+                        className="w-4 h-4"
+                      />
+                      <span>Oui</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={formData.hammam_entretien_prestataire === false}
+                        onChange={() => handleRadioChange('section_equip_spe_exterieur.hammam_entretien_prestataire', 'false')}
+                        className="w-4 h-4"
+                      />
+                      <span>Non</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">
+                    Instructions d'utilisation
+                  </label>
+                  <textarea
+                    placeholder="Décrivez les instructions pour utiliser le hammam en toute sécurité"
+                    className="w-full p-3 border rounded h-24"
+                    value={getField('section_equip_spe_exterieur.hammam_instructions')}
+                    onChange={(e) => handleInputChange('section_equip_spe_exterieur.hammam_instructions', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <PhotoUpload
+                    fieldPath="section_equip_spe_exterieur.hammam_photos"
+                    label="Photos du hammam"
+                    multiple={true}
+                    maxFiles={10}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* BRANCHE SALLE DE CINÉMA */}
+            {formData.dispose_salle_cinema === true && (
+              <div className="border-l-4 border-pink-500 pl-6 space-y-6">
+                <h2 className="text-xl font-semibold text-pink-700">🎬 Salle de cinéma</h2>
+
+                <div>
+                  <label className="block font-semibold mb-1">
+                    Instructions d'utilisation
+                  </label>
+                  <textarea
+                    placeholder="Décrivez les instructions pour utiliser la salle de cinéma (équipements, télécommandes, réglages, etc.)"
+                    className="w-full p-3 border rounded h-24"
+                    value={getField('section_equip_spe_exterieur.salle_cinema_instructions')}
+                    onChange={(e) => handleInputChange('section_equip_spe_exterieur.salle_cinema_instructions', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <PhotoUpload
+                    fieldPath="section_equip_spe_exterieur.salle_cinema_photos"
+                    label="Photos de la salle de cinéma"
+                    multiple={true}
+                    maxFiles={10}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* BRANCHE SALLE DE SPORT */}
+            {formData.dispose_salle_sport === true && (
+              <div className="border-l-4 border-green-500 pl-6 space-y-6">
+                <h2 className="text-xl font-semibold text-green-700">🏋️ Salle de sport</h2>
+
+                <div>
+                  <label className="block font-semibold mb-1">
+                    Instructions d'utilisation
+                  </label>
+                  <textarea
+                    placeholder="Décrivez les instructions pour utiliser la salle de sport (équipements disponibles, consignes de sécurité, etc.)"
+                    className="w-full p-3 border rounded h-24"
+                    value={getField('section_equip_spe_exterieur.salle_sport_instructions')}
+                    onChange={(e) => handleInputChange('section_equip_spe_exterieur.salle_sport_instructions', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <PhotoUpload
+                    fieldPath="section_equip_spe_exterieur.salle_sport_photos"
+                    label="Photos de la salle de sport"
+                    multiple={true}
+                    maxFiles={10}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* BRANCHE SALLE DE JEUX */}
+            {formData.dispose_salle_jeux === true && (
+              <div className="border-l-4 border-orange-500 pl-6 space-y-6">
+                <h2 className="text-xl font-semibold text-orange-700">🎮 Salle de jeux</h2>
+
+                <div>
+                  <label className="block font-semibold mb-3">
+                    Équipements disponibles :
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {['Billard', 'Baby Foot', 'Ping Pong'].map(option => (
+                      <label key={option} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={(formData.salle_jeux_equipements || []).includes(option)}
+                          onChange={(e) => handleArrayCheckboxChange('section_equip_spe_exterieur.salle_jeux_equipements', option, e.target.checked)}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {(formData.salle_jeux_equipements || []).includes('Billard') && (
+                  <div>
+                    <label className="block font-semibold mb-1">
+                      Billard - Instructions d'utilisation
+                    </label>
+                    <textarea
+                      placeholder="Décrivez les instructions pour utiliser le billard"
+                      className="w-full p-3 border rounded h-24"
+                      value={getField('section_equip_spe_exterieur.salle_jeux_billard_instructions')}
+                      onChange={(e) => handleInputChange('section_equip_spe_exterieur.salle_jeux_billard_instructions', e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {(formData.salle_jeux_equipements || []).includes('Baby Foot') && (
+                  <div>
+                    <label className="block font-semibold mb-1">
+                      Baby Foot - Instructions d'utilisation
+                    </label>
+                    <textarea
+                      placeholder="Décrivez les instructions pour utiliser le baby foot"
+                      className="w-full p-3 border rounded h-24"
+                      value={getField('section_equip_spe_exterieur.salle_jeux_baby_foot_instructions')}
+                      onChange={(e) => handleInputChange('section_equip_spe_exterieur.salle_jeux_baby_foot_instructions', e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {(formData.salle_jeux_equipements || []).includes('Ping Pong') && (
+                  <div>
+                    <label className="block font-semibold mb-1">
+                      Ping Pong - Instructions d'utilisation
+                    </label>
+                    <textarea
+                      placeholder="Décrivez les instructions pour utiliser la table de ping pong"
+                      className="w-full p-3 border rounded h-24"
+                      value={getField('section_equip_spe_exterieur.salle_jeux_ping_pong_instructions')}
+                      onChange={(e) => handleInputChange('section_equip_spe_exterieur.salle_jeux_ping_pong_instructions', e.target.value)}
+                    />
+                  </div>
+                )}
+                <div>
+                  <PhotoUpload
+                    fieldPath="section_equip_spe_exterieur.salle_jeux_photos"
+                    label="Photos de la salle de jeux"
+                    multiple={true}
+                    maxFiles={10}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* 🆕 ÉLÉMENTS ABÎMÉS GARAGE - À ajouter à la fin de la section */}
+            <div className="bg-white rounded-xl p-6 shadow mb-6">
               <h2 className="text-base font-semibold mb-4">Éléments abîmés dans le garage</h2>
-              
+
               <div className="mb-6">
                 <label className="block font-semibold mb-3">
                   Photos de tous les éléments abîmés, cassés ou détériorés dans le garage
                 </label>
                 <p className="text-sm text-gray-600 mb-4">
-                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus,
                   tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
                 </p>
-                
+
                 <div className="flex gap-6">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -931,7 +1382,7 @@ export default function FicheEquipExterieur() {
                     />
                     <span>Oui</span>
                   </label>
-                  
+
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
@@ -947,11 +1398,11 @@ export default function FicheEquipExterieur() {
                     <span>Non</span>
                   </label>
                 </div>
-                
+
                 {/* Upload conditionnel avec fond bleu clair */}
                 {getField('section_equip_spe_exterieur.garage_elements_abimes') === true && (
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <PhotoUpload 
+                    <PhotoUpload
                       fieldPath="section_equip_spe_exterieur.garage_elements_abimes_photos"
                       label="Photos des éléments abîmés du garage"
                       multiple={true}
@@ -967,16 +1418,16 @@ export default function FicheEquipExterieur() {
             {/* 🆕 ÉLÉMENTS ABÎMÉS BUANDERIE - À ajouter à la fin de la section */}
             <div className="bg-white rounded-xl p-6 shadow mb-6">
               <h2 className="text-base font-semibold mb-4">Éléments abîmés dans la buanderie</h2>
-              
+
               <div className="mb-6">
                 <label className="block font-semibold mb-3">
                   Photos de tous les éléments abîmés, cassés ou détériorés dans la buanderie
                 </label>
                 <p className="text-sm text-gray-600 mb-4">
-                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus,
                   tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
                 </p>
-                
+
                 <div className="flex gap-6">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -989,7 +1440,7 @@ export default function FicheEquipExterieur() {
                     />
                     <span>Oui</span>
                   </label>
-                  
+
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
@@ -1005,11 +1456,11 @@ export default function FicheEquipExterieur() {
                     <span>Non</span>
                   </label>
                 </div>
-                
+
                 {/* Upload conditionnel avec fond bleu clair */}
                 {getField('section_equip_spe_exterieur.buanderie_elements_abimes') === true && (
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <PhotoUpload 
+                    <PhotoUpload
                       fieldPath="section_equip_spe_exterieur.buanderie_elements_abimes_photos"
                       label="Photos des éléments abîmés de la buanderie"
                       multiple={true}
@@ -1025,16 +1476,16 @@ export default function FicheEquipExterieur() {
             {/* 🆕 ÉLÉMENTS ABÎMÉS AUTRES PIÈCES - À ajouter à la fin de la section */}
             <div className="bg-white rounded-xl p-6 shadow mb-6">
               <h2 className="text-base font-semibold mb-4">Éléments abîmés dans autres pièces</h2>
-              
+
               <div className="mb-6">
                 <label className="block font-semibold mb-3">
                   Photos de tous les éléments abîmés, cassés ou détériorés dans autres pièces (palier, bureau, couloir, escalier etc)
                 </label>
                 <p className="text-sm text-gray-600 mb-4">
-                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus, 
+                  Traces d'usures, tâches, joints colorés, joints décollés, meubles abîmés, tâches sur les tissus,
                   tâches sur les murs, trous, absence de cache prise, absence de lustre, rayures, etc.
                 </p>
-                
+
                 <div className="flex gap-6">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1047,7 +1498,7 @@ export default function FicheEquipExterieur() {
                     />
                     <span>Oui</span>
                   </label>
-                  
+
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
@@ -1063,11 +1514,11 @@ export default function FicheEquipExterieur() {
                     <span>Non</span>
                   </label>
                 </div>
-                
+
                 {/* Upload conditionnel avec fond bleu clair */}
                 {getField('section_equip_spe_exterieur.autres_pieces_elements_abimes') === true && (
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <PhotoUpload 
+                    <PhotoUpload
                       fieldPath="section_equip_spe_exterieur.autres_pieces_elements_abimes_photos"
                       label="Photos des éléments abîmés des autres pièces"
                       multiple={true}
@@ -1079,46 +1530,46 @@ export default function FicheEquipExterieur() {
                 )}
               </div>
             </div>
-            
+
           </div>
           {/* Indicateur de sauvegarde */}
           {saveStatus.saving && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
-                ⏳ Sauvegarde en cours...
-              </div>
-            )}
-            {saveStatus.saved && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                ✅ Sauvegardé avec succès !
-              </div>
-            )}
-            {saveStatus.error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                ❌ {saveStatus.error}
-              </div>
-            )}
-
-            {/* Boutons de navigation */}
-            <div className="flex justify-between items-center pt-6 border-t">
-              <Button 
-                variant="ghost" 
-                onClick={back} 
-                disabled={currentStep === 0}
-              >
-                Retour
-              </Button>
-              
-              <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={handleSave}
-                  disabled={saveStatus.saving}
-                >
-                  {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
-                </Button>
-                <Button variant="primary" onClick={next}>Suivant</Button>
-              </div>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              ⏳ Sauvegarde en cours...
             </div>
+          )}
+          {saveStatus.saved && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+              ✅ Sauvegardé avec succès !
+            </div>
+          )}
+          {saveStatus.error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+              ❌ {saveStatus.error}
+            </div>
+          )}
+
+          {/* Boutons de navigation */}
+          <div className="flex justify-between items-center pt-6 border-t">
+            <Button
+              variant="ghost"
+              onClick={back}
+              disabled={currentStep === 0}
+            >
+              Retour
+            </Button>
+
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                onClick={handleSave}
+                disabled={saveStatus.saving}
+              >
+                {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
+              </Button>
+              <Button variant="primary" onClick={next}>Suivant</Button>
+            </div>
+          </div>
         </div>
         <div className="h-20"></div>
       </div>

@@ -246,19 +246,19 @@ export default function FicheFinalisation() {
             <div className="mb-8">
               <MiniDashboard formData={formData} />
             </div>
-            
 
-{/* GÉNÉRATION PDF */}
-<div className="bg-white rounded-xl shadow-sm p-8 mb-6">
-  <div className="flex items-center gap-3 mb-6">
-    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-      <FileText className="w-5 h-5 text-white" />
-    </div>
-    <div>
-      <h3 className="text-lg font-semibold text-gray-900">Génération des fiches PDF</h3>
-      <p className="text-sm text-gray-600">Créez automatiquement vos documents logement et ménage</p>
-    </div>
-  </div>
+
+            {/* GÉNÉRATION PDF */}
+            <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Génération des fiches PDF</h3>
+                  <p className="text-sm text-gray-600">Créez automatiquement vos documents logement et ménage</p>
+                </div>
+              </div>
 
               <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
                 <PDFUpload
@@ -285,16 +285,16 @@ export default function FicheFinalisation() {
                       />
                     </svg>
                   </div>
-                    <div className="text-sm text-blue-700 leading-relaxed space-y-2">
-                      <ul className="ml-4 space-y-1">
-                        <li>• <strong>Fiche Logement</strong> : disponible au téléchargement ci-dessous</li>
-                        <li>• <strong>Fiche Ménage</strong> : générée en parallèle</li>
-                      </ul>
-                      <p className="mt-2">
-                        Les deux fiches remontent automatiquement sur le <strong>Drive</strong> et dans <strong>Monday</strong> à chaque génération. 
-                        <span className="inline-block ml-1">♻️ Vous pouvez régénérer autant de fois que nécessaire.</span>
-                      </p>
-                    </div>
+                  <div className="text-sm text-blue-700 leading-relaxed space-y-2">
+                    <ul className="ml-4 space-y-1">
+                      <li>• <strong>Fiche Logement</strong> : disponible au téléchargement ci-dessous</li>
+                      <li>• <strong>Fiche Ménage</strong> : générée en parallèle</li>
+                    </ul>
+                    <p className="mt-2">
+                      Les deux fiches remontent automatiquement sur le <strong>Drive</strong> et dans <strong>Monday</strong> à chaque génération.
+                      <span className="inline-block ml-1">♻️ Vous pouvez régénérer autant de fois que nécessaire.</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -333,7 +333,7 @@ export default function FicheFinalisation() {
                     <li>• Cliquez sur <strong>"Valider cette annonce"</strong> une fois satisfait</li>
                   </ul>
                   <p className="mt-2">
-                    L'annonce validée remonte automatiquement dans <strong>Monday</strong>, colonne <em>"Contenu pour création d'annonce"</em>. 
+                    L'annonce validée remonte automatiquement dans <strong>Monday</strong>, colonne <em>"Contenu pour création d'annonce"</em>.
                     <span className="inline-block ml-1">♻️ Vous pouvez régénérer et valider autant de fois que nécessaire.</span>
                   </p>
                 </div>
@@ -473,34 +473,35 @@ export default function FicheFinalisation() {
                 </div>
               )}
             </div>
-            
 
-            {/* SECTION PRÉ-VALIDATION - Après MiniDashboard */}
+
+
+            {/* SECTION PRÉ-FINALISATION (statuts et champs obligatoires) */}
             <div className="mb-8 space-y-4">
-              
+
               {/* 1. Alerte si Brouillon */}
               {formData.statut === 'Brouillon' && (
-              <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <FileEdit className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                      Cette fiche est en brouillon
-                    </h3>
-                    <p className="text-sm text-blue-800 mb-2">
-                      Pensez à la <strong>Finaliser</strong> une fois toutes les sections complétées pour déclencher 
-                      la synchronisation des photos/vidéos vers Google Drive.
-                    </p>
-                    <p className="text-sm text-blue-800">
-                      <AlertCircle className="w-4 h-4 inline-block mr-1" />
-                      <strong>Cette synchronisation se fait une seule fois et est définitive.</strong> Si vous devez ajouter des photos après la finalisation, 
-                      vous pourrez les ajouter dans la Fiche logement, mais il faudra les transférer manuellement dans le Drive.
-                    </p>
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FileEdit className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                        Cette fiche est en brouillon
+                      </h3>
+                      <p className="text-sm text-blue-800 mb-2">
+                        Pensez à la <strong>Finaliser</strong> une fois toutes les sections complétées pour déclencher
+                        la synchronisation des photos/vidéos vers Google Drive.
+                      </p>
+                      <p className="text-sm text-blue-800">
+                        <AlertCircle className="w-4 h-4 inline-block mr-1" />
+                        <strong>Cette synchronisation se fait une seule fois et est définitive.</strong> Si vous devez ajouter des photos après la finalisation,
+                        vous pourrez les ajouter dans la Fiche logement, mais il faudra les transférer manuellement dans le Drive.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
               )}
 
               {/* 2. Compteur de validation */}
@@ -531,9 +532,9 @@ export default function FicheFinalisation() {
                   return (
                     <div className="bg-orange-50 border-2 border-orange-300 rounded-xl p-6">
                       <div className="flex items-start gap-4">
-<div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
-  <AlertCircle className="w-6 h-6 text-white" />
-</div>
+                        <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <AlertCircle className="w-6 h-6 text-white" />
+                        </div>
                         <div className="flex-1">
                           <h3 className="text-lg font-semibold text-orange-900 mb-2">
                             Il manque encore {totalErrors} champ{totalErrors > 1 ? 's' : ''} obligatoire{totalErrors > 1 ? 's' : ''}
@@ -558,7 +559,7 @@ export default function FicheFinalisation() {
                   )
                 }
               })()}
-              
+
             </div>
 
             {/* Messages sauvegarde */}

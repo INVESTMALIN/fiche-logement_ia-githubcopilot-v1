@@ -37,6 +37,8 @@ export default function SimulationLoomky() {
   // === SECTION 3: Tests & Résultats ===
   const [sending, setSending] = useState(false)
   const [testHistory, setTestHistory] = useState([])
+  const [deletePropertyId, setDeletePropertyId] = useState('')
+  const [deleteChecklistId, setDeleteChecklistId] = useState('')
 
   // Charger config depuis localStorage
   useEffect(() => {
@@ -145,30 +147,213 @@ export default function SimulationLoomky() {
   const buildResolvedChecklists = (fiche) => {
     const checklists = []
 
+
     // === SECTIONS STANDARD (toujours présentes) ===
 
-    // Salon
+
+    // Entrée
     checklists.push({
-      name: "Salon",
+      name: "Entrée",
       tasks: [
-        { name: "Vue d'ensemble (murs + sols)", description: "Vérifier la propreté générale" },
-        { name: "Canapé", description: "Nettoyer et aspirer" },
-        { name: "Table basse", description: "Dépoussiérer" }
+        { name: "Vue d'ensemble de l'entrée (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" },
+        { name: "Porte d'entrée", description: "Porte propre, poignée et interrupteurs désinfectés" }
       ],
       isRequired: true,
       beforePhotosRequired: true,
       afterPhotosRequired: true
     })
 
+
+    // Salon
+    const salonTasks = [
+      { name: "Vue d'ensemble (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" }
+    ]
+
+    // Task conditionnelle : Table basse
+    if (fiche.salon_sam_equipements_table_basse === true) {
+      salonTasks.push({ name: "Table basse", description: "Surface essuyée et rangée" })
+    }
+
+    // Task conditionnelle : Canapé
+    if (fiche.salon_sam_equipements_canape === true) {
+      salonTasks.push({ name: "Canapé", description: "Canapé propre, aspiré, dépoussiéré et détaché" })
+    }
+
+    // Task conditionnelle : Fauteuils
+    if (fiche.salon_sam_equipements_fauteuils === true) {
+      salonTasks.push({ name: "Fauteuils", description: "Fauteuils propre, aspiré, dépoussiéré et détaché" })
+    }
+
+    // Task conditionnelle : Climatisation
+    if (fiche.salon_sam_equipements_climatisation === true) {
+      salonTasks.push({ name: "Climatisation", description: "Réglage à 18° à partir du 1er novembre et éteint à partir du 1er avril. Etat fonctionnel" })
+    }
+
+    // Task conditionnelle : Chauffages
+    if (fiche.salon_sam_equipements_chauffage === true) {
+      salonTasks.push({ name: "Chauffages", description: "Propres et dépoussiérés. Etat fonctionnel" })
+    }
+
+    // Task conditionnelle : Télévision
+    if (fiche.salon_sam_equipements_television === true) {
+      salonTasks.push({ name: "Télévision et télécommande", description: "Dépoussiérées et fonctionnelles : vérification nécessaire" })
+    }
+
+    // Task conditionnelle : Canapé-lit
+    if (fiche.salon_sam_equipements_canape_lit === true) {
+      salonTasks.push({ name: "Linge propre à disposition pour le canapé lit", description: "Vérifier présence et propreté : couette et housse de couette + Oreillers et taies d'oreillers + Drap housse + Serviettes (1 grande et 1 petite par personne)" })
+    }
+
+    /* (OLD)
+    // Vérifier si au moins une chambre a un canapé-lit avec draps fournis
+    let hasCanapeLitWithDraps = false
+    for (let i = 1; i <= 6; i++) {
+      const hasCanapeLit = (fiche[`chambres_chambre_${i}_canape_lit_simple`] > 0) ||
+        (fiche[`chambres_chambre_${i}_canape_lit_double`] > 0)
+      const hasDraps = fiche[`chambres_chambre_${i}_equipements_draps_fournis`] === true
+
+      if (hasCanapeLit && hasDraps) {
+        hasCanapeLitWithDraps = true
+        break
+      }
+    }
+
+    // Task conditionnelle : Linge canapé-lit
+    if (hasCanapeLitWithDraps) {
+      salonTasks.push({
+        name: "Linge propre à disposition pour le canapé lit",
+        description: "Vérifier présence et propreté : Couette et housse de couette + Oreillers et taies d'oreillers + Drap housse + Serviettes (1 grande et 1 petite par personne)"
+      })
+    }
+    */
+
+    checklists.push({
+      name: "Salon",
+      tasks: salonTasks,
+      isRequired: true,
+      beforePhotosRequired: true,
+      afterPhotosRequired: true
+    })
+
+
+    // Salle à manger
+    const salleAMangerTasks = [
+      { name: "Vue d'ensemble (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" }
+    ]
+
+    // Task conditionnelle : Table à manger
+    if (fiche.salon_sam_equipements_table_manger === true) {
+      salleAMangerTasks.push({ name: "Table à manger", description: "Surfaces propres et alignées. Pas de miettes sous la table, sur la table ni sur les chaises" })
+    }
+
+    // Task conditionnelle : Chaises
+    if (fiche.salon_sam_equipements_chaises === true) {
+      salleAMangerTasks.push({ name: "Chaises", description: "Surfaces propres et alignées. Pas de miettes sous les chaises. Les chaises ont été aspirées" })
+    }
+
+    // Task conditionnelle : Climatisation
+    if (fiche.salon_sam_equipements_climatisation === true) {
+      salleAMangerTasks.push({ name: "Climatisation", description: "Réglage à 18° à partir du 1er novembre et éteint à partir du 1er avril. Etat fonctionnel" })
+    }
+
+    // Task conditionnelle : Chauffage
+    if (fiche.salon_sam_equipements_chauffage === true) {
+      salleAMangerTasks.push({ name: "Chauffage", description: "Propres et dépoussiérés. Etat fonctionnel" })
+    }
+
+    checklists.push({
+      name: "Salle à manger",
+      tasks: salleAMangerTasks,
+      isRequired: true,
+      beforePhotosRequired: true,
+      afterPhotosRequired: true
+    })
+
     // Cuisine
+    const cuisineTasks = [
+      { name: "Vue d'ensemble de la cuisine (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et équipements rangés" },
+      { name: "Plan de travail", description: "Essuyé et désinfecté" },
+      { name: "Plaque de cuisson", description: "Propre et fonctionnelle" },
+      { name: "Évier", description: "Nettoyé et sans traces de calcaire. Vérifier que l'écoulement se fait correctement" },
+      { name: "Poubelle avec sac propre", description: "Vidée et remplacée. Propre et désinfectée" },
+      { name: "Torchon", description: "Propre et plié" },
+      { name: "Éponge, liquide vaisselle, savon pour les mains", description: "Disponibles, en bon état et en quantité suffisante" },
+      { name: "Essuie-tout, sel, sucre, poivre", description: "Disponibles, en bon état et en quantité suffisante" },
+      { name: "Café, thé", description: "Disponibles, au bon format et en quantité suffisante (1 café et 1 thé par personne)" },
+      { name: "Autres produits si demandés par le propriétaire (pastille lave-vaisselle, bouteille d'eau, gâteaux etc.)", description: "Disponibles, en bon état et en quantité suffisante" },
+      { name: "Emplacement produits ménagers", description: "Ordonné et accessible" }
+    ]
+
+    if (fiche.cuisine_1_equipements_hotte === true) {
+      cuisineTasks.push({ name: "Hotte", description: "Dépoussiérée et propre. Les filtres de la hotte sont propres. La hotte est fonctionnelle" })
+    }
+
+    if (fiche.cuisine_1_equipements_refrigerateur === true) {
+      cuisineTasks.push({ name: "Réfrigérateur", description: "Propre, désinfecté et fonctionnel. Aucune nourriture à l'intérieur. Le frigo est laissé sur 2 ou 3 maximum et ne présente pas de givre" })
+    }
+
+    if (fiche.cuisine_1_equipements_congelateur === true) {
+      cuisineTasks.push({ name: "Congélateur", description: "Propre, désinfecté et fonctionnel. Aucune nourriture à l'intérieur. Le congélateur est décongelé (pas de bloc de glace)" })
+    }
+
+    if (fiche.cuisine_1_equipements_mini_refrigerateur === true) {
+      cuisineTasks.push({ name: "Mini-réfrigérateur", description: "Propre, désinfecté et fonctionnel. Aucune nourriture à l'intérieur. Le congélateur est décongelé (pas de bloc de glace)" })
+    }
+
+    if (fiche.cuisine_1_equipements_cuisiniere === true) {
+      cuisineTasks.push({ name: "Cuisinière", description: "Propre, désinfecté et fonctionnel. Aucune nourriture à l'intérieur. Le congélateur est décongelé (pas de bloc de glace)" })
+    }
+
+    if (fiche.cuisine_1_equipements_cafetiere === true || fiche.cuisine_1_equipements_machine_cafe === true) {
+      cuisineTasks.push({ name: "Cafetière", description: "Propre, désinfectée et fonctionnelle. Aucune capsule ou café à l'intérieur. L'eau a été vidée. Elle ne présente pas de traces de calcaire" })
+    }
+
+    if (fiche.cuisine_1_equipements_bouilloire === true) {
+      cuisineTasks.push({ name: "Bouilloire", description: "Intérieur propre et désinfecté. Bouilloire fonctionnelle. L'eau a été vidée. Elle ne présente pas de traces de calcaire" })
+    }
+
+    if (fiche.cuisine_1_equipements_lave_vaisselle === true) {
+      cuisineTasks.push({ name: "Lave-vaisselle", description: "Intérieur propre et désinfecté. Lave-vaisselle fonctionnel. Aucune vaisselle n'a été laissée à l'intérieur. Le filtre a été nettoyé. L'intérieur ne présente pas de traces de calcaire" })
+    }
+
+    if (fiche.cuisine_1_equipements_grille_pain === true) {
+      cuisineTasks.push({ name: "Grille pain", description: "Propre, désinfecté et fonctionnel. Sans taches et sans miettes " })
+    }
+
+    if (fiche.cuisine_1_equipements_blender === true) {
+      cuisineTasks.push({ name: "Blender", description: "Propre, désinfecté et fonctionnel" })
+    }
+
+    if (fiche.cuisine_1_equipements_cuiseur_riz === true) {
+      cuisineTasks.push({ name: "Cuiseur à riz", description: "Propre, désinfecté et fonctionnel" })
+    }
+
+    if (fiche.cuisine_1_equipements_machine_pain === true) {
+      cuisineTasks.push({ name: "Machine à pain", description: "Propre, désinfectée et fonctionnelle" })
+    }
+
+    if (fiche.cuisine_1_equipements_lave_linge === true) {
+      cuisineTasks.push({ name: "Lave linge", description: "Propre, désinfecté et fonctionnel. Aucune linge n'a été laissée à l'intérieur. Le filtre a été nettoyé. L'intérieur ne présente pas de traces de calcaire" })
+    }
+
+    if (fiche.cuisine_1_equipements_four === true) {
+      cuisineTasks.push({ name: "Four", description: "Intérieur propre et désinfecté. Four fonctionnel. Aucune nourriture n'a été laissée à l'intérieur. L'intérieur ne présente pas de traces de brûlure. Les grilles et les plaques ont été nettoyées. Astuce : Pour un nettoyage plus facile, vous pouvez mettre du papier de cuisson propre sur les plaques afin que les voyageurs les utilisent et ne tachent pas les grilles et les plaques" })
+    }
+
+    if (fiche.cuisine_1_equipements_micro_ondes === true) {
+      cuisineTasks.push({ name: "Micro-ondes", description: "Intérieur propre et désinfecté. Micro-ondes fonctionnel. Aucune nourriture n'a été laissée à l'intérieur" })
+    }
+
+    if (fiche.cuisine_1_equipements_autre === true && fiche.cuisine_1_equipements_autre_details) {
+      cuisineTasks.push({
+        name: fiche.cuisine_1_equipements_autre_details,
+        description: "Intérieur propre et désinfecté. Appareil fonctionnel"
+      })
+    }
+
     checklists.push({
       name: "Cuisine",
-      tasks: [
-        { name: "Plan de travail", description: "Nettoyer et désinfecter" },
-        { name: "Évier", description: "Nettoyer et faire briller" },
-        { name: "Frigo", description: "Nettoyer intérieur et extérieur" },
-        { name: "Poubelle avec sac propre", description: "Vider et mettre un nouveau sac" }
-      ],
+      tasks: cuisineTasks,
       isRequired: true,
       beforePhotosRequired: true,
       afterPhotosRequired: true
@@ -183,10 +368,9 @@ export default function SimulationLoomky() {
       checklists.push({
         name: "Espace nuit",
         tasks: [
-          { name: "Vue d'ensemble (murs + sols)", description: "Vérifier la propreté générale" },
-          { name: "Couchage fait + serviettes roulées", description: "1 grande + 1 petite/personne" },
-          { name: "Dessous du couchage", description: "Aspirer sous le canapé-lit/lit" },
-          { name: "Climatisation / Chauffage", description: "Nettoyer et vérifier" }
+          { name: "Vue d'ensemble (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" },
+          { name: "Couchage", description: "Propre et rangé" },
+          { name: "Dessous du couchage", description: "Dépoussiérés et nettoyés. Sans éléments oubliés" }
         ],
         required: true,
         isRequired: true,
@@ -196,16 +380,33 @@ export default function SimulationLoomky() {
     } else {
       // Chambres classiques (1 à 6)
       for (let i = 1; i <= Math.min(nombreChambres, 6); i++) {
+        const chambreTasks = [
+          { name: "Vue d'ensemble (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" },
+          { name: "Lits", description: "Faits avec serviettes roulées sur les lits (1 grande et 1 petite par personne)" },
+          { name: "Dessous de lits", description: "Dépoussiérés et nettoyés. Sans éléments oubliés" }
+        ]
+
+        // Task conditionnelle : Placards/commodes
+        if (fiche[`chambres_chambre_${i}_equipements_espace_rangement`] === true) {
+          chambreTasks.push({ name: "Intérieur des placards et commodes", description: "Rangé et propre. Sans éléments oubliés" })
+        }
+
+        // Task standard : Tables de chevet
+        chambreTasks.push({ name: "Tiroirs des tables de chevet ouvert", description: "Rangé et propre. Sans éléments oubliés" })
+
+        // Task conditionnelle : Climatisation
+        if (fiche[`chambres_chambre_${i}_equipements_climatisation`] === true) {
+          chambreTasks.push({ name: "Climatisation", description: "Réglage à 18° à partir du 1er Novembre et éteint à partir du 1er Avril. Etat fonctionnel" })
+        }
+
+        // Task conditionnelle : Chauffage
+        if (fiche[`chambres_chambre_${i}_equipements_chauffage`] === true) {
+          chambreTasks.push({ name: "Chauffage", description: "Propres et dépoussiérés. Etat fonctionnel" })
+        }
+
         checklists.push({
           name: `Chambre ${i}`,
-          tasks: [
-            { name: "Vue d'ensemble (murs + sols)", description: "Vérifier la propreté générale" },
-            { name: "Lits faits + serviettes roulées", description: "1 grande + 1 petite/personne" },
-            { name: "Dessous de lits", description: "Aspirer sous les lits" },
-            { name: "Intérieur placards + commodes", description: "Vérifier propreté" },
-            { name: "Tiroirs tables de chevet", description: "Si présentes, vérifier et nettoyer" },
-            { name: "Climatisation / Chauffage", description: "Nettoyer et vérifier" }
-          ],
+          tasks: chambreTasks,
           required: true,
           isRequired: true,
           beforePhotosRequired: true,
@@ -218,37 +419,72 @@ export default function SimulationLoomky() {
     const nombreSDB = fiche.visite_nombre_salles_bains ? parseInt(fiche.visite_nombre_salles_bains) : 1
 
     for (let i = 1; i <= Math.min(nombreSDB, 6); i++) {
-      // Récupérer le sèche-serviette spécifique à cette SDB
-      const salleKey = `salle_de_bains_salle_de_bain_${i}_equipements_seche_serviette`
-      const hasSecheServiettes = fiche[salleKey] === true
-
-      const tasks = [
-        { name: "Vue d'ensemble (murs + sols)", description: "Vérifier la propreté générale" },
-        { name: "Douche / baignoire", description: "Nettoyer parois et fond" },
-        { name: "Joints + baguettes portes de douche", description: "Nettoyer et vérifier état" },
-        { name: "Parois douche/baignoire", description: "Faire briller" },
-        { name: "Bonde douche", description: "Nettoyer" },
-        { name: "Bonde évier", description: "Nettoyer" },
-        { name: "Lavabo + robinet", description: "Nettoyer et faire briller" },
-        { name: "Intérieur tiroirs/placards + vue sèche-cheveux", description: "Vérifier propreté et présence" },
-        { name: "Tapis de bain", description: "Vérifier état et propreté" },
-        { name: "Poubelle avec sac propre", description: "Vider et mettre sac neuf" }
+      const sdbTasks = [
+        { name: "Vue d'ensemble (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" }
       ]
 
-      // Task conditionnelle : Sèche-serviettes (spécifique à cette SDB)
-      if (hasSecheServiettes) {
-        tasks.push({ name: "Sèche-serviettes", description: "Nettoyer et vérifier fonctionnement" })
+      // Tasks conditionnelles : Douche / Baignoire / Combo
+      const hasDouche = fiche[`salle_de_bains_salle_de_bain_${i}_equipements_douche`] === true
+      const hasBaignoire = fiche[`salle_de_bains_salle_de_bain_${i}_equipements_baignoire`] === true
+      const hasCombo = fiche[`salle_de_bains_salle_de_bain_${i}_equipements_douche_baignoire_com`] === true
+
+      if (hasCombo) {
+        sdbTasks.push({ name: "Douche-baignoire", description: "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation et eau chaude fonctionnelle" })
+      } else {
+        if (hasDouche) {
+          sdbTasks.push({ name: "Douche", description: "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation et eau chaude fonctionnelle" })
+        }
+        if (hasBaignoire) {
+          sdbTasks.push({ name: "Baignoire", description: "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation et eau chaude fonctionnelle" })
+        }
       }
 
-      // Toujours finir par Climatisation
-      tasks.push({ name: "Climatisation / Chauffage", description: "Nettoyer et vérifier" })
+      // Joints et parois (conditionnels selon douche)
+      if (hasDouche || hasCombo) {
+        sdbTasks.push({ name: "Joints et baguettes des portes de douche", description: "Propre et sans traces ou décoloration" })
+        sdbTasks.push({ name: "Parois ou rideau de douche", description: "Propres et essuyés. Sans traces de calcaire ou de décoloration" })
+      }
+
+      // Rideau baignoire (conditionnel)
+      if (hasBaignoire && !hasCombo) {
+        sdbTasks.push({ name: "Rideau de baignoire (si présent)", description: "Propres et essuyés. Sans traces de calcaire ou de décoloration" })
+      }
+
+      // Tasks standard
+      sdbTasks.push({ name: "Lavabo", description: "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation fonctionnelle et eau chaude fonctionnelle" })
+      sdbTasks.push({ name: "Intérieurs des tiroirs/placards", description: "Rangé, sans éléments oubliés et vue sèche-cheveux accessible" })
+      sdbTasks.push({ name: "Tapis de bain", description: "Propre et placé : roulé sur le lavabo ou plié sur sèche serviette ou plié sur rebord de baignoire" })
+      sdbTasks.push({ name: "Intérieur poubelle avec sac poubelle", description: "Vidée et remplacée. Propre et désinfectée" })
+
+      // Task conditionnelle : Sèche-serviettes
+      if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_seche_serviette`] === true) {
+        sdbTasks.push({ name: "Sèche serviettes", description: "Propre, dépoussiéré et fonctionnel. Laissé éteint" })
+      }
+
+      // Task conditionnelle : Bidet
+      if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_bidet`] === true) {
+        sdbTasks.push({ name: "Bidet", description: "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation fonctionnelle et eau chaude fonctionnelle" })
+      }
+
+      // Task conditionnelle : Chauffage
+      if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_chauffage`] === true) {
+        sdbTasks.push({ name: "Chauffage", description: "Réglage à 18° à partir du 1er Novembre et éteint à partir du 1er Avril. Etat fonctionnel" })
+      }
+
+      // Task conditionnelle : Autre équipement
+      if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_autre`] === true && fiche[`salle_de_bains_salle_de_bain_${i}_equipements_autre_details`]) {
+        sdbTasks.push({
+          name: fiche[`salle_de_bains_salle_de_bain_${i}_equipements_autre_details`],
+          description: "Propre, désinfecté et fonctionnel"
+        })
+      }
 
       // Consommables en dernier
-      tasks.push({ name: "Consommables: 1 savon mains", description: "Vérifier présence" })
+      sdbTasks.push({ name: "Consommables : 1 savon pour les mains", description: "Disponible, en bon état et en quantité suffisante" })
 
       checklists.push({
         name: `Salle de bain ${i}`,
-        tasks,
+        tasks: sdbTasks,
         required: true,
         isRequired: true,
         beforePhotosRequired: true,
@@ -256,29 +492,238 @@ export default function SimulationLoomky() {
       })
     }
 
+    // WC
+    checklists.push({
+      name: "WC",
+      tasks: [
+        { name: "Vue d'ensemble des WC (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" },
+        { name: "Abattant", description: "Propre et désinfecté" },
+        { name: "Lunette de WC", description: "Propre et désinfectée" },
+        { name: "Cuvette de WC", description: "Propre et désinfectée. Sans trace de calcaire" },
+        { name: "Base de WC (arrondi en bas)", description: "Propre et désinfectée" },
+        { name: "Brosse de WC", description: "Propre et désinfectée" },
+        { name: "Poubelle de WC", description: "Vider et mettre sac neuf. Intérieur poubelle avec sac poubelle" },
+        { name: "Consommables", description: "2 rouleaux papier toilette. Disponible, en bon état et en quantité suffisante" }
+      ],
+      isRequired: true,
+      beforePhotosRequired: true,
+      afterPhotosRequired: true
+    })
+
+
     // === SECTIONS CONDITIONNELLES ===
 
-    // Jacuzzi (si disponible)
-    if (fiche.equip_spe_ext_dispose_jacuzzi) {
+
+    // === BUANDERIE (conditionnelle globale) ===
+    if (fiche.visite_pieces_buanderie === true) {
+      const buanderieTasks = [
+        { name: "Vue d'ensemble de la pièce", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" }
+      ]
+
+      // Task conditionnelle : Machine à laver
+      if (fiche.equipements_lave_linge === true) {
+        buanderieTasks.push({ name: "Machine à laver", description: "Propre et fonctionnelle. Sans linge à l'intérieur" })
+      }
+
+      // Task conditionnelle : Sèche-linge
+      if (fiche.equipements_seche_linge === true) {
+        buanderieTasks.push({ name: "Sèche linge", description: "Propre et fonctionnel. Sans linge à l'intérieur" })
+      }
+
+      // Task conditionnelle : Lit bébé (avec type dynamique)
+      if ((fiche.bebe_equipements || []).includes('Lit bébé')) {
+        const typeLit = fiche.bebe_lit_bebe_type || "Lit bébé"
+        buanderieTasks.push({
+          name: "Lit bébé",
+          description: `${typeLit} propre et rangé. Sans linge à l'intérieur`
+        })
+      }
+
+      // Task conditionnelle : Étendoir
+      if (fiche.equipements_etendoir === true) {
+        buanderieTasks.push({ name: "Etendoir à linge", description: "Propre et rangé. Sans linge étendu" })
+      }
+
+      // Task standard : Espace de stockage (toujours présent)
+      buanderieTasks.push({ name: "Espace de stockage (linge et consommables)", description: "Linge et consommables ordonnés" })
+
       checklists.push({
-        name: "Jacuzzi",
-        tasks: [
-          { name: "Nettoyage complet", description: "Nettoyer parois et fond" },
-          { name: "Vérification fonctionnement", description: "Tester jets et température" }
-        ],
+        name: "Buanderie / Stockage",
+        tasks: buanderieTasks,
         isRequired: true,
         beforePhotosRequired: true,
         afterPhotosRequired: true
       })
     }
 
-    // Piscine (si disponible)
-    if (fiche.equip_spe_ext_dispose_piscine) {
+    // === AUTRES PIÈCES OU MATÉRIEL (conditionnelles individuelles) ===
+    const autresPiecesTasks = []
+
+    // Salle de cinéma
+    if (fiche.equip_spe_ext_dispose_salle_cinema === true) {
+      autresPiecesTasks.push({
+        name: "Vue d'ensemble de la salle de cinéma",
+        description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, matériel rangé et fonctionnel. Matériel au complet"
+      })
+    }
+
+    // Salle de sport
+    if (fiche.equip_spe_ext_dispose_salle_sport === true) {
+      autresPiecesTasks.push({
+        name: "Vue d'ensemble de la salle de sport",
+        description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, matériel rangé et fonctionnel. Matériel au complet"
+      })
+    }
+
+    // Salle de jeux (si cochée, on ajoute les équipements)
+    if (fiche.equip_spe_ext_dispose_salle_jeux === true) {
+      const equipementsSalleJeux = fiche.equip_spe_ext_salle_jeux_equipements || []
+
+      if (equipementsSalleJeux.includes('Billard')) {
+        autresPiecesTasks.push({
+          name: "Vue d'ensemble du billard",
+          description: "Surfaces dépoussiérées et propres, matériel rangé et fonctionnel. Matériel au complet et tapis de table non abîmé"
+        })
+      }
+
+      if (equipementsSalleJeux.includes('Baby Foot')) {
+        autresPiecesTasks.push({
+          name: "Vue d'ensemble du baby-foot",
+          description: "Surfaces dépoussiérées et propres, matériel rangé et fonctionnel. Matériel au complet, avec balle et joueurs"
+        })
+      }
+
+      if (equipementsSalleJeux.includes('Ping Pong')) {
+        autresPiecesTasks.push({
+          name: "Vue d'ensemble de la table de ping-pong avec raquettes et balles",
+          description: "Surfaces dépoussiérées et propres, matériel rangé et fonctionnel. Matériel au complet, avec balle et raquettes"
+        })
+      }
+    }
+
+    // Jacuzzi intérieur
+    if (fiche.equip_spe_ext_dispose_jacuzzi === true) {
+      autresPiecesTasks.push({
+        name: "Vue d'ensemble du jacuzzi (intérieur)",
+        description: "Intérieur propre (parois et rebords), eau avec PH adapté, pastilles/produits ajoutés (ou changement d'eau effectué). Jacuzzi fonctionnel. Matériel au complet"
+      })
+    }
+
+    // Sauna
+    if (fiche.equip_spe_ext_dispose_sauna === true) {
+      autresPiecesTasks.push({
+        name: "Vue d'ensemble du sauna",
+        description: "Sol aspiré et nettoyé, surfaces désinfectées et propres, matériel fonctionnel. Matériel au complet"
+      })
+    }
+
+    // Hammam
+    if (fiche.equip_spe_ext_dispose_hammam === true) {
+      autresPiecesTasks.push({
+        name: "Vue d'ensemble du hammam",
+        description: "Sol aspiré et nettoyé, surfaces désinfectées et propres, matériel fonctionnel. Matériel au complet"
+      })
+    }
+
+    // Autre pièce (champ libre)
+    if (fiche.visite_pieces_autre === true && fiche.visite_pieces_autre_details) {
+      autresPiecesTasks.push({
+        name: `Vue d'ensemble de ${fiche.visite_pieces_autre_details}`,
+        description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, matériel rangé et fonctionnel. Matériel au complet"
+      })
+    }
+
+    // Ajouter la checklist si au moins une task existe
+    if (autresPiecesTasks.length > 0) {
+      checklists.push({
+        name: "Autres pièces ou matériel",
+        tasks: autresPiecesTasks,
+        isRequired: true,
+        beforePhotosRequired: true,
+        afterPhotosRequired: true
+      })
+    }
+
+    // === EXTÉRIEURS (si applicable) ===
+    if (fiche.equip_spe_ext_dispose_exterieur === true) {
+      const exterieurTasks = [
+        { name: "Vue d'ensemble de l'extérieur", description: "Ensemble propre, rangé, pas d'élément laissé au sol" }
+      ]
+
+      const typeEspaces = fiche.equip_spe_ext_exterieur_type_espace || []
+      const equipementsExt = fiche.equip_spe_ext_exterieur_equipements || []
+
+      // Types d'espaces (breakdown en 4 tasks)
+      if (typeEspaces.includes('Balcon')) {
+        exterieurTasks.push({ name: "Balcon", description: "Sol balayé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" })
+      }
+
+      if (typeEspaces.includes('Terrasse')) {
+        exterieurTasks.push({ name: "Terrasse", description: "Sol balayé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" })
+      }
+
+      if (typeEspaces.includes('Jardin')) {
+        exterieurTasks.push({ name: "Jardin", description: "Sol balayé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" })
+      }
+
+      if (typeEspaces.includes('Patio')) {
+        exterieurTasks.push({ name: "Patio", description: "Sol balayé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" })
+      }
+
+      // Équipements conditionnels
+      if (equipementsExt.includes('Barbecue')) {
+        exterieurTasks.push({ name: "Barbecue", description: "Nettoyé et prêt à l'usage" })
+      }
+
+      if (equipementsExt.includes('Plancha')) {
+        exterieurTasks.push({ name: "Plancha", description: "Nettoyé et prêt à l'usage" })
+      }
+
+      if (equipementsExt.includes('Brasero')) {
+        exterieurTasks.push({ name: "Brasero", description: "Nettoyé et prêt à l'usage" })
+      }
+
+      // Cendrier (toujours affiché si extérieur présent)
+      exterieurTasks.push({ name: "Cendrier", description: "Vidé et propre" })
+
+      // Table extérieure
+      if (equipementsExt.includes('Table extérieure')) {
+        exterieurTasks.push({ name: "Table et chaises d'extérieur", description: "Nettoyées, rangées et alignées" })
+      }
+
+      // Jeux pour enfants
+      if (equipementsExt.includes('Jeux pour enfants')) {
+        exterieurTasks.push({ name: "Jeux pour enfants", description: "Nettoyé et rangé" })
+      }
+
+      // Produits pour la plage
+      if (equipementsExt.includes('Produits pour la plage')) {
+        exterieurTasks.push({ name: "Produits pour la plage", description: "Nettoyé et rangé" })
+      }
+
+      // Autre équipement (champ libre)
+      if (equipementsExt.includes('Autre') && fiche.equip_spe_ext_exterieur_equipements_autre_details) {
+        exterieurTasks.push({
+          name: fiche.equip_spe_ext_exterieur_equipements_autre_details,
+          description: "Nettoyé et rangé"
+        })
+      }
+
+      checklists.push({
+        name: "Extérieurs",
+        tasks: exterieurTasks,
+        isRequired: true,
+        beforePhotosRequired: true,
+        afterPhotosRequired: true
+      })
+    }
+
+    // Piscine (si disponible ET privée uniquement)
+    if (fiche.equip_spe_ext_dispose_piscine === true && fiche.equip_spe_ext_piscine_type === 'Privée') {
       checklists.push({
         name: "Piscine",
         tasks: [
-          { name: "Intérieur piscine", description: "Nettoyer parois et ligne d'eau" },
-          { name: "Rebords", description: "Nettoyer margelles" }
+          { name: "Vue d'ensemble de la piscine", description: "Intérieur propre (parois et rebords), eau claire (non trouble ou verte) avec PH adapté, pastilles/produits ajoutés (ou changement d'eau effectué). Pas de feuilles ou débris à la surface. Piscine fonctionnelle. Matériel au complet" }
         ],
         isRequired: true,
         beforePhotosRequired: true,
@@ -290,6 +735,10 @@ export default function SimulationLoomky() {
   }
 
   const mapTypeToLoomky = (typePropriete) => {
+    // TEMPORAIRE: L'API test n'accepte que le type 'apartment'
+    return 'apartment'
+
+    /* VERSION FINALE (à réactiver en prod):
     switch (typePropriete) {
       case 'Appartement':
       case 'Studio':
@@ -303,6 +752,7 @@ export default function SimulationLoomky() {
       default:
         return 'other'
     }
+    */
   }
 
   const calculateBedCounts = (fiche) => {
@@ -324,10 +774,15 @@ export default function SimulationLoomky() {
       doubleBedCount += (fiche[`chambres_chambre_${i}_canape_lit_double`] || 0)
     }
 
+    if (simpleBedCount === 0 && doubleBedCount === 0) {
+      simpleBedCount = 1 // Mettre 1 lit simple par défaut
+    }
+
     return { simpleBedCount, doubleBedCount }
   }
 
   const generatePayloads = (fiche) => {
+
     // Payload Hébergement (format Loomky)
     const hebergement = {
       name: `${fiche.logement_type_propriete || ''} ${fiche.nom || fiche.logement_numero_bien || ''}`.trim() || "Hébergement sans nom",
@@ -349,9 +804,10 @@ export default function SimulationLoomky() {
         to: "11:00"
       },
       surfaceArea: fiche.logement_surface || null,
-      defaultOccupancy: fiche.logement_nombre_personnes_max ? parseInt(fiche.logement_nombre_personnes_max) : null,
-      numberOfRooms: fiche.visite_nombre_chambres ? parseInt(fiche.visite_nombre_chambres) : 1,
-      numberOfBathrooms: fiche.visite_nombre_salles_bains ? parseInt(fiche.visite_nombre_salles_bains) : null,
+      defaultOccupancy: fiche.logement_nombre_personnes_max ? parseInt(fiche.logement_nombre_personnes_max) : 1,
+      maxOccupancy: fiche.logement_nombre_personnes_max ? parseInt(fiche.logement_nombre_personnes_max) : 1,
+      numberOfRooms: fiche.logement_type_propriete === "Studio" ? 1 : (parseInt(fiche.visite_nombre_chambres) || 1),
+      numberOfBathrooms: fiche.visite_nombre_salles_bains ? parseInt(fiche.visite_nombre_salles_bains) : 1,
       defaultRate: 100,
       timezone: "Europe/Paris",
       ...calculateBedCounts(fiche),
@@ -527,6 +983,63 @@ export default function SimulationLoomky() {
     if (confirm('Effacer l\'historique ?')) {
       setTestHistory([])
       localStorage.removeItem(HISTORY_KEY)
+    }
+  }
+
+  const deleteProperty = async () => {
+    if (!deletePropertyId.trim()) {
+      alert('⚠️ Property ID requis')
+      return
+    }
+
+    if (!confirm(`Supprimer la property ${deletePropertyId} ?`)) {
+      return
+    }
+
+    setSending(true)
+    try {
+      const headers = {
+        'Content-Type': 'application/json'
+      }
+
+      if (loomkyToken) {
+        headers['Authorization'] = `Bearer ${loomkyToken}`
+      }
+
+      // 1️⃣ Supprimer la checklist si ID fourni
+      if (deleteChecklistId.trim()) {
+        const checklistUrl = `${LOOMKY_BASE_URL}/v1/properties/${deletePropertyId}/cleaning-checklists/${deleteChecklistId}`
+        const checklistRes = await fetch(checklistUrl, {
+          method: 'DELETE',
+          headers
+        })
+
+        if (!checklistRes.ok) {
+          throw new Error(`Erreur suppression checklist: ${checklistRes.status}`)
+        }
+        console.log('✅ Checklist supprimée')
+      }
+
+      // 2️⃣ Supprimer la property
+      const propertyUrl = `${LOOMKY_BASE_URL}/v1/properties/${deletePropertyId}`
+      const propertyRes = await fetch(propertyUrl, {
+        method: 'DELETE',
+        headers
+      })
+
+      if (!propertyRes.ok) {
+        throw new Error(`Erreur suppression property: ${propertyRes.status}`)
+      }
+
+      alert('✅ Property supprimée avec succès !')
+      setDeletePropertyId('')
+      setDeleteChecklistId('')
+
+    } catch (error) {
+      console.error('Erreur suppression:', error)
+      alert(`❌ Erreur : ${error.message}`)
+    } finally {
+      setSending(false)
     }
   }
 
@@ -1089,6 +1602,40 @@ export default function SimulationLoomky() {
               Sélectionnez une fiche
             </div>
           )}
+        </div>
+        {/* Séparateur */}
+        <div className="my-6 border-t border-gray-300"></div>
+
+        {/* Section Suppression */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-gray-700">🗑️ Supprimer un logement</h3>
+
+          <input
+            type="text"
+            placeholder="Property ID (requis)"
+            value={deletePropertyId}
+            onChange={(e) => setDeletePropertyId(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg text-sm"
+          />
+
+          <input
+            type="text"
+            placeholder="Checklist ID (optionnel)"
+            value={deleteChecklistId}
+            onChange={(e) => setDeleteChecklistId(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg text-sm"
+          />
+
+          <button
+            onClick={deleteProperty}
+            disabled={sending || !deletePropertyId.trim()}
+            className={`w-full py-2 rounded-lg font-semibold text-white ${sending || !deletePropertyId.trim()
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-red-600 hover:bg-red-700'
+              }`}
+          >
+            {sending ? '⏳ Suppression...' : '🗑️ Supprimer le logement'}
+          </button>
         </div>
       </div>
     </div>

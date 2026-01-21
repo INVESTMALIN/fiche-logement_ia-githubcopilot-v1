@@ -1,10 +1,6 @@
 // src/components/PDFMenageTemplate.jsx - VERSION 2 CLEAN & PHOTOS GRANDES
 import React from 'react'
 
-const isVideoFile = (url) => {
-  if (!url) return false
-  return /\.(mp4|webm|ogg|mov|avi|m4v|mkv)$/i.test(url)
-}
 const PDFMenageTemplate = ({ formData }) => {
 
   // Vérification des données
@@ -38,9 +34,15 @@ const PDFMenageTemplate = ({ formData }) => {
   // Helper pour vérifier si c'est une URL d'image valide
   const isImageUrl = (url) => {
     if (typeof url !== 'string' || url.trim() === '') return false
-    return url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) !== null ||
-      url.includes('supabase') ||
-      url.includes('storage')
+
+    // Extraire l'extension sans les query params
+    const urlWithoutParams = url.split('?')[0]
+
+    // Vérifier que c'est bien une image, PAS une vidéo
+    const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(urlWithoutParams)
+    const isVideo = /\.(mp4|webm|ogg|mov|avi|m4v|mkv|qt)$/i.test(urlWithoutParams)
+
+    return isImage && !isVideo
   }
 
   // 🧹 Helper pour nettoyer les URLs malformées
@@ -351,7 +353,7 @@ const PDFMenageTemplate = ({ formData }) => {
           justifyContent: 'flex-start', // Aligne à gauche
           alignItems: 'flex-start'
         }}>
-          {photos.map((photo, index) => (
+          {photos.slice(0, 5).map((photo, index) => (
             <div key={index} style={{
               // 🔧 CONTENEUR adaptatif pour grandes photos
               display: 'inline-block',
@@ -373,75 +375,27 @@ const PDFMenageTemplate = ({ formData }) => {
                   width: 'fit-content'
                 }}
               >
-                {isVideoFile(photo.url) ? (
-                  // AFFICHAGE VIDÉO : Format adapté aux GRANDES tailles ménage
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '25px 15px',
-                    backgroundColor: '#f7fafc',
-                    // 🔧 GRANDES TAILLES pour ménage (format portrait adaptées)
-                    width: photos.length === 1 ? '200px' :
-                      photos.length === 2 ? '160px' :
-                        photos.length <= 3 ? '120px' : '100px',
-                    height: photos.length === 1 ? '280px' :
-                      photos.length === 2 ? '220px' :
-                        photos.length <= 3 ? '170px' : '140px'
-                  }}>
-                    <div style={{
-                      fontSize: photos.length === 1 ? '48px' :
-                        photos.length === 2 ? '40px' :
-                          photos.length <= 3 ? '32px' : '28px',
-                      marginBottom: '12px'
-                    }}>🎬</div>
-                    <div style={{
-                      fontSize: photos.length === 1 ? '14pt' :
-                        photos.length === 2 ? '12pt' :
-                          photos.length <= 3 ? '10pt' : '9pt',
-                      color: '#4a5568',
-                      textAlign: 'center',
-                      fontWeight: '600',
-                      marginBottom: '6px'
-                    }}>
-                      VIDÉO
-                    </div>
-                    <div style={{
-                      fontSize: photos.length === 1 ? '10pt' :
-                        photos.length === 2 ? '9pt' :
-                          photos.length <= 3 ? '8pt' : '7pt',
-                      color: '#718096',
-                      textAlign: 'center',
-                      lineHeight: '1.3'
-                    }}>
-                      Cliquer pour voir
-                    </div>
-                  </div>
-                ) : (
-                  // AFFICHAGE IMAGE : tailles originales ménage
-                  <img
-                    src={photo.url}
-                    alt={photo.label}
-                    style={{
-                      display: 'block',
-                      // 🔧 TAILLES ORIGINALES MÉNAGE (plus grandes)
-                      maxWidth: photos.length === 1 ? '350px' :
-                        photos.length === 2 ? '280px' :
-                          photos.length <= 3 ? '220px' : '170px',
-                      maxHeight: photos.length === 1 ? '250px' :
-                        photos.length === 2 ? '200px' :
-                          photos.length <= 3 ? '170px' : '140px',
-                      width: 'auto',
-                      height: 'auto',
-                      objectFit: 'contain',
-                      backgroundColor: '#f7fafc'
-                    }}
-                    onError={(e) => {
-                      e.target.style.display = 'none'
-                    }}
-                  />
-                )}
+                <img
+                  src={photo.url}
+                  alt={photo.label}
+                  style={{
+                    display: 'block',
+                    // 🔧 TAILLES ORIGINALES MÉNAGE (plus grandes)
+                    maxWidth: photos.length === 1 ? '350px' :
+                      photos.length === 2 ? '280px' :
+                        photos.length <= 3 ? '220px' : '170px',
+                    maxHeight: photos.length === 1 ? '250px' :
+                      photos.length === 2 ? '200px' :
+                        photos.length <= 3 ? '170px' : '140px',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    backgroundColor: '#f7fafc'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                  }}
+                />
               </a>
 
               <div style={{
@@ -457,6 +411,24 @@ const PDFMenageTemplate = ({ formData }) => {
               </div>
             </div>
           ))}
+          {photos.length > 5 && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '10pt',
+              color: '#6b7280',
+              fontStyle: 'italic',
+              textAlign: 'center',
+              padding: '24px',
+              border: '2px dashed #cbd5e0',
+              borderRadius: '8px',
+              minWidth: '160px'
+            }}>
+              +{photos.length - 5} autres photos disponibles
+            </div>
+          )}
+
         </div>
       </div>
     )
@@ -653,7 +625,7 @@ const PDFMenageTemplate = ({ formData }) => {
           letterSpacing: '1px'
         }}>
           <img
-            src="/letahost-transparent.png"
+            src="https://qwjgkqxemnpvlhwxexht.supabase.co/storage/v1/object/public/fiche-pdfs/assets/letahost-transparent.png"
             style={{
               height: '100px',
               width: 'auto',

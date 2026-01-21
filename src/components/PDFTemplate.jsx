@@ -1,13 +1,8 @@
 // src/components/PDFTemplate.jsx - VERSION 2 CLEAN & COMPLETE
 import React from 'react'
 
-// Helper pour détecter les vidéos
-const isVideoFile = (url) => {
-  if (!url) return false
-  return /\.(mp4|webm|ogg|mov|avi|m4v|mkv)$/i.test(url)
-}
-
 const PDFTemplate = ({ formData }) => {
+
   // Vérification des données
   if (!formData) {
     return (
@@ -125,9 +120,15 @@ const PDFTemplate = ({ formData }) => {
   // Helper pour vérifier si c'est une URL d'image valide
   const isImageUrl = (url) => {
     if (typeof url !== 'string' || url.trim() === '') return false
-    return url.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) !== null ||
-      url.includes('supabase') ||
-      url.includes('storage')
+
+    // Extraire l'extension sans les query params
+    const urlWithoutParams = url.split('?')[0]
+
+    // Vérifier que c'est bien une image, PAS une vidéo
+    const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(urlWithoutParams)
+    const isVideo = /\.(mp4|webm|ogg|mov|avi|m4v|mkv|qt)$/i.test(urlWithoutParams)
+
+    return isImage && !isVideo
   }
 
   // 🧹 Helper pour nettoyer les URLs malformées
@@ -427,7 +428,7 @@ const PDFTemplate = ({ formData }) => {
           justifyContent: 'flex-start', // Aligne à gauche
           alignItems: 'flex-start'
         }}>
-          {photos.slice(0, 6).map((photo, index) => (
+          {photos.slice(0, 4).map((photo, index) => (
             <div key={index} style={{
               // 🔧 CONTENEUR qui s'adapte au contenu
               display: 'inline-block',
@@ -449,70 +450,26 @@ const PDFTemplate = ({ formData }) => {
                   width: 'fit-content'
                 }}
               >
-                {isVideoFile(photo.url) ? (
-                  // AFFICHAGE VIDÉO : Format mobile portrait
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '15px 10px',
-                    backgroundColor: '#f7fafc',
-                    // 🔧 FORMAT MOBILE PORTRAIT (plus haut que large)
-                    width: photos.length === 1 ? '100px' :
-                      photos.length === 2 ? '85px' :
-                        photos.length <= 4 ? '70px' : '60px',
-                    height: photos.length === 1 ? '140px' :
+                <img
+                  src={photo.url}
+                  alt={photo.label}
+                  style={{
+                    display: 'block',
+                    // 🔧 TAILLE RESPONSIVE basée sur le nombre de photos
+                    maxWidth: photos.length === 1 ? '150px' :
                       photos.length === 2 ? '120px' :
-                        photos.length <= 4 ? '100px' : '85px'
-                  }}>
-                    <div style={{
-                      fontSize: photos.length === 1 ? '28px' :
-                        photos.length === 2 ? '24px' : '20px',
-                      marginBottom: '6px'
-                    }}>🎬</div>
-                    <div style={{
-                      fontSize: photos.length === 1 ? '9pt' :
-                        photos.length === 2 ? '8pt' : '7pt',
-                      color: '#4a5568',
-                      textAlign: 'center',
-                      fontWeight: '600',
-                      marginBottom: '3px'
-                    }}>
-                      VIDÉO
-                    </div>
-                    <div style={{
-                      fontSize: photos.length === 1 ? '7pt' : '6pt',
-                      color: '#718096',
-                      textAlign: 'center',
-                      lineHeight: '1.2'
-                    }}>
-                      Cliquer pour voir
-                    </div>
-                  </div>
-                ) : (
-                  // AFFICHAGE IMAGE : normal
-                  <img
-                    src={photo.url}
-                    alt={photo.label}
-                    style={{
-                      display: 'block',
-                      // 🔧 TAILLE RESPONSIVE basée sur le nombre de photos
-                      maxWidth: photos.length === 1 ? '150px' :
-                        photos.length === 2 ? '120px' :
-                          photos.length <= 4 ? '100px' : '80px',
-                      maxHeight: photos.length === 1 ? '120px' :
-                        photos.length === 2 ? '100px' : '70px',
-                      width: 'auto',
-                      height: 'auto',
-                      objectFit: 'contain',
-                      backgroundColor: '#f7fafc'
-                    }}
-                    onError={(e) => {
-                      e.target.style.display = 'none'
-                    }}
-                  />
-                )}
+                        photos.length <= 4 ? '100px' : '80px',
+                    maxHeight: photos.length === 1 ? '120px' :
+                      photos.length === 2 ? '100px' : '70px',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    backgroundColor: '#f7fafc'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                  }}
+                />
               </a>
 
               <div style={{
@@ -528,7 +485,7 @@ const PDFTemplate = ({ formData }) => {
             </div>
           ))}
 
-          {photos.length > 6 && (
+          {photos.length > 4 && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -542,7 +499,7 @@ const PDFTemplate = ({ formData }) => {
               borderRadius: '6px',
               minWidth: '100px'
             }}>
-              +{photos.length - 6} autres photos disponibles
+              +{photos.length - 4} autres photos disponibles
             </div>
           )}
         </div>
@@ -906,7 +863,7 @@ const PDFTemplate = ({ formData }) => {
           letterSpacing: '1px'
         }}>
           <img
-            src="/letahost-transparent.png"
+            src="https://qwjgkqxemnpvlhwxexht.supabase.co/storage/v1/object/public/fiche-pdfs/assets/letahost-transparent.png"
             alt="Logo Letahost"
             style={{
               height: '100px',
