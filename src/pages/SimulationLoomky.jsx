@@ -1032,6 +1032,25 @@ export default function SimulationLoomky() {
       }
 
       alert('✅ Property supprimée avec succès !')
+
+      // 3️⃣ Nettoyer les colonnes Supabase
+      const { error: cleanupError } = await supabase
+        .from('fiches')
+        .update({
+          loomky_property_id: null,
+          loomky_checklist_ids: null,
+          loomky_sync_status: null,
+          loomky_synced_at: null,
+          loomky_snapshot: null
+        })
+        .eq('loomky_property_id', deletePropertyId)
+
+      if (cleanupError) {
+        console.error('❌ Erreur nettoyage Supabase:', cleanupError)
+      } else {
+        console.log('✅ Colonnes Loomky nettoyées dans Supabase')
+      }
+
       setDeletePropertyId('')
       setDeleteChecklistId('')
 

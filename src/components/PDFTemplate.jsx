@@ -630,9 +630,15 @@ const PDFTemplate = ({ formData }) => {
           // 🚫 FILTRE SPÉCIAL : Exclure WiFi et Parking de section_equipements
           if (config.key === 'section_equipements') {
             const excludedFields = [
+              // WiFi et Parking (affichés dans sections dédiées)
               'wifi_statut', 'wifi_nom_reseau', 'wifi_mot_de_passe', 'wifi_details', 'wifi_routeur_photo', 'wifi_disponible',
               'parking_type', 'parking_rue_details', 'parking_sur_place_types', 'parking_sur_place_details',
-              'parking_payant_type', 'parking_payant_details', 'parking_equipement', 'parking_photos', 'parking_videos'
+              'parking_payant_type', 'parking_payant_details', 'parking_equipement', 'parking_photos', 'parking_videos',
+              // Champs techniques (affichés dans section dédiée)
+              'video_acces_poubelle', 'poubelle_emplacement', 'poubelle_ramassage', 'poubelle_photos',
+              'disjoncteur_emplacement', 'disjoncteur_photos',
+              'vanne_eau_emplacement', 'vanne_arret_photos',
+              'systeme_chauffage_eau', 'chauffage_eau_emplacement', 'chauffage_eau_photos', 'video_systeme_chauffage',
             ]
             if (excludedFields.includes(fieldKey)) return
           }
@@ -697,6 +703,14 @@ const PDFTemplate = ({ formData }) => {
           // Récupérer tous les champs liés à cet équipement
           Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
             if (fieldKey.startsWith(equip.key + '_') && !isEmpty(fieldValue)) {
+              // Exclure les champs techniques (déjà affichés dans section dédiée)
+              const technicalFields = [
+                'chauffage_eau_emplacement',
+                'chauffage_eau_photos',
+                'video_systeme_chauffage'
+              ];
+              if (technicalFields.includes(fieldKey)) return;
+
               if (fieldKey.includes('photo') || fieldKey.includes('video')) {
                 // Extraire les photos/vidéos
                 const urls = parsePhotoValue(fieldValue)
@@ -826,6 +840,127 @@ const PDFTemplate = ({ formData }) => {
     }
 
     return parkingData
+  }
+
+  // 🔧 FONCTION SPÉCIALE : Rendu groupé pour Informations Techniques
+  const renderTechnicalInfoGrouped = (sectionData) => {
+    const technicalFields = []
+
+    // 🗑️ POUBELLE
+    const poubelleData = {
+      label: 'Poubelle',
+      emoji: '🗑️',
+      fields: {},
+      photos: [],
+      videos: []
+    }
+
+    if (sectionData.poubelle_emplacement) poubelleData.fields.poubelle_emplacement = sectionData.poubelle_emplacement
+    if (sectionData.poubelle_ramassage) poubelleData.fields.poubelle_ramassage = sectionData.poubelle_ramassage
+
+    if (sectionData.poubelle_photos && !isEmpty(sectionData.poubelle_photos)) {
+      const urls = parsePhotoValue(sectionData.poubelle_photos)
+      urls.forEach(url => poubelleData.photos.push({
+        url: cleanUrl(url),
+        label: 'Photo poubelle',
+        isValid: isImageUrl(cleanUrl(url))
+      }))
+    }
+
+    if (sectionData.video_acces_poubelle && !isEmpty(sectionData.video_acces_poubelle)) {
+      const urls = parsePhotoValue(sectionData.video_acces_poubelle)
+      urls.forEach(url => poubelleData.videos.push({
+        url: cleanUrl(url),
+        label: 'Vidéo accès poubelle',
+        isValid: isImageUrl(cleanUrl(url))
+      }))
+    }
+
+    if (Object.keys(poubelleData.fields).length > 0 || poubelleData.photos.length > 0 || poubelleData.videos.length > 0) {
+      technicalFields.push(poubelleData)
+    }
+
+    // ⚡ DISJONCTEUR
+    const disjoncteurData = {
+      label: 'Disjoncteur',
+      emoji: '⚡',
+      fields: {},
+      photos: []
+    }
+
+    if (sectionData.disjoncteur_emplacement) disjoncteurData.fields.disjoncteur_emplacement = sectionData.disjoncteur_emplacement
+
+    if (sectionData.disjoncteur_photos && !isEmpty(sectionData.disjoncteur_photos)) {
+      const urls = parsePhotoValue(sectionData.disjoncteur_photos)
+      urls.forEach(url => disjoncteurData.photos.push({
+        url: cleanUrl(url),
+        label: 'Photo disjoncteur',
+        isValid: isImageUrl(cleanUrl(url))
+      }))
+    }
+
+    if (Object.keys(disjoncteurData.fields).length > 0 || disjoncteurData.photos.length > 0) {
+      technicalFields.push(disjoncteurData)
+    }
+
+    // 💧 VANNE D'EAU
+    const vanneEauData = {
+      label: 'Vanne d\'arrêt d\'eau',
+      emoji: '💧',
+      fields: {},
+      photos: []
+    }
+
+    if (sectionData.vanne_eau_emplacement) vanneEauData.fields.vanne_eau_emplacement = sectionData.vanne_eau_emplacement
+
+    if (sectionData.vanne_arret_photos && !isEmpty(sectionData.vanne_arret_photos)) {
+      const urls = parsePhotoValue(sectionData.vanne_arret_photos)
+      urls.forEach(url => vanneEauData.photos.push({
+        url: cleanUrl(url),
+        label: 'Photo vanne d\'eau',
+        isValid: isImageUrl(cleanUrl(url))
+      }))
+    }
+
+    if (Object.keys(vanneEauData.fields).length > 0 || vanneEauData.photos.length > 0) {
+      technicalFields.push(vanneEauData)
+    }
+
+    // 🔥 SYSTÈME CHAUFFAGE D'EAU
+    const chauffageEauData = {
+      label: 'Système de chauffage d\'eau',
+      emoji: '🔥',
+      fields: {},
+      photos: [],
+      videos: []
+    }
+
+    if (sectionData.systeme_chauffage_eau) chauffageEauData.fields.systeme_chauffage_eau = sectionData.systeme_chauffage_eau
+    if (sectionData.chauffage_eau_emplacement) chauffageEauData.fields.chauffage_eau_emplacement = sectionData.chauffage_eau_emplacement
+
+    if (sectionData.chauffage_eau_photos && !isEmpty(sectionData.chauffage_eau_photos)) {
+      const urls = parsePhotoValue(sectionData.chauffage_eau_photos)
+      urls.forEach(url => chauffageEauData.photos.push({
+        url: cleanUrl(url),
+        label: 'Photo système chauffage eau',
+        isValid: isImageUrl(cleanUrl(url))
+      }))
+    }
+
+    if (sectionData.video_systeme_chauffage && !isEmpty(sectionData.video_systeme_chauffage)) {
+      const urls = parsePhotoValue(sectionData.video_systeme_chauffage)
+      urls.forEach(url => chauffageEauData.videos.push({
+        url: cleanUrl(url),
+        label: 'Vidéo système chauffage',
+        isValid: isImageUrl(cleanUrl(url))
+      }))
+    }
+
+    if (Object.keys(chauffageEauData.fields).length > 0 || chauffageEauData.photos.length > 0 || chauffageEauData.videos.length > 0) {
+      technicalFields.push(chauffageEauData)
+    }
+
+    return technicalFields.length > 0 ? technicalFields : null
   }
 
   const sections = generateSections()
@@ -1098,9 +1233,70 @@ const PDFTemplate = ({ formData }) => {
                     const equipementsData = renderEquipementsGrouped(formData.section_equipements || {})
                     const wifiData = renderWifiGrouped(formData.section_equipements || {})
                     const parkingData = renderParkingGrouped(formData.section_equipements || {})
+                    const technicalData = renderTechnicalInfoGrouped(formData.section_equipements || {})
 
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                        {/* PARTIE 0 : INFORMATIONS TECHNIQUES */}
+                        {technicalData && (
+                          <div>
+                            <h4 style={{
+                              margin: '0 0 12px 0',
+                              fontSize: '11pt',
+                              fontWeight: '700',
+                              color: '#1e40af',
+                              borderBottom: '2px solid #dbeafe',
+                              paddingBottom: '6px'
+                            }}>
+                              🔧 Informations Techniques
+                            </h4>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              {technicalData.map((item, idx) => (
+                                <div key={idx} style={{
+                                  padding: '12px',
+                                  backgroundColor: '#fef3c7',
+                                  border: '1px solid #fbbf24',
+                                  borderRadius: '6px',
+                                  pageBreakInside: 'avoid'
+                                }}>
+                                  {/* Titre */}
+                                  <h5 style={{
+                                    margin: '0 0 8px 0',
+                                    fontSize: '10pt',
+                                    fontWeight: '600',
+                                    color: '#2d3748',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                  }}>
+                                    <span>{item.emoji}</span>
+                                    <span>{item.label}</span>
+                                  </h5>
+
+                                  {/* Champs */}
+                                  {Object.keys(item.fields).length > 0 && (
+                                    <div style={{ marginBottom: (item.photos.length > 0 || item.videos?.length > 0) ? '8px' : '0' }}>
+                                      {Object.entries(item.fields).map(([key, value], fieldIdx) => (
+                                        <div key={fieldIdx} style={{
+                                          marginBottom: fieldIdx < Object.entries(item.fields).length - 1 ? '6px' : '0',
+                                          fontSize: '9pt',
+                                          color: '#4a5568'
+                                        }}>
+                                          <span style={{ fontWeight: '600' }}>
+                                            {formatFieldName(key)}:
+                                          </span>{' '}
+                                          <span style={{ color: '#2d3748' }}>{formatValue(value, key)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         {/* PARTIE 1 : ÉQUIPEMENTS ET COMMODITÉS */}
                         {equipementsData.length > 0 && (

@@ -8,10 +8,12 @@ import Button from '../components/Button'
 import PDFUpload from '../components/PDFUpload'
 import MiniDashboard from '../components/MiniDashboard'
 import { prepareForN8nWebhook } from '../lib/PdfFormatter'
-import { CheckCircle, PenTool, Send, Bot, Copy, AlertCircle, Sparkles, Loader2, Check, FileText, FileEdit, Ban } from 'lucide-react'
+import { CheckCircle, PenTool, Send, RefreshCw, Copy, AlertCircle, Sparkles, Loader2, Check, FileText, FileEdit, Ban } from 'lucide-react'
 import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
 import { supabase } from '../lib/supabaseClient'
 import { validateRequiredFields } from '../lib/validationConfig'
+import { syncToLoomky, normalizeFormDataToFiche, buildResolvedChecklists, hasLoomkyChanges, extractLoomkyFields } from '../services/loomkyService'
+
 
 export default function FicheFinalisation() {
   const navigate = useNavigate()
@@ -24,6 +26,11 @@ export default function FicheFinalisation() {
   const [validatedAnnonce, setValidatedAnnonce] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
   const [showValidationErrors, setShowValidationErrors] = useState(false)
+  const [loomkyStatus, setLoomkyStatus] = useState({
+    syncing: false,
+    error: null
+  })
+  const [loomkyDirty, setLoomkyDirty] = useState(false)
   const annonceSessionIdRef = useRef(null)
   const messagesEndRef = useRef(null)
   const errorBlockRef = useRef(null)
@@ -43,9 +50,28 @@ export default function FicheFinalisation() {
     updateField,
     handleSave,
     saveStatus,
+    handleLoad,
     finaliserFiche,
     triggerAssistantPdfWebhook
   } = useForm()
+
+
+  useEffect(() => {
+    if (!formData.loomky_property_id) {
+      setLoomkyDirty(false)
+      return
+    }
+
+    if (formData.loomky_snapshot) {
+      const ficheNormalized = normalizeFormDataToFiche(formData)
+      const currentSnapshot = extractLoomkyFields(ficheNormalized)
+      const savedSnapshot = formData.loomky_snapshot
+
+      const isDirty = hasLoomkyChanges(ficheNormalized)
+      console.log('🔍 isDirty:', isDirty)
+      setLoomkyDirty(isDirty)
+    }
+  }, [formData])
 
   useEffect(() => {
     if (!annonceSessionIdRef.current && formData) {
@@ -231,6 +257,76 @@ export default function FicheFinalisation() {
     setShowFinalModal(true)
   }
 
+  // Récupérer le token depuis les variables d'environnement
+  const LOOMKY_TOKEN = import.meta.env.VITE_LOOMKY_TOKEN
+
+
+  const handleSyncLoomky = async () => {
+    setLoomkyStatus({ syncing: true, error: null })
+
+    try {
+      const ficheNormalized = normalizeFormDataToFiche(formData)
+
+      const result = await syncToLoomky(ficheNormalized, LOOMKY_TOKEN)
+
+      if (!result.success) {
+        setLoomkyStatus({
+          syncing: false,
+          error: result.errors?.join(', ') || 'Erreur sync Loomky'
+        })
+        return
+      }
+
+      // Préparer le payload Supabase
+      const updatePayload = {
+        loomky_property_id: result.propertyId,
+        loomky_sync_status: 'synced',
+        loomky_synced_at: new Date().toISOString(),
+        loomky_snapshot: result.snapshot
+      }
+
+      // Ajouter checklist IDs seulement s'ils existent (fallback GET peut échouer)
+      if (result.checklistIds) {
+        updatePayload.loomky_checklist_ids = result.checklistIds
+      }
+
+      // UPDATE Supabase
+      const { error: updateError } = await supabase
+        .from('fiches')
+        .update(updatePayload)
+        .eq('id', formData.id)
+
+      if (updateError) {
+        console.error('❌ Erreur update Supabase:', updateError)
+        setLoomkyStatus({
+          syncing: false,
+          error: 'Erreur sauvegarde Supabase'
+        })
+        return
+      }
+
+      // Sync FormContext (UI immédiate)
+      updateField('loomky_property_id', result.propertyId)
+      updateField('loomky_sync_status', 'synced')
+      updateField('loomky_synced_at', updatePayload.loomky_synced_at)
+      updateField('loomky_snapshot', result.snapshot)
+      if (result.checklistIds) {
+        updateField('loomky_checklist_ids', result.checklistIds)
+      }
+
+      console.log('✅ Sync Loomky réussie:', result)
+      setLoomkyStatus({ syncing: false, error: null })
+      alert('✅ Synchronisation Loomky réussie !')
+
+    } catch (error) {
+      console.error('❌ Erreur sync Loomky:', error)
+      setLoomkyStatus({
+        syncing: false,
+        error: error.message || 'Erreur inattendue'
+      })
+    }
+  }
+
   return (
     <div className="flex min-h-screen">
       <SidebarMenu />
@@ -297,6 +393,222 @@ export default function FicheFinalisation() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* ============================================
+            BLOC SYNCHRONISATION LOOMKY - 🚧 EN DÉVELOPPEMENT
+            ============================================ */}
+            <div className="bg-white rounded-xl shadow-sm border-2 border-purple-300 p-6 mb-6">
+              {/* Warning DEV */}
+              <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">🚧</div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-yellow-900 mb-1">
+                      FONCTIONNALITÉ EN DÉVELOPPEMENT
+                    </p>
+                    <p className="text-xs text-yellow-800">
+                      Cette synchronisation Loomky est en cours de développement. Ne pas utiliser en production pour le moment.
+                      Elle sera activée prochainement une fois tous les tests validés.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <RefreshCw className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    Synchronisation Loomky
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Envoyez les informations du logement vers Loomky pour créer la propriété et la checklist ménage.
+                  </p>
+                </div>
+              </div>
+
+              {/* Badge statut */}
+              <div className="mb-4">
+                {/* Jamais synchronisé */}
+                {!formData.loomky_property_id && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="px-3 py-1.5 bg-gray-100 text-gray-800 rounded-full font-medium">
+                      ⏸️ Jamais synchronisé
+                    </span>
+                  </div>
+                )}
+
+                {/* Synchronisé et à jour */}
+                {formData.loomky_property_id && !loomkyDirty && !loomkyStatus.error && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="px-3 py-1.5 bg-green-100 text-green-800 rounded-full font-medium">
+                      ✅ Synchronisé
+                    </span>
+                    {formData.loomky_synced_at && (
+                      <span className="text-gray-500">
+                        le {new Date(formData.loomky_synced_at).toLocaleDateString('fr-FR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Modifications détectées */}
+                {formData.loomky_property_id && loomkyDirty && !loomkyStatus.error && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="px-3 py-1.5 bg-orange-100 text-orange-800 rounded-full font-medium">
+                      ⚠️ Modifications non synchronisées
+                    </span>
+                  </div>
+                )}
+
+                {/* En cours de sync */}
+                {loomkyStatus.syncing && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-medium flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Synchronisation en cours...
+                    </span>
+                  </div>
+                )}
+
+                {/* Erreur */}
+                {loomkyStatus.error && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="px-3 py-1.5 bg-red-100 text-red-800 rounded-full font-medium">
+                      ❌ Échec synchronisation
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Message d'erreur */}
+              {loomkyStatus.error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800">
+                    <strong>Erreur :</strong> {loomkyStatus.error}
+                  </p>
+                </div>
+              )}
+
+              {/* Bouton action */}
+              <div className="flex gap-3">
+                {/* Jamais synchronisé OU Erreur → Bouton "Envoyer" */}
+                {(!formData.loomky_property_id || loomkyStatus.error) && (
+                  <button
+                    onClick={handleSyncLoomky}
+                    disabled={loomkyStatus.syncing}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${loomkyStatus.syncing
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : loomkyStatus.error
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      }`}
+                  >
+                    {loomkyStatus.syncing ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Synchronisation...
+                      </>
+                    ) : loomkyStatus.error ? (
+                      <>
+                        <RefreshCw className="w-5 h-5" />
+                        Réessayer
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-5 h-5" />
+                        Envoyer à Loomky
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Modifications détectées → Bouton "Mettre à jour" */}
+                {formData.loomky_property_id && loomkyDirty && !loomkyStatus.error && (
+                  <button
+                    onClick={handleSyncLoomky}
+                    disabled={loomkyStatus.syncing}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${loomkyStatus.syncing
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : 'bg-orange-600 hover:bg-orange-700 text-white'
+                      }`}
+                  >
+                    {loomkyStatus.syncing ? (
+                      <>
+                        <RefreshCw className="w-5 h-5 animate-spin" />
+                        Mise à jour...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-5 h-5" />
+                        Mettre à jour Loomky
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Synchronisé et à jour → Message de confirmation */}
+                {formData.loomky_property_id && !loomkyDirty && !loomkyStatus.error && !loomkyStatus.syncing && (
+                  <div className="flex items-center gap-3 text-sm text-gray-600">
+                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>La fiche est synchronisée avec Loomky</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Lien vers Loomky */}
+              {formData.loomky_property_id && (
+                <div className="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <p className="text-xs text-gray-600 mb-2">
+                    <strong>Property ID:</strong>{' '}
+                    <code className="bg-gray-200 px-2 py-0.5 rounded text-xs">
+                      {formData.loomky_property_id}
+                    </code>
+                  </p>
+
+                  {formData.loomky_checklist_ids && formData.loomky_checklist_ids.length > 0 && (
+                    <p className="text-xs text-gray-600 mb-3">
+                      <strong>Checklists:</strong>{' '}
+                      {formData.loomky_checklist_ids.length} créée(s)
+                    </p>
+                  )}
+
+                  <a
+                    href={`https://app.loomky.com/version-test/index/rentals/edit/informations/general?propertyId=${formData.loomky_property_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg font-medium transition-all"
+                  >
+                    🔗 Voir dans Loomky
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              )}
+
+
+
             </div>
 
             {/* ASSISTANT ANNONCE - Toujours visible */}

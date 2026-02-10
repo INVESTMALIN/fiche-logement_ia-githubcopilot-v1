@@ -2340,7 +2340,13 @@ export const mapSupabaseToFormData = (supabaseData) => {
 
     pdf_logement_url: supabaseData.pdf_logement_url || null,
     pdf_menage_url: supabaseData.pdf_menage_url || null,
-    pdf_last_generated_at: supabaseData.pdf_last_generated_at
+    pdf_last_generated_at: supabaseData.pdf_last_generated_at,
+
+    loomky_property_id: supabaseData.loomky_property_id || null,
+    loomky_checklist_ids: supabaseData.loomky_checklist_ids || null,
+    loomky_sync_status: supabaseData.loomky_sync_status || null,
+    loomky_synced_at: supabaseData.loomky_synced_at || null,
+    loomky_snapshot: supabaseData.loomky_snapshot || null
   }
 }
 
