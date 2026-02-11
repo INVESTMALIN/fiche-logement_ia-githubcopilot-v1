@@ -91,7 +91,11 @@ export const mapFormDataToSupabase = (formData) => {
     booking_mot_passe: formData.section_booking?.mot_passe || null,
     booking_explication_refus: formData.section_booking?.explication_refus || null,
 
-    // 🎯 Section Réglementation
+    // Section Email Outlook
+    email_outlook_email: formData.section_email_outlook?.email_compte || null,
+    email_outlook_mot_passe: formData.section_email_outlook?.mot_passe || null,
+
+    // Section Réglementation
     reglementation_ville_changement_usage: formData.section_reglementation?.ville_changement_usage || null,
     reglementation_date_expiration_changement: formData.section_reglementation?.date_expiration_changement || null,
     reglementation_numero_declaration: formData.section_reglementation?.numero_declaration || null,
@@ -1252,7 +1256,13 @@ export const mapSupabaseToFormData = (supabaseData) => {
       explication_refus: supabaseData.booking_explication_refus || ""
     },
 
-    // 🎯 Section Réglementation
+    // Section Email Outlook
+    section_email_outlook: {
+      email_compte: supabaseData.email_outlook_email || "",
+      mot_passe: supabaseData.email_outlook_mot_passe || ""
+    },
+
+    // Section Réglementation
     section_reglementation: {
       ville_changement_usage: supabaseData.reglementation_ville_changement_usage || "",
       date_expiration_changement: supabaseData.reglementation_date_expiration_changement || "",

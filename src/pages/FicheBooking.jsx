@@ -2,18 +2,22 @@ import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import { useForm } from '../components/FormContext'
 import Button from '../components/Button'
+import React, { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function FicheBooking() {
-  const { 
-    next, 
-    back, 
-    currentStep, 
-    totalSteps, 
+  const {
+    next,
+    back,
+    currentStep,
+    totalSteps,
     getField,
     updateField,
     handleSave,
     saveStatus
   } = useForm()
+
+  const [showPassword, setShowPassword] = useState(false)
 
   // Récupération des valeurs depuis FormContext
   // Fix pour les booléens : ne pas utiliser getField() qui retourne "" par défaut
@@ -77,7 +81,7 @@ export default function FicheBooking() {
           {/* Section Codes de connexion */}
           <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <h3 className="font-semibold text-lg mb-4">Codes de connexion au compte Booking du propriétaire</h3>
-            
+
             <div className="mb-4">
               <label className="block font-semibold mb-3">
                 Code Booking - Avez-vous obtenu les identifiants de connexion du propriétaire ?
@@ -125,13 +129,22 @@ export default function FicheBooking() {
                   <label className="block font-semibold mb-1">
                     Mot de passe <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={motPasse}
-                    onChange={(e) => updateField('section_booking.mot_passe', e.target.value)}
-                    className="w-full p-2 border rounded"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={motPasse}
+                      onChange={(e) => updateField('section_booking.mot_passe', e.target.value)}
+                      className="w-full p-2 pr-10 border rounded"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -171,23 +184,23 @@ export default function FicheBooking() {
 
           {/* Boutons de navigation */}
           <div className="mt-6 flex justify-between">
-            <Button 
-              variant="ghost" 
-              onClick={back} 
+            <Button
+              variant="ghost"
+              onClick={back}
               disabled={currentStep === 0}
             >
               Retour
             </Button>
             <div className="flex gap-3">
-              <Button 
+              <Button
                 variant="secondary"
                 onClick={handleSave}
                 disabled={saveStatus.saving}
               >
                 {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={next}
                 disabled={currentStep === totalSteps - 1}
               >

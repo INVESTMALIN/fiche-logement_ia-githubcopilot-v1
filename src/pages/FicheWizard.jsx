@@ -4,6 +4,7 @@ import FicheLogement from './FicheLogement'
 import FicheClefs from './FicheClefs'
 import FicheAirbnb from './FicheAirbnb'
 import FicheBooking from './FicheBooking'
+import FicheEmailOutlook from './FicheEmailOutlook'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
@@ -30,15 +31,15 @@ import FicheFinalisation from './FicheFinalisation'
 // Composant placeholder pour les sections pas encore créées
 function PlaceholderSection({ title }) {
   const { next, back, currentStep, totalSteps } = useForm()
-  
+
   return (
     <div className="flex min-h-screen">
       <SidebarMenu />
-      
+
       <div className="flex-1 flex flex-col">
         {/* Barre de progression en haut */}
         <ProgressBar />
-        
+
         {/* Contenu principal */}
         <div className="flex-1 p-6 bg-gray-100">
           <h1 className="text-2xl font-bold mb-6">{title}</h1>
@@ -50,18 +51,18 @@ function PlaceholderSection({ title }) {
               Section {currentStep + 1} sur {totalSteps}
             </p>
           </div>
-          
+
           {/* Boutons navigation */}
           <div className="mt-6 flex justify-between">
-            <Button 
-              variant="ghost" 
-              onClick={back} 
+            <Button
+              variant="ghost"
+              onClick={back}
               disabled={currentStep === 0}
             >
               Retour
             </Button>
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               onClick={next}
               disabled={currentStep === totalSteps - 1}
             >
@@ -84,6 +85,7 @@ export default function FicheWizard() {
     <FicheClefs key="clefs" />,
     <FicheAirbnb key="airbnb" />,
     <FicheBooking key="booking" />,
+    <FicheEmailOutlook key="email-outlook" />,
     <FicheReglementation key="reglementation" />,
     <FicheExigences key="exigences" />,
     <FicheGestionLinge key="linge" />,

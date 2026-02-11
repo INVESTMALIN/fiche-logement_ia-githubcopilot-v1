@@ -137,6 +137,11 @@ const initialFormData = {
     explication_refus: ""
   },
 
+  section_email_outlook: {
+    email_compte: "",
+    mot_passe: ""
+  },
+
   section_reglementation: {
     ville_changement_usage: "",
     date_expiration_changement: "",
@@ -1231,7 +1236,7 @@ export function FormProvider({ children }) {
   const [duplicateAlert, setDuplicateAlert] = useState(null)
 
   const sections = [
-    "Propriétaire", "Logement", "Avis", "Clefs", "Airbnb", "Booking", "Réglementation",
+    "Propriétaire", "Logement", "Avis", "Clefs", "Airbnb", "Booking", 'E-mail Outlook', "Réglementation",
     "Exigences", "Gestion linge", "Équipements", "Consommables", "Visite",
     "Chambres", "Salle de bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. spé. / Extérieur",
     "Communs", "Télétravail", "Bébé", "Guide d'accès", "Sécurité", "Finalisation"

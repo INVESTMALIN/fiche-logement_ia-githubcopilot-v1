@@ -36,7 +36,7 @@ export default function Dashboard() {
 
   // 📢 BANDEAU D'ANNONCE
   const [showAnnouncement, setShowAnnouncement] = useState(false)
-  const ANNOUNCEMENT_KEY = 'announcement_dismissed_2026_01_14' // Changer cette clé pour réafficher l'annonce
+  const ANNOUNCEMENT_KEY = 'announcement_dismissed_2026_02_11' // Changer cette clé pour réafficher l'annonce
 
   // 🆕 AJOUTS RÉAFFECTATION
   const [reassignModal, setReassignModal] = useState({
@@ -402,10 +402,15 @@ export default function Dashboard() {
           <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
             <Info className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
             <div className="flex-1">
-              <h4 className="font-semibold text-blue-900 mb-1">Amélioration des PDF générés</h4>
-              <p className="text-sm text-blue-800">
-                Bonne nouvelle ! Les PDF des fiches logement et ménage sont désormais optimisés avec du texte sélectionnable. Vous pouvez maintenant copier-coller le contenu directement depuis vos PDF et utiliser la fonction recherche (Ctrl+F).
-              </p>
+              <h4 className="font-semibold text-blue-900 mb-2">Nouvelles améliorations disponibles !</h4>
+              <div className="space-y-2 text-sm text-blue-800">
+                <p>
+                  <strong>📧 Nouvelle section E-mail Outlook :</strong> Vous pouvez maintenant enregistrer les identifiants du compte e-mail Outlook du propriétaire directement dans la fiche.
+                </p>
+                <p>
+                  <strong>👁️ Affichage des mots de passe :</strong> Un bouton a été ajouté à côté des champs de mot de passe pour afficher ou masquer le texte saisi, facilitant ainsi la vérification de vos saisies.
+                </p>
+              </div>
             </div>
             <button
               onClick={handleDismissAnnouncement}
