@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { useForm } from './FormContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import imageCompression from 'browser-image-compression'
 
 const sanitizeFileName = (fileName) => {
   return fileName
@@ -14,7 +15,7 @@ const sanitizeFileName = (fileName) => {
     .replace(/^_|_$/g, '')               // Enlève underscores en début/fin
 }
 
-const PhotoUpload = ({ 
+const PhotoUpload = ({
   fieldPath,           // ex: "section_equipements.poubelle_photos"
   label,               // ex: "Photos du local poubelle"
   multiple = true,     // Plusieurs photos ou une seule
@@ -31,105 +32,35 @@ const PhotoUpload = ({
 
   // Récupérer les photos actuelles
   const fieldValue = getField(fieldPath)
-let rawPhotos = fieldValue || []
+  let rawPhotos = fieldValue || []
 
-// Parse les strings JSON malformées
-if (typeof rawPhotos === 'string') {
-  if (rawPhotos === '[]' || rawPhotos === '') {
-    rawPhotos = []
-  } else if (rawPhotos.startsWith('[')) {
-    try { rawPhotos = JSON.parse(rawPhotos) } catch { rawPhotos = [] }
-  } else {
-    rawPhotos = [rawPhotos] // Single URL
+  // Parse les strings JSON malformées
+  if (typeof rawPhotos === 'string') {
+    if (rawPhotos === '[]' || rawPhotos === '') {
+      rawPhotos = []
+    } else if (rawPhotos.startsWith('[')) {
+      try { rawPhotos = JSON.parse(rawPhotos) } catch { rawPhotos = [] }
+    } else {
+      rawPhotos = [rawPhotos] // Single URL
+    }
   }
-}
 
-const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
+  const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
   // Génération du path pour Supabase Storage
   const generateStoragePath = (fileName) => {
-  const timestamp = Date.now()
-  const randomId = Math.random().toString(36).substr(2, 6)
-  const [section, field] = fieldPath.split('.')
-  
-  const numeroBien = getField('section_logement.numero_bien') || `temp-${timestamp}`
-  
-  // 🧹 NETTOYER LE NOM DE FICHIER
-  const cleanFileName = sanitizeFileName(fileName)
+    const timestamp = Date.now()
+    const randomId = Math.random().toString(36).substr(2, 6)
+    const [section, field] = fieldPath.split('.')
 
-  return `user-${user.id}/fiche-${numeroBien}/${section}/${field}/${timestamp}_${randomId}_${cleanFileName}`
-}
+    const numeroBien = getField('section_logement.numero_bien') || `temp-${timestamp}`
 
-   // 🔧 FONCTION COMPRESSION AUTOMATIQUE - Ajout pour anciens Android
-  const compressImage = async (file) => {
-    return new Promise((resolve) => {
-      // Si c'est une vidéo, on ne compresse pas
-      if (file.type.startsWith('video/')) {
-        resolve(file)
-        return
-      }
+    // 🧹 NETTOYER LE NOM DE FICHIER
+    const cleanFileName = sanitizeFileName(fileName)
 
-      // Si l'image fait moins de 1MB, on ne compresse pas
-      if (file.size < 1024 * 1024) {
-        resolve(file)
-        return
-      }
-
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      const img = new Image()
-
-      img.onload = () => {
-        // 🎯 CALCUL TAILLE OPTIMALE
-        let { width, height } = img
-        
-        // Limiter les dimensions max (crucial pour anciens Android)
-        const maxDimension = 1920 // Max 1920px sur le côté le plus grand
-        if (width > maxDimension || height > maxDimension) {
-          if (width > height) {
-            height = (height * maxDimension) / width
-            width = maxDimension
-          } else {
-            width = (width * maxDimension) / height
-            height = maxDimension
-          }
-        }
-
-        canvas.width = width
-        canvas.height = height
-
-        // Dessiner l'image redimensionnée
-        ctx.drawImage(img, 0, 0, width, height)
-
-        // 🎯 COMPRESSION JPEG avec qualité adaptative
-        const quality = file.size > 5 * 1024 * 1024 ? 0.6 : 0.8 // Plus aggressif pour grosses images
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              // Créer un nouveau File avec le nom original
-              const compressedFile = new File([blob], file.name, {
-                type: 'image/jpeg',
-                lastModified: Date.now()
-              })
-              
-              console.log(`📷 Compression: ${(file.size / 1024 / 1024).toFixed(1)}MB → ${(compressedFile.size / 1024 / 1024).toFixed(1)}MB`)
-              resolve(compressedFile)
-            } else {
-              resolve(file) // Fallback si compression échoue
-            }
-          },
-          'image/jpeg',
-          quality
-        )
-      }
-
-      img.onerror = () => {
-        resolve(file) // Fallback si erreur de chargement
-      }
-
-      img.src = URL.createObjectURL(file)
-    })
+    return `user-${user.id}/fiche-${numeroBien}/${section}/${field}/${timestamp}_${randomId}_${cleanFileName}`
   }
+
+
 
   // 🔧 FONCTION COMPRESSION VIDÉO AVEC AUDIO - Version corrigée
 
@@ -144,7 +75,7 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
       }
 
       console.log(`📹 Compression vidéo ${file.name}: ${(file.size / 1024 / 1024).toFixed(1)}MB`)
-      
+
       // 🚨 ACTIVER LE FEEDBACK COMPRESSION
       setCompressing(true)
 
@@ -162,7 +93,7 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
           // Calculer les nouvelles dimensions (moins agressif)
           let { videoWidth, videoHeight } = video
           const maxDimension = 1600 // Moins agressif: 1600px au lieu de 1280px
-          
+
           if (videoWidth > maxDimension || videoHeight > maxDimension) {
             const aspectRatio = videoWidth / videoHeight
             if (videoWidth > videoHeight) {
@@ -181,15 +112,15 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
           const audioContext = new AudioContext()
           const arrayBuffer = await file.arrayBuffer()
           const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-          
+
           // Créer un stream audio depuis le buffer
           const audioStream = new MediaStream()
           const source = audioContext.createBufferSource()
           source.buffer = audioBuffer
-          
+
           const destination = audioContext.createMediaStreamDestination()
           source.connect(destination)
-          
+
           // Ajouter les tracks audio au stream
           destination.stream.getAudioTracks().forEach(track => {
             audioStream.addTrack(track)
@@ -223,9 +154,9 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
 
           mediaRecorder.onstop = () => {
             const compressedBlob = new Blob(chunks, { type: 'video/webm' })
-            
+
             // Créer un nouveau File
-            const compressedFile = new File([compressedBlob], 
+            const compressedFile = new File([compressedBlob],
               file.name.replace(/\.[^/.]+$/, '.webm'), {
               type: 'video/webm',
               lastModified: Date.now()
@@ -236,7 +167,7 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
 
             // 🚨 DÉSACTIVER LE FEEDBACK COMPRESSION
             setCompressing(false)
-            
+
             // Nettoyer
             audioContext.close()
             resolve(compressedFile)
@@ -249,12 +180,12 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
           // Fonction pour dessiner une frame et avancer
           const drawFrame = () => {
             video.currentTime = currentTime
-            
+
             video.onseeked = () => {
               ctx.drawImage(video, 0, 0, videoWidth, videoHeight)
-              
+
               currentTime += frameRate
-              
+
               if (currentTime < video.duration) {
                 // Frame suivante
                 setTimeout(drawFrame, 33) // ~30 FPS (1000/30 = 33ms)
@@ -289,7 +220,7 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
       video.src = URL.createObjectURL(file)
     })
   }
-    
+
   // Upload vers Supabase Storage
   const uploadToSupabase = async (files) => {
     // 🚨 VALIDATION CRITIQUE - Numéro de bien obligatoire
@@ -297,15 +228,15 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
     if (!numeroBien || numeroBien.trim() === '') {
       throw new Error('Impossible d\'uploader : le numéro de bien est obligatoire. Remplissez ce champ dans la section "Logement" avant d\'ajouter des photos.')
     }
-  
+
     const uploadedUrls = []
-    
+
     try {
       for (const file of files) {
         // Validation type de fichier
         const isImage = file.type.startsWith('image/')
         const isVideo = file.type.startsWith('video/')
-        
+
         if (!isImage && !(acceptVideo && isVideo)) {
           throw new Error(`${file.name} n'est pas un format valide`)
         }
@@ -314,7 +245,18 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
         let fileToUpload = file
         if (isImage) {
           console.log(`📷 Compression de ${file.name}...`)
-          fileToUpload = await compressImage(file)
+          // Compression avec browser-image-compression (cible: 2 MB max)
+          const options = {
+            maxSizeMB: 2,
+            useWebWorker: true
+          }
+          try {
+            fileToUpload = await imageCompression(file, options)
+            console.log(`📷 Compression: ${(file.size / 1024 / 1024).toFixed(1)}MB → ${(fileToUpload.size / 1024 / 1024).toFixed(1)}MB`)
+          } catch (error) {
+            console.error('Erreur compression:', error)
+            fileToUpload = file // Fallback vers fichier original
+          }
         } else if (isVideo) {
           // Si vidéo > 95 MB, on SKIP la compression navigateur (backend gérera)
           if (file.size > 95 * 1024 * 1024) {
@@ -325,17 +267,17 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
             fileToUpload = await compressVideo(file)
           }
         }
-  
+
         // Validation taille APRÈS compression (modifiée)
         const maxSize = isVideo ? 350 * 1024 * 1024 : 20 * 1024 * 1024 // 20MB max pour images
         if (fileToUpload.size > maxSize) {
           const maxSizeMB = isVideo ? '350MB' : '20MB'
           throw new Error(`${file.name} est encore trop volumineux après compression (max ${maxSizeMB})`)
         }
-  
+
         // Génération du path de stockage
         const storagePath = generateStoragePath(fileToUpload.name)
-        
+
         // Upload vers Supabase
         const { data, error } = await supabase.storage
           .from('fiche-photos')
@@ -343,36 +285,36 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
             cacheControl: '3600',
             upsert: false
           })
-  
+
         if (error) throw error
-  
+
         // Récupération de l'URL publique
         const { data: urlData } = supabase.storage
           .from('fiche-photos')
           .getPublicUrl(storagePath)
-  
+
         // 🎬 COMPRESSION BACKEND si vidéo > 95 MB
         if (isVideo && file.size > 95 * 1024 * 1024) {
           console.log('🎬 Vidéo > 95MB, compression backend en cours...')
           setBackendCompressing(true)
-          
+
           try {
             const response = await fetch('https://video-compressor-production.up.railway.app/compress-video', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ videoUrl: urlData.publicUrl })
             })
-            
+
             if (!response.ok) {
               throw new Error('Erreur compression backend')
             }
-            
+
             const result = await response.json()
             console.log('✅ Compression backend terminée:', result.compressedUrl)
-            
+
             // Stocker l'URL compressée au lieu de l'originale
             uploadedUrls.push(result.compressedUrl)
-            
+
           } catch (compressionError) {
             console.error('❌ Erreur compression backend:', compressionError)
             // Fallback : garder l'URL originale si compression échoue
@@ -386,7 +328,7 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
           uploadedUrls.push(urlData.publicUrl)
         }
       }
-  
+
       return { success: true, urls: uploadedUrls }
     } catch (error) {
       return { success: false, error: error.message }
@@ -395,100 +337,123 @@ const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
 
   // Gestion du changement de fichier
   const handleFileChange = async (event) => {
-  const files = Array.from(event.target.files)
-  
-  if (files.length === 0) return
+    const files = Array.from(event.target.files)
 
-  // Vérification limite nombre de fichiers
-  if (currentPhotos.length + files.length > maxFiles) {
-    setError(`Maximum ${maxFiles} photos autorisées`)
-    return
+    if (files.length === 0) return
+
+    // Vérification limite nombre de fichiers
+    if (currentPhotos.length + files.length > maxFiles) {
+      setError(`Maximum ${maxFiles} photos autorisées`)
+      return
+    }
+
+    setUploading(true)
+    setError(null)
+
+    try {
+      const result = await uploadToSupabase(files)
+
+      if (result.success) {
+        // FORCER currentPhotos à être un array
+        const safeCurrentPhotos = Array.isArray(currentPhotos) ? currentPhotos : []
+
+        const newUrls = result.urls
+
+        if (multiple) {
+          const updatedPhotos = [...safeCurrentPhotos, ...newUrls]
+          updateField(fieldPath, updatedPhotos)
+        } else {
+          updateField(fieldPath, newUrls[0])
+        }
+
+        // Reset du input
+        event.target.value = ''
+      } else {
+        setError(result.error)
+      }
+    } catch (err) {
+      setError('Erreur lors de l\'upload: ' + err.message)
+    } finally {
+      setUploading(false)
+    }
   }
 
-  setUploading(true)
-  setError(null)
+  // Suppression d'une photo - VERSION FINALE
 
-  try {
-    const result = await uploadToSupabase(files)
-    
-    if (result.success) {
-      // FORCER currentPhotos à être un array
-      const safeCurrentPhotos = Array.isArray(currentPhotos) ? currentPhotos : []
-      
-      const newUrls = result.urls
-      
+  const handleDeletePhoto = async (photoUrl, index) => {
+    try {
+      // Extraire le path depuis l'URL Supabase
+      const urlParts = photoUrl.split('/')
+      const bucketIndex = urlParts.findIndex(part => part === 'fiche-photos')
+      let storagePath = urlParts.slice(bucketIndex + 1).join('/')
+
+      // DÉCODAGE CRUCIAL pour les caractères spéciaux (%20 → espaces, etc.)
+      storagePath = decodeURIComponent(storagePath)
+
+      // Tentative de suppression du storage Supabase
+      const { error } = await supabase.storage
+        .from('fiche-photos')
+        .remove([storagePath])
+
+      // ⚠️ IMPORTANT : On continue même si erreur Storage (fichier déjà supprimé)
+      if (error) {
+        console.warn('Fichier déjà supprimé du Storage ou erreur:', error)
+        // On ne return pas, on continue pour nettoyer le FormContext
+      }
+
+      // Mise à jour du FormContext (TOUJOURS faire ça)
       if (multiple) {
-        const updatedPhotos = [...safeCurrentPhotos, ...newUrls]
+        const updatedPhotos = currentPhotos.filter((_, i) => i !== index)
         updateField(fieldPath, updatedPhotos)
       } else {
-        updateField(fieldPath, newUrls[0])
+        updateField(fieldPath, null)
       }
-      
-      // Reset du input
-      event.target.value = ''
-    } else {
-      setError(result.error)
+
+      console.log('✅ Photo supprimée du FormContext')
+
+    } catch (err) {
+      console.error('Erreur suppression photo:', err)
+
+      // Même si erreur, essayer de nettoyer le FormContext
+      if (multiple) {
+        const updatedPhotos = currentPhotos.filter((_, i) => i !== index)
+        updateField(fieldPath, updatedPhotos)
+      } else {
+        updateField(fieldPath, null)
+      }
+
+      setError('Photo supprimée (erreur Storage ignorée)')
     }
-  } catch (err) {
-    setError('Erreur lors de l\'upload: ' + err.message)
-  } finally {
-    setUploading(false)
   }
-}
 
-// Suppression d'une photo - VERSION FINALE
+  const PhotoWithFallback = ({ photoUrl, index }) => {
+    const [broken, setBroken] = useState(false)
 
-const handleDeletePhoto = async (photoUrl, index) => {
-  try {
-    // Extraire le path depuis l'URL Supabase
-    const urlParts = photoUrl.split('/')
-    const bucketIndex = urlParts.findIndex(part => part === 'fiche-photos')
-    let storagePath = urlParts.slice(bucketIndex + 1).join('/')
-    
-    // DÉCODAGE CRUCIAL pour les caractères spéciaux (%20 → espaces, etc.)
-    storagePath = decodeURIComponent(storagePath)
-    
-    // Tentative de suppression du storage Supabase
-    const { error } = await supabase.storage
-      .from('fiche-photos')
-      .remove([storagePath])
-
-    // ⚠️ IMPORTANT : On continue même si erreur Storage (fichier déjà supprimé)
-    if (error) {
-      console.warn('Fichier déjà supprimé du Storage ou erreur:', error)
-      // On ne return pas, on continue pour nettoyer le FormContext
+    if (broken) {
+      return (
+        <div className="w-full h-24 rounded-lg border bg-gray-50 flex flex-col items-center justify-center gap-1">
+          <span className="text-lg">📁</span>
+          <span className="text-xs text-gray-400">Archivée sur Drive</span>
+        </div>
+      )
     }
 
-    // Mise à jour du FormContext (TOUJOURS faire ça)
-    if (multiple) {
-      const updatedPhotos = currentPhotos.filter((_, i) => i !== index)
-      updateField(fieldPath, updatedPhotos)
-    } else {
-      updateField(fieldPath, null)
-    }
-    
-    console.log('✅ Photo supprimée du FormContext')
-    
-  } catch (err) {
-    console.error('Erreur suppression photo:', err)
-    
-    // Même si erreur, essayer de nettoyer le FormContext
-    if (multiple) {
-      const updatedPhotos = currentPhotos.filter((_, i) => i !== index)
-      updateField(fieldPath, updatedPhotos)
-    } else {
-      updateField(fieldPath, null)
-    }
-    
-    setError('Photo supprimée (erreur Storage ignorée)')
+    return (
+      <img
+        src={photoUrl}
+        alt={`Photo ${index + 1}`}
+        className="w-full h-24 object-cover rounded-lg border shadow-sm"
+        loading="lazy"
+        onError={() => setBroken(true)}
+      />
+    )
   }
-}
 
   return (
     <div className="space-y-4">
       <div>
         <label className="block font-semibold mb-2">{label}</label>
-        
+
         {/* Input upload */}
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
           <input
@@ -501,8 +466,8 @@ const handleDeletePhoto = async (photoUrl, index) => {
             className="hidden"
             id={`upload-${fieldPath}`}
           />
-          
-          <label 
+
+          <label
             htmlFor={`upload-${fieldPath}`}
             className={`cursor-pointer ${(uploading || compressing || backendCompressing) ? 'opacity-50' : ''}`}
           >
@@ -536,7 +501,7 @@ const handleDeletePhoto = async (photoUrl, index) => {
                 </p>
                 {acceptVideo && (
                   <p className="text-xs mt-2 text-orange-600">
-                    💡 <strong>Astuce :</strong> Filmez en 720p pour réduire la taille. 
+                    💡 <strong>Astuce :</strong> Filmez en 720p pour réduire la taille.
                     Les vidéos &gt;300MB prennent 4-5 min à optimiser.
                   </p>
                 )}
@@ -580,53 +545,48 @@ const handleDeletePhoto = async (photoUrl, index) => {
               <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
             <span>
-              <strong>Photos conservées 30 jours</strong> dans l'application. 
+              <strong>Photos conservées 90 jours</strong> dans l'application.
               Elles seront ensuite disponibles uniquement dans Google Drive.
             </span>
           </div>
         )}
       </div>
 
-    {/* Galerie photos existantes */}
-    {currentPhotos.length > 0 && (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {currentPhotos.map((photoUrl, index) => {
-          // Détecter si c'est une vidéo par l'extension
-          const isVideo = /\.(mp4|webm|ogg|mov|avi)$/i.test(photoUrl)
-          
-          return (
-            <div key={index} className="relative group">
-              {isVideo ? (
-                // Affichage icône vidéo
-                <div className="w-full h-24 bg-gray-800 rounded-lg border shadow-sm flex flex-col items-center justify-center text-white">
-                  <svg className="w-8 h-8 mb-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                  </svg>
-                  <span className="text-xs">Vidéo</span>
-                </div>
-              ) : (
-                // Affichage image normal
-                <img
-                  src={photoUrl}
-                  alt={`Photo ${index + 1}`}
-                  className="w-full h-24 object-cover rounded-lg border shadow-sm"
-                  loading="lazy"
-                />
-              )}
-              
-              {/* Bouton suppression */}
-              <button
-                onClick={() => handleDeletePhoto(photoUrl, index)}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Supprimer cette photo"
-              >
-                ×
-              </button>
-            </div>
-          )
-        })}
-      </div>
-    )}
+      {/* Galerie photos existantes */}
+      {currentPhotos.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {currentPhotos.map((photoUrl, index) => {
+            // Détecter si c'est une vidéo par l'extension
+            const isVideo = /\.(mp4|webm|ogg|mov|avi)$/i.test(photoUrl)
+
+            return (
+              <div key={index} className="relative group">
+                {isVideo ? (
+                  // Affichage icône vidéo
+                  <div className="w-full h-24 bg-gray-800 rounded-lg border shadow-sm flex flex-col items-center justify-center text-white">
+                    <svg className="w-8 h-8 mb-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                    </svg>
+                    <span className="text-xs">Vidéo</span>
+                  </div>
+                ) : (
+                  // Affichage image normal
+                  <PhotoWithFallback photoUrl={photoUrl} index={index} />
+                )}
+
+                {/* Bouton suppression */}
+                <button
+                  onClick={() => handleDeletePhoto(photoUrl, index)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Supprimer cette photo"
+                >
+                  ×
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
     </div>
   )

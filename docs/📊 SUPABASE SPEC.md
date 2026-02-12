@@ -1,5 +1,5 @@
 # 📊 SUPABASE SPEC - Fiche Logement
-*Architecture technique - Mise à jour : 17 novembre 2025*
+*Architecture technique - Mise à jour : 12 février 2026*
 
 ---
 
@@ -338,6 +338,153 @@ CREATE TRIGGER fiche_annonce_pdf_webhook
 
 ---
 
+## 🧹 **STORAGE CLEANUP AUTOMATIQUE**
+
+### **Contexte**
+Le storage Supabase avait atteint **107 GB** (limite 100 GB dépassée). Un système de cleanup automatique a été mis en place pour nettoyer les fichiers anciens selon des règles de rétention.
+
+### **Architecture du Système**
+
+#### **1. Fonction SQL : `get_old_storage_objects`**
+
+Fonction `SECURITY DEFINER` dans le schéma `public` permettant d'accéder à `storage.objects` depuis les Edge Functions.
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_old_storage_objects(
+  p_bucket_id TEXT,
+  p_cutoff TIMESTAMPTZ,
+  p_limit INT DEFAULT 1000
+)
+RETURNS TABLE(name TEXT, size BIGINT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    objects.name,
+    (objects.metadata->>'size')::bigint as size
+  FROM storage.objects
+  WHERE bucket_id = p_bucket_id
+    AND created_at < p_cutoff
+  ORDER BY created_at ASC
+  LIMIT p_limit;
+END;
+$$;
+```
+
+**Raison d'existence :** `storage.objects` n'est pas accessible via l'API REST Supabase (erreur PGRST106). C'est le **seul moyen** d'accéder à ces données depuis une Edge Function via `.rpc()`.
+
+#### **2. Edge Function : `cleanup-storage`**
+
+Fonction déployée dans Supabase qui effectue le nettoyage automatique.
+
+**Paramètres de rétention :**
+- **Photos** (`fiche-photos`) : 90 jours
+- **PDFs** (`fiche-pdfs`) : 7 jours
+
+**Fonctionnement :**
+1. Appelle `get_old_storage_objects()` via `.rpc()` pour récupérer les fichiers anciens
+2. Supprime les fichiers par batch de **1000 max** (limite Supabase) via `.remove()`
+3. Flag `DRY_RUN` en haut du fichier pour tester sans supprimer
+
+```typescript
+// supabase/functions/cleanup-storage/index.ts
+const DRY_RUN = false // Mettre à true pour tester
+
+const RETENTION_POLICIES = {
+  'fiche-photos': 90,  // 90 jours
+  'fiche-pdfs': 7      // 7 jours
+}
+
+// Récupération via RPC (seul moyen d'accéder à storage.objects)
+const { data: oldFiles } = await supabase.rpc('get_old_storage_objects', {
+  p_bucket_id: bucketId,
+  p_cutoff: cutoffDate,
+  p_limit: 1000
+})
+
+// Suppression via API Storage (JAMAIS via SQL DELETE = fichiers orphelins)
+if (!DRY_RUN) {
+  await supabase.storage.from(bucketId).remove(filePaths)
+}
+```
+
+#### **3. Cron Job : `cleanup-storage-daily`**
+
+Planification automatique du nettoyage tous les soirs à 2h du matin.
+
+```sql
+-- Configuration dans Supabase Dashboard > Database > Cron Jobs
+SELECT cron.schedule(
+  'cleanup-storage-daily',
+  '0 2 * * *',  -- Tous les jours à 2h du matin
+  $$
+  SELECT net.http_post(
+    url := 'https://[PROJECT_REF].supabase.co/functions/v1/cleanup-storage',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer [ANON_KEY]'
+    )
+  );
+  $$
+);
+```
+
+### **Règles Critiques**
+
+> [!CAUTION]
+> **Ne JAMAIS faire `DELETE FROM storage.objects` via SQL**
+> 
+> Le trigger `protect_delete` sur `storage.objects` interdit les suppressions directes. Toujours utiliser l'API `.remove()` pour supprimer des fichiers.
+
+> [!IMPORTANT]
+> **Accès à `storage.objects`**
+> 
+> - `storage.objects` n'est **pas accessible** via l'API REST Supabase (erreur PGRST106)
+> - Seule solution : fonction SQL `SECURITY DEFINER` appelée via `.rpc()`
+> - Les stats du dashboard Supabase peuvent mettre **jusqu'à 1h** à se rafraîchir
+
+### **Monitoring du Storage**
+
+**Source de vérité pour le storage :**
+
+```sql
+-- Taille totale par bucket (en GB)
+SELECT 
+  bucket_id,
+  (sum((metadata->>'size')::bigint) / 1024.0 / 1024.0 / 1024.0)::numeric(10,2) as total_gb
+FROM storage.objects
+GROUP BY bucket_id
+ORDER BY total_gb DESC;
+```
+
+**Résultat attendu :**
+```
+bucket_id      | total_gb
+---------------|----------
+fiche-photos   | 45.23
+fiche-pdfs     | 2.15
+guide-acces-pdfs | 0.87
+annonce-pdfs   | 0.34
+```
+
+### **Workflow de Nettoyage**
+
+```mermaid
+graph TD
+    A[Cron Job 2h du matin] -->|POST| B[Edge Function cleanup-storage]
+    B -->|.rpc| C[get_old_storage_objects]
+    C -->|Retourne fichiers anciens| D{DRY_RUN?}
+    D -->|true| E[Log uniquement]
+    D -->|false| F[.remove batch 1000]
+    F --> G[Fichiers supprimés]
+    E --> H[Rapport de nettoyage]
+    G --> H
+```
+
+---
+
 ## 🔐 **AUTHENTIFICATION & PERMISSIONS**
 
 ### **RLS Policies**
@@ -433,5 +580,5 @@ const handleSave = async () => {
 
 *📝 Document technique de référence*  
 *🔧 Architecture validée en production*  
-*📅 Dernière mise à jour : 17 novembre 2025*
+*📅 Dernière mise à jour : 12 février 2026*
 ```
