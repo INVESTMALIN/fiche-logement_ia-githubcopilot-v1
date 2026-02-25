@@ -85,6 +85,27 @@ export default function FicheClefs() {
               <p className="text-xs text-gray-500 mt-1">Photo obligatoire pour localiser la boîte à clés</p>
             </div>
 
+            {/* Emplacement de l'emballage de la boîte à clés */}
+            <div className="mb-6">
+              <label className="block font-semibold mb-3">Emplacement de l'emballage de la boîte à clés (Si possible dans l'espace de stockage prestataire) *</label>
+              <textarea
+                placeholder="Décrivez où se trouve l'emballage de la boîte à clés"
+                className="w-full p-3 border rounded h-20 resize-none"
+                value={formData.emplacementEmballageBoite}
+                onChange={(e) => handleInputChange('section_clefs.emplacementEmballageBoite', e.target.value)}
+              />
+            </div>
+
+            {/* Photo de l'emplacement de l'emballage */}
+            <div className="mb-6">
+              <PhotoUpload
+                fieldPath="section_clefs.emplacementEmballagePhoto"
+                label="Photo de l'emplacement de l'emballage"
+                multiple={true}
+                maxFiles={10}
+              />
+            </div>
+
             {/* Sections conditionnelles selon le type de boîte */}
             {formData.boiteType === "TTlock" && (
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">

@@ -578,6 +578,223 @@ const handleSave = async () => {
 
 ---
 
+# 🧹 Système de Cleanup Storage Supabase
+
+> Mis en place le 12 février 2026 suite à une saturation du storage (107 GB / 100 GB limite).
+
+---
+
+## 📊 Contexte
+
+Le storage Supabase avait atteint **107 GB** (limite plan Pro = 100 GB), bloquant tous les uploads.
+
+**Répartition du storage :**
+| Type | Fichiers | Volume |
+|------|----------|--------|
+| Photos | 12 317 | 67 GB |
+| Vidéos | 740 | 40 GB |
+| PDFs fiches | - | ~2 GB |
+| **Total** | | **~107 GB** |
+
+**Taux d'upload :** ~4 GB/nuit avec les coordinateurs actifs.
+
+---
+
+## 🏗️ Architecture du système
+
+### Flux complet
+```
+Cron SQL (2h du matin)
+  → Appelle Edge Function cleanup-storage
+    → .rpc('get_old_storage_objects') sur chaque bucket
+      → Retourne liste fichiers > cutoff
+        → .remove() sur les fichiers trouvés
+```
+
+---
+
+## 🗄️ Fonction SQL : `get_old_storage_objects`
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_old_storage_objects(
+  p_bucket_id TEXT,
+  p_cutoff TIMESTAMPTZ,
+  p_limit INT DEFAULT 1000
+)
+RETURNS TABLE(name TEXT, size BIGINT)
+LANGUAGE SQL
+SECURITY DEFINER
+AS $$
+  SELECT name, (metadata->>'size')::bigint as size
+  FROM storage.objects
+  WHERE bucket_id = p_bucket_id
+  AND created_at < p_cutoff
+  AND name NOT LIKE 'assets/%'
+  ORDER BY created_at ASC
+  LIMIT p_limit;
+$$;
+```
+
+### Pourquoi cette fonction existe ?
+`storage.objects` n'est **pas accessible** via l'API REST Supabase JS depuis une Edge Function.
+Tenter `.schema('storage').from('objects')` retourne l'erreur :
+```
+PGRST106: The schema must be one of the following: public, graphql_public
+```
+La seule solution = créer une fonction SQL `SECURITY DEFINER` dans le schéma `public` qui accède à `storage.objects`.
+
+### Exclusion du dossier `assets/`
+Le logo PDF (`letahost-transparent.png`) est stocké dans `fiche-pdfs/assets/`.
+Le filtre `AND name NOT LIKE 'assets/%'` empêche sa suppression accidentelle.
+
+---
+
+## ⚡ Edge Function : `cleanup-storage`
+
+### Paramètres clés
+```typescript
+const DRY_RUN = false        // ⚠️ Mettre true pour tester sans supprimer
+const CUTOFF_DAYS_PHOTOS = 90  // 3 mois
+const CUTOFF_DAYS_PDFS = 7     // 1 semaine
+const BATCH_SIZE = 1000        // Limite max Supabase pour .remove()
+```
+
+### Pourquoi ces cutoffs ?
+- **Photos 90 jours** : Les photos sont synchronisées sur Google Drive via Make.com dès la finalisation. 90 jours = marge confortable. Les coordinateurs ne modifient pas les photos après upload.
+- **PDFs 7 jours** : Les PDFs sont régénérables à tout moment depuis l'app, et synchronisés immédiatement sur Drive + Monday.com.
+
+### Règle CRITIQUE : suppression via API uniquement
+```typescript
+// ✅ CORRECT
+await supabase.storage.from('fiche-photos').remove(fileNames)
+
+// ❌ INTERDIT - trigger protect_delete bloque et crée des orphelins
+DELETE FROM storage.objects WHERE ...
+```
+
+### Pourquoi pas de récursion ?
+La première approche récursive (parcours de l'arborescence de dossiers) causait des `EarlyDrop` à ~500ms car :
+1. Trop d'appels `.list()` en cascade
+2. Spam de logs I/O qui tue le runtime Edge
+
+**Solution finale :** Requête directe sur `storage.objects` via SQL, zéro récursion.
+
+---
+
+## ⏰ Cron Job : `cleanup-storage-daily`
+
+```sql
+-- Vérifier le statut du cron
+SELECT jobname, schedule, active FROM cron.job;
+
+-- Le cron appelle l'Edge Function via HTTP POST
+-- Schedule : 0 2 * * * (tous les soirs à 2h du matin)
+```
+
+> ⚠️ Impossible de modifier le cron via SQL standard (permission denied).
+> Utiliser l'interface Supabase → Database → Cron Jobs.
+
+---
+
+## 📦 Compression photos côté client
+
+Mise en place en même temps pour réduire le volume d'upload.
+
+**Librairie :** `browser-image-compression`
+**Cible :** 2 MB max par photo
+**Résultat observé :** 2.8 MB → 1.6 MB
+
+```typescript
+// Dans PhotoUpload.jsx - uploadToSupabase()
+const options = {
+  maxSizeMB: 2,
+  useWebWorker: true
+}
+fileToUpload = await imageCompression(file, options)
+```
+
+---
+
+## 🔍 Monitoring
+
+### Source de vérité (pas le dashboard !)
+Le dashboard Supabase peut mettre **jusqu'à 1h** à se rafraîchir. Toujours utiliser ce SQL :
+
+```sql
+SELECT
+  bucket_id,
+  (sum((metadata->>'size')::bigint) / 1024.0 / 1024.0 / 1024.0)::numeric(10,2) as total_gb
+FROM storage.objects
+GROUP BY bucket_id
+ORDER BY total_gb DESC;
+```
+
+### Vérifier les fichiers > 90 jours restants
+```sql
+SELECT COUNT(*),
+  (sum((metadata->>'size')::bigint) / 1024.0 / 1024.0 / 1024.0)::numeric(10,2) as total_gb
+FROM storage.objects
+WHERE bucket_id = 'fiche-photos'
+AND created_at < NOW() - INTERVAL '90 days';
+```
+
+---
+
+## 🚨 Points critiques à ne jamais oublier
+
+| Règle | Raison |
+|-------|--------|
+| Toujours `.remove()` via API, jamais SQL DELETE | Trigger `protect_delete` + orphelins |
+| Ne jamais faire de récursion globale en Edge Function | EarlyDrop garanti sur gros volumes |
+| `storage.objects` via `.rpc()` uniquement | Schéma storage non exposé via REST |
+| Exclure `assets/` du cleanup | Logo PDF letahost stocké là |
+| Dashboard stats = pas fiable en temps réel | Délai jusqu'à 1h |
+
+---
+
+## 📁 Fallback UI - Photos archivées
+
+Les photos supprimées du storage (> 90 jours) génèrent des URLs cassées (404).
+Un composant `PhotoWithFallback` dans `PhotoUpload.jsx` gère ça proprement :
+
+```jsx
+const PhotoWithFallback = ({ photoUrl, index }) => {
+  const [broken, setBroken] = useState(false)
+
+  if (broken) {
+    return (
+      <div className="w-full h-24 rounded-lg border bg-gray-50 flex flex-col items-center justify-center gap-1">
+        <span className="text-lg">📁</span>
+        <span className="text-xs text-gray-400">Archivée sur Drive</span>
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={photoUrl}
+      alt={`Photo ${index + 1}`}
+      className="w-full h-24 object-cover rounded-lg border shadow-sm"
+      loading="lazy"
+      onError={() => setBroken(true)}
+    />
+  )
+}
+```
+
+---
+
+## 📈 Résultats
+
+| Métrique | Avant | Après |
+|----------|-------|-------|
+| Storage total | 107 GB | 93 GB |
+| Fichiers supprimés | - | 2 533 |
+| Espace libéré | - | ~14 GB |
+| Taille moyenne photo | 5.5 MB | ~2 MB (compression) |
+
+---
+
 *📝 Document technique de référence*  
 *🔧 Architecture validée en production*  
 *📅 Dernière mise à jour : 12 février 2026*

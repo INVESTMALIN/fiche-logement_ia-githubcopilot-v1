@@ -119,7 +119,64 @@ export default function MiniDashboard({ formData }) {
         </div>
       </div>
 
-      {/* CONFORMITÉ & RECOMMANDATIONS - PLEINE LARGEUR */}
+      {/* APERÇU DU LOGEMENT */}
+      <div className="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <Home className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Aperçu du logement</h3>
+            <p className="text-sm text-gray-600">Caractéristiques principales</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* Carte Capacité */}
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="text-sm text-gray-600 mb-1">Capacité</div>
+            <div className="font-semibold text-gray-900">{apercu.capacite.personnes} personnes</div>
+            <div className="text-xs text-gray-500">{nombreChambres} chambres • {apercu.capacite.lits} lits</div>
+          </div>
+
+          {/* Carte Surface */}
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="text-sm text-gray-600 mb-1">Surface</div>
+            <div className="font-semibold text-gray-900">{apercu.capacite.surface}</div>
+            <div className="text-xs text-gray-500">{apercu.nom}</div>
+          </div>
+
+          {/* Carte WiFi */}
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="text-sm text-gray-600 mb-1">WiFi</div>
+            <div className={`font-semibold ${apercu.equipements.wifi.disponible ? 'text-green-600' : 'text-red-600'}`}>
+              {apercu.equipements.wifi.texte}
+            </div>
+          </div>
+
+          {/* Carte Parking */}
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="text-sm text-gray-600 mb-1">Parking</div>
+            <div className="font-semibold text-gray-900">{apercu.equipements.parking.texte}</div>
+          </div>
+        </div>
+
+        {/* Atouts */}
+        {apercu.atouts.length > 0 && (
+          <div>
+            <div className="text-sm font-medium text-gray-900 mb-3">🌟 Atouts principaux</div>
+            <div className="flex flex-wrap gap-2">
+              {apercu.atouts.map((atout, index) => (
+                <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  {atout}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+            {/* CONFORMITÉ & RECOMMANDATIONS */}
       <div className="bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-200 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center">
@@ -204,63 +261,6 @@ export default function MiniDashboard({ formData }) {
         <div className="mt-4 text-xs text-gray-500 text-center">
           💡 Conformité selon réglementation location courte durée et recommandations internes
         </div>
-      </div>
-
-      {/* APERÇU DU LOGEMENT */}
-      <div className="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Home className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Aperçu du logement</h3>
-            <p className="text-sm text-gray-600">Caractéristiques principales</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Carte Capacité */}
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
-            <div className="text-sm text-gray-600 mb-1">Capacité</div>
-            <div className="font-semibold text-gray-900">{apercu.capacite.personnes} personnes</div>
-            <div className="text-xs text-gray-500">{nombreChambres} chambres • {apercu.capacite.lits} lits</div>
-          </div>
-
-          {/* Carte Surface */}
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
-            <div className="text-sm text-gray-600 mb-1">Surface</div>
-            <div className="font-semibold text-gray-900">{apercu.capacite.surface}</div>
-            <div className="text-xs text-gray-500">{apercu.nom}</div>
-          </div>
-
-          {/* Carte WiFi */}
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
-            <div className="text-sm text-gray-600 mb-1">WiFi</div>
-            <div className={`font-semibold ${apercu.equipements.wifi.disponible ? 'text-green-600' : 'text-red-600'}`}>
-              {apercu.equipements.wifi.texte}
-            </div>
-          </div>
-
-          {/* Carte Parking */}
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
-            <div className="text-sm text-gray-600 mb-1">Parking</div>
-            <div className="font-semibold text-gray-900">{apercu.equipements.parking.texte}</div>
-          </div>
-        </div>
-
-        {/* Atouts */}
-        {apercu.atouts.length > 0 && (
-          <div>
-            <div className="text-sm font-medium text-gray-900 mb-3">🌟 Atouts principaux</div>
-            <div className="flex flex-wrap gap-2">
-              {apercu.atouts.map((atout, index) => (
-                <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  {atout}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ALERTES */}

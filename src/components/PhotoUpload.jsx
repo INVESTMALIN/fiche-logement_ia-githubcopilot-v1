@@ -15,6 +15,29 @@ const sanitizeFileName = (fileName) => {
     .replace(/^_|_$/g, '')               // Enlève underscores en début/fin
 }
 
+const PhotoWithFallback = ({ photoUrl, index }) => {
+  const [broken, setBroken] = useState(false)
+
+  if (broken) {
+    return (
+      <div className="w-full h-24 rounded-lg border bg-gray-50 flex flex-col items-center justify-center gap-1">
+        <span className="text-lg">📁</span>
+        <span className="text-xs text-gray-400">Archivée sur Drive</span>
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={photoUrl}
+      alt={`Photo ${index + 1}`}
+      className="w-full h-24 object-cover rounded-lg border shadow-sm"
+      loading="lazy"
+      onError={() => setBroken(true)}
+    />
+  )
+}
+
 const PhotoUpload = ({
   fieldPath,           // ex: "section_equipements.poubelle_photos"
   label,               // ex: "Photos du local poubelle"
@@ -424,29 +447,6 @@ const PhotoUpload = ({
 
       setError('Photo supprimée (erreur Storage ignorée)')
     }
-  }
-
-  const PhotoWithFallback = ({ photoUrl, index }) => {
-    const [broken, setBroken] = useState(false)
-
-    if (broken) {
-      return (
-        <div className="w-full h-24 rounded-lg border bg-gray-50 flex flex-col items-center justify-center gap-1">
-          <span className="text-lg">📁</span>
-          <span className="text-xs text-gray-400">Archivée sur Drive</span>
-        </div>
-      )
-    }
-
-    return (
-      <img
-        src={photoUrl}
-        alt={`Photo ${index + 1}`}
-        className="w-full h-24 object-cover rounded-lg border shadow-sm"
-        loading="lazy"
-        onError={() => setBroken(true)}
-      />
-    )
   }
 
   return (

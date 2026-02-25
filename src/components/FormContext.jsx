@@ -72,6 +72,8 @@ const initialFormData = {
     boiteType: "",                    // TEXT
     emplacementBoite: "",             // TEXT
     emplacementPhoto: [],             // ARRAY
+    emplacementEmballageBoite: "",    // TEXT
+    emplacementEmballagePhoto: [],    // ARRAY
 
     // TTlock (conditionnel)
     ttlock: {

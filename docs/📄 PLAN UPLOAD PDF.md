@@ -1,64 +1,299 @@
-# 📄 PLAN UPLOAD PDF - Architecture Complète
-*Mise à jour : 17 novembre 2025*
+# 📄 SYSTÈME DE GÉNÉRATION PDF - Documentation Complète
+*Mise à jour : 12 février 2026*
 
 ---
 
 ## 🎯 **VUE D'ENSEMBLE**
 
-Système complet de génération et synchronisation PDF pour l'application Fiche Logement, comprenant :
-- **2 PDF Fiches** : Logement (complet) + Ménage (filtré)
-- **2 PDF Assistants IA** : Guide d'accès + Annonce
-- **Synchronisation automatique** vers Google Drive et Monday.com via Make
+Système complet de génération et synchronisation PDF pour l'application Fiche Logement, comprenant **deux architectures distinctes** :
+
+### **📋 PDF Fiches (Puppeteer/Railway)**
+- **Fiche Logement** : PDF complet avec 23 sections
+- **Fiche Ménage** : PDF filtré avec 14 sections spécifiques
+
+### **🤖 PDF Assistants IA (jsPDF client-side)**
+- **Guide d'accès** : Généré depuis l'assistant IA
+- **Annonce** : Généré depuis l'assistant IA
+
+### **🔄 Synchronisation automatique**
+- Upload vers Supabase Storage
+- Webhooks Make → Google Drive + Monday.com
 
 ---
 
 ## 🏗️ **ARCHITECTURE GÉNÉRALE**
 
-### **Workflow Frontend → Supabase → Make**
+### **Workflow Frontend → Backend → Supabase → Make**
 
 ```mermaid
 graph TD
-    A[Utilisateur génère PDF] --> B[Génération + Upload Storage]
-    B --> C[FormContext.triggerWebhook]
-    C --> D[UPDATE Supabase colonnes + timestamps]
-    D --> E[Trigger SQL détecte changement]
-    E --> F[Webhook Make POST]
-    F --> G[Make télécharge PDF]
-    G --> H[Upload Drive + Monday]
+    A[Utilisateur génère PDF] --> B{Type de PDF?}
+    B -->|Fiches| C[PDFUpload.jsx]
+    B -->|Assistants| D[generateAssistantPDF.js]
+    
+    C --> E[Extraction HTML via iframe]
+    E --> F[Railway/Puppeteer]
+    F --> G[Upload Supabase Storage]
+    
+    D --> H[jsPDF génération client]
+    H --> G
+    
+    G --> I[UPDATE colonnes + timestamps]
+    I --> J[Trigger SQL détecte changement]
+    J --> K[Webhook Make POST]
+    K --> L[Make télécharge PDF]
+    L --> M[Upload Drive + Monday]
 ```
 
 ---
 
-## 📊 **1. PDF FICHES LOGEMENT & MÉNAGE**
+## 📊 **1. PDF FICHES LOGEMENT & MÉNAGE (Puppeteer/Railway)**
 
-### **Composants**
+### **🎯 Architecture**
 
-#### **PDFUpload.jsx**
-- Génère 2 PDF simultanément via iframes cachés
-- Routes : `/print-pdf` (logement) + `/print-pdf-menage` (ménage)
-- Upload vers bucket `fiche-pdfs`
-- Appelle `triggerPdfWebhook(urlLogement, urlMenage)`
+**Frontend (React)** → **Routes PDF** → **Extraction HTML** → **Service Railway (Puppeteer)** → **Supabase Storage** → **Trigger DB** → **Webhook Make**
 
-#### **Templates**
-- **PDFTemplate.jsx** : Fiche complète (23 sections)
-- **PDFMenageTemplate.jsx** : Fiche filtrée (14 sections ménage)
+---
 
-#### **Génération**
+### **📁 Composants Frontend**
+
+#### **PDFUpload.jsx** - Orchestrateur principal
 ```javascript
-// html2pdf.js avec pagination intelligente
-const options = {
-  margin: [15, 15, 15, 15],
-  image: { type: 'jpeg', quality: 0.95 },
-  html2canvas: { scale: 2, useCORS: true },
-  jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-  pagebreak: { mode: ['avoid-all', 'css'], avoid: ['.section', '.header'] }
+// Génère 2 PDF simultanément via iframes cachés
+const generateAndUploadPDF = async () => {
+  // 1. Extraction HTML Logement
+  const htmlLogement = await extractHTMLFromIframe(`/print-pdf?fiche=${formData.id}`)
+  
+  // 2. Extraction HTML Ménage
+  const htmlMenage = await extractHTMLFromIframe(`/print-pdf-menage?fiche=${formData.id}`)
+  
+  // 3. Génération PDF Logement via Railway
+  const railwayResponseLogement = await fetch(
+    'https://video-compressor-production.up.railway.app/generate-pdf',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        htmlContent: htmlLogement,
+        fileName: `fiche-logement-${numeroBien}.pdf`
+      })
+    }
+  )
+  
+  // 4. Génération PDF Ménage via Railway
+  const railwayResponseMenage = await fetch(...)
+  
+  // 5. Trigger webhook Make
+  await triggerPdfWebhook(resultLogement.pdfUrl, resultMenage.pdfUrl)
 }
 ```
 
-### **Storage Supabase**
+**Fonctionnalités clés** :
+- ✅ Extraction HTML via iframe invisible
+- ✅ Aspiration de tous les styles CSS (Tailwind injecté par Vite)
+- ✅ Conversion URLs relatives → absolues (images)
+- ✅ Nettoyage des scripts Vite (qui font planter Puppeteer)
+- ✅ Timeout 30s pour extraction HTML
+- ✅ Attente 3s pour rendu React complet
+
+---
+
+#### **Routes de rendu HTML**
+
+**PrintPDF.jsx** (`/print-pdf`) - Fiche Logement
+```javascript
+const PrintPDF = () => {
+  const [formData, setFormData] = useState(null)
+  
+  useEffect(() => {
+    // PRIORITÉ 1 : sessionStorage (système actuel)
+    const sessionData = sessionStorage.getItem('pdf-data')
+    if (sessionData) {
+      setFormData(JSON.parse(sessionData))
+      sessionStorage.removeItem('pdf-data')
+      return
+    }
+    
+    // PRIORITÉ 2 : URL parameter (pour Make/webhooks)
+    const urlParams = new URLSearchParams(window.location.search)
+    const ficheId = urlParams.get('fiche')
+    if (ficheId) {
+      const result = await loadFiche(ficheId)
+      setFormData(result.data)
+    }
+  }, [])
+  
+  return <PDFTemplate formData={formData} />
+}
+```
+
+**PrintPDFMenage.jsx** (`/print-pdf-menage`) - Fiche Ménage
+- Même logique que PrintPDF.jsx
+- Utilise `PDFMenageTemplate` au lieu de `PDFTemplate`
+
+---
+
+#### **Templates HTML**
+
+**PDFTemplate.jsx** - Fiche complète (23 sections)
+```javascript
+const sectionsConfig = [
+  { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
+  { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
+  { key: 'section_avis', label: '⭐ Avis', emoji: '⭐' },
+  { key: 'section_clefs', label: '🔑 Clefs', emoji: '🔑' },
+  { key: 'section_airbnb', label: '🏠 Airbnb', emoji: '🏠' },
+  { key: 'section_booking', label: '📅 Booking', emoji: '📅' },
+  { key: 'section_reglementation', label: '📋 Réglementation', emoji: '📋' },
+  { key: 'section_exigences', label: '⚠️ Exigences', emoji: '⚠️' },
+  { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
+  { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
+  { key: 'section_consommables', label: '🧴 Consommables', emoji: '🧴' },
+  { key: 'section_visite', label: '🎥 Visite', emoji: '🎥' },
+  { key: 'section_chambres', label: '🛏️ Chambres', emoji: '🛏️' },
+  { key: 'section_salle_de_bains', label: '🚿 Salle de Bains', emoji: '🚿' },
+  { key: 'section_cuisine_1', label: '🍳 Cuisine 1', emoji: '🍳' },
+  { key: 'section_cuisine_2', label: '🍽️ Cuisine 2', emoji: '🍽️' },
+  { key: 'section_salon_sam', label: '🛋️ Salon / SAM', emoji: '🛋️' },
+  { key: 'section_equip_spe_exterieur', label: '🏗️ Équip. Spé. / Extérieur', emoji: '🏗️' },
+  { key: 'section_communs', label: '🏢 Communs', emoji: '🏢' },
+  { key: 'section_teletravail', label: '💻 Télétravail', emoji: '💻' },
+  { key: 'section_bebe', label: '👶 Bébé', emoji: '👶' },
+  { key: 'section_securite', label: '🔒 Sécurité', emoji: '🔒' }
+]
+```
+
+**Fonctionnalités** :
+- ✅ Logo Letahost depuis Supabase Storage
+- ✅ Extraction intelligente des photos (max 4 par section)
+- ✅ Traduction valeurs techniques → humaines
+- ✅ Agrégation automatique des lits
+- ✅ Rendu groupé pour équipements (TV, Climatisation, etc.)
+- ✅ Sections WiFi et Parking dédiées
+
+**PDFMenageTemplate.jsx** - Fiche filtrée (14 sections)
+```javascript
+const menageSectionsConfig = [
+  { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
+  { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
+  { key: 'section_clefs', label: '🔑 Clefs', emoji: '🔑' },
+  { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
+  { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
+  { key: 'section_consommables', label: '🧴 Consommables', emoji: '🧴' },
+  { key: 'section_visite', label: '🎥 Visite', emoji: '🎥' },
+  { key: 'section_chambres', label: '🛏️ Chambres', emoji: '🛏️' },
+  { key: 'section_salle_de_bains', label: '🚿 Salle de Bains', emoji: '🚿' },
+  { key: 'section_cuisine_1', label: '🍳 Cuisine 1', emoji: '🍳' },
+  { key: 'section_cuisine_2', label: '🍽️ Cuisine 2', emoji: '🍽️' },
+  { key: 'section_salon_sam', label: '🛋️ Salon / SAM', emoji: '🛋️' },
+  { key: 'section_equip_spe_exterieur', label: '🏗️ Équip. Spé. / Extérieur', emoji: '🏗️' },
+  { key: 'section_securite', label: '🔒 Sécurité', emoji: '🔒' }
+]
+```
+
+**Fonctionnalités spécifiques ménage** :
+- ✅ Photos plus grandes (max 5 par section)
+- ✅ Masquage codes confidentiels (masterpinConciergerie, codeProprietaire, codeVoyageur)
+- ✅ Liste rouge des consommables obligatoires
+- ✅ Filtrage équipements (poubelle, parking uniquement)
+
+---
+
+### **🚀 Service Railway (Node.js + Puppeteer)**
+
+**Endpoint** : `https://video-compressor-production.up.railway.app/generate-pdf`
+
+#### **server.js** - API Express
+```javascript
+app.post('/generate-pdf', async (req, res) => {
+  const { htmlContent, fileName } = req.body
+  
+  const result = await generatePDF(htmlContent, fileName)
+  
+  res.json(result) // { pdfUrl, fileName, size }
+})
+```
+
+#### **generatePDF.js** - Génération Puppeteer
+```javascript
+async function generatePDF(htmlContent, fileName) {
+  // 1. Écrire HTML dans fichier temporaire
+  fs.writeFileSync(tempHtmlPath, htmlContent, 'utf-8')
+  
+  // 2. Lancer Puppeteer
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    executablePath: '/usr/bin/chromium-browser', // Alpine Docker
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+  })
+  
+  const page = await browser.newPage()
+  
+  // 3. Bloquer les vidéos (éviter de les embarquer dans le PDF)
+  await page.setRequestInterception(true)
+  page.on('request', (request) => {
+    const isVideo = /\.(mp4|webm|ogg|mov|avi|m4v|mkv)$/i.test(request.url())
+    if (isVideo) {
+      request.abort()
+    } else {
+      request.continue()
+    }
+  })
+  
+  // 4. Charger HTML et attendre images
+  await page.goto(`file://${tempHtmlPath}`, {
+    waitUntil: 'networkidle0', // Attendre toutes les ressources
+    timeout: 120000 // 120 secondes max
+  })
+  
+  // 5. Attendre 3s pour styles
+  await new Promise(resolve => setTimeout(resolve, 3000))
+  
+  // 6. Générer PDF
+  const pdfBuffer = await page.pdf({
+    format: 'A4',
+    printBackground: true,
+    margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
+  })
+  
+  // 7. Upload vers Supabase Storage
+  const { data, error } = await supabase.storage
+    .from('fiche-pdfs')
+    .upload(fileName, pdfBuffer, {
+      contentType: 'application/pdf',
+      cacheControl: '3600',
+      upsert: true // Écrase si existe déjà
+    })
+  
+  // 8. Récupérer URL publique
+  const { data: urlData } = supabase.storage
+    .from('fiche-pdfs')
+    .getPublicUrl(fileName)
+  
+  return {
+    pdfUrl: urlData.publicUrl,
+    fileName: fileName,
+    size: pdfBuffer.length
+  }
+}
+```
+
+**Points techniques** :
+- ✅ Chromium Alpine sur Railway
+- ✅ Request Interception pour bloquer vidéos
+- ✅ `networkidle0` : attend toutes les ressources
+- ✅ Timeout 120s pour images distantes
+- ✅ Upload direct sur Supabase Storage
+- ✅ Upsert : écrase le PDF si régénération
+
+---
+
+### **💾 Storage Supabase**
 
 ```
 📁 Bucket "fiche-pdfs" (PUBLIC)
+├── 📁 assets/
+│   └── 📄 letahost-transparent.png (logo)
 ├── 📄 fiche-logement-7755.pdf
 ├── 📄 fiche-menage-7755.pdf
 └── ...
@@ -66,7 +301,9 @@ const options = {
 Pattern nommage : fiche-{type}-{numero_bien}.pdf
 ```
 
-### **Base de données**
+---
+
+### **🗄️ Base de données**
 
 ```sql
 -- Colonnes PDF Fiches
@@ -75,7 +312,9 @@ pdf_menage_url TEXT
 pdf_last_generated_at TIMESTAMP WITH TIME ZONE
 ```
 
-### **Trigger SQL**
+---
+
+### **⚡ Trigger SQL**
 
 ```sql
 -- Fonction : notify_pdf_update()
@@ -111,7 +350,9 @@ END;
 $function$;
 ```
 
-### **FormContext.jsx**
+---
+
+### **🔄 FormContext.jsx**
 
 ```javascript
 const triggerPdfWebhook = async (pdfLogementUrl, pdfMenageUrl) => {
@@ -134,49 +375,124 @@ const triggerPdfWebhook = async (pdfLogementUrl, pdfMenageUrl) => {
 
 ---
 
-## 🤖 **2. PDF ASSISTANTS IA (GUIDE D'ACCÈS + ANNONCE)**
+## 🤖 **2. PDF ASSISTANTS IA (jsPDF client-side)**
 
-### **Composants**
+### **🎯 Architecture**
 
-#### **generateAssistantPDF.js**
-- **generateGuideAccesPDF()** : Génère PDF guide d'accès
-- **generateAnnoncePDF()** : Génère PDF annonce
-- Upload vers buckets dédiés avec `upsert: true`
-- Pattern nommage : `guide_acces_{ficheId}.pdf` / `annonce_{ficheId}.pdf`
+**Frontend (React)** → **jsPDF génération** → **Supabase Storage** → **Trigger DB** → **Webhook Make**
 
-#### **FicheGuideAcces.jsx**
+---
+
+### **📁 Composants**
+
+#### **generateAssistantPDF.js** - Bibliothèque jsPDF
+
+**Fonctions principales** :
+- `generateGuideAccesPDF(content, metadata, ficheId)` : Génère PDF guide d'accès
+- `generateAnnoncePDF(content, metadata, ficheId)` : Génère PDF annonce
+
+**Exemple : generateGuideAccesPDF**
 ```javascript
+import { jsPDF } from 'jspdf'
+import { supabase } from './supabaseClient'
+
+export const generateGuideAccesPDF = async (content, metadata, ficheId) => {
+  // 1. Créer document jsPDF
+  const doc = new jsPDF('p', 'mm', 'a4')
+  
+  // 2. Render header (logo, titre, métadonnées)
+  let yPos = renderHeader(doc, 'guide', metadata)
+  
+  // 3. Render contenu (détection titres : majuscules OU deux points)
+  yPos = renderContent(doc, content, yPos)
+  
+  // 4. Render footer (numéro page, infos)
+  renderFooter(doc, 'guide', metadata)
+  
+  // 5. Générer blob PDF
+  const pdfBlob = doc.output('blob')
+  const fileName = `guide_acces_${ficheId}.pdf`
+  
+  // 6. Upload vers Supabase Storage
+  const { error: uploadError } = await supabase.storage
+    .from('guide-acces-pdfs')
+    .upload(fileName, pdfBlob, {
+      contentType: 'application/pdf',
+      upsert: true
+    })
+  
+  if (uploadError) throw uploadError
+  
+  // 7. Récupérer URL publique
+  const { data: { publicUrl } } = supabase.storage
+    .from('guide-acces-pdfs')
+    .getPublicUrl(fileName)
+  
+  return publicUrl
+}
+```
+
+**Fonctionnalités** :
+- ✅ Génération 100% client-side (pas de backend)
+- ✅ Détection intelligente des titres (majuscules OU deux points)
+- ✅ Pagination automatique avec `checkPageBreak()`
+- ✅ Wrapping manuel du texte
+- ✅ Header/Footer personnalisés
+- ✅ Palette couleurs Letahost (#dbae61)
+
+---
+
+#### **FicheGuideAcces.jsx** - Page Guide d'accès
+
+```javascript
+import { generateGuideAccesPDF } from '../lib/generateAssistantPDF'
+
 const handleValidateGuide = async () => {
-  // Nettoyer contenu IA
+  // 1. Nettoyer contenu IA
   const cleanedContent = message.content
-    .replace(/([^\s]):/g, '$1 :')
-    .replace(/\u00A0/g, ' ')
+    .replace(/([^\s]):/g, '$1 :') // Espace avant deux points
+    .replace(/\u00A0/g, ' ') // Remplacer espaces insécables
   
-  // Générer PDF
-  const pdfUrl = await generateGuideAccesPDF(cleanedContent, metadata, formData.id)
+  // 2. Générer PDF
+  const pdfUrl = await generateGuideAccesPDF(
+    cleanedContent,
+    metadata,
+    formData.id
+  )
   
-  // Déclencher webhook
+  // 3. Déclencher webhook
   const result = await triggerAssistantPdfWebhook(pdfUrl, null)
 }
 ```
 
-#### **FicheFinalisation.jsx**
+---
+
+#### **FicheFinalisation.jsx** - Page Annonce
+
 ```javascript
+import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
+
 const handleValidateAnnonce = async () => {
-  // Nettoyer contenu IA
+  // 1. Nettoyer contenu IA
   const cleanedContent = message.content
     .replace(/([^\s]):/g, '$1 :')
     .replace(/\u00A0/g, ' ')
   
-  // Générer PDF
-  const pdfUrl = await generateAnnoncePDF(cleanedContent, metadata, formData.id)
+  // 2. Générer PDF
+  const pdfUrl = await generateAnnoncePDF(
+    cleanedContent,
+    metadata,
+    formData.id
+  )
   
-  // Déclencher webhook
+  // 3. Déclencher webhook
   const result = await triggerAssistantPdfWebhook(null, pdfUrl)
 }
 ```
 
-### **Storage Supabase**
+---
+
+### **💾 Storage Supabase**
 
 ```
 📁 Bucket "guide-acces-pdfs" (PUBLIC)
@@ -188,7 +504,9 @@ const handleValidateAnnonce = async () => {
 └── ...
 ```
 
-### **Base de données**
+---
+
+### **🗄️ Base de données**
 
 ```sql
 -- Colonnes PDF Assistants
@@ -198,7 +516,9 @@ annonce_pdf_url TEXT
 annonce_last_generated_at TIMESTAMP WITH TIME ZONE
 ```
 
-### **Triggers SQL (2 triggers séparés)**
+---
+
+### **⚡ Triggers SQL (2 triggers séparés)**
 
 #### **Trigger Guide d'accès**
 ```sql
@@ -266,7 +586,9 @@ END;
 $function$;
 ```
 
-### **FormContext.jsx**
+---
+
+### **🔄 FormContext.jsx**
 
 ```javascript
 const triggerAssistantPdfWebhook = async (guideAccesUrl, annonceUrl) => {
@@ -339,14 +661,32 @@ annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 
 ---
 
+## 🔍 **COMPARAISON DES DEUX SYSTÈMES**
+
+| Aspect | PDF Fiches (Puppeteer) | PDF Assistants (jsPDF) |
+|--------|------------------------|------------------------|
+| **Technologie** | Puppeteer (Node.js) | jsPDF (JavaScript) |
+| **Localisation** | Service Railway externe | Client-side (navigateur) |
+| **Input** | HTML complet (React) | Texte brut (IA) |
+| **Avantages** | Rendu parfait, styles CSS, images | Rapide, léger, pas de backend |
+| **Inconvénients** | Lent (3-5s), dépendance externe | Mise en page manuelle |
+| **Use case** | Fiches complexes avec photos | Documents texte simples |
+
+---
+
 ## ✅ **TESTS VALIDÉS**
 
 ### **PDF Fiches**
 - ✅ Génération simultanée Logement + Ménage
+- ✅ Extraction HTML via iframe (sessionStorage + URL param)
+- ✅ Transformation URLs relatives → absolues
+- ✅ Nettoyage scripts Vite
 - ✅ Upload Storage avec upsert
 - ✅ Trigger webhook déclenché correctement
 - ✅ Make télécharge et organise sur Drive/Monday
 - ✅ Regénération fonctionne (même URLs)
+- ✅ Logo Supabase Storage affiché correctement
+- ✅ Blocage vidéos dans Puppeteer
 
 ### **PDF Assistants**
 - ✅ Génération Guide d'accès depuis IA
@@ -356,20 +696,41 @@ annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 - ✅ Make route selon `pdf_type`
 - ✅ Timestamps mis à jour correctement
 - ✅ Regénération fonctionne (même URLs)
+- ✅ Détection titres (majuscules + deux points)
+- ✅ Pagination automatique
 
 ---
 
 ## 🎯 **AVANTAGES DU SYSTÈME**
 
-- ✅ **Workflow unifié** : Même pattern pour tous les PDFs
+- ✅ **Deux architectures adaptées** : Puppeteer pour complexité, jsPDF pour simplicité
+- ✅ **Workflow unifié** : Même pattern de webhook pour tous les PDFs
 - ✅ **Triggers indépendants** : Pas d'interférence entre PDF types
 - ✅ **Regénération illimitée** : Timestamps garantissent le déclenchement
 - ✅ **Make optimisé** : Routage intelligent selon type
 - ✅ **Storage organisé** : Buckets dédiés par type
 - ✅ **Upsert automatique** : Pas d'accumulation de fichiers
+- ✅ **Scalabilité** : Service Railway indépendant
+- ✅ **Résilience** : Fallback sessionStorage + URL param
 
 ---
 
-*📝 Document maintenu à jour - Dernière mise à jour : 17 novembre 2025*  
+## 🚨 **POINTS D'ATTENTION**
+
+### **PDF Fiches (Puppeteer)**
+- ⚠️ **Timeout** : 120s max pour chargement images
+- ⚠️ **Scripts Vite** : Doivent être nettoyés avant envoi
+- ⚠️ **URLs relatives** : Doivent être converties en absolues
+- ⚠️ **Service externe** : Dépendance à Railway
+- ⚠️ **Vidéos** : Bloquées automatiquement (pas dans PDF)
+
+### **PDF Assistants (jsPDF)**
+- ⚠️ **Mise en page** : Wrapping manuel du texte
+- ⚠️ **Pagination** : Gestion manuelle des page breaks
+- ⚠️ **Styles limités** : Pas de CSS, uniquement fonts/couleurs
+- ⚠️ **Images** : Difficile à intégrer (base64 requis)
+
+---
+
+*📝 Document maintenu à jour - Dernière mise à jour : 12 février 2026*  
 *🎯 Système PDF complet opérationnel en production*
-``

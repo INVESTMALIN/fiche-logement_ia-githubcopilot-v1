@@ -53,6 +53,8 @@ export const mapFormDataToSupabase = (formData) => {
     clefs_boite_type: formData.section_clefs?.boiteType || null,
     clefs_emplacement_boite: formData.section_clefs?.emplacementBoite || null,
     clefs_emplacement_photo: formData.section_clefs?.emplacementPhoto || [],
+    clefs_emplacement_emballage_boite: formData.section_clefs?.emplacementEmballageBoite || null,
+    clefs_emplacement_emballage_photo: formData.section_clefs?.emplacementEmballagePhoto || [],
     clefs_ttlock_masterpin_conciergerie: formData.section_clefs?.ttlock?.masterpinConciergerie || null,
     clefs_ttlock_code_proprietaire: formData.section_clefs?.ttlock?.codeProprietaire || null,
     clefs_ttlock_code_menage: formData.section_clefs?.ttlock?.codeMenage || null,
@@ -1207,6 +1209,8 @@ export const mapSupabaseToFormData = (supabaseData) => {
       boiteType: supabaseData.clefs_boite_type || "",
       emplacementBoite: supabaseData.clefs_emplacement_boite || "",
       emplacementPhoto: supabaseData.clefs_emplacement_photo || [],
+      emplacementEmballageBoite: supabaseData.clefs_emplacement_emballage_boite || "",
+      emplacementEmballagePhoto: supabaseData.clefs_emplacement_emballage_photo || [],
       ttlock: {
         masterpinConciergerie: supabaseData.clefs_ttlock_masterpin_conciergerie || "",
         codeProprietaire: supabaseData.clefs_ttlock_code_proprietaire || "",
