@@ -330,7 +330,7 @@ export function buildResolvedChecklists(fiche) {
             { name: "Porte d'entrée", description: "Porte propre, poignée et interrupteurs désinfectés" }
         ],
         isRequired: true,
-        beforePhotosRequired: true,
+        beforePhotosRequired: false,
         afterPhotosRequired: true
     })
 
@@ -402,7 +402,7 @@ export function buildResolvedChecklists(fiche) {
         name: "Salon",
         tasks: salonTasks,
         isRequired: true,
-        beforePhotosRequired: true,
+        beforePhotosRequired: false,
         afterPhotosRequired: true
     })
 
@@ -436,7 +436,7 @@ export function buildResolvedChecklists(fiche) {
         name: "Salle à manger",
         tasks: salleAMangerTasks,
         isRequired: true,
-        beforePhotosRequired: true,
+        beforePhotosRequired: false,
         afterPhotosRequired: true
     })
 
@@ -526,7 +526,7 @@ export function buildResolvedChecklists(fiche) {
         name: "Cuisine",
         tasks: cuisineTasks,
         isRequired: true,
-        beforePhotosRequired: true,
+        beforePhotosRequired: false,
         afterPhotosRequired: true
     })
 
@@ -545,7 +545,7 @@ export function buildResolvedChecklists(fiche) {
             ],
             required: true,
             isRequired: true,
-            beforePhotosRequired: true,
+            beforePhotosRequired: false,
             afterPhotosRequired: true
         })
     } else {
@@ -580,7 +580,7 @@ export function buildResolvedChecklists(fiche) {
                 tasks: chambreTasks,
                 required: true,
                 isRequired: true,
-                beforePhotosRequired: true,
+                beforePhotosRequired: false,
                 afterPhotosRequired: true
             })
         }
@@ -658,7 +658,7 @@ export function buildResolvedChecklists(fiche) {
             tasks: sdbTasks,
             required: true,
             isRequired: true,
-            beforePhotosRequired: true,
+            beforePhotosRequired: false,
             afterPhotosRequired: true
         })
     }
@@ -677,7 +677,7 @@ export function buildResolvedChecklists(fiche) {
             { name: "Consommables", description: "2 rouleaux papier toilette. Disponible, en bon état et en quantité suffisante" }
         ],
         isRequired: true,
-        beforePhotosRequired: true,
+        beforePhotosRequired: false,
         afterPhotosRequired: true
     })
 
@@ -722,7 +722,7 @@ export function buildResolvedChecklists(fiche) {
             name: "Buanderie / Stockage",
             tasks: buanderieTasks,
             isRequired: true,
-            beforePhotosRequired: true,
+            beforePhotosRequired: false,
             afterPhotosRequired: true
         })
     }
@@ -810,7 +810,7 @@ export function buildResolvedChecklists(fiche) {
             name: "Autres pièces ou matériel",
             tasks: autresPiecesTasks,
             isRequired: true,
-            beforePhotosRequired: true,
+            beforePhotosRequired: false,
             afterPhotosRequired: true
         })
     }
@@ -884,7 +884,7 @@ export function buildResolvedChecklists(fiche) {
             name: "Extérieurs",
             tasks: exterieurTasks,
             isRequired: true,
-            beforePhotosRequired: true,
+            beforePhotosRequired: false,
             afterPhotosRequired: true
         })
     }
@@ -897,7 +897,7 @@ export function buildResolvedChecklists(fiche) {
                 { name: "Vue d'ensemble de la piscine", description: "Intérieur propre (parois et rebords), eau claire (non trouble ou verte) avec PH adapté, pastilles/produits ajoutés (ou changement d'eau effectué). Pas de feuilles ou débris à la surface. Piscine fonctionnelle. Matériel au complet" }
             ],
             isRequired: true,
-            beforePhotosRequired: true,
+            beforePhotosRequired: false,
             afterPhotosRequired: true
         })
     }
