@@ -98,24 +98,24 @@ export default function FicheAvis() {
       <div className="flex-1 flex flex-col">
         <ProgressBar />
         <div className="flex-1 p-6 bg-muted/50">
-        <h1 className="text-2xl font-bold mb-6">Avis sur le logement</h1>
-        <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl p-6 mb-6">
+          <h1 className="text-2xl font-bold mb-6">Avis sur le logement</h1>
+          <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl p-6 mb-6">
 
-        <h1 className="text-xl font-semibold mb-2">Votre avis compte !</h1>
-        <p className="text-sm leading-relaxed">
-            Votre avis compte énormément ! En tant que coordinateur sur place, votre perception du logement est unique et précieuse.
-            Vos observations peuvent révéler des atouts cachés ou des particularités que seul quelqu'un ayant visité le lieu peut remarquer.
-            Ces détails peuvent faire toute la différence dans l'annonce, alors n'hésitez pas à partager vos impressions !
-        </p>
-        </div>
+            <h1 className="text-xl font-semibold mb-2">Votre avis compte !</h1>
+            <p className="text-sm leading-relaxed">
+              Votre avis compte énormément ! En tant que coordinateur sur place, votre perception du logement est unique et précieuse.
+              Vos observations peuvent révéler des atouts cachés ou des particularités que seul quelqu'un ayant visité le lieu peut remarquer.
+              Ces détails peuvent faire toute la différence dans l'annonce, alors n'hésitez pas à partager vos impressions !
+            </p>
+          </div>
           <div className="bg-white rounded-xl p-6 shadow mb-6">
-          <div className="mb-4">
-            <h2 className="text-base font-semibold mb-1">Évaluation de l'environnement et du logement</h2>
-            <h3 className="text-sm font-medium text-gray-700">Vidéo globale à l'arrivée dans le logement (vidéo du quartier, de l'immeuble, du logement)</h3>
-          </div>            
+            <div className="mb-4">
+              <h2 className="text-base font-semibold mb-1">Évaluation de l'environnement et du logement</h2>
+              <h3 className="text-sm font-medium text-gray-700">Vidéo globale à l'arrivée dans le logement (vidéo du quartier, de l'immeuble, du logement)</h3>
+            </div>
             {/* Question vidéo globale */}
             <div className="mb-4">
-              
+
               <div className="flex gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -128,7 +128,7 @@ export default function FicheAvis() {
                   />
                   <span>Oui</span>
                 </label>
-                
+
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
@@ -139,11 +139,11 @@ export default function FicheAvis() {
                     className="w-4 h-4 cursor-pointer"
                   />
                   <span>Non</span>
-                </label>               
+                </label>
               </div>
               {formData.video_globale_validation === true && (
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <PhotoUpload 
+                  <PhotoUpload
                     fieldPath="section_avis.video_globale_videos"
                     label="Vidéos globales du quartier, immeuble et logement"
                     multiple={true}
@@ -152,17 +152,17 @@ export default function FicheAvis() {
                   />
                 </div>
               )}
-            </div>           
+            </div>
           </div>
-          
+
 
           <div className="bg-white rounded-xl p-6 shadow mb-6">
             <h2 className="text-base font-semibold mb-4">Évaluation du quartier</h2>
-            
+
             {/* Type de quartier - Choix multiples */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Type de quartier</label>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {[
                   { key: 'quartier_neuf', label: 'Quartier neuf (récemment développé, moderne)' },
@@ -173,7 +173,9 @@ export default function FicheAvis() {
                   { key: 'quartier_central', label: 'Quartier central (proche du centre-ville, bien desservi)' },
                   { key: 'quartier_chic', label: 'Quartier chic (haut de gamme, commerçants et services de luxe)' },
                   { key: 'quartier_intermediaire', label: 'Quartier intermédiaire (familial, moyen de gamme)' },
-                  { key: 'quartier_defavorise', label: 'Quartier défavorisé (secteur avec des conditions de vie moins favorables) ⚠️' }
+                  { key: 'quartier_defavorise', label: 'Quartier défavorisé (secteur avec des conditions de vie moins favorables) ⚠️' },
+                  { key: 'quartier_rural', label: 'Zone rurale (campagne isolée, éloignée des commodités et transports)' },
+                  { key: 'quartier_village', label: 'Village (centre-bourg avec commerces de proximité, ambiance locale)' }
                 ].map(({ key, label }) => (
                   <label
                     key={key}
@@ -184,7 +186,7 @@ export default function FicheAvis() {
                       checked={formData.quartier_types?.includes(key) || false}
                       onChange={(e) => {
                         const currentTypes = formData.quartier_types || []
-                        const newTypes = e.target.checked 
+                        const newTypes = e.target.checked
                           ? [...currentTypes, key]
                           : currentTypes.filter(type => type !== key)
                         handleChange('section_avis.quartier_types', newTypes)
@@ -198,11 +200,11 @@ export default function FicheAvis() {
                 ))}
               </div>
             </div>
-            
+
             {/* Sécurité du quartier */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Sécurité du quartier</label>
-              
+
               <div className="flex flex-col gap-3">
                 {[
                   { value: 'securise', label: 'Sécurisé (quartier calme)' },
@@ -223,11 +225,11 @@ export default function FicheAvis() {
                 ))}
               </div>
             </div>
-            
+
             {/* Perturbations du quartier */}
             <div className="mb-4">
               <label className="block font-semibold mb-3">Perturbations du quartier</label>
-              
+
               <div className="flex flex-col gap-3">
                 {[
                   { value: 'aucune', label: 'Pas d\'élément perturbateur' },
@@ -246,7 +248,7 @@ export default function FicheAvis() {
                   </label>
                 ))}
               </div>
-              
+
               {/* Champ conditionnel - Détails perturbations */}
               {formData.quartier_perturbations === 'perturbateur' && (
                 <div className="mt-4">
@@ -267,11 +269,11 @@ export default function FicheAvis() {
 
           <div className="bg-white rounded-xl p-6 shadow mb-6">
             <h2 className="text-base font-semibold mb-4">Évaluation de l'immeuble</h2>
-            
+
             {/* État général de l'immeuble */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">État général de l'immeuble</label>
-              
+
               <div className="flex flex-col gap-3">
                 {[
                   { value: 'bon_etat', label: 'Bon état (entretien régulier, bâtiment bien conservé, récentes rénovations)' },
@@ -292,11 +294,11 @@ export default function FicheAvis() {
                 ))}
               </div>
             </div>
-            
+
             {/* Propreté de l'immeuble */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Propreté de l'immeuble</label>
-              
+
               <div className="flex flex-col gap-3">
                 {[
                   { value: 'propre', label: 'Propre (espaces communs bien entretenus)' },
@@ -316,11 +318,11 @@ export default function FicheAvis() {
                 ))}
               </div>
             </div>
-            
+
             {/* Accessibilité de l'immeuble */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Accessibilité de l'immeuble</label>
-              
+
               <div className="flex flex-col gap-3">
                 {[
                   { value: 'tres_accessible', label: 'Très accessible (ascenseur fonctionnel, rampes, accès facile aux personnes à mobilité réduite)' },
@@ -341,11 +343,11 @@ export default function FicheAvis() {
                 ))}
               </div>
             </div>
-            
+
             {/* Niveau sonore de l'immeuble */}
             <div className="mb-4">
               <label className="block font-semibold mb-3">Niveau sonore de l'immeuble</label>
-              
+
               <div className="flex flex-col gap-3">
                 {[
                   { value: 'tres_calme', label: 'Très calme (absence de bruit, excellente isolation sonore)' },
@@ -370,11 +372,11 @@ export default function FicheAvis() {
 
           <div className="bg-white rounded-xl p-6 shadow mb-6">
             <h2 className="text-base font-semibold mb-4">Évaluation du logement</h2>
-            
+
             {/* État général du logement */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">État général du logement</label>
-              
+
               <div className="flex flex-col gap-3">
                 {[
                   { value: 'excellent_etat', label: 'Excellent état (récent ou rénové, tout est fonctionnel, pas d\'usure visible)' },
@@ -396,7 +398,7 @@ export default function FicheAvis() {
                   </label>
                 ))}
               </div>
-              
+
               {/* Champ conditionnel - Détails état dégradé */}
               {(formData.logement_etat_general === 'etat_degrade' || formData.logement_etat_general === 'tres_mauvais_etat') && (
                 <div className="mt-4">
@@ -413,11 +415,11 @@ export default function FicheAvis() {
                 </div>
               )}
             </div>
-            
+
             {/* Propreté et entretien */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Propreté et entretien</label>
-              
+
               <div className="flex flex-col gap-3">
                 {[
                   { value: 'propre', label: 'Propre (logement bien nettoyé, entretien régulier et approfondi du logement)' },
@@ -437,7 +439,7 @@ export default function FicheAvis() {
                   </label>
                 ))}
               </div>
-              
+
               {/* Champ conditionnel - Détails éléments sales */}
               {formData.logement_proprete === 'sale' && (
                 <div className="mt-4">
@@ -454,11 +456,11 @@ export default function FicheAvis() {
                 </div>
               )}
             </div>
-            
+
             {/* Ambiance générale du logement */}
             <div className="mb-6">
               <label className="block font-semibold mb-3">Ambiance générale du logement</label>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { key: 'logement_epure', label: 'Logement épuré (décor minimaliste, espaces aérés)' },
@@ -478,7 +480,7 @@ export default function FicheAvis() {
                       checked={formData.logement_ambiance?.includes(key) || false}
                       onChange={(e) => {
                         const currentAmbiance = formData.logement_ambiance || []
-                        const newAmbiance = e.target.checked 
+                        const newAmbiance = e.target.checked
                           ? [...currentAmbiance, key]
                           : currentAmbiance.filter(item => item !== key)
                         handleChange('section_avis.logement_ambiance', newAmbiance)
@@ -491,7 +493,7 @@ export default function FicheAvis() {
                   </label>
                 ))}
               </div>
-              
+
               {/* Champ conditionnel - Absence de décoration */}
               {formData.logement_ambiance?.includes('absence_decoration') && (
                 <div className="mt-4">
@@ -507,7 +509,7 @@ export default function FicheAvis() {
                   />
                 </div>
               )}
-              
+
               {/* Champ conditionnel - Décoration personnalisée */}
               {formData.logement_ambiance?.includes('decoration_personnalisee') && (
                 <div className="mt-4">
@@ -524,11 +526,11 @@ export default function FicheAvis() {
                 </div>
               )}
             </div>
-            
+
             {/* Vis-à-vis du logement */}
             <div className="mb-4">
               <label className="block font-semibold mb-3">Vis-à-vis du logement</label>
-              
+
               <div className="flex flex-col gap-3">
                 {[
                   { value: 'vue_degagee', label: 'Vue dégagée sur pièce principale et jardin' },
@@ -548,11 +550,11 @@ export default function FicheAvis() {
                   </label>
                 ))}
               </div>
-              
+
               {/* Photos vis-à-vis */}
               <div className="mt-4">
                 <label className="block text-sm font-medium mb-2">Photos du vis-à-vis</label>
-                <PhotoUpload 
+                <PhotoUpload
                   fieldPath="section_avis.logement_vis_a_vis_photos"
                   label=""
                   multiple={true}
@@ -633,23 +635,23 @@ export default function FicheAvis() {
 
           {/* Boutons de navigation */}
           <div className="mt-6 flex justify-between">
-            <Button 
-              variant="ghost" 
-              onClick={back} 
+            <Button
+              variant="ghost"
+              onClick={back}
               disabled={currentStep === 0}
             >
               Retour
             </Button>
             <div className="flex gap-3">
-              <Button 
-                variant="secondary" 
-                onClick={handleSave} 
+              <Button
+                variant="secondary"
+                onClick={handleSave}
                 disabled={saveStatus.saving}
               >
                 {saveStatus.saving ? 'Sauvegarde...' : 'Enregistrer'}
               </Button>
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={next}
                 disabled={currentStep === totalSteps - 1}
               >
