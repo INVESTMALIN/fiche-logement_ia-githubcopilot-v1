@@ -18,7 +18,7 @@ const LOOMKY_CONFIG = {
 }
 
 // Utiliser DEV pour l'instant
-const CURRENT_ENV = 'PROD' // TODO PROD: basculer en PROD une fois credentials prêts
+const CURRENT_ENV = 'DEV' // TODO PROD: basculer en PROD une fois credentials prêts
 const BASE_URL = LOOMKY_CONFIG[CURRENT_ENV].BASE_URL
 
 // ⚠️ IMPORTANT: Le token n'est JAMAIS hardcodé
@@ -246,7 +246,7 @@ export function hasChecklistsChanges(fiche) {
 export function buildPropertyPayload(fiche) {
     return {
         name: `${fiche.logement_type_propriete || ''} ${fiche.nom || fiche.logement_numero_bien || ''}`.trim() || "Hébergement sans nom",
-        type: 'apartment', // TODO PROD: mapPropertyType(fiche.logement_type_propriete),
+        type: "apartment", // TODO PROD: mapPropertyType(fiche.logement_type_propriete),
         address: {
             street: fiche.proprietaire_adresse_rue || 'Non renseignée',
             city: fiche.proprietaire_adresse_ville || 'Non renseignée',
@@ -256,19 +256,19 @@ export function buildPropertyPayload(fiche) {
         description: `${fiche.logement_type_propriete || ''} - ${fiche.logement_typologie || ''} à ${fiche.proprietaire_adresse_ville || ''}`.trim() || 'Logement de vacances',
         status: "active",
         checkin: {
-            from: "15:00",
+            from: "16:00",
             to: "18:00"
         },
         checkout: {
-            from: "10:00",
-            to: "11:00"
+            from: "08:00",
+            to: "10:00"
         },
         surfaceArea: fiche.logement_surface ? parseInt(fiche.logement_surface) : 10,
         defaultOccupancy: fiche.logement_nombre_personnes_max ? parseInt(fiche.logement_nombre_personnes_max) : 1,
         maxOccupancy: fiche.logement_nombre_personnes_max ? parseInt(fiche.logement_nombre_personnes_max) : 1,
         numberOfRooms: fiche.logement_type_propriete === "Studio" ? 1 : (parseInt(fiche.visite_nombre_chambres) || 1),
         numberOfBathrooms: fiche.visite_nombre_salles_bains ? parseInt(fiche.visite_nombre_salles_bains) : 1,
-        defaultRate: 100,
+        defaultRate: 5000,
         timezone: "Europe/Paris",
         ...calculateBedCounts(fiche),
         coordinates: {
