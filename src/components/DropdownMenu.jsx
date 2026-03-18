@@ -74,7 +74,7 @@ const DropdownMenu = ({
       {/* Menu dropdown */}
       {isOpen && (
         <div className={`
-            absolute right-0 top-full mt-1 z-50
+            absolute right-0 top-full mt-1
             bg-white rounded-lg shadow-lg border border-gray-200
             min-w-48 py-1
             ${menuClassName}

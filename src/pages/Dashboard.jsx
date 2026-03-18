@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
 import { useFiches } from '../hooks/useFiches'
-import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List, UserPen, Share, X, Info } from 'lucide-react'
+import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List, UserPen, Share, X, Info, LogOut, FilePlus, Settings } from 'lucide-react'
 import DropdownMenu from '../components/DropdownMenu'
 import UserRoleBadge from '../components/UserRoleBadge'
 import ReassignModal from '../components/ReassignModal'
@@ -29,6 +29,8 @@ export default function Dashboard() {
     isOpen: false,
     fiche: null
   })
+  const [copiedField, setCopiedField] = useState(null) // 'logement' | 'menage' | null
+  const [sortOrder, setSortOrder] = useState('recent') // 'recent' | 'oldest' | 'az' | 'za'
 
   // 📄 PAGINATION
   const [currentPage, setCurrentPage] = useState(1)
@@ -84,7 +86,7 @@ export default function Dashboard() {
   // �📄 PAGINATION: Reset à page 1 quand recherche/filtre change
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, activeFilter])
+  }, [searchTerm, activeFilter, sortOrder])
 
   // 📄 PAGINATION: Scroll to top sur changement de page
   useEffect(() => {
@@ -282,14 +284,26 @@ export default function Dashboard() {
   // Filtres de statut
   const statusFilters = ["Tous", "Complété", "Brouillon", "Archivé"]
 
-  // Filtrage par statut et recherche
-  const filteredFiches = fiches.filter(fiche => {
-    const matchesSearch = fiche.nom.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = activeFilter === "Tous"
-      ? fiche.statut !== "Archivé"
-      : fiche.statut === activeFilter
-    return matchesSearch && matchesStatus
-  })
+  // Filtrage par statut, recherche et tri
+  const filteredFiches = useMemo(() => {
+    const filtered = fiches.filter(fiche => {
+      const matchesSearch = fiche.nom.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = activeFilter === "Tous"
+        ? fiche.statut !== "Archivé"
+        : fiche.statut === activeFilter
+      return matchesSearch && matchesStatus
+    })
+
+    return [...filtered].sort((a, b) => {
+      switch (sortOrder) {
+        case 'oldest': return new Date(a.updated_at) - new Date(b.updated_at)
+        case 'az': return a.nom.localeCompare(b.nom, 'fr')
+        case 'za': return b.nom.localeCompare(a.nom, 'fr')
+        case 'recent':
+        default: return new Date(b.updated_at) - new Date(a.updated_at)
+      }
+    })
+  }, [fiches, searchTerm, activeFilter, sortOrder])
 
   // 📄 PAGINATION: Calcul des fiches à afficher
   const indexOfLast = currentPage * fichesPerPage
@@ -360,36 +374,52 @@ export default function Dashboard() {
               <p className="text-lg opacity-90">
                 Accès <UserRoleBadge /> : <span className="font-medium">{userEmail}</span>
               </p>
+              {!loading && fiches.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500 bg-opacity-20 text-green-200">
+                    ✓ {fiches.filter(f => f.statut === 'Complété').length} complétées
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white bg-opacity-10 text-white text-opacity-70">
+                    ✏ {fiches.filter(f => f.statut === 'Brouillon').length} brouillons
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white bg-opacity-10 text-white text-opacity-50">
+                    📦 {fiches.filter(f => f.statut === 'Archivé').length} archivées
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex items-center gap-2">
+              {/* Nouvelle fiche */}
               <button
                 onClick={() => navigate('/fiche')}
-                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg transition-all duration-200 w-full sm:w-auto"
-                style={{
-                  background: `linear-gradient(to right, #dbae61, #c19b4f)`,
-                }}
-                onMouseEnter={(e) => e.target.style.background = `linear-gradient(to right, #c19b4f, #aa8943)`}
-                onMouseLeave={(e) => e.target.style.background = `linear-gradient(to right, #dbae61, #c19b4f)`}
+                className="flex items-center justify-center w-10 h-10 rounded-xl shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                style={{ background: `linear-gradient(135deg, #dbae61, #c19b4f)` }}
+                onMouseEnter={(e) => e.currentTarget.style.background = `linear-gradient(135deg, #c19b4f, #aa8943)`}
+                onMouseLeave={(e) => e.currentTarget.style.background = `linear-gradient(135deg, #dbae61, #c19b4f)`}
+                title="Nouvelle fiche"
               >
-                + Nouvelle fiche
+                <FilePlus size={19} className="text-white" />
               </button>
 
-              <button
-                onClick={handleLogout}
-                className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-6 py-2.5 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto"
-              >
-                Déconnexion
-              </button>
-              {/* ✅ NOUVEAU BOUTON - Console Admin (visible uniquement pour super_admin) */}
+              {/* Console Admin */}
               {isSuperAdmin && (
                 <button
                   onClick={() => navigate('/admin')}
-                  className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-3 py-2.5 rounded-xl transition-all duration-200"
+                  className="flex items-center justify-center w-10 h-10 rounded-xl border border-white border-opacity-20 text-white text-opacity-60 hover:bg-white hover:bg-opacity-10 hover:text-opacity-100 transition-all duration-200"
                   title="Console Admin"
                 >
-                  Console
+                  <Settings size={17} />
                 </button>
               )}
+
+              {/* Déconnexion */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center w-10 h-10 rounded-xl border border-white border-opacity-20 text-white text-opacity-50 hover:bg-white hover:bg-opacity-10 hover:text-opacity-100 transition-all duration-200"
+                title="Déconnexion"
+              >
+                <LogOut size={17} />
+              </button>
             </div>
           </div>
         </div>
@@ -423,35 +453,34 @@ export default function Dashboard() {
         )}
 
         {/* Onglets de filtrage, recherche ET toggle vue */}
-        <div className="mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            {/* Onglets de filtrage */}
-            <div className="flex flex-wrap gap-2">
-              {statusFilters.map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${activeFilter === filter
-                    ? 'text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                    }`}
-                  style={activeFilter === filter ? {
-                    background: `linear-gradient(to right, #dbae61, #c19b4f)`
-                  } : {}}
-                >
-                  {filter}
-                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeFilter === filter ? 'bg-white bg-opacity-20' : 'bg-gray-100'
-                    }`}>
-                    {getFilterCount(filter)}
-                  </span>
-                </button>
-              ))}
-            </div>
+        <div className="mb-6 space-y-3">
+          {/* Ligne 1 : Onglets de filtrage */}
+          <div className="flex flex-wrap gap-2">
+            {statusFilters.map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${activeFilter === filter
+                  ? 'text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                style={activeFilter === filter ? {
+                  background: `linear-gradient(to right, #dbae61, #c19b4f)`
+                } : {}}
+              >
+                {filter}
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeFilter === filter ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                  }`}>
+                  {getFilterCount(filter)}
+                </span>
+              </button>
+            ))}
+          </div>
 
-            {/* Recherche + Toggle vues */}
-            <div className="flex gap-3 items-center">
+          {/* Ligne 2 : Recherche + Tri + Toggle vues */}
+          <div className="flex gap-3 items-center justify-end">
               {/* Barre de recherche */}
-              <div className="sm:w-64">
+              <div className="sm:w-56">
                 <input
                   type="text"
                   placeholder="Rechercher..."
@@ -463,6 +492,20 @@ export default function Dashboard() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+
+              {/* Sélecteur de tri */}
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="w-36 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 focus:outline-none cursor-pointer"
+                onFocus={(e) => e.target.style.boxShadow = `0 0 0 2px #dbae61`}
+                onBlur={(e) => e.target.style.boxShadow = 'none'}
+              >
+                <option value="recent">Plus récent</option>
+                <option value="oldest">Plus ancien</option>
+                <option value="az">A → Z</option>
+                <option value="za">Z → A</option>
+              </select>
 
               {/* Toggle Grid/List */}
               <div className="flex bg-white rounded-lg border border-gray-300 p-1">
@@ -487,7 +530,6 @@ export default function Dashboard() {
                   <List size={18} />
                 </button>
               </div>
-            </div>
           </div>
         </div>
 
@@ -706,11 +748,12 @@ export default function Dashboard() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(shareModal.fiche.pdf_logement_url)
-                          // TODO: Ajouter feedback "Copié !"
+                          setCopiedField('logement')
+                          setTimeout(() => setCopiedField(null), 2000)
                         }}
-                        className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        className={`px-3 py-2 rounded text-sm text-white transition-colors ${copiedField === 'logement' ? 'bg-green-500' : 'bg-blue-600 hover:bg-blue-700'}`}
                       >
-                        Copier
+                        {copiedField === 'logement' ? '✓ Copié !' : 'Copier'}
                       </button>
                       <button
                         onClick={() => {
@@ -742,11 +785,12 @@ export default function Dashboard() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(shareModal.fiche.pdf_menage_url)
-                          // TODO: Ajouter feedback "Copié !"
+                          setCopiedField('menage')
+                          setTimeout(() => setCopiedField(null), 2000)
                         }}
-                        className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        className={`px-3 py-2 rounded text-sm text-white transition-colors ${copiedField === 'menage' ? 'bg-green-500' : 'bg-blue-600 hover:bg-blue-700'}`}
                       >
-                        Copier
+                        {copiedField === 'menage' ? '✓ Copié !' : 'Copier'}
                       </button>
                       <button
                         onClick={() => {

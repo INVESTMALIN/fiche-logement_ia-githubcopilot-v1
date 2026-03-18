@@ -169,27 +169,49 @@ Both use `html2pdf.js` with intelligent pagination and upload to `fiche-pdfs` bu
 ### Authentication & Permissions
 
 #### User Roles
-- **coordinateur**: Can CRUD their own fiches
+- **coordinateur**: Can CRUD their own fiches (default fallback)
 - **admin**: Can read all fiches (rarely used)
 - **super_admin**: Full CRUD access + user management
 
+Roles are stored in the `profiles` table (`role` column), not in `raw_user_meta_data`. The `profiles` table also has an `active` boolean — deactivated accounts are rejected at login even with valid credentials.
+
+`AuthContext` exposes helpers: `isCoordinateur`, `isAdmin`, `isSuperAdmin`, `canEditAllFiches`, `canViewAllFiches`.
+
 #### Row Level Security (RLS)
-Supabase policies enforce role-based access:
+Supabase policies enforce role-based access using the `profiles` table:
 ```sql
 -- Coordinateur can only see their own fiches
-CREATE POLICY "coordinateur_own_fiches" ON fiches 
+CREATE POLICY "coordinateur_own_fiches" ON fiches
   FOR SELECT USING (user_id = auth.uid())
 
 -- Super admin can see all fiches
-CREATE POLICY "super_admin_all_fiches" ON fiches 
+CREATE POLICY "super_admin_all_fiches" ON fiches
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM auth.users 
-      WHERE id = auth.uid() 
-      AND raw_user_meta_data->>'role' = 'super_admin'
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid()
+      AND role = 'super_admin'
     )
   )
 ```
+
+### Loomky Integration
+
+`src/services/loomkyService.js` handles synchronization with the Loomky property management API. Key points:
+- Currently points to `DEV` environment (`dev.loomky.com`). Change `CURRENT_ENV` to `'PROD'` when ready.
+- The API token is **never hardcoded** — it must be injected by the caller (e.g., `FicheFinalisation`, `SimulationLoomky`).
+- `normalizeFormDataToFiche()` converts nested FormContext state to a flat fiche structure before API calls.
+- `/simulation-loomky` is a protected test route for the Loomky API.
+- `/test-guide-agent` is a protected test route for the n8n guide agent.
+
+### Validation System
+
+`src/lib/validationConfig.js` defines three-tier validation run during finalization:
+1. **`REQUIRED_FIELDS`** — always-required fields per section
+2. **`CONDITIONAL_REQUIRED_FIELDS`** — fields required based on other field values (e.g., TTlock codes only if `boiteType === 'TTlock'`)
+3. **`SPECIAL_VALIDATIONS`** — complex logic (e.g., at least one bed type per room, at least one bathroom equipment per bathroom)
+
+`validateRequiredFields(formData)` is the main export — returns an `errors` object keyed by section name.
 
 ### Automation Integration
 
@@ -247,9 +269,16 @@ All media fields should be arrays (`TEXT[]` in Supabase) and follow the naming p
 ### Key Files
 
 - `src/components/FormContext.jsx`: Central state management
+- `src/components/AuthContext.jsx`: Auth state + role helpers (`useAuth()` hook)
 - `src/lib/supabaseHelpers.js`: Database mapping logic
+- `src/lib/validationConfig.js`: Finalization validation rules
+- `src/lib/checklistHelpers.js`: Checklist generation from fiche data
+- `src/lib/DataProcessor.js`, `PdfFormatter.js`, `AlerteDetector.js`: PDF/assistant data processing
+- `src/lib/pdfRenderer.js`, `generateAssistantPDF.js`: PDF rendering utilities
 - `src/components/PhotoUpload.jsx`: Media upload component
+- `src/components/PDFTemplate.jsx`, `PDFMenageTemplate.jsx`: PDF print templates
 - `src/hooks/useFiches.js`: Custom hook for fiche operations
+- `src/services/loomkyService.js`: Loomky API integration
 - `docs/🏗️ ARCHITECTURE.md`: Detailed technical architecture
 - `docs/📋 FEATURE SPEC.md`: Feature specifications
 

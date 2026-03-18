@@ -55,16 +55,27 @@ export function normalizeFormDataToFiche(formData) {
         logement_surface: formData.section_logement?.surface || formData.section_logement?.caracteristiques?.surface || null,
         logement_nombre_personnes_max: formData.section_logement?.nombre_personnes_max || '',
         logement_nombre_lits: formData.section_logement?.nombre_lits || '',
+        logement_appartement_etage: formData.section_logement?.appartement?.etage || '',
+
+        // Clefs / Accès
+        clefs_digicode_details: formData.section_clefs?.digicodeDetails || '',
+        clefs_emplacement_boite: formData.section_clefs?.emplacementBoite || '',
 
         // Visite (pour numberOfRooms et numberOfBathrooms)
         visite_nombre_chambres: formData.section_visite?.nombre_chambres || formData.section_logement?.caracteristiques?.nombreChambres || '',
         visite_nombre_salles_bains: formData.section_visite?.nombre_salles_bains || '',
 
-        // Équipements WiFi
+        // Équipements - WiFi
         equipements_wifi_statut: formData.section_equipements?.wifi_statut || '',
         equipements_wifi_nom_reseau: formData.section_equipements?.wifi_nom_reseau || '',
         equipements_wifi_mot_de_passe: formData.section_equipements?.wifi_mot_de_passe || '',
         equipements_wifi_details: formData.section_equipements?.wifi_details || '',
+
+        // Équipements - parking
+        equipements_parking_type: formData.section_equipements?.parking_type || '',
+        equipements_parking_rue_details: formData.section_equipements?.parking_rue_details || '',
+        equipements_parking_sur_place_details: formData.section_equipements?.parking_sur_place_details || '',
+        equipements_parking_payant_details: formData.section_equipements?.parking_payant_details || '',
 
         // Chambres (pour calculateBedCounts - 6 chambres possibles)
         ...generateChambresFlat(formData),
@@ -257,10 +268,10 @@ export function buildPropertyPayload(fiche) {
         status: "active",
         checkin: {
             from: "16:00",
-            to: "18:00"
+            to: "00:00"
         },
         checkout: {
-            from: "08:00",
+            from: "00:00",
             to: "10:00"
         },
         surfaceArea: fiche.logement_surface ? parseInt(fiche.logement_surface) : 10,
@@ -274,10 +285,31 @@ export function buildPropertyPayload(fiche) {
         coordinates: {
             latitude: 0,
             longitude: 0
+        }
+    }
+}
+
+/**
+ * Construit le payload d'enrichissement pour le PUT post-création
+ * Appelé depuis FicheFinalisation, quand toutes les données sont disponibles
+ * Couvre : accessDetails + wifiDetails
+ */
+export function buildEnrichmentPayload(fiche) {
+    return {
+        accessDetails: {
+            buildingCode: fiche.clefs_digicode_details || '',
+            floor: fiche.logement_appartement_etage || '',
+            instructions: fiche.clefs_emplacement_boite || '',
+            parking: (() => {
+                const type = fiche.equipements_parking_type
+                if (type === 'sur_place') return fiche.equipements_parking_sur_place_details || ''
+                if (type === 'rue') return fiche.equipements_parking_rue_details || ''
+                if (type === 'payant') return fiche.equipements_parking_payant_details || ''
+                return ''
+            })()
         },
         wifiDetails: (() => {
             const statut = fiche.equipements_wifi_statut || ''
-
             if (statut === 'non') {
                 return {
                     name: '',
@@ -285,7 +317,6 @@ export function buildPropertyPayload(fiche) {
                     instructions: 'Pas de Wi-Fi dans le logement'
                 }
             }
-
             if (statut === 'en_cours') {
                 return {
                     name: fiche.equipements_wifi_nom_reseau || '',
@@ -293,8 +324,6 @@ export function buildPropertyPayload(fiche) {
                     instructions: 'Le Wi-Fi est en cours d\'installation. ' + (fiche.equipements_wifi_details || '')
                 }
             }
-
-            // Statut "Oui" ou par défaut
             return {
                 name: fiche.equipements_wifi_nom_reseau || '',
                 password: fiche.equipements_wifi_mot_de_passe || '',
@@ -1325,6 +1354,15 @@ export async function createPropertyOnLoomky(fiche, token) {
 export async function createChecklistsOnLoomky(propertyId, fiche, token) {
     const payload = buildResolvedChecklists(fiche)
     return await createChecklists(propertyId, payload, token)
+}
+
+/**
+ * Enrichit une property Loomky existante (accessDetails + wifiDetails)
+ * Appelé depuis FicheFinalisation après création des checklists
+ */
+export async function enrichPropertyOnLoomky(propertyId, fiche, token) {
+    const payload = buildEnrichmentPayload(fiche)
+    return await updateProperty(propertyId, payload, token)
 }
 
 /**

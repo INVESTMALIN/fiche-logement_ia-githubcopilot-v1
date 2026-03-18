@@ -12,7 +12,7 @@ import { CheckCircle, PenTool, Send, RefreshCw, Copy, AlertCircle, Sparkles, Loa
 import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
 import { supabase } from '../lib/supabaseClient'
 import { validateRequiredFields } from '../lib/validationConfig'
-import { createChecklistsOnLoomky, normalizeFormDataToFiche } from '../services/loomkyService'
+import { createChecklistsOnLoomky, normalizeFormDataToFiche, enrichPropertyOnLoomky } from '../services/loomkyService'
 
 
 export default function FicheFinalisation() {
@@ -244,6 +244,15 @@ export default function FicheFinalisation() {
 
     try {
       const ficheNormalized = normalizeFormDataToFiche(formData)
+
+      // 1️⃣ Enrichissement property (accessDetails + wifiDetails)
+      const enrichResult = await enrichPropertyOnLoomky(formData.loomky_property_id, ficheNormalized, loomkyToken)
+      if (!enrichResult.success) {
+        setLoomkyStatus({ syncing: false, error: `Enrichissement property échoué: ${enrichResult.error}` })
+        return
+      }
+
+      // 2️⃣ Création checklists (inchangé)
       const result = await createChecklistsOnLoomky(formData.loomky_property_id, ficheNormalized, loomkyToken)
 
       if (!result.success) {

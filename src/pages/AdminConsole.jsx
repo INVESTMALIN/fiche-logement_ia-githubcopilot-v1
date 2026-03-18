@@ -569,15 +569,7 @@ export default function AdminConsole() {
               >
                 Dashboard
               </button>
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut()
-                  navigate('/login')
-                }}
-                className="border border-white border-opacity-30 text-white hover:bg-white hover:bg-opacity-20 px-6 py-2.5 rounded-xl font-medium transition-all duration-200 w-full sm:w-auto text-center"
-              >
-                Déconnexion
-              </button>
+
             </div>
           </div>
         </div>

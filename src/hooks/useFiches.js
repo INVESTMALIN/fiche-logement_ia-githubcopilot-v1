@@ -23,7 +23,6 @@ export const useFiches = () => {
     // 🔧 FIX : Ne pas fetch si userRole n'est pas encore récupéré
     // authLoading = false, user existe, mais userRole pas encore défini = attendre
     if (!userRole) {
-      console.log("Attente récupération rôle utilisateur...")
       return
     }
 
@@ -35,12 +34,8 @@ export const useFiches = () => {
       
       // 🔥 Adapter la requête selon le rôle
       if (canViewAllFiches) {
-        // Admin ou Super Admin : récupérer toutes les fiches (Y COMPRIS ARCHIVÉES)
-        console.log(`Chargement de toutes les fiches (rôle: ${userRole})`)
-        result = await getAllFiches(true) // ← AJOUTER true pour inclure archivées
+        result = await getAllFiches(true)
       } else {
-        // Coordinateur : récupérer seulement ses fiches
-        console.log(`Chargement des fiches personnelles (rôle: ${userRole})`)
         result = await getUserFiches(user.id)
       }
       
