@@ -20,6 +20,7 @@ const initialFormData = {
     prenom: "",
     nom: "",
     email: "",
+    telephone: "",
     adresse: {
       rue: "",
       complement: "",

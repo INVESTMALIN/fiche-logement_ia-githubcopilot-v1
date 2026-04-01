@@ -22,6 +22,7 @@ import HelpButton from './components/HelpButton'
 // Test page for Guide Agent et API Loomky
 import TestGuideAgent from './pages/TestGuideAgent'
 import SimulationLoomky from './pages/SimulationLoomky'
+import VoiceInventoryTest from './pages/VoiceInventoryTest'
 
 
 
@@ -51,14 +52,23 @@ export default function App() {
             } 
           />    
 
-          <Route 
-            path="/simulation-loomky" 
+          <Route
+            path="/simulation-loomky"
             element={
               <ProtectedRoute>
                 <SimulationLoomky />
               </ProtectedRoute>
-            } 
-          /> 
+            }
+          />
+
+          <Route
+            path="/voice-inventory-test"
+            element={
+              <ProtectedRoute>
+                <VoiceInventoryTest />
+              </ProtectedRoute>
+            }
+          />
           
           <Route 
             path="/" 

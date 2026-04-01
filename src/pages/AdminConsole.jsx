@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { deleteFiche } from '../lib/supabaseHelpers'
-import { Edit, Archive, Trash2, RotateCcw, Eye, MoreHorizontal, Search, UserPen } from 'lucide-react'
+import { Edit, Archive, Trash2, RotateCcw, Eye, MoreHorizontal, Search, UserPen, Home, User, RefreshCw, Check, X } from 'lucide-react'
 import FichePreviewModal from '../components/FichePreviewModal'
 import ReassignModal from '../components/ReassignModal'
 import { useAuth } from '../components/AuthContext'
@@ -536,6 +536,11 @@ export default function AdminConsole() {
       id: 'historique',
       label: 'Historique',
       count: null
+    },
+    {
+      id: 'loomky',
+      label: 'Loomky',
+      count: null
     }
   ]
 
@@ -584,7 +589,7 @@ export default function AdminConsole() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
-                  ? 'border-red-500 text-red-600'
+                  ? tab.id === 'loomky' ? 'border-purple-500 text-purple-600' : 'border-red-500 text-red-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
@@ -623,6 +628,10 @@ export default function AdminConsole() {
 
         {activeTab === 'historique' && (
           <HistoriqueTab />
+        )}
+
+        {activeTab === 'loomky' && (
+          <LoomkyTab />
         )}
       </div>
       {/* Modal de prévisualisation des fiches */}
@@ -1434,6 +1443,256 @@ function StatsTab({ users, fiches }) {
   )
 }
 
+// Composant Loomky
+function LoomkyTab() {
+  const [loading, setLoading] = useState(true)
+  const [kpis, setKpis] = useState({ propertiesCount: 0, ownersCount: 0, lastSyncAt: null })
+  const [owners, setOwners] = useState([])
+  const [fiches, setFiches] = useState([])
+  const [syncFilter, setSyncFilter] = useState('incomplete')
+  const [syncSearch, setSyncSearch] = useState('')
+
+  useEffect(() => {
+    loadLoomkyData()
+  }, [])
+
+  const loadLoomkyData = async () => {
+    setLoading(true)
+    try {
+      const [fichesRes, ownersRes, lastEventRes] = await Promise.all([
+        supabase
+          .from('fiches')
+          .select('nom, logement_numero_bien, loomky_property_id, loomky_owner_id, loomky_checklist_ids, loomky_synced_at')
+          .neq('statut', 'supprimee')
+          .order('nom', { ascending: true }),
+        supabase
+          .from('loomky_owners')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('fiches_history')
+          .select('changed_at')
+          .in('action', ['loomky_property_created', 'loomky_owner_created', 'loomky_owner_assigned', 'loomky_checklists_created'])
+          .order('changed_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      ])
+
+      if (fichesRes.error) throw fichesRes.error
+      if (ownersRes.error) throw ownersRes.error
+
+      const fichesData = fichesRes.data || []
+      const ownersData = ownersRes.data || []
+
+      const propertiesCount = fichesData.filter(f => f.loomky_property_id).length
+      const lastSyncAt = lastEventRes.data?.changed_at || null
+
+      setKpis({ propertiesCount, ownersCount: ownersData.length, lastSyncAt })
+      setOwners(ownersData)
+      setFiches(fichesData)
+    } catch (error) {
+      console.error('Erreur chargement données Loomky:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatDate = (iso) => {
+    if (!iso) return 'Jamais'
+    return new Date(iso).toLocaleDateString('fr-FR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    })
+  }
+
+  const SyncBadge = ({ value, isChecklist }) => {
+    let ok = value !== null && value !== undefined
+    if (isChecklist) ok = ok && value !== '[]' && value !== ''
+    return ok
+      ? <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700"><Check size={12} />OK</span>
+      : <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700"><X size={12} />Manquant</span>
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-12 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des données Loomky...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+
+      {/* Section 1 — KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm font-medium">Logements synchronisés</p>
+              <p className="text-3xl font-bold mt-1">{kpis.propertiesCount}</p>
+            </div>
+            <div className="bg-white bg-opacity-20 rounded-full p-3"><Home size={32} /></div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg shadow p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-cyan-100 text-sm font-medium">Propriétaires enregistrés</p>
+              <p className="text-3xl font-bold mt-1">{kpis.ownersCount}</p>
+            </div>
+            <div className="bg-white bg-opacity-20 rounded-full p-3"><User size={32} /></div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg shadow p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-teal-100 text-sm font-medium">Dernière synchro</p>
+              <p className="text-lg font-bold mt-1">{formatDate(kpis.lastSyncAt)}</p>
+            </div>
+            <div className="bg-white bg-opacity-20 rounded-full p-3"><RefreshCw size={32} /></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 2 — Registre des propriétaires */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b">
+          <h2 className="text-xl font-semibold">Registre des propriétaires</h2>
+          <p className="text-gray-600 mt-1">{owners.length} propriétaire{owners.length !== 1 ? 's' : ''} enregistré{owners.length !== 1 ? 's' : ''}</p>
+        </div>
+        <div className="overflow-x-auto">
+          {owners.length === 0 ? (
+            <p className="text-gray-500 text-center py-10">Aucun owner enregistré</p>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loomky Owner ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date d'enregistrement</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {owners.map(owner => (
+                  <tr key={owner.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm text-gray-900">{owner.email}</td>
+                    <td className="px-6 py-4 text-sm font-mono text-gray-600">{owner.loomky_owner_id}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{formatDate(owner.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {/* Section 3 — État de synchro des fiches */}
+      {(() => {
+        const isIncomplete = (f) => {
+          const ownerMissing = !f.loomky_owner_id
+          const checklistMissing = !f.loomky_checklist_ids || f.loomky_checklist_ids === '[]' || f.loomky_checklist_ids === ''
+          return ownerMissing || checklistMissing
+        }
+        const synced = fiches.filter(f => f.loomky_property_id)
+        const base = syncFilter === 'incomplete' ? synced.filter(isIncomplete) : synced
+        const displayed = syncSearch.trim()
+          ? base.filter(f => (f.logement_numero_bien || '').toLowerCase().includes(syncSearch.trim().toLowerCase()))
+          : base
+
+        return (
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 border-b">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold">État de synchro des fiches</h2>
+                  <p className="text-gray-600 mt-1">{displayed.length} fiche{displayed.length !== 1 ? 's' : ''} affichée{displayed.length !== 1 ? 's' : ''}</p>
+                </div>
+
+                {/* Toggle pill */}
+                <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-1 self-start sm:self-auto">
+                  <button
+                    onClick={() => setSyncFilter('incomplete')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${syncFilter === 'incomplete'
+                      ? 'bg-white text-purple-700 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                  >
+                    Incomplètes seulement
+                  </button>
+                  <button
+                    onClick={() => setSyncFilter('all')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${syncFilter === 'all'
+                      ? 'bg-white text-purple-700 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                  >
+                    Toutes les fiches synchro
+                  </button>
+                </div>
+              </div>
+
+              {/* Barre de recherche */}
+              <div className="relative mt-4 max-w-xs">
+                <input
+                  type="text"
+                  placeholder="Rechercher par n° de bien..."
+                  value={syncSearch}
+                  onChange={(e) => setSyncSearch(e.target.value)}
+                  className="w-full px-3 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              {displayed.length === 0 ? (
+                <p className="text-gray-500 text-center py-10">
+                  {syncSearch.trim()
+                    ? 'Aucune fiche trouvée pour ce numéro de bien'
+                    : syncFilter === 'incomplete'
+                      ? 'Aucune fiche incomplète, tout est synchronisé ✅'
+                      : 'Aucune fiche synchronisée'
+                  }
+                </p>
+              ) : (
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom de la fiche</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Numéro de bien</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Checklists</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {displayed.map((fiche, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{fiche.nom}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{fiche.logement_numero_bien || '—'}</td>
+                        <td className="px-6 py-4 text-center"><SyncBadge value={fiche.loomky_property_id} /></td>
+                        <td className="px-6 py-4 text-center"><SyncBadge value={fiche.loomky_owner_id} /></td>
+                        <td className="px-6 py-4 text-center"><SyncBadge value={fiche.loomky_checklist_ids} isChecklist /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
+    </div>
+  )
+}
+
 // Composant Historique avec recherche par numéro de bien
 function HistoriqueTab() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -1575,6 +1834,18 @@ function HistoriqueTab() {
                 } else if (event.action === 'numero_bien_changed') {
                   color = 'bg-orange-500'
                   icon = '⚠️'
+                } else if (event.action === 'loomky_property_created') {
+                  color = 'bg-purple-600'
+                  icon = '🏠'
+                } else if (event.action === 'loomky_owner_created') {
+                  color = 'bg-cyan-500'
+                  icon = '👤'
+                } else if (event.action === 'loomky_owner_assigned') {
+                  color = 'bg-teal-500'
+                  icon = '🔗'
+                } else if (event.action === 'loomky_checklists_created') {
+                  color = 'bg-emerald-600'
+                  icon = '✅'
                 }
 
                 return (
@@ -1600,6 +1871,10 @@ function HistoriqueTab() {
                             {event.action === 'status_changed' && `${icon} Changement de statut: ${event.old_value} → ${event.new_value}`}
                             {event.action === 'nom_changed' && `${icon} Renommage: ${event.old_value} → ${event.new_value}`}
                             {event.action === 'numero_bien_changed' && `${icon} Numéro modifié: ${event.old_value} → ${event.new_value}`}
+                            {event.action === 'loomky_property_created' && `${icon} Logement créé sur Loomky`}
+                            {event.action === 'loomky_owner_created' && `${icon} Propriétaire créé sur Loomky`}
+                            {event.action === 'loomky_owner_assigned' && `${icon} Propriétaire existant assigné au logement`}
+                            {event.action === 'loomky_checklists_created' && `${icon} Checklists créées sur Loomky`}
                           </div>
 
                           <div className="flex items-center gap-3 text-xs text-gray-500">

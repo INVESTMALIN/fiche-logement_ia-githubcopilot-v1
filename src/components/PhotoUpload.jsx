@@ -271,6 +271,7 @@ const PhotoUpload = ({
           // Compression avec browser-image-compression (cible: 2 MB max)
           const options = {
             maxSizeMB: 2,
+            maxWidthOrHeight: 1200,
             useWebWorker: true
           }
           try {

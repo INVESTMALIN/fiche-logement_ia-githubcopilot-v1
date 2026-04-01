@@ -14,6 +14,7 @@ export const mapFormDataToSupabase = (formData) => {
     proprietaire_prenom: formData.section_proprietaire?.prenom || null,
     proprietaire_nom: formData.section_proprietaire?.nom || null,
     proprietaire_email: formData.section_proprietaire?.email || null,
+    proprietaire_telephone: formData.section_proprietaire?.telephone || null,
     proprietaire_adresse_rue: formData.section_proprietaire?.adresse?.rue || null,
     proprietaire_adresse_complement: formData.section_proprietaire?.adresse?.complement || null,
     proprietaire_adresse_ville: formData.section_proprietaire?.adresse?.ville || null,
@@ -1156,6 +1157,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       prenom: supabaseData.proprietaire_prenom || "",
       nom: supabaseData.proprietaire_nom || "",
       email: supabaseData.proprietaire_email || "",
+      telephone: supabaseData.proprietaire_telephone || "",
       adresse: {
         rue: supabaseData.proprietaire_adresse_rue || "",
         complement: supabaseData.proprietaire_adresse_complement || "",

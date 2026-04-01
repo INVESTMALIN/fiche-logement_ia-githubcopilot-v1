@@ -89,6 +89,18 @@ export default function FicheForm() {
             />
           </div>
 
+          {/* Téléphone */}
+          <div className="mb-4">
+            <label className="block font-semibold mb-1">Téléphone</label>
+            <input
+              type="tel"
+              placeholder="+33 6 00 00 00 00"
+              className="w-full p-2 border rounded"
+              value={getField('section_proprietaire.telephone')}
+              onChange={(e) => handleInputChange('section_proprietaire.telephone', e.target.value)}
+            />
+          </div>
+
           {/* Adresse */}
           <div className="mb-4">
             <label className="block font-semibold mb-1">Adresse *</label>

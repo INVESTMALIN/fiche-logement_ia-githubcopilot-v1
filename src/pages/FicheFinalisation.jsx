@@ -12,7 +12,7 @@ import { CheckCircle, PenTool, Send, RefreshCw, Copy, AlertCircle, Sparkles, Loa
 import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
 import { supabase } from '../lib/supabaseClient'
 import { validateRequiredFields } from '../lib/validationConfig'
-import { createChecklistsOnLoomky, normalizeFormDataToFiche, enrichPropertyOnLoomky } from '../services/loomkyService'
+import { createChecklistsOnLoomky, normalizeFormDataToFiche, enrichPropertyOnLoomky, logLoomkyEvent } from '../services/loomkyService'
 
 
 export default function FicheFinalisation() {
@@ -279,6 +279,7 @@ export default function FicheFinalisation() {
       updateField('loomky_sync_status', 'synced')
       updateField('loomky_synced_at', updatePayload.loomky_synced_at)
 
+      logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_checklists_created', formData.user_id)
       setLoomkyStatus({ syncing: false, error: null })
       alert('✅ Checklists Loomky créées avec succès !')
 

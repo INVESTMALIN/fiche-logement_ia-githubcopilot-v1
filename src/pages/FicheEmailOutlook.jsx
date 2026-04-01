@@ -4,7 +4,7 @@ import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import { Eye, EyeOff, House, Loader2, CheckCircle2, XCircle, Construction, RefreshCw, Rocket, Trash2, ChevronDown, AlertTriangle } from 'lucide-react'
-import { createPropertyOnLoomky, normalizeFormDataToFiche, deletePropertyOnLoomky } from '../services/loomkyService'
+import { createPropertyOnLoomky, createPropertyOwnerOnLoomky, assignPropertyToOwnerOnLoomky, normalizeFormDataToFiche, deletePropertyOnLoomky, logLoomkyEvent } from '../services/loomkyService'
 import { supabase } from '../lib/supabaseClient'
 
 export default function FicheEmailOutlook() {
@@ -27,36 +27,72 @@ export default function FicheEmailOutlook() {
 
     const [loomkyToken, setLoomkyToken] = useState('')
     const [loomkyLoading, setLoomkyLoading] = useState(false)
+    const [loomkyStep, setLoomkyStep] = useState(null) // 'property' | 'owner' | 'assign'
     const [loomkyError, setLoomkyError] = useState(null)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [successModal, setSuccessModal] = useState(null) // { type: 'created' | 'deleted', propertyId }
 
     const handleCreateProperty = async () => {
         setLoomkyLoading(true)
+        setLoomkyStep(null)
         setLoomkyError(null)
 
         try {
             const ficheNormalized = normalizeFormDataToFiche(formData)
-            const result = await createPropertyOnLoomky(ficheNormalized, loomkyToken)
 
-            if (!result.success) {
-                setLoomkyError(result.error)
+            // Étape 1 : Création de la property
+            setLoomkyStep('property')
+            const propertyResult = await createPropertyOnLoomky(ficheNormalized, loomkyToken)
+            if (!propertyResult.success) {
+                setLoomkyError(propertyResult.error)
+                return
+            }
+            const propertyId = propertyResult.propertyId
+
+            // Sauvegarder immédiatement le propertyId — évite une property orpheline si les étapes suivantes échouent
+            await supabase
+                .from('fiches')
+                .update({ loomky_property_id: propertyId })
+                .eq('id', formData.id)
+            updateField('loomky_property_id', propertyId)
+            logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_property_created', formData.user_id)
+
+            // Étape 2 : Création du propriétaire
+            setLoomkyStep('owner')
+            const ownerResult = await createPropertyOwnerOnLoomky(ficheNormalized, loomkyToken)
+            if (!ownerResult.success) {
+                setLoomkyError(ownerResult.error)
+                return
+            }
+            const ownerId = ownerResult.ownerId
+
+            // Sauvegarder immédiatement l'ownerId — évite de le perdre si l'étape suivante échoue
+            await supabase
+                .from('fiches')
+                .update({ loomky_owner_id: ownerId })
+                .eq('id', formData.id)
+            updateField('loomky_owner_id', ownerId)
+            if (!ownerResult.existing) {
+                logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_owner_created', formData.user_id)
+            } else {
+                logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_owner_assigned', formData.user_id)
+            }
+
+            // Étape 3 : Association propriétaire ↔ property
+            setLoomkyStep('assign')
+            const assignResult = await assignPropertyToOwnerOnLoomky(ownerId, propertyId, loomkyToken)
+            if (!assignResult.success) {
+                setLoomkyError(assignResult.error)
                 return
             }
 
-            // Sauvegarder le propertyId en Supabase + FormContext
-            await supabase
-                .from('fiches')
-                .update({ loomky_property_id: result.propertyId })
-                .eq('id', formData.id)
-
-            updateField('loomky_property_id', result.propertyId)
-            setSuccessModal({ type: 'created', propertyId: result.propertyId })
+            setSuccessModal({ type: 'created', propertyId })
 
         } catch (err) {
             setLoomkyError(err.message || 'Erreur inattendue')
         } finally {
             setLoomkyLoading(false)
+            setLoomkyStep(null)
         }
     }
 
@@ -84,6 +120,7 @@ export default function FicheEmailOutlook() {
                 .from('fiches')
                 .update({
                     loomky_property_id: null,
+                    loomky_owner_id: null,
                     loomky_checklist_ids: null,
                     loomky_sync_status: null,
                     loomky_synced_at: null,
@@ -93,6 +130,7 @@ export default function FicheEmailOutlook() {
 
             // Cleanup FormContext
             updateField('loomky_property_id', null)
+            updateField('loomky_owner_id', null)
             updateField('loomky_checklist_ids', null)
             updateField('loomky_sync_status', null)
             updateField('loomky_synced_at', null)
@@ -242,7 +280,12 @@ export default function FicheEmailOutlook() {
                                         {loomkyLoading ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                <span>Création...</span>
+                                                <span>
+                                                    {loomkyStep === 'property' && 'Création propriété...'}
+                                                    {loomkyStep === 'owner' && 'Création propriétaire...'}
+                                                    {loomkyStep === 'assign' && 'Association...'}
+                                                    {!loomkyStep && 'Chargement...'}
+                                                </span>
                                             </>
                                         ) : (
                                             <>

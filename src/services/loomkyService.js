@@ -2,6 +2,7 @@
 // LOOMKY SERVICE
 // Service centralisé pour l'intégration Loomky
 // ============================================
+import { supabase } from '../lib/supabaseClient'
 
 /**
  * Configuration Loomky
@@ -1336,6 +1337,32 @@ function calculateBedCounts(fiche) {
 // ============================================
 
 /**
+ * Enregistre un événement Loomky dans fiches_history
+ * Ne bloque jamais le flow principal en cas d'erreur
+ * @param {string} ficheId
+ * @param {string} numeroBien
+ * @param {string} ficheName
+ * @param {string} action - 'loomky_property_created' | 'loomky_owner_created' | 'loomky_checklists_created'
+ * @param {string} userId
+ */
+export async function logLoomkyEvent(ficheId, numeroBien, ficheName, action, userId) {
+    try {
+        await supabase
+            .from('fiches_history')
+            .insert({
+                fiche_id: ficheId,
+                numero_bien: numeroBien || '',
+                fiche_nom: ficheName || '',
+                action,
+                changed_by: userId || null,
+                changed_at: new Date().toISOString()
+            })
+    } catch (err) {
+        console.warn('logLoomkyEvent failed (non-blocking):', err)
+    }
+}
+
+/**
  * Crée une property Loomky depuis une fiche normalisée
  * @param {Object} fiche - Fiche normalisée (via normalizeFormDataToFiche)
  * @param {string} token - Token JWT Loomky (saisi par le coordinateur)
@@ -1343,6 +1370,145 @@ function calculateBedCounts(fiche) {
 export async function createPropertyOnLoomky(fiche, token) {
     const payload = buildPropertyPayload(fiche)
     return await createProperty(payload, token)
+}
+
+/**
+ * Crée un propriétaire (property owner) dans Loomky depuis une fiche normalisée
+ * @param {Object} fiche - Fiche normalisée (via normalizeFormDataToFiche)
+ * @param {string} token - Token JWT Loomky (saisi par le coordinateur)
+ * @returns {Promise<Object>} - { success, ownerId } ou { success: false, error }
+ */
+export async function createPropertyOwnerOnLoomky(fiche, token) {
+    if (!token) return { success: false, error: 'Token requis' }
+
+    const email = fiche.proprietaire_email || ''
+
+    // Vérifier si cet owner existe déjà dans le registre local
+    if (email) {
+        const { data: existing } = await supabase
+            .from('loomky_owners')
+            .select('loomky_owner_id')
+            .eq('email', email)
+            .maybeSingle()
+
+        if (existing?.loomky_owner_id) {
+            return { success: true, ownerId: existing.loomky_owner_id, existing: true }
+        }
+    }
+
+    const payload = {
+        email,
+        firstName: fiche.proprietaire_prenom || '',
+        lastName: fiche.proprietaire_nom || '',
+        phone: fiche.proprietaire_telephone || '+33700000000',
+        address: {
+            street: fiche.proprietaire_adresse_rue || '',
+            city: fiche.proprietaire_adresse_ville || '',
+            country: 'FR',
+            postalCode: fiche.proprietaire_adresse_code_postal || ''
+        },
+        ownerPermissions: {
+            viewStats: {
+                occupancy: true,  // Taux d'occupation
+                totalNights: true,   // Nb total de nuits
+                grossRevenueExclFees: false,
+                grossRevenueInclFees: false,
+                grossRevenuePerPlatformInclFees: false,
+                grossRevenuePerPlatformExclFees: false,
+                nightsPerPlatform: true,  // Nb de nuits par plateforme
+                customFees: false,
+                commission: false,
+                cityTax: false,
+                netRevenue: true   // Revenu net
+            },
+            viewCalendar: true,  // Calendrier
+            updateAvailability: false,
+            viewBookingDetails: true  // Réservations
+        },
+        sendCredentials: true
+    }
+
+    try {
+        const response = await fetch(`${BASE_URL}/v1/property-owners`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        })
+
+        const text = await response.text()
+        let data = {}
+        try {
+            data = text ? JSON.parse(text) : {}
+        } catch (e) {
+            return { success: false, error: `Erreur parsing réponse: ${text.substring(0, 100)}` }
+        }
+
+        if (!response.ok) {
+            const errorMsg = data?.message || response.statusText || 'Erreur inconnue'
+            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+        }
+
+        const ownerId = data.owner?._id
+        if (!ownerId) {
+            return { success: false, error: 'OwnerId non trouvé dans la réponse' }
+        }
+
+        // Enregistrer dans le registre local pour éviter les doublons futurs
+        if (email) {
+            await supabase
+                .from('loomky_owners')
+                .insert({ email, loomky_owner_id: ownerId })
+        }
+
+        return { success: true, ownerId, existing: false }
+
+    } catch (error) {
+        return { success: false, error: error.message }
+    }
+}
+
+/**
+ * Associe une property à un propriétaire dans Loomky
+ * @param {string} ownerId - ID Loomky du propriétaire
+ * @param {string} propertyId - ID Loomky de la property
+ * @param {string} token - Token JWT Loomky (saisi par le coordinateur)
+ * @returns {Promise<Object>} - { success } ou { success: false, error }
+ */
+export async function assignPropertyToOwnerOnLoomky(ownerId, propertyId, token) {
+    if (!token) return { success: false, error: 'Token requis' }
+    if (!ownerId) return { success: false, error: 'OwnerId requis' }
+    if (!propertyId) return { success: false, error: 'PropertyId requis' }
+
+    try {
+        const response = await fetch(`${BASE_URL}/v1/property-owners/${ownerId}/properties/assign`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ propertiesIds: [propertyId] })
+        })
+
+        if (response.status === 204) {
+            return { success: true }
+        }
+
+        if (!response.ok) {
+            const text = await response.text()
+            let errorData = {}
+            try { errorData = text ? JSON.parse(text) : {} } catch (e) { /* noop */ }
+            const errorMsg = errorData?.message || response.statusText || 'Erreur inconnue'
+            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+        }
+
+        return { success: true }
+
+    } catch (error) {
+        return { success: false, error: error.message }
+    }
 }
 
 /**
