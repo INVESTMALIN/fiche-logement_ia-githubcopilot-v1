@@ -145,17 +145,6 @@ const PDFTemplate = ({ formData }) => {
       .replace(/\]$/, '') // Sécurité : enlever ] restant
   }
 
-  // 🔧 Helper pour optimiser les URLs Supabase via transformations d'images
-  // Utilise resize=contain pour préserver le ratio sans crop (évite le portrait étroit)
-  const optimizeImageUrl = (url) => {
-    if (typeof url !== 'string') return url
-    if (!url.includes('supabase.co/storage')) return url
-    if (url.includes('/assets/')) return url
-    const renderUrl = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
-    const separator = renderUrl.includes('?') ? '&' : '?'
-    return `${renderUrl}${separator}width=800&quality=65&resize=contain`
-  }
-
   // 🔧 Helper pour parser les strings JSON malformées + nettoyage URLs
   const parsePhotoValue = (value) => {
     if (Array.isArray(value)) {
@@ -255,9 +244,8 @@ const PDFTemplate = ({ formData }) => {
     // Helper pour créer un objet photo standardisé
     const createPhotoObject = (url, label, fieldKey) => {
       const cleanedUrl = cleanUrl(url)
-      const optimizedUrl = optimizeImageUrl(cleanedUrl)
       return {
-        url: optimizedUrl,
+        url: cleanedUrl,
         label: label,
         fieldKey: fieldKey,
         isValid: isImageUrl(cleanedUrl)
@@ -291,13 +279,7 @@ const PDFTemplate = ({ formData }) => {
       }
     })
 
-    const validPhotos = photos.filter(photo => photo.isValid)
-    const seen = new Set()
-    return validPhotos.filter(p => {
-      if (seen.has(p.url)) return false
-      seen.add(p.url)
-      return true
-    })
+    return photos.filter(photo => photo.isValid)
   }
 
   // 🔍 Helper pour formater les noms de champs
