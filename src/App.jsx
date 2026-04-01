@@ -22,13 +22,12 @@ import HelpButton from './components/HelpButton'
 // Test page for Guide Agent et API Loomky
 import TestGuideAgent from './pages/TestGuideAgent'
 import SimulationLoomky from './pages/SimulationLoomky'
-import VoiceInventoryTest from './pages/VoiceInventoryTest'
 
 
 
 export default function App() {
   const navigate = useNavigate()
-  
+
   // Configurer la redirection automatique pour les erreurs 401
   useEffect(() => {
     setAuthNavigateCallback(navigate)
@@ -43,14 +42,14 @@ export default function App() {
           <Route path="/update-password" element={<UpdatePassword />} />
           <Route path="/confirm-signup" element={<ConfirmSignup />} />
 
-          <Route 
-            path="/test-guide-agent" 
+          <Route
+            path="/test-guide-agent"
             element={
               <ProtectedRoute>
                 <TestGuideAgent />
               </ProtectedRoute>
-            } 
-          />    
+            }
+          />
 
           <Route
             path="/simulation-loomky"
@@ -62,48 +61,39 @@ export default function App() {
           />
 
           <Route
-            path="/voice-inventory-test"
-            element={
-              <ProtectedRoute>
-                <VoiceInventoryTest />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route 
-            path="/" 
+            path="/"
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/fiche" 
+          <Route
+            path="/fiche"
             element={
               <ProtectedRoute>
                 <FicheWizard />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/fiche/:id" 
+          <Route
+            path="/fiche/:id"
             element={
               <ProtectedRoute>
                 <FicheWizard />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/admin" 
+          <Route
+            path="/admin"
             element={
               <AdminRoute>
                 <AdminConsole />
               </AdminRoute>
-            } 
+            }
           />
 
           <Route path="/print-pdf" element={<PrintPDF />} />
