@@ -46,7 +46,7 @@ export default function FicheClefs() {
             <div className="mb-6">
               <label className="block font-semibold mb-3">Type de boîte à clés *</label>
               <div className="flex flex-col gap-2">
-                {["TTlock", "Igloohome", "Masterlock", "Serrure connectée"].map(type => (
+                {["TTlock", "Igloohome", "Masterlock", "Keynest", "Serrure connectée"].map(type => (
                   <label key={type} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
