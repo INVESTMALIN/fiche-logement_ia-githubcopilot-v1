@@ -19,7 +19,7 @@ const LOOMKY_CONFIG = {
 }
 
 // Utiliser DEV pour l'instant
-const CURRENT_ENV = 'DEV' // TODO PROD: basculer en PROD une fois credentials prêts
+const CURRENT_ENV = 'PROD' // TODO PROD: basculer en PROD une fois credentials prêts
 const BASE_URL = LOOMKY_CONFIG[CURRENT_ENV].BASE_URL
 
 // ⚠️ IMPORTANT: Le token n'est JAMAIS hardcodé
@@ -1425,7 +1425,8 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
             updateAvailability: false,
             viewBookingDetails: true  // Réservations
         },
-        sendCredentials: true
+        sendCredentials: true,
+        type: 'individual'
     }
 
     try {
