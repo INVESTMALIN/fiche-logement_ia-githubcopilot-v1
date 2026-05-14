@@ -188,15 +188,46 @@ const initialFormData = {
     immeuble_niveau_sonore: null,                // Radio: "Très calme"/"Relativement calme"/"Très bruyant"/null
 
     // 🏠 4. ÉVALUATION LOGEMENT
-    logement_etat_general: null,                 // Radio: "Excellent"/"Bon"/"Moyen"/"Dégradé"/"Très mauvais"/null
-    logement_etat_details: "",                   // Textarea conditionnel (si état = "Dégradé" ou "Très mauvais")
-    logement_proprete: null,                     // Radio: "Propre"/"Correct"/"Sale"/null
-    logement_proprete_details: "",               // Textarea conditionnel (si propreté = "Sale")
-    logement_ambiance: [],                       // Array checkboxes (choix multiples)
-    logement_absence_decoration_details: "",     // Textarea conditionnel (si ambiance contient "Absence de décoration")
-    logement_decoration_personnalisee_details: "", // Textarea conditionnel (si ambiance contient "Décoration très personnalisée")
-    logement_vis_a_vis: null,                    // Radio: "Vue dégagée"/"Vis-à-vis partielle"/"Vis-à-vis direct"/null
-    logement_vis_a_vis_photos: [],               // Array photos
+    // Legacy : conservés pour compatibilité (alimentés automatiquement depuis la grille au save)
+    logement_etat_general: null,
+    logement_etat_details: "",
+    logement_proprete: null,
+    logement_proprete_details: "",
+    logement_ambiance: [],
+    logement_absence_decoration_details: "",
+    logement_decoration_personnalisee_details: "",
+    logement_vis_a_vis: null,
+    logement_vis_a_vis_photos: [],
+
+    // 📊 Grille d'évaluation objective (9 critères, note de 1 à 5)
+    grille_proprete_generale_note: null,
+    grille_proprete_generale_obs: "",
+    grille_sols_note: null,
+    grille_sols_obs: "",
+    grille_murs_plafonds_note: null,
+    grille_murs_plafonds_obs: "",
+    grille_cuisine_note: null,
+    grille_cuisine_obs: "",
+    grille_salle_bain_note: null,
+    grille_salle_bain_obs: "",
+    grille_equipements_note: null,
+    grille_equipements_obs: "",
+    grille_menuiseries_note: null,
+    grille_menuiseries_obs: "",
+    grille_odeurs_note: null,
+    grille_odeurs_obs: "",
+    grille_impression_generale_note: null,
+    grille_impression_generale_obs: "",
+
+    // ⚠️ Vérification sécurité (liste de dangers cochés)
+    securite_dangers: [],
+
+    // 🎥 Vidéo état du logement
+    logement_etat_videos: [],
+
+    // 🏷️ Type de 1er passage
+    type_premier_menage: null,
+    type_premiere_maintenance: null,
 
     atouts_logement: {
       lumineux: null,

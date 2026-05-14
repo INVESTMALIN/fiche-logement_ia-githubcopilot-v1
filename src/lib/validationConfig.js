@@ -116,7 +116,44 @@ export const REQUIRED_FIELDS = {
 
     exigences: [], // Pas de champs obligatoires
 
-    avis: [], // Pas de champs obligatoires
+    avis: [
+        {
+            field: 'section_avis.grille_proprete_generale_note',
+            message: 'Évaluation du logement : note "Propreté générale" obligatoire'
+        },
+        {
+            field: 'section_avis.grille_sols_note',
+            message: 'Évaluation du logement : note "Sols" obligatoire'
+        },
+        {
+            field: 'section_avis.grille_murs_plafonds_note',
+            message: 'Évaluation du logement : note "Murs et plafonds" obligatoire'
+        },
+        {
+            field: 'section_avis.grille_cuisine_note',
+            message: 'Évaluation du logement : note "Cuisine" obligatoire'
+        },
+        {
+            field: 'section_avis.grille_salle_bain_note',
+            message: 'Évaluation du logement : note "Salle de bain / WC" obligatoire'
+        },
+        {
+            field: 'section_avis.grille_equipements_note',
+            message: 'Évaluation du logement : note "Équipements" obligatoire'
+        },
+        {
+            field: 'section_avis.grille_menuiseries_note',
+            message: 'Évaluation du logement : note "Menuiseries" obligatoire'
+        },
+        {
+            field: 'section_avis.grille_odeurs_note',
+            message: 'Évaluation du logement : note "Odeurs" obligatoire'
+        },
+        {
+            field: 'section_avis.grille_impression_generale_note',
+            message: 'Évaluation du logement : note "Impression générale" obligatoire'
+        }
+    ],
 
     linge: [
         {

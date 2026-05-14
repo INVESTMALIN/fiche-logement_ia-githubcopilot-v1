@@ -1,4 +1,5 @@
 // src/lib/AlerteDetector.js
+import { GRILLE_CRITERES, computeGrilleStats, proprietyFromGrilleNote, dangerLabelByKey } from './avisGrilleHelpers'
 
 // Génère un aperçu synthétique du logement
 export const generateApercu = (formData) => {
@@ -81,8 +82,13 @@ export const detectAlertes = (formData) => {
     })
   }
   
-  // Logement en mauvais état
-  if (avis.logement_etat_general === 'mauvais') {
+  // Logement en mauvais état — la grille est la source de vérité (toujours fraîche
+  // pendant l'édition), les champs legacy servent uniquement de fallback pour les
+  // fiches antérieures à la refonte qui n'ont pas de grille remplie.
+  const grilleStats = computeGrilleStats(avis)
+  const verdictMauvais = grilleStats.verdict === 'etat_degrade' || grilleStats.verdict === 'tres_mauvais_etat'
+  const legacyEtatMauvais = avis.logement_etat_general === 'etat_degrade' || avis.logement_etat_general === 'tres_mauvais_etat'
+  if (verdictMauvais || (grilleStats.filled === 0 && legacyEtatMauvais)) {
     alertes.critiques.push({
       icone: '⚠️',
       titre: 'État général mauvais',
@@ -90,9 +96,11 @@ export const detectAlertes = (formData) => {
       action: 'Travaux requis avant mise en location'
     })
   }
-  
-  // Propreté insuffisante
-  if (avis.logement_proprete === 'sale') {
+
+  // Propreté insuffisante — même logique : critère 1 de la grille en priorité,
+  // legacy uniquement si grille vide.
+  const propreteFromGrille = proprietyFromGrilleNote(avis.grille_proprete_generale_note)
+  if (propreteFromGrille === 'sale' || (propreteFromGrille === null && avis.logement_proprete === 'sale')) {
     alertes.critiques.push({
       icone: '🧹',
       titre: 'Propreté insuffisante',
@@ -100,7 +108,20 @@ export const detectAlertes = (formData) => {
       action: 'Grand ménage obligatoire'
     })
   }
-  
+
+  // Danger sécurité — au moins un élément électrique dangereux coché dans la
+  // vérification sécurité de la grille avis. Vieilles fiches sans sécurité
+  // remplie : securite_dangers est null ou [] → pas d'alerte.
+  if (avis.securite_dangers?.length > 0) {
+    const dangersLisibles = avis.securite_dangers.map(dangerLabelByKey).join(' · ')
+    alertes.critiques.push({
+      icone: '🚨',
+      titre: 'Danger sécurité détecté',
+      message: `Éléments dangereux observés : ${dangersLisibles}`,
+      action: 'Le logement ne doit pas être mis en location avant intervention.'
+    })
+  }
+
   // Pas de détecteur de fumée
   const detecteurFumee = securite.equipements?.includes('Détecteur de fumée')
   if (!detecteurFumee) {
@@ -124,16 +145,16 @@ export const detectAlertes = (formData) => {
   }
   
   // Perturbations détectées
-  if (avis.quartier_perturbations === 'oui') {
+  if (avis.quartier_perturbations === 'perturbateur') {
     alertes.moderees.push({
       icone: '🔊',
       titre: 'Perturbations signalées',
       message: avis.quartier_perturbations_details || 'Nuisances sonores ou autres perturbations'
     })
   }
-  
+
   // Vis-à-vis important
-  if (avis.logement_vis_a_vis === 'important') {
+  if (avis.logement_vis_a_vis === 'vis_a_vis_direct') {
     alertes.moderees.push({
       icone: '👀',
       titre: 'Vis-à-vis important',
@@ -150,6 +171,24 @@ export const detectAlertes = (formData) => {
     })
   }
   
+  // Critères individuels en mauvais état (note ≤ 2) — utile pour repérer un
+  // défaut isolé qui serait masqué par un verdict global correct (ex : cuisine
+  // à 1/5 noyée dans un verdict "Bon état"). Skip si le verdict global est
+  // déjà mauvais : l'alerte critique "État général mauvais" couvre déjà le cas.
+  if (grilleStats.verdict !== 'etat_degrade' && grilleStats.verdict !== 'tres_mauvais_etat') {
+    GRILLE_CRITERES.forEach((critere) => {
+      const note = avis[`grille_${critere.key}_note`]
+      if (typeof note === 'number' && note <= 2) {
+        const niveau = critere.niveaux.find(n => n.val === note)
+        alertes.moderees.push({
+          icone: '📉',
+          titre: `Défaut sur "${critere.label}"`,
+          message: niveau ? `${niveau.name} : ${niveau.desc}` : `Note ${note}/5`
+        })
+      }
+    })
+  }
+
   // Démarches réglementaires requises
   if (reglementation.ville_changement_usage && reglementation.ville_changement_usage !== 'NON !') {
     alertes.moderees.push({

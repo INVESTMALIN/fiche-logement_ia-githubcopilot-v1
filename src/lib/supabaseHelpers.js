@@ -1,10 +1,17 @@
 // src/lib/supabaseHelpers.js
 import { supabase, safeSupabaseQuery } from './supabaseClient'
+import { computeGrilleStats, proprietyFromGrilleNote } from './avisGrilleHelpers'
 
 // 🔄 Mapping FormContext → Colonnes Supabase
 export const mapFormDataToSupabase = (formData) => {
   console.log('🔍 formData.guide_acces_pdf_url:', formData.guide_acces_pdf_url)
   console.log('🔍 formData.annonce_pdf_url:', formData.annonce_pdf_url)
+
+  // Calcul du verdict et des valeurs legacy dérivées depuis la grille d'évaluation
+  const grilleStats = computeGrilleStats(formData.section_avis)
+  const derivedEtatGeneral = grilleStats.verdict || formData.section_avis?.logement_etat_general || null
+  const derivedProprete = proprietyFromGrilleNote(formData.section_avis?.grille_proprete_generale_note) || formData.section_avis?.logement_proprete || null
+  const securiteDangers = formData.section_avis?.securite_dangers || []
 
   return {
     nom: formData.nom || 'Nouvelle fiche',
@@ -139,15 +146,50 @@ export const mapFormDataToSupabase = (formData) => {
     avis_immeuble_niveau_sonore: formData.section_avis?.immeuble_niveau_sonore || null,
 
     // 🏠 Évaluation logement
-    avis_logement_etat_general: formData.section_avis?.logement_etat_general || null,
+    // Legacy : dérivé de la grille (verdict global pour l'état, critère 1 pour la propreté)
+    // afin de conserver le trigger d'alertes Make existant
+    avis_logement_etat_general: derivedEtatGeneral,
     avis_logement_etat_details: formData.section_avis?.logement_etat_details || null,
-    avis_logement_proprete: formData.section_avis?.logement_proprete || null,
+    avis_logement_proprete: derivedProprete,
     avis_logement_proprete_details: formData.section_avis?.logement_proprete_details || null,
     avis_logement_ambiance: formData.section_avis?.logement_ambiance || [],
     avis_logement_absence_decoration_details: formData.section_avis?.logement_absence_decoration_details || null,
     avis_logement_decoration_personnalisee_details: formData.section_avis?.logement_decoration_personnalisee_details || null,
     avis_logement_vis_a_vis: formData.section_avis?.logement_vis_a_vis || null,
     avis_logement_vis_a_vis_photos: formData.section_avis?.logement_vis_a_vis_photos || [],
+
+    // 📊 Grille d'évaluation objective (9 critères + score + verdict)
+    avis_grille_proprete_generale_note: formData.section_avis?.grille_proprete_generale_note ?? null,
+    avis_grille_proprete_generale_obs: formData.section_avis?.grille_proprete_generale_obs || null,
+    avis_grille_sols_note: formData.section_avis?.grille_sols_note ?? null,
+    avis_grille_sols_obs: formData.section_avis?.grille_sols_obs || null,
+    avis_grille_murs_plafonds_note: formData.section_avis?.grille_murs_plafonds_note ?? null,
+    avis_grille_murs_plafonds_obs: formData.section_avis?.grille_murs_plafonds_obs || null,
+    avis_grille_cuisine_note: formData.section_avis?.grille_cuisine_note ?? null,
+    avis_grille_cuisine_obs: formData.section_avis?.grille_cuisine_obs || null,
+    avis_grille_salle_bain_note: formData.section_avis?.grille_salle_bain_note ?? null,
+    avis_grille_salle_bain_obs: formData.section_avis?.grille_salle_bain_obs || null,
+    avis_grille_equipements_note: formData.section_avis?.grille_equipements_note ?? null,
+    avis_grille_equipements_obs: formData.section_avis?.grille_equipements_obs || null,
+    avis_grille_menuiseries_note: formData.section_avis?.grille_menuiseries_note ?? null,
+    avis_grille_menuiseries_obs: formData.section_avis?.grille_menuiseries_obs || null,
+    avis_grille_odeurs_note: formData.section_avis?.grille_odeurs_note ?? null,
+    avis_grille_odeurs_obs: formData.section_avis?.grille_odeurs_obs || null,
+    avis_grille_impression_generale_note: formData.section_avis?.grille_impression_generale_note ?? null,
+    avis_grille_impression_generale_obs: formData.section_avis?.grille_impression_generale_obs || null,
+    avis_grille_score_total: grilleStats.filled > 0 ? grilleStats.total : null,
+    avis_grille_verdict: grilleStats.verdict,
+
+    // ⚠️ Sécurité (liste des dangers cochés + bool dérivé pour le trigger d'alertes)
+    avis_securite_dangers: securiteDangers,
+    avis_securite_danger_detecte: securiteDangers.length > 0,
+
+    // 🎥 Vidéo de l'état du logement
+    avis_logement_etat_videos: formData.section_avis?.logement_etat_videos || [],
+
+    // 🏷️ Type de 1er passage (ménage / maintenance)
+    avis_type_premier_menage: formData.section_avis?.type_premier_menage || null,
+    avis_type_premiere_maintenance: formData.section_avis?.type_premiere_maintenance || null,
 
 
     avis_atouts_lumineux: formData.section_avis?.atouts_logement?.lumineux ?? null,
@@ -1315,7 +1357,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       immeuble_accessibilite: supabaseData.avis_immeuble_accessibilite || null,
       immeuble_niveau_sonore: supabaseData.avis_immeuble_niveau_sonore || null,
 
-      // 🏠 Évaluation logement
+      // 🏠 Évaluation logement (legacy, dérivé de la grille à l'écriture)
       logement_etat_general: supabaseData.avis_logement_etat_general || null,
       logement_etat_details: supabaseData.avis_logement_etat_details || "",
       logement_proprete: supabaseData.avis_logement_proprete || null,
@@ -1325,6 +1367,36 @@ export const mapSupabaseToFormData = (supabaseData) => {
       logement_decoration_personnalisee_details: supabaseData.avis_logement_decoration_personnalisee_details || "",
       logement_vis_a_vis: supabaseData.avis_logement_vis_a_vis || null,
       logement_vis_a_vis_photos: supabaseData.avis_logement_vis_a_vis_photos || [],
+
+      // 📊 Grille d'évaluation objective
+      grille_proprete_generale_note: supabaseData.avis_grille_proprete_generale_note ?? null,
+      grille_proprete_generale_obs: supabaseData.avis_grille_proprete_generale_obs || "",
+      grille_sols_note: supabaseData.avis_grille_sols_note ?? null,
+      grille_sols_obs: supabaseData.avis_grille_sols_obs || "",
+      grille_murs_plafonds_note: supabaseData.avis_grille_murs_plafonds_note ?? null,
+      grille_murs_plafonds_obs: supabaseData.avis_grille_murs_plafonds_obs || "",
+      grille_cuisine_note: supabaseData.avis_grille_cuisine_note ?? null,
+      grille_cuisine_obs: supabaseData.avis_grille_cuisine_obs || "",
+      grille_salle_bain_note: supabaseData.avis_grille_salle_bain_note ?? null,
+      grille_salle_bain_obs: supabaseData.avis_grille_salle_bain_obs || "",
+      grille_equipements_note: supabaseData.avis_grille_equipements_note ?? null,
+      grille_equipements_obs: supabaseData.avis_grille_equipements_obs || "",
+      grille_menuiseries_note: supabaseData.avis_grille_menuiseries_note ?? null,
+      grille_menuiseries_obs: supabaseData.avis_grille_menuiseries_obs || "",
+      grille_odeurs_note: supabaseData.avis_grille_odeurs_note ?? null,
+      grille_odeurs_obs: supabaseData.avis_grille_odeurs_obs || "",
+      grille_impression_generale_note: supabaseData.avis_grille_impression_generale_note ?? null,
+      grille_impression_generale_obs: supabaseData.avis_grille_impression_generale_obs || "",
+
+      // ⚠️ Sécurité
+      securite_dangers: supabaseData.avis_securite_dangers || [],
+
+      // 🎥 Vidéo de l'état du logement
+      logement_etat_videos: supabaseData.avis_logement_etat_videos || [],
+
+      // 🏷️ Type de 1er passage
+      type_premier_menage: supabaseData.avis_type_premier_menage || null,
+      type_premiere_maintenance: supabaseData.avis_type_premiere_maintenance || null,
 
       atouts_logement: {
         // Anciens atouts (déjà mappés)

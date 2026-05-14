@@ -37,6 +37,33 @@
 |---|---|---|---|
 | `video_globale_videos` | `avis_video_globale_videos` | TEXT[] | PhotoUpload conditionnel si `video_globale_validation = true` |
 
+### **🆕 2bis. Section Avis - Refonte "Évaluation du logement" (25 nouveaux champs, mai 2026)**
+
+Refonte du sous-bloc "État général + propreté" (subjectif) en grille objective de 9 critères × 5 niveaux + checks sécurité + vidéo + types de 1er passage.
+
+**Stratégie compatibilité** : `avis_logement_etat_general` (verdict global) et `avis_logement_proprete` (note critère 1) sont désormais **dérivés automatiquement** depuis la grille au save (`mapFormDataToSupabase`). Le trigger `notify_fiche_alerts` reste inchangé.
+
+| Champ FormContext | Colonne Supabase | Type | Interface |
+|---|---|---|---|
+| `grille_proprete_generale_note` + `_obs` | `avis_grille_proprete_generale_note` (SMALLINT) + `_obs` (TEXT) | grille |
+| `grille_sols_note` + `_obs` | `avis_grille_sols_note` + `_obs` | grille |
+| `grille_murs_plafonds_note` + `_obs` | `avis_grille_murs_plafonds_note` + `_obs` | grille |
+| `grille_cuisine_note` + `_obs` | `avis_grille_cuisine_note` + `_obs` | grille |
+| `grille_salle_bain_note` + `_obs` | `avis_grille_salle_bain_note` + `_obs` | grille |
+| `grille_equipements_note` + `_obs` | `avis_grille_equipements_note` + `_obs` | grille |
+| `grille_menuiseries_note` + `_obs` | `avis_grille_menuiseries_note` + `_obs` | grille |
+| `grille_odeurs_note` + `_obs` | `avis_grille_odeurs_note` + `_obs` | grille |
+| `grille_impression_generale_note` + `_obs` | `avis_grille_impression_generale_note` + `_obs` | grille |
+| _(dérivé)_ | `avis_grille_score_total` (SMALLINT) | calculé |
+| _(dérivé)_ | `avis_grille_verdict` (TEXT) | calculé : excellent_etat / bon_etat / etat_moyen / etat_degrade / tres_mauvais_etat |
+| `securite_dangers` | `avis_securite_dangers` (TEXT[]) | 7 checkboxes |
+| _(dérivé)_ | `avis_securite_danger_detecte` (BOOLEAN) | dérivé : true si `securite_dangers` non vide |
+| `logement_etat_videos` | `avis_logement_etat_videos` (TEXT[]) | PhotoUpload vidéo |
+| `type_premier_menage` | `avis_type_premier_menage` (TEXT) | pills single-select |
+| `type_premiere_maintenance` | `avis_type_premiere_maintenance` (TEXT) | pills single-select |
+
+**⚠️ Trigger `notify_fiche_completed` à mettre à jour** pour inclure `avis_logement_etat_videos` dans le payload media.
+
 ### **📊 2. Section Avis - 20 Champs Évaluations**
 | Champ FormContext | Colonne Supabase | Type | Interface |
 |---|---|---|---|
