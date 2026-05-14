@@ -1,4 +1,5 @@
 // src/lib/AlerteDetector.js
+import { computeGrilleStats, proprietyFromGrilleNote } from './avisGrilleHelpers'
 
 // Génère un aperçu synthétique du logement
 export const generateApercu = (formData) => {
@@ -81,8 +82,13 @@ export const detectAlertes = (formData) => {
     })
   }
   
-  // Logement en mauvais état
-  if (avis.logement_etat_general === 'etat_degrade' || avis.logement_etat_general === 'tres_mauvais_etat') {
+  // Logement en mauvais état — la grille est la source de vérité (toujours fraîche
+  // pendant l'édition), les champs legacy servent uniquement de fallback pour les
+  // fiches antérieures à la refonte qui n'ont pas de grille remplie.
+  const grilleStats = computeGrilleStats(avis)
+  const verdictMauvais = grilleStats.verdict === 'etat_degrade' || grilleStats.verdict === 'tres_mauvais_etat'
+  const legacyEtatMauvais = avis.logement_etat_general === 'etat_degrade' || avis.logement_etat_general === 'tres_mauvais_etat'
+  if (verdictMauvais || (grilleStats.filled === 0 && legacyEtatMauvais)) {
     alertes.critiques.push({
       icone: '⚠️',
       titre: 'État général mauvais',
@@ -90,9 +96,11 @@ export const detectAlertes = (formData) => {
       action: 'Travaux requis avant mise en location'
     })
   }
-  
-  // Propreté insuffisante
-  if (avis.logement_proprete === 'sale') {
+
+  // Propreté insuffisante — même logique : critère 1 de la grille en priorité,
+  // legacy uniquement si grille vide.
+  const propreteFromGrille = proprietyFromGrilleNote(avis.grille_proprete_generale_note)
+  if (propreteFromGrille === 'sale' || (propreteFromGrille === null && avis.logement_proprete === 'sale')) {
     alertes.critiques.push({
       icone: '🧹',
       titre: 'Propreté insuffisante',
