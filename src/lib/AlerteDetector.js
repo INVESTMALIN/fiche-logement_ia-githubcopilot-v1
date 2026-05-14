@@ -82,7 +82,7 @@ export const detectAlertes = (formData) => {
   }
   
   // Logement en mauvais état
-  if (avis.logement_etat_general === 'mauvais') {
+  if (avis.logement_etat_general === 'etat_degrade' || avis.logement_etat_general === 'tres_mauvais_etat') {
     alertes.critiques.push({
       icone: '⚠️',
       titre: 'État général mauvais',
@@ -124,16 +124,16 @@ export const detectAlertes = (formData) => {
   }
   
   // Perturbations détectées
-  if (avis.quartier_perturbations === 'oui') {
+  if (avis.quartier_perturbations === 'perturbateur') {
     alertes.moderees.push({
       icone: '🔊',
       titre: 'Perturbations signalées',
       message: avis.quartier_perturbations_details || 'Nuisances sonores ou autres perturbations'
     })
   }
-  
+
   // Vis-à-vis important
-  if (avis.logement_vis_a_vis === 'important') {
+  if (avis.logement_vis_a_vis === 'vis_a_vis_direct') {
     alertes.moderees.push({
       icone: '👀',
       titre: 'Vis-à-vis important',
