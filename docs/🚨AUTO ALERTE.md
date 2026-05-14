@@ -80,8 +80,8 @@ Refonte du sous-bloc "État général + propreté" (subjectif) en grille objecti
 | `logement_proprete` | `avis_logement_proprete` | TEXT | Radio (3 options) |
 | `logement_proprete_details` | `avis_logement_proprete_details` | TEXT | Textarea conditionnel |
 | `logement_ambiance` | `avis_logement_ambiance` | TEXT[] | Checkboxes multiples (8 options) |
-| `logement_ambiance_absence_details` | `avis_logement_ambiance_absence_details` | TEXT | Textarea conditionnel |
-| `logement_ambiance_personnalisee_details` | `avis_logement_ambiance_personnalisee_details` | TEXT | Textarea conditionnel |
+| `logement_absence_decoration_details` | `avis_logement_absence_decoration_details` | TEXT | Textarea conditionnel |
+| `logement_decoration_personnalisee_details` | `avis_logement_decoration_personnalisee_details` | TEXT | Textarea conditionnel |
 | `logement_vis_a_vis` | `avis_logement_vis_a_vis` | TEXT | Radio (3 options) |
 | `logement_vis_a_vis_photos` | `avis_logement_vis_a_vis_photos` | TEXT[] | PhotoUpload |
 
@@ -108,6 +108,10 @@ Refonte du sous-bloc "État général + propreté" (subjectif) en grille objecti
 ---
 
 ## 🚨 **SYSTÈME D'ALERTES AUTOMATIQUES - OPÉRATIONNEL**
+
+> ⚠️ Deux systèmes d'alertes coexistent et sont indépendants :
+> - **Système 1 — SQL trigger Make** (cette section) : envoie des notifications externes (emails Mélissa/David) sur 12 champs surveillés.
+> - **Système 2 — MiniDashboard JS** (voir section dédiée plus bas) : affichage in-app dans `FicheFinalisation`, calculé par `src/lib/AlerteDetector.js` à partir du `formData` en mémoire.
 
 ### **Architecture implémentée**
 - ✅ **Trigger Supabase** : `notify_fiche_alerts()` avec logique intelligente
@@ -136,6 +140,58 @@ Refonte du sous-bloc "État général + propreté" (subjectif) en grille objecti
 10. `avis_logement_ambiance` contient "absence_decoration" → **Notification**
 11. `avis_logement_ambiance` contient "decoration_personnalisee" → **Notification**
 12. `avis_logement_vis_a_vis` = "vis_a_vis_direct" → **Notification**
+
+---
+
+## 🧠 **ALERTES MINIDASHBOARD (JS — `src/lib/AlerteDetector.js`)**
+
+> Mises à jour 14/05/2026 dans le cadre de la refonte avis grille objective.
+
+Affichage in-app dans `FicheFinalisation` via le composant `MiniDashboard`. Calculé à la volée à partir du `formData` en mémoire (pas de webhook, pas de trigger SQL). Indépendant du système Make ci-dessus.
+
+### **Source of truth : la grille avis**
+
+Depuis le 14/05/2026, `detectAlertes()` lit **la grille comme source de vérité** pour les alertes "État général" et "Propreté" :
+- En priorité : `computeGrilleStats(avis).verdict` et `proprietyFromGrilleNote(avis.grille_proprete_generale_note)` (helpers dans `src/lib/avisGrilleHelpers.js`)
+- Fallback legacy : `avis.logement_etat_general` et `avis.logement_proprete` UNIQUEMENT si la grille est vide (`grilleStats.filled === 0` / critère 1 absent), pour préserver la compatibilité avec les anciennes fiches
+
+Raison : pendant l'édition (avant que l'auto-save de 5s n'ait tourné), les champs legacy ne sont pas encore à jour dans le state (ils sont matérialisés au save par `mapFormDataToSupabase`). Lire la grille évite la fenêtre de stale state quand l'utilisateur jump direct sur Finalisation via la sidebar.
+
+### **🔴 Alertes critiques**
+
+| # | Condition | Titre | Action affichée |
+|---|---|---|---|
+| 1 | `avis.quartier_securite === 'zone_risques'` | Zone à risques détectée | Vérifications supplémentaires recommandées |
+| 2 | Verdict grille = `etat_degrade` ou `tres_mauvais_etat` (fallback legacy si grille vide) | État général mauvais | Travaux requis avant mise en location |
+| 3 | Critère 1 grille (Propreté générale) ≤ 2 → `'sale'` (fallback legacy si grille vide) | Propreté insuffisante | Grand ménage obligatoire |
+| 4 | 🆕 `avis.securite_dangers?.length > 0` | Danger sécurité détecté | **Le logement ne doit pas être mis en location avant intervention.** |
+| 5 | `securite.equipements` ne contient pas "Détecteur de fumée" | Détecteur de fumée manquant | Installation immédiate requise |
+
+### **🟡 Alertes modérées**
+
+| # | Condition | Titre |
+|---|---|---|
+| 1 | `avis.quartier_types` contient "quartier_defavorise" | Quartier défavorisé |
+| 2 | `avis.quartier_perturbations === 'perturbateur'` | Perturbations signalées |
+| 3 | `avis.logement_vis_a_vis === 'vis_a_vis_direct'` | Vis-à-vis important |
+| 4 | `equipements.wifi_statut === 'non'` | WiFi non disponible |
+| 5 | Réglementation : changement d'usage requis | Changement d'usage requis |
+| 6 | Réglementation : déclaration simple requise | Déclaration simple requise |
+| 7 | 🆕 Critère individuel grille noté ≤ 2 (boucle sur les 9 critères) | `Défaut sur "<critère>"` (avec label + description du niveau) |
+
+> **Garde-fou alerte 7** : skip si le verdict global est déjà `etat_degrade` ou `tres_mauvais_etat` (l'alerte critique #2 couvre déjà le cas, on évite le doublon).
+>
+> Cas typique : un critère "Cuisine" à 1/5 ("hors d'usage") qui se noyait dans un verdict moyen/bon → désormais remonté individuellement.
+
+### **🆕 Champs lus**
+
+Liste des champs `section_avis` consommés par `detectAlertes` (ajouts 14/05/2026 marqués 🆕) :
+
+- `quartier_securite`, `quartier_types`, `quartier_perturbations`, `quartier_perturbations_details`
+- `logement_vis_a_vis`
+- 🆕 `grille_*_note` (9 critères) → `computeGrilleStats` + `proprietyFromGrilleNote`
+- 🆕 `securite_dangers` → labellisation via `dangerLabelByKey` (helper `avisGrilleHelpers`)
+- Legacy fallback : `logement_etat_general`, `logement_proprete`
 
 ---
 
@@ -263,6 +319,6 @@ Refonte du sous-bloc "État général + propreté" (subjectif) en grille objecti
 
 ---
 
-*📝 Document maintenu à jour à chaque session de développement*  
-*👤 Équipe : Julien Gaichet + Claude Sonnet 4*  
-*📅 Dernière session : 14 août 2025*
+*📝 Document maintenu à jour à chaque session de développement*
+*👤 Équipe : Julien Gaichet + Claude Sonnet 4*
+*📅 Dernière session : 14 mai 2026 (refonte avis grille objective + alertes MiniDashboard sécurité & critères individuels)*
