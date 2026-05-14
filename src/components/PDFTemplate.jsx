@@ -1,5 +1,6 @@
 // src/components/PDFTemplate.jsx - VERSION 2 CLEAN & COMPLETE
 import React from 'react'
+import { GRILLE_CRITERES, SECURITE_DANGERS, computeGrilleStats } from '../lib/avisGrilleHelpers'
 
 const PDFTemplate = ({ formData }) => {
 
@@ -627,6 +628,25 @@ const PDFTemplate = ({ formData }) => {
           // Fin du traitement pour nombre_lits, on skip le reste
         } else {
           // Traitement normal pour tous les autres champs
+          // 🚫 FILTRE SPÉCIAL avis : exclure les champs de la grille (rendus dans le bloc custom)
+          if (config.key === 'section_avis') {
+            const avisExcluded = [
+              'grille_proprete_generale_note', 'grille_proprete_generale_obs',
+              'grille_sols_note', 'grille_sols_obs',
+              'grille_murs_plafonds_note', 'grille_murs_plafonds_obs',
+              'grille_cuisine_note', 'grille_cuisine_obs',
+              'grille_salle_bain_note', 'grille_salle_bain_obs',
+              'grille_equipements_note', 'grille_equipements_obs',
+              'grille_menuiseries_note', 'grille_menuiseries_obs',
+              'grille_odeurs_note', 'grille_odeurs_obs',
+              'grille_impression_generale_note', 'grille_impression_generale_obs',
+              'securite_dangers',
+              'type_premier_menage', 'type_premiere_maintenance',
+              // Les anciennes valeurs sont dérivées de la grille → masquées du PDF (verdict global affiché à la place)
+              'logement_etat_general', 'logement_proprete'
+            ]
+            if (avisExcluded.includes(fieldKey)) return
+          }
           // 🚫 FILTRE SPÉCIAL : Exclure WiFi et Parking de section_equipements
           if (config.key === 'section_equipements') {
             const excludedFields = [
@@ -654,8 +674,13 @@ const PDFTemplate = ({ formData }) => {
         }
       })
 
-      // Ajouter la section seulement si elle a du contenu (champs OU photos)
-      if (fields.length > 0 || photos.length > 0) {
+      // 📊 Avis : on garde la section dès qu'au moins un critère de grille est rempli
+      // (sinon le bloc verdict custom ne s'afficherait jamais sur les fiches sans champs libres)
+      const hasAvisGrille = config.key === 'section_avis'
+        && computeGrilleStats(sectionData).filled > 0
+
+      // Ajouter la section seulement si elle a du contenu (champs OU photos OU grille avis)
+      if (fields.length > 0 || photos.length > 0 || hasAvisGrille) {
         sections.push({
           ...config,
           fields,
@@ -1088,6 +1113,141 @@ const PDFTemplate = ({ formData }) => {
             }}>
               {section.label}
             </h3>
+
+            {/* 📊 BLOC SPÉCIAL : récap grille d'évaluation pour la section Avis */}
+            {section.key === 'section_avis' && (() => {
+              const avisData = formData.section_avis || {}
+              const stats = computeGrilleStats(avisData)
+              if (stats.filled === 0 && (avisData.securite_dangers || []).length === 0
+                  && !avisData.type_premier_menage && !avisData.type_premiere_maintenance) {
+                return null
+              }
+
+              const verdictColors = {
+                excellent_etat: { bg: '#dcfce7', text: '#166534' },
+                bon_etat: { bg: '#dcfce7', text: '#166534' },
+                etat_moyen: { bg: '#fef3c7', text: '#92400e' },
+                etat_degrade: { bg: '#ffedd5', text: '#9a3412' },
+                tres_mauvais_etat: { bg: '#fee2e2', text: '#991b1b' }
+              }
+              const verdictStyle = stats.verdict ? verdictColors[stats.verdict] : { bg: '#f3f4f6', text: '#374151' }
+              const dangers = avisData.securite_dangers || []
+              const dangerLabels = dangers
+                .map(key => SECURITE_DANGERS.find(d => d.key === key)?.label)
+                .filter(Boolean)
+
+              return (
+                <div style={{
+                  marginBottom: '16px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                  pageBreakInside: 'avoid'
+                }}>
+                  {/* Bandeau verdict doré */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #e3bd7a, #c89a4a)',
+                    color: '#ffffff',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '9pt', opacity: 0.9 }}>Score grille d'évaluation</div>
+                      <div style={{ fontSize: '14pt', fontWeight: 'bold' }}>{stats.total} / 45</div>
+                    </div>
+                    <div style={{
+                      backgroundColor: verdictStyle.bg,
+                      color: verdictStyle.text,
+                      padding: '4px 12px',
+                      borderRadius: '999px',
+                      fontSize: '10pt',
+                      fontWeight: '600'
+                    }}>
+                      {stats.verdictLabel || `En cours (${stats.filled}/9)`}
+                    </div>
+                  </div>
+
+                  {/* Tableau récap 9 critères */}
+                  {stats.filled > 0 && (
+                    <table style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      fontSize: '9pt'
+                    }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#f8fafc' }}>
+                          <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1px solid #e2e8f0', color: '#4a5568', fontWeight: '600' }}>Critère</th>
+                          <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1px solid #e2e8f0', color: '#4a5568', fontWeight: '600' }}>Niveau</th>
+                          <th style={{ textAlign: 'right', padding: '8px 12px', borderBottom: '1px solid #e2e8f0', color: '#4a5568', fontWeight: '600' }}>Note</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {GRILLE_CRITERES.map((critere) => {
+                          const note = avisData[`grille_${critere.key}_note`]
+                          const niveau = critere.niveaux.find(n => n.val === note)
+                          return (
+                            <tr key={critere.key} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '6px 12px', color: '#2d3748' }}>{critere.label}</td>
+                              <td style={{ padding: '6px 12px', color: niveau ? '#2d3748' : '#9ca3af', fontStyle: niveau ? 'normal' : 'italic' }}>
+                                {niveau ? niveau.name : 'Non évalué'}
+                              </td>
+                              <td style={{ padding: '6px 12px', textAlign: 'right', color: '#2d3748', fontWeight: '600' }}>
+                                {typeof note === 'number' ? `${note} / 5` : '—'}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+
+                  {/* Sécurité — alerte rouge si dangers détectés */}
+                  {dangerLabels.length > 0 && (
+                    <div style={{
+                      backgroundColor: '#fee2e2',
+                      color: '#991b1b',
+                      padding: '10px 16px',
+                      borderTop: '1px solid #fca5a5',
+                      fontSize: '9pt'
+                    }}>
+                      <div style={{ fontWeight: '700', marginBottom: '4px' }}>🚨 Danger détecté</div>
+                      <div>{dangerLabels.join(' · ')}</div>
+                    </div>
+                  )}
+
+                  {/* Type de 1er passage */}
+                  {(avisData.type_premier_menage || avisData.type_premiere_maintenance) && (
+                    <div style={{
+                      backgroundColor: '#f8fafc',
+                      padding: '10px 16px',
+                      borderTop: '1px solid #e2e8f0',
+                      fontSize: '9pt',
+                      color: '#4a5568',
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '24px'
+                    }}>
+                      {avisData.type_premier_menage && (
+                        <div>
+                          <span style={{ fontWeight: '600' }}>🧹 1er ménage : </span>
+                          <span style={{ color: '#2d3748' }}>{avisData.type_premier_menage}</span>
+                        </div>
+                      )}
+                      {avisData.type_premiere_maintenance && (
+                        <div>
+                          <span style={{ fontWeight: '600' }}>🔧 1ère maintenance : </span>
+                          <span style={{ color: '#2d3748' }}>{avisData.type_premiere_maintenance}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Champs de la section */}
             {section.fields.length > 0 && (
