@@ -1,5 +1,5 @@
 // src/lib/AlerteDetector.js
-import { computeGrilleStats, proprietyFromGrilleNote, dangerLabelByKey } from './avisGrilleHelpers'
+import { GRILLE_CRITERES, computeGrilleStats, proprietyFromGrilleNote, dangerLabelByKey } from './avisGrilleHelpers'
 
 // Génère un aperçu synthétique du logement
 export const generateApercu = (formData) => {
@@ -171,6 +171,24 @@ export const detectAlertes = (formData) => {
     })
   }
   
+  // Critères individuels en mauvais état (note ≤ 2) — utile pour repérer un
+  // défaut isolé qui serait masqué par un verdict global correct (ex : cuisine
+  // à 1/5 noyée dans un verdict "Bon état"). Skip si le verdict global est
+  // déjà mauvais : l'alerte critique "État général mauvais" couvre déjà le cas.
+  if (grilleStats.verdict !== 'etat_degrade' && grilleStats.verdict !== 'tres_mauvais_etat') {
+    GRILLE_CRITERES.forEach((critere) => {
+      const note = avis[`grille_${critere.key}_note`]
+      if (typeof note === 'number' && note <= 2) {
+        const niveau = critere.niveaux.find(n => n.val === note)
+        alertes.moderees.push({
+          icone: '📉',
+          titre: `Défaut sur "${critere.label}"`,
+          message: niveau ? `${niveau.name} : ${niveau.desc}` : `Note ${note}/5`
+        })
+      }
+    })
+  }
+
   // Démarches réglementaires requises
   if (reglementation.ville_changement_usage && reglementation.ville_changement_usage !== 'NON !') {
     alertes.moderees.push({
