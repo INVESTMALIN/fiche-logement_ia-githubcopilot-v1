@@ -1,6 +1,6 @@
 // src/components/PDFTemplate.jsx - VERSION 2 CLEAN & COMPLETE
 import React from 'react'
-import { GRILLE_CRITERES, SECURITE_DANGERS, computeGrilleStats } from '../lib/avisGrilleHelpers'
+import { GRILLE_CRITERES, computeGrilleStats, dangerLabelByKey } from '../lib/avisGrilleHelpers'
 
 const PDFTemplate = ({ formData }) => {
 
@@ -1132,9 +1132,7 @@ const PDFTemplate = ({ formData }) => {
               }
               const verdictStyle = stats.verdict ? verdictColors[stats.verdict] : { bg: '#f3f4f6', text: '#374151' }
               const dangers = avisData.securite_dangers || []
-              const dangerLabels = dangers
-                .map(key => SECURITE_DANGERS.find(d => d.key === key)?.label)
-                .filter(Boolean)
+              const dangerLabels = dangers.map(dangerLabelByKey).filter(Boolean)
 
               return (
                 <div style={{

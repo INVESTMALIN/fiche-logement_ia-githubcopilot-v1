@@ -1,5 +1,5 @@
 // src/lib/AlerteDetector.js
-import { computeGrilleStats, proprietyFromGrilleNote } from './avisGrilleHelpers'
+import { computeGrilleStats, proprietyFromGrilleNote, dangerLabelByKey } from './avisGrilleHelpers'
 
 // Génère un aperçu synthétique du logement
 export const generateApercu = (formData) => {
@@ -108,7 +108,20 @@ export const detectAlertes = (formData) => {
       action: 'Grand ménage obligatoire'
     })
   }
-  
+
+  // Danger sécurité — au moins un élément électrique dangereux coché dans la
+  // vérification sécurité de la grille avis. Vieilles fiches sans sécurité
+  // remplie : securite_dangers est null ou [] → pas d'alerte.
+  if (avis.securite_dangers?.length > 0) {
+    const dangersLisibles = avis.securite_dangers.map(dangerLabelByKey).join(' · ')
+    alertes.critiques.push({
+      icone: '🚨',
+      titre: 'Danger sécurité détecté',
+      message: `Éléments dangereux observés : ${dangersLisibles}`,
+      action: 'Le logement ne doit pas être mis en location avant intervention.'
+    })
+  }
+
   // Pas de détecteur de fumée
   const detecteurFumee = securite.equipements?.includes('Détecteur de fumée')
   if (!detecteurFumee) {

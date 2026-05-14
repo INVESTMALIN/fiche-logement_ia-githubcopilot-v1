@@ -113,6 +113,9 @@ export const SECURITE_DANGERS = [
   { key: 'odeur_brule', label: 'Odeur de brûlé / échauffement' }
 ]
 
+export const dangerLabelByKey = (key) =>
+  SECURITE_DANGERS.find(d => d.key === key)?.label || key
+
 export const TYPES_PASSAGE = [
   'Vérification / Inventaire',
   'Classique',
