@@ -1239,7 +1239,7 @@ const PDFTemplate = ({ formData }) => {
                       )}
                       {avisData.type_premiere_maintenance && (
                         <div>
-                          <span style={{ fontWeight: '600' }}>🔧 1ère maintenance : </span>
+                          <span style={{ fontWeight: '600' }}>🔧 Maintenance : </span>
                           <span style={{ color: '#2d3748' }}>{avisData.type_premiere_maintenance}</span>
                         </div>
                       )}
