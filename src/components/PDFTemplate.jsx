@@ -67,7 +67,7 @@ const PDFTemplate = ({ formData }) => {
 
       // 🏘️ ÉVALUATION QUARTIER - Perturbations
       'aucune': 'Pas d\'élément perturbateur',
-      'element_perturbateur': 'Élément perturbateur à proximité',
+      'perturbateur': 'Élément perturbateur à proximité',
 
       // 🏢 ÉVALUATION IMMEUBLE - État général
       'bon_etat': 'Bon état (entretien régulier, bâtiment bien conservé)',
