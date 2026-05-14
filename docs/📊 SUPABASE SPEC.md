@@ -1,5 +1,5 @@
 # 📊 SUPABASE SPEC - Fiche Logement
-*Architecture technique - Mise à jour : 12 février 2026*
+*Architecture technique - Mise à jour : 14 mai 2026*
 
 ---
 
@@ -17,7 +17,7 @@ Application React + Supabase pour remplacer les formulaires Jotform. 24 sections
 
 ## 🗄️ **BASE DE DONNÉES**
 
-### **Architecture : Table Plate 750+ Colonnes**
+### **Architecture : Table Plate 975+ Colonnes**
 Une seule table `fiches` avec pattern de nommage `{section}_{champ}`.
 
 ```sql
@@ -53,14 +53,29 @@ CREATE TABLE fiches (
   -- Champs d'alertes critiques
   equipements_wifi_statut TEXT,
   avis_quartier_securite TEXT,
-  avis_logement_etat_general TEXT,
-  
+  avis_logement_etat_general TEXT,  -- ⚠️ Auto-rempli depuis la grille (voir Refonte 14/05/2026)
+  avis_logement_proprete TEXT,      -- ⚠️ Auto-rempli depuis la grille (voir Refonte 14/05/2026)
+
+  -- 🆕 Refonte avis 14/05/2026 : grille d'évaluation objective (extrait, 25 colonnes au total)
+  avis_grille_proprete_generale_note SMALLINT,   -- 1-5
+  avis_grille_proprete_generale_obs TEXT,
+  avis_grille_sols_note SMALLINT,
+  -- ... 7 autres critères (cuisine, salle_bain, equipements, menuiseries, odeurs,
+  --     murs_plafonds, impression_generale), chacun avec _note + _obs
+  avis_grille_score_total SMALLINT,                  -- 0-45, calculé front
+  avis_grille_verdict TEXT,                          -- excellent_etat | bon_etat | etat_moyen | etat_degrade | tres_mauvais_etat
+  avis_securite_dangers TEXT[] DEFAULT '{}',         -- 7 clés possibles : fils_denudes, prises_arrachees, ...
+  avis_securite_danger_detecte BOOLEAN DEFAULT false, -- dérivé : true si securite_dangers non vide
+  avis_type_premier_menage TEXT,                     -- pills single-select
+  avis_type_premiere_maintenance TEXT,               -- pills single-select
+
   -- Champs média (TEXT[] pour photos/vidéos)
   clefs_photos TEXT[],
   equipements_poubelle_photos TEXT[],
   chambres_chambre_1_photos_chambre TEXT[],
   guide_acces_video_acces TEXT[],
-  -- ... 94 champs média au total
+  avis_logement_etat_videos TEXT[],  -- 🆕 14/05/2026 : vidéo état logement (95e champ média)
+  -- ... 95 champs média au total
 );
 
 -- Table utilisateurs
@@ -77,21 +92,37 @@ CREATE TABLE profiles (
 
 ```javascript
 // FormContext → Supabase  
-export const mapFormDataToSupabase = (formData) => ({
-  nom: formData.nom || 'Nouvelle fiche',
-  logement_numero_bien: formData.section_logement?.numero_bien || null,
-  clefs_photos: formData.section_clefs?.photos || [],
-  
-  // ⚠️ CRITIQUE : Les timestamps PDF ne doivent JAMAIS être mappés ici
-  // Ils sont gérés UNIQUEMENT par triggerPdfWebhook() et triggerAssistantPdfWebhook()
-  pdf_logement_url: formData.pdf_logement_url || null,
-  pdf_menage_url: formData.pdf_menage_url || null,
-  guide_acces_pdf_url: formData.guide_acces_pdf_url || null,
-  annonce_pdf_url: formData.annonce_pdf_url || null,
-  // pdf_last_generated_at: JAMAIS mappé
-  // guide_acces_last_generated_at: JAMAIS mappé
-  // annonce_last_generated_at: JAMAIS mappé
-})
+export const mapFormDataToSupabase = (formData) => {
+  // 🆕 14/05/2026 — Dérivation auto des champs legacy avis depuis la grille.
+  // Voir src/lib/avisGrilleHelpers.js pour computeGrilleStats / proprietyFromGrilleNote.
+  const grilleStats = computeGrilleStats(formData.section_avis)
+  const derivedEtatGeneral = grilleStats.verdict || formData.section_avis?.logement_etat_general || null
+  const derivedProprete = proprietyFromGrilleNote(formData.section_avis?.grille_proprete_generale_note)
+                       || formData.section_avis?.logement_proprete || null
+  const securiteDangers = formData.section_avis?.securite_dangers || []
+
+  return {
+    nom: formData.nom || 'Nouvelle fiche',
+    logement_numero_bien: formData.section_logement?.numero_bien || null,
+    clefs_photos: formData.section_clefs?.photos || [],
+
+    // ⚠️ Champs legacy avis : alimentés automatiquement à partir de la grille
+    // afin de préserver le trigger d'alertes Make sans toucher au SQL backend.
+    avis_logement_etat_general: derivedEtatGeneral,        // ← verdict global de la grille
+    avis_logement_proprete: derivedProprete,               // ← critère 1 (Propreté générale)
+    avis_securite_danger_detecte: securiteDangers.length > 0, // ← dérivé de avis_securite_dangers
+
+    // ⚠️ CRITIQUE : Les timestamps PDF ne doivent JAMAIS être mappés ici
+    // Ils sont gérés UNIQUEMENT par triggerPdfWebhook() et triggerAssistantPdfWebhook()
+    pdf_logement_url: formData.pdf_logement_url || null,
+    pdf_menage_url: formData.pdf_menage_url || null,
+    guide_acces_pdf_url: formData.guide_acces_pdf_url || null,
+    annonce_pdf_url: formData.annonce_pdf_url || null,
+    // pdf_last_generated_at: JAMAIS mappé
+    // guide_acces_last_generated_at: JAMAIS mappé
+    // annonce_last_generated_at: JAMAIS mappé
+  }
+}
 
 // Supabase → FormContext
 export const mapSupabaseToFormData = (supabaseData) => ({
@@ -137,7 +168,9 @@ BEGIN
           'menage_url', NEW.pdf_menage_url
         ),
         'media', jsonb_build_object(
-          -- 94 champs média structurés
+          -- 95 champs média structurés (split en media_part1..4 pour la lisibilité du payload)
+          -- Depuis le 14/05/2026, media_part4 inclut avis_logement_etat_videos
+          -- (vidéo état logement ajoutée par la refonte avis grille objective)
         )
       ),
       headers := '{"Content-Type": "application/json"}'::jsonb
@@ -286,7 +319,7 @@ CREATE TRIGGER fiche_annonce_pdf_webhook
 
 | Trigger | Condition | Webhook | Payload Principal |
 |---------|-----------|---------|-------------------|
-| **Finalisation** | `statut` → "Complété" | `ydjwftmd7czs4rygv1rjhi6u4pvb4gdj` | 94 champs média + PDFs |
+| **Finalisation** | `statut` → "Complété" | `ydjwftmd7czs4rygv1rjhi6u4pvb4gdj` | 95 champs média + PDFs |
 | **PDF Fiches** | `pdf_last_generated_at` change | `3vmb2eijfjw8nc5y68j8hp3fbw67az9q` | URLs Logement + Ménage |
 | **PDF Guide** | `guide_acces_last_generated_at` change | `wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | URL + `pdf_type: 'guide_acces'` |
 | **PDF Annonce** | `annonce_last_generated_at` change | `wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | URL + `pdf_type: 'annonce'` |
@@ -316,7 +349,7 @@ CREATE TRIGGER fiche_annonce_pdf_webhook
 └── annonce_{ficheId}.pdf
 ```
 
-### **94 Champs Média Total**
+### **95 Champs Média Total**
 
 #### Clefs (5)
 - clefs_emplacement_photo, clefs_interphone_photo, clefs_tempo_gache_photo, clefs_digicode_photo, clefs_photos
@@ -335,6 +368,9 @@ CREATE TRIGGER fiche_annonce_pdf_webhook
 
 #### Éléments abîmés (21)
 - avis_video_globale_videos, avis_logement_vis_a_vis_photos, cuisine_1_elements_abimes_photos, salon/chambres/sdb/exterieur elements_abimes_photos
+
+#### 🆕 Refonte avis 14/05/2026 (1)
+- `avis_logement_etat_videos` — vidéo de l'état du logement (PhotoUpload `acceptVideo`). Inclus dans `media_part4` du payload du trigger `notify_fiche_completed` depuis le 14/05/2026.
 
 ---
 
@@ -795,7 +831,7 @@ const PhotoWithFallback = ({ photoUrl, index }) => {
 
 ---
 
-*📝 Document technique de référence*  
-*🔧 Architecture validée en production*  
-*📅 Dernière mise à jour : 12 février 2026*
+*📝 Document technique de référence*
+*🔧 Architecture validée en production*
+*📅 Dernière mise à jour : 14 mai 2026 (refonte avis grille objective : +25 colonnes, 95 champs média)*
 ```
