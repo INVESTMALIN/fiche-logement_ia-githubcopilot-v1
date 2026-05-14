@@ -57,6 +57,8 @@ const PDFTemplate = ({ formData }) => {
       'quartier_chic': 'Quartier chic (haut de gamme, commerçants et services de luxe)',
       'quartier_intermediaire': 'Quartier intermédiaire (familial, moyen de gamme)',
       'quartier_defavorise': 'Quartier défavorisé (secteur avec des conditions de vie moins favorables)',
+      'quartier_rural': 'Zone rurale (campagne isolée, éloignée des commodités et transports)',
+      'quartier_village': 'Village (centre-bourg avec commerces de proximité, ambiance locale)',
 
       // 🏘️ ÉVALUATION QUARTIER - Sécurité
       'securise': 'Sécurisé (quartier calme)',
@@ -1119,7 +1121,7 @@ const PDFTemplate = ({ formData }) => {
               const avisData = formData.section_avis || {}
               const stats = computeGrilleStats(avisData)
               if (stats.filled === 0 && (avisData.securite_dangers || []).length === 0
-                  && !avisData.type_premier_menage && !avisData.type_premiere_maintenance) {
+                && !avisData.type_premier_menage && !avisData.type_premiere_maintenance) {
                 return null
               }
 
