@@ -1,9 +1,15 @@
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
+import {
+  GRILLE_CRITERES,
+  SECURITE_DANGERS,
+  TYPES_PASSAGE,
+  computeGrilleStats
+} from '../lib/avisGrilleHelpers'
 
 const StyledCheckboxGrid = ({ options, values, path, onChange }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -41,6 +47,41 @@ export default function FicheAvis() {
   const voyageurs = formData.types_voyageurs || {}
 
   const handleChange = (field, value) => updateField(field, value)
+
+  const [checklistOpen, setChecklistOpen] = useState(false)
+
+  const grilleStats = useMemo(() => computeGrilleStats(formData), [formData])
+  const securiteDangers = formData.securite_dangers || []
+  const dangerDetecte = securiteDangers.length > 0
+
+  const toggleSecurite = (key) => {
+    const current = formData.securite_dangers || []
+    const next = current.includes(key)
+      ? current.filter(d => d !== key)
+      : [...current, key]
+    handleChange('section_avis.securite_dangers', next)
+  }
+
+  const setGrilleNote = (critereKey, note) => {
+    handleChange(`section_avis.grille_${critereKey}_note`, note)
+  }
+
+  const setGrilleObs = (critereKey, value) => {
+    handleChange(`section_avis.grille_${critereKey}_obs`, value)
+  }
+
+  const setTypePassage = (kind, value) => {
+    const field = kind === 'menage' ? 'type_premier_menage' : 'type_premiere_maintenance'
+    handleChange(`section_avis.${field}`, value)
+  }
+
+  const verdictPalette = {
+    excellent_etat: 'bg-emerald-100 text-emerald-800',
+    bon_etat: 'bg-green-100 text-green-800',
+    etat_moyen: 'bg-amber-100 text-amber-800',
+    etat_degrade: 'bg-orange-100 text-orange-800',
+    tres_mauvais_etat: 'bg-red-100 text-red-800'
+  }
 
   const optionsAtouts = [
     { key: 'lumineux', label: 'Lumineux' },
@@ -371,91 +412,311 @@ export default function FicheAvis() {
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow mb-6">
-            <h2 className="text-base font-semibold mb-4">Évaluation du logement</h2>
+            <div className="flex items-baseline justify-between gap-4 flex-wrap mb-1">
+              <h2 className="text-base font-semibold">Évaluation du logement</h2>
+              <span className="text-xs text-text-muted">
+                {grilleStats.filled} / {GRILLE_CRITERES.length} critères évalués · {grilleStats.total} pts
+              </span>
+            </div>
+            <p className="text-sm text-text-muted mb-4">
+              Pour chaque critère, sélectionne le niveau qui correspond le mieux à ce que tu observes sur place. Tu peux ajouter une observation libre si besoin.
+            </p>
 
-            {/* État général du logement */}
-            <div className="mb-6">
-              <label className="block font-semibold mb-3">État général du logement</label>
-
-              <div className="flex flex-col gap-3">
-                {[
-                  { value: 'excellent_etat', label: 'Excellent état (récent ou rénové, tout est fonctionnel, pas d\'usure visible)' },
-                  { value: 'bon_etat', label: 'Bon état (quelques signes d\'usure légers)' },
-                  { value: 'etat_moyen', label: 'État moyen (éléments nécessitant des réparations mineures)' },
-                  { value: 'etat_degrade', label: 'État dégradé (meubles, installations détériorés, des travaux sont nécessaires) ⚠️' },
-                  { value: 'tres_mauvais_etat', label: 'Très mauvais état (vétusté générale) ⚠️' }
-                ].map(({ value, label }) => (
-                  <label key={value} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="logement_etat_general"
-                      value={value}
-                      checked={formData.logement_etat_general === value}
-                      onChange={() => handleChange('section_avis.logement_etat_general', value)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-
-              {/* Champ conditionnel - Détails état dégradé */}
-              {(formData.logement_etat_general === 'etat_degrade' || formData.logement_etat_general === 'tres_mauvais_etat') && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium mb-2">
-                    Décrire l'élément vétustes (ex : murs et meubles abimés, sol abîmé, moisissure etc)
-                  </label>
-                  <textarea
-                    className="w-full p-3 border rounded"
-                    rows="3"
-                    placeholder="Décrivez les éléments détériorés..."
-                    value={formData.logement_etat_details || ''}
-                    onChange={(e) => handleChange('section_avis.logement_etat_details', e.target.value)}
-                  />
-                </div>
-              )}
+            <div className="bg-primary/10 border border-primary/30 text-text rounded-xl p-4 mb-6 text-sm leading-relaxed">
+              <p className="font-semibold mb-1">💡 Comment ça marche</p>
+              Chaque critère est noté de 1 (mauvais état) à 5 (excellent état). Le score total (sur 45) et le verdict global se calculent automatiquement en fonction de tes choix.
             </div>
 
-            {/* Propreté et entretien */}
-            <div className="mb-6">
-              <label className="block font-semibold mb-3">Propreté et entretien</label>
-
-              <div className="flex flex-col gap-3">
-                {[
-                  { value: 'propre', label: 'Propre (logement bien nettoyé, entretien régulier et approfondi du logement)' },
-                  { value: 'correct', label: 'Correct (légères traces d\'usure, entretien basique)' },
-                  { value: 'sale', label: 'Sale (zones visibles non nettoyées, saleté visible et absence ou manque d\'entretien) ⚠️' }
-                ].map(({ value, label }) => (
-                  <label key={value} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="logement_proprete"
-                      value={value}
-                      checked={formData.logement_proprete === value}
-                      onChange={() => handleChange('section_avis.logement_proprete', value)}
-                      className="w-4 h-4 cursor-pointer"
+            {/* 9 critères */}
+            <div className="divide-y divide-gray-200">
+              {GRILLE_CRITERES.map((critere) => {
+                const noteValue = formData[`grille_${critere.key}_note`]
+                const obsValue = formData[`grille_${critere.key}_obs`] || ''
+                return (
+                  <div key={critere.key} className="py-5 first:pt-0 last:pb-0">
+                    <p className="font-semibold mb-3">{critere.label}</p>
+                    <div className="flex flex-col gap-2 mb-3">
+                      {critere.niveaux.map((n) => {
+                        const checked = noteValue === n.val
+                        const pointBadge = n.val === 1
+                          ? 'bg-red-100 text-red-800'
+                          : n.val === 2
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-gray-100 text-gray-700'
+                        return (
+                          <label
+                            key={n.val}
+                            className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                              checked ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name={`grille_${critere.key}`}
+                              value={n.val}
+                              checked={checked}
+                              onChange={() => setGrilleNote(critere.key, n.val)}
+                              className="mt-1 h-4 w-4 accent-primary cursor-pointer"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`text-sm font-semibold ${checked ? 'text-primary' : 'text-text'}`}>{n.name}</span>
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${pointBadge}`}>
+                                  {n.val} pt{n.val > 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <p className="text-sm text-text-muted leading-snug">{n.desc}</p>
+                            </div>
+                          </label>
+                        )
+                      })}
+                    </div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Observations (optionnel)</label>
+                    <textarea
+                      className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      rows="2"
+                      placeholder="Précise un détail particulier sur ce critère…"
+                      value={obsValue}
+                      onChange={(e) => setGrilleObs(critere.key, e.target.value)}
                     />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-
-              {/* Champ conditionnel - Détails éléments sales */}
-              {formData.logement_proprete === 'sale' && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium mb-2">
-                    Décrire les éléments sales (ex: murs sales, cafards, odeur)
-                  </label>
-                  <textarea
-                    className="w-full p-3 border rounded"
-                    rows="3"
-                    placeholder="Décrivez les problèmes de propreté..."
-                    value={formData.logement_proprete_details || ''}
-                    onChange={(e) => handleChange('section_avis.logement_proprete_details', e.target.value)}
-                  />
-                </div>
-              )}
+                  </div>
+                )
+              })}
             </div>
+
+            {/* Bloc verdict global */}
+            <div
+              className="mt-6 rounded-xl p-5 text-white shadow-md"
+              style={{ background: 'linear-gradient(135deg, #e3bd7a, #c89a4a)' }}
+            >
+              <div className="flex justify-between items-center gap-4 flex-wrap">
+                <div>
+                  <p className="text-sm opacity-90 mb-1">Score total</p>
+                  <p className="text-3xl font-bold leading-none">{grilleStats.total} / 45</p>
+                </div>
+                <span
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${
+                    grilleStats.verdict ? verdictPalette[grilleStats.verdict] : 'bg-white/20 text-white'
+                  }`}
+                >
+                  {grilleStats.verdictLabel || (grilleStats.filled > 0 ? `En cours (${grilleStats.filled}/9)` : 'À compléter')}
+                </span>
+              </div>
+              <div className="h-2 bg-white/25 rounded-full overflow-hidden mt-3">
+                <div
+                  className="h-full bg-white rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(100, (grilleStats.total / 45) * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs opacity-85 mt-2">{grilleStats.filled} / 9 critères évalués</p>
+            </div>
+          </div>
+
+          {/* ⚠️ Vérification sécurité */}
+          <div className="bg-white rounded-xl p-6 shadow mb-6">
+            <h2 className="text-base font-semibold mb-1">⚠️ Vérification sécurité</h2>
+            <p className="text-sm text-text-muted mb-4">
+              Coche tout élément dangereux que tu as observé. Si au moins un élément est coché, le logement sera signalé comme présentant un danger.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {SECURITE_DANGERS.map((item) => {
+                const checked = securiteDangers.includes(item.key)
+                return (
+                  <label
+                    key={item.key}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 border rounded-lg cursor-pointer text-sm transition-colors ${
+                      checked ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleSecurite(item.key)}
+                      className="h-4 w-4 cursor-pointer"
+                      style={{ accentColor: '#dc2626' }}
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                )
+              })}
+            </div>
+            {dangerDetecte && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-300 text-red-800 rounded-lg text-sm flex items-center gap-2.5">
+                <span>🚨</span>
+                <span><strong>Danger détecté.</strong> Le logement présente des éléments de sécurité préoccupants qui nécessitent une intervention.</span>
+              </div>
+            )}
+          </div>
+
+          {/* 📋 Pense-bête pliable */}
+          <div className="bg-white rounded-xl p-6 shadow mb-6">
+            <button
+              type="button"
+              className="w-full flex justify-between items-center text-left"
+              onClick={() => setChecklistOpen(o => !o)}
+              aria-expanded={checklistOpen}
+            >
+              <span className="flex items-center gap-3">
+                <span className="text-lg">📋</span>
+                <span>
+                  <span className="block text-base font-semibold">Points sensibles à filmer</span>
+                  <span className="block text-xs text-text-muted mt-0.5">Pense-bête : ce qu'il faut absolument capturer dans la vidéo</span>
+                </span>
+              </span>
+              <span className={`text-xl text-text-muted transition-transform ${checklistOpen ? 'rotate-180' : ''}`}>▾</span>
+            </button>
+            {checklistOpen && (
+              <div className="mt-5 pt-5 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Colonne Ménage */}
+                <div>
+                  <h3 className="text-sm font-semibold pb-2 mb-3 border-b border-gray-200">🧹 Ménage</h3>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Logement de manière général</p>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">
+                    Mobilier <span className="font-normal text-text-muted">(derrière, au-dessus, à l'intérieur si poussière)</span>
+                  </p>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Cuisine :</p>
+                  <ul className="ml-5 list-disc text-xs text-text-muted space-y-0.5">
+                    <li>État de l'évier et robinetterie</li>
+                    <li>Four et micro-ondes</li>
+                    <li>Hotte et filtre</li>
+                    <li>Réfrigérateur / congélateur (moisissures ?)</li>
+                    <li>État des placards</li>
+                  </ul>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Salle de bain :</p>
+                  <ul className="ml-5 list-disc text-xs text-text-muted space-y-0.5">
+                    <li>Cuvette des WC stable et fonctionnelle</li>
+                    <li>Cabine de douche / carrelage</li>
+                    <li>Joints / moisissures</li>
+                    <li>Siphons qui évacuent bien</li>
+                  </ul>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Linge :</p>
+                  <ul className="ml-5 list-disc text-xs text-text-muted space-y-0.5">
+                    <li>Draps et serviettes en bon état, non tachés</li>
+                  </ul>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Extérieurs :</p>
+                  <ul className="ml-5 list-disc text-xs text-text-muted space-y-0.5">
+                    <li>Mobilier en bon état</li>
+                  </ul>
+                </div>
+                {/* Colonne Maintenance */}
+                <div>
+                  <h3 className="text-sm font-semibold pb-2 mb-3 border-b border-gray-200">🔧 Maintenance</h3>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Éclairage : ampoules fonctionnelles</p>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Électricité :</p>
+                  <ul className="ml-5 list-disc text-xs text-text-muted space-y-0.5">
+                    <li>Prises</li>
+                    <li>Interrupteurs</li>
+                    <li>Télécommande / TV / Wi-Fi</li>
+                  </ul>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Plomberie :</p>
+                  <ul className="ml-5 list-disc text-xs text-text-muted space-y-0.5">
+                    <li>Fuites sous éviers / WC</li>
+                    <li>Pression d'eau</li>
+                    <li>Eau chaude</li>
+                  </ul>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Chauffage / climatisation opérationnels</p>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Fenêtres / volets / rideaux fonctionnels</p>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Électroménager :</p>
+                  <ul className="ml-5 list-disc text-xs text-text-muted space-y-0.5">
+                    <li>Lave-linge</li>
+                    <li>Lave-vaisselle</li>
+                    <li>Cafetière, bouilloire, etc.</li>
+                  </ul>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Détecteur de fumée présent et fonctionnel</p>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Mobilier :</p>
+                  <ul className="ml-5 list-disc text-xs text-text-muted space-y-0.5">
+                    <li>Casse</li>
+                    <li>Rayures</li>
+                    <li>Mal fixé</li>
+                  </ul>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Traces de nuisibles :</p>
+                  <ul className="ml-5 list-disc text-xs text-text-muted space-y-0.5">
+                    <li>Insectes</li>
+                    <li>Humidité</li>
+                    <li>Moisissures</li>
+                  </ul>
+                  <p className="text-xs font-medium text-gray-700 mt-3 mb-1">Murs et plafonds :</p>
+                  <ul className="ml-5 list-disc text-xs text-text-muted space-y-0.5">
+                    <li>Tâches</li>
+                    <li>Trous</li>
+                    <li>Fissures</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 🎥 Vidéo état du logement */}
+          <div className="bg-white rounded-xl p-6 shadow mb-6">
+            <h2 className="text-base font-semibold mb-1">🎥 Vidéo de l'état du logement</h2>
+            <p className="text-sm text-text-muted mb-4">
+              Ajoute une ou plusieurs vidéos qui illustrent l'état général du logement (vue d'ensemble, points sensibles, défauts constatés…).
+            </p>
+            <PhotoUpload
+              fieldPath="section_avis.logement_etat_videos"
+              label=""
+              multiple={true}
+              maxFiles={5}
+              acceptVideo={true}
+            />
+          </div>
+
+          {/* 🏷️ Type de 1er passage */}
+          <div className="bg-white rounded-xl p-6 shadow mb-6">
+            <h2 className="text-base font-semibold mb-1">🏷️ Type de 1er ménage</h2>
+            <p className="text-sm text-text-muted mb-4">
+              Sur la base de ce que tu as filmé et constaté, indique le type d'intervention nécessaire pour le ménage et la maintenance.
+            </p>
+
+            <div className="mb-5">
+              <p className="text-sm font-semibold text-gray-700 mb-2">🧹 Ménage</p>
+              <div className="flex flex-wrap gap-2">
+                {TYPES_PASSAGE.map((opt) => {
+                  const active = formData.type_premier_menage === opt
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setTypePassage('menage', active ? null : opt)}
+                      className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors ${
+                        active
+                          ? 'bg-primary text-accent border-primary'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-primary/5 hover:text-primary'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-2">🔧 Maintenance</p>
+              <div className="flex flex-wrap gap-2">
+                {TYPES_PASSAGE.map((opt) => {
+                  const active = formData.type_premiere_maintenance === opt
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setTypePassage('maintenance', active ? null : opt)}
+                      className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors ${
+                        active
+                          ? 'bg-primary text-accent border-primary'
+                          : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-primary/5 hover:text-primary'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow mb-6">
+            <h2 className="text-base font-semibold mb-4">Ambiance & vis-à-vis du logement</h2>
 
             {/* Ambiance générale du logement */}
             <div className="mb-6">
