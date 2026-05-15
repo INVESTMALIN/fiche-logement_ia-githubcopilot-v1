@@ -142,18 +142,20 @@ function buildColumnValues(fields: SyncRequest['fields'], onlyKeys: FieldKey[] |
   const shouldPush = (key: FieldKey) => onlyKeys === undefined || onlyKeys.includes(key)
   const out: Record<string, unknown> = {}
 
+  // ⚠️ On envoie TOUJOURS une valeur pour chaque champ qu'on veut push, même null/vide.
+  // Sinon une suppression côté Fiche Logement (user efface un mot de passe ou décoche
+  // le statut) ne se propageait jamais à Monday — la colonne restait avec l'ancienne
+  // valeur indéfiniment. Pour Monday : `{label: null}` vide une status column,
+  // string vide vide une text column.
   if (shouldPush('type_premier_menage')) {
     const normalized = normalizeTypePremierMenage(fields.type_premier_menage)
-    // null/undefined → on n'écrase pas la colonne. Si on voulait reset, il faudrait { label: '' }.
-    if (normalized) {
-      out[COLUMN_IDS.statut] = { label: normalized }
-    }
+    out[COLUMN_IDS.statut] = normalized ? { label: normalized } : { label: null }
   }
-  if (shouldPush('airbnb_mot_passe') && fields.airbnb_mot_passe !== null && fields.airbnb_mot_passe !== undefined) {
-    out[COLUMN_IDS.airbnbPassword] = fields.airbnb_mot_passe
+  if (shouldPush('airbnb_mot_passe')) {
+    out[COLUMN_IDS.airbnbPassword] = fields.airbnb_mot_passe ?? ''
   }
-  if (shouldPush('booking_mot_passe') && fields.booking_mot_passe !== null && fields.booking_mot_passe !== undefined) {
-    out[COLUMN_IDS.bookingPassword] = fields.booking_mot_passe
+  if (shouldPush('booking_mot_passe')) {
+    out[COLUMN_IDS.bookingPassword] = fields.booking_mot_passe ?? ''
   }
 
   return out
@@ -212,10 +214,13 @@ serve(async (req: Request) => {
   const updatedColumns = Object.keys(columnValues)
 
   if (updatedColumns.length === 0) {
+    // Cas anormal depuis le fix null-skip : ne devrait survenir que si
+    // changedFields est passé en array explicitement vide [] par le client
+    // (le hook front ne devrait jamais appeler dans ce cas).
     return jsonResponse({
       success: false,
       error: 'NO_FIELDS_TO_UPDATE',
-      message: 'Aucun champ à pousser (tous null ou aucun changement requis)'
+      message: 'changedFields vide : aucun champ demandé pour le push'
     }, 200)
   }
 
