@@ -2434,7 +2434,13 @@ export const mapSupabaseToFormData = (supabaseData) => {
     loomky_checklist_ids: supabaseData.loomky_checklist_ids || null,
     loomky_sync_status: supabaseData.loomky_sync_status || null,
     loomky_synced_at: supabaseData.loomky_synced_at || null,
-    loomky_snapshot: supabaseData.loomky_snapshot || null
+    loomky_snapshot: supabaseData.loomky_snapshot || null,
+
+    // 🟦 Monday sync — snapshot des 3 champs déjà push vers Monday
+    // Voir src/services/mondayService.js et l'Edge Function supabase/functions/monday-sync.
+    // ⚠️ NON mappé dans mapFormDataToSupabase (mis à jour séparément après push réussi
+    // pour éviter d'écraser le snapshot via un save normal pré-sync).
+    monday_snapshot: supabaseData.monday_snapshot || null
   }
 }
 
