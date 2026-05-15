@@ -1660,10 +1660,13 @@ export function FormProvider({ children }) {
     const isComplete = savedData.statut === 'Complété'
     if (!isComplete) return
 
-    const numeroBienRaw = savedData.section_logement?.numero_bien
-    const numeroBien = parseInt(numeroBienRaw, 10)
-    if (!numeroBienRaw || Number.isNaN(numeroBien)) {
-      console.warn('[Monday sync] Skip : numero_bien manquant ou invalide')
+    // ⚠️ On envoie le numero_bien tel quel (en string trimmée) sans parseInt :
+    // certains numéros de bien peuvent contenir des préfixes ou caractères non
+    // numériques selon les conventions Letahost. Le lookup Monday se fait par
+    // valeur exacte de la colonne `num_ro`, qui tolère le string côté API.
+    const numeroBien = savedData.section_logement?.numero_bien?.toString().trim()
+    if (!numeroBien) {
+      console.warn('[Monday sync] Skip : numero_bien manquant ou vide')
       return
     }
 
