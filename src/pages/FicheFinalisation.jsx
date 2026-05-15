@@ -236,9 +236,6 @@ export default function FicheFinalisation() {
     setShowFinalModal(true)
   }
 
-  // Récupérer le token depuis les variables d'environnement
-  const LOOMKY_TOKEN = import.meta.env.VITE_LOOMKY_TOKEN
-
   const handleCreateChecklists = async () => {
     setLoomkyStatus({ syncing: true, error: null })
 
