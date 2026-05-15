@@ -1,16 +1,16 @@
 # 📊 SUPABASE SPEC - Fiche Logement
-*Architecture technique - Mise à jour : 14 mai 2026*
+*Architecture technique - Mise à jour : 15 mai 2026*
 
 ---
 
 ## 🎯 **ARCHITECTURE GÉNÉRALE**
 
-Application React + Supabase pour remplacer les formulaires Jotform. 24 sections de formulaire avec upload média, génération PDF automatique (4 types) et 4 systèmes de webhooks indépendants vers Make.com.
+Application React + Supabase pour remplacer les formulaires Jotform. 24 sections de formulaire avec upload média, génération PDF automatique (4 types), 4 systèmes de webhooks indépendants vers Make.com, et 1 Edge Function Supabase pour la sync Monday (depuis le 15/05/2026).
 
 **Stack :**
 - Frontend : React + Vite + Tailwind
-- Backend : Supabase (PostgreSQL + Auth + Storage)
-- Automatisation : Make.com (4 webhooks séparés)
+- Backend : Supabase (PostgreSQL + Auth + Storage + Edge Functions)
+- Automatisation : Make.com (4 webhooks séparés) + Supabase Edge Functions (sync Monday)
 - PDF : html2pdf.js + jsPDF
 
 ---
@@ -76,6 +76,9 @@ CREATE TABLE fiches (
   guide_acces_video_acces TEXT[],
   avis_logement_etat_videos TEXT[],  -- 🆕 14/05/2026 : vidéo état logement (95e champ média)
   -- ... 95 champs média au total
+
+  -- 🟦 Sync Monday (15/05/2026) — voir docs/🟦 MONDAY_INTEGRATION.md
+  monday_snapshot JSONB              -- snapshot des 3 champs déjà push à Monday (dirty detection)
 );
 
 -- Table utilisateurs
@@ -138,6 +141,21 @@ export const mapSupabaseToFormData = (supabaseData) => ({
   annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 })
 ```
+
+---
+
+## 🟦 **EDGE FUNCTIONS**
+
+### **monday-sync** (15/05/2026)
+
+Sync automatique de 3 champs Fiche Logement → Monday board `1272144935` à la finalisation et sur modifications post-finalisation. Token Monday admin-global stocké comme **Edge Secret** (`MONDAY_API_TOKEN`), jamais exposé côté client.
+
+- **Path** : `supabase/functions/monday-sync/index.ts`
+- **Trigger** : invoqué par le client (`pushToMonday` dans `src/services/mondayService.js`) après chaque save réussi (hook dans `FormContext.handleSave` + `updateStatut`)
+- **Logique** : pattern aligné sur `notify_fiche_alerts` — push si transition Brouillon→Complété OU si l'un des 3 champs surveillés a changé (dirty-detection via `monday_snapshot`)
+- **Best effort** : ne bloque jamais le save Supabase, log les erreurs en console côté client
+
+Doc complète : [`docs/🟦 MONDAY_INTEGRATION.md`](🟦 MONDAY_INTEGRATION.md)
 
 ---
 
@@ -833,5 +851,5 @@ const PhotoWithFallback = ({ photoUrl, index }) => {
 
 *📝 Document technique de référence*
 *🔧 Architecture validée en production*
-*📅 Dernière mise à jour : 14 mai 2026 (refonte avis grille objective : +25 colonnes, 95 champs média)*
+*📅 Dernière mise à jour : 15 mai 2026 (sync Monday via Edge Function : +1 colonne `monday_snapshot`, premier usage Edge Functions)*
 ```

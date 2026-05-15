@@ -5,6 +5,7 @@ import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
+import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 
 const FormContext = createContext()
 
@@ -1647,6 +1648,72 @@ export function FormProvider({ children }) {
     return current !== null && current !== undefined ? current : ""
   }
 
+  // 🟦 Sync Monday — déclenché en best-effort après un save réussi.
+  // Logique alignée avec le pattern du trigger SQL notify_fiche_alerts :
+  //   - statut === 'Complété' ET (transition Brouillon→Complété OU au moins
+  //     un des 3 champs surveillés a changé vs monday_snapshot)
+  //   - Push partiel possible (changedFields), full sinon (finalisation initiale).
+  //   - Update monday_snapshot en DB + state APRÈS push réussi uniquement.
+  //   - En cas d'échec : log + warn console (toast à brancher si besoin), pas de blocage.
+  const triggerMondaySync = (savedData, wasCompleteBeforeSave) => {
+    if (!savedData) return
+    const isComplete = savedData.statut === 'Complété'
+    if (!isComplete) return
+
+    // ⚠️ On envoie le numero_bien tel quel (en string trimmée) sans parseInt :
+    // certains numéros de bien peuvent contenir des préfixes ou caractères non
+    // numériques selon les conventions Letahost. Le lookup Monday se fait par
+    // valeur exacte de la colonne `num_ro`, qui tolère le string côté API.
+    const numeroBien = savedData.section_logement?.numero_bien?.toString().trim()
+    if (!numeroBien) {
+      console.warn('[Monday sync] Skip : numero_bien manquant ou vide')
+      return
+    }
+
+    const newSnapshot = extractMondaySnapshot(savedData)
+    const savedSnapshot = savedData.monday_snapshot
+
+    let changedFields = null  // null = push complet
+    let shouldPush = false
+
+    if (!wasCompleteBeforeSave) {
+      // Finalisation initiale (Brouillon → Complété) : push complet
+      shouldPush = true
+    } else if (savedSnapshot) {
+      // Post-finalisation : on diff
+      changedFields = getMondayChangedFields(newSnapshot, savedSnapshot)
+      shouldPush = Array.isArray(changedFields) && changedFields.length > 0
+    } else {
+      // Cas edge : déjà Complété mais pas de snapshot (fiche pré-feature) → push complet
+      shouldPush = true
+    }
+
+    if (!shouldPush) return
+
+    // Fire-and-forget : on ne await pas, le save retourne immédiatement
+    pushToMonday({ ficheId: savedData.id, numeroBien, snapshot: newSnapshot, changedFields })
+      .then(async (mondayResult) => {
+        if (mondayResult?.success) {
+          // Persist le nouveau snapshot pour la prochaine dirty-detection
+          const { error: updateError } = await supabase
+            .from('fiches')
+            .update({ monday_snapshot: newSnapshot })
+            .eq('id', savedData.id)
+          if (updateError) {
+            console.warn('[Monday sync] Snapshot DB update failed:', updateError.message)
+          } else {
+            setFormData(prev => ({ ...prev, monday_snapshot: newSnapshot }))
+            console.log(`[Monday sync] OK — fiche=${savedData.id} numero_bien=${numeroBien} columns=${mondayResult.updatedColumns?.join(',')}`)
+          }
+        } else {
+          console.warn(`[Monday sync] ${mondayResult?.error || 'UNKNOWN'} — ${mondayResult?.message || ''}`)
+        }
+      })
+      .catch(err => {
+        console.warn('[Monday sync] Unexpected error:', err)
+      })
+  }
+
   const handleSave = async (customData = {}) => {
 
     // DEBUG
@@ -1691,6 +1758,9 @@ export function FormProvider({ children }) {
       console.log('🔍 AVANT SAVE - user_id:', dataToSave.user_id);
       console.log('🔍 AVANT SAVE - user email:', user?.email);
 
+      // Capture l'état AVANT save pour détecter la transition Brouillon → Complété
+      const wasCompleteBeforeSave = formData.statut === 'Complété'
+
       const result = await saveFiche(dataToSave, user.id);
 
       if (result.success) {
@@ -1699,6 +1769,10 @@ export function FormProvider({ children }) {
         setTimeout(() => {
           setSaveStatus(prev => ({ ...prev, saved: false }))
         }, 3000)
+
+        // 🟦 Sync Monday — best effort, fire-and-forget, ne bloque jamais le save
+        triggerMondaySync(result.data, wasCompleteBeforeSave)
+
         return { success: true, data: result.data };
       } else {
         setSaveStatus({ saving: false, saved: false, error: result.message });
@@ -1743,6 +1817,9 @@ export function FormProvider({ children }) {
     }
 
     try {
+      // Capture l'état AVANT save pour la dirty-detection Monday
+      const wasCompleteBeforeSave = formData.statut === 'Complété'
+
       const updatedData = { ...formData, statut: newStatut };
       const result = await saveFiche(updatedData);
 
@@ -1757,6 +1834,11 @@ export function FormProvider({ children }) {
             console.log('✅ Checklist ménage créée:', checklistId);
           }
         }
+
+        // 🟦 Sync Monday — déclenchée ici aussi car finaliserFiche() passe par updateStatut.
+        // À la transition Brouillon → Complété, on push le snapshot complet.
+        triggerMondaySync(result.data, wasCompleteBeforeSave)
+
         return { success: true, data: result.data };
       } else {
         return { success: false, error: result.message };
