@@ -114,7 +114,11 @@ const PDFTemplate = ({ formData }) => {
       // 📶 ÉQUIPEMENTS - WiFi
       'oui': 'Oui',
       'en_cours': 'En cours d\'installation',
-      'non': 'Non'
+      'non': 'Non',
+
+      // 🚲 LOCAL À VÉLO - Type d'accès
+      'libre': 'Libre',
+      'avec_cle': 'Avec clé'
     }
 
     return translations[value] || value
