@@ -1531,6 +1531,98 @@ export default function FicheEquipExterieur() {
               </div>
             </div>
 
+            {/* 🆕 LOCAL À VÉLO */}
+            <div className="bg-white rounded-xl p-6 shadow mb-6">
+              <h2 className="text-base font-semibold mb-4">Local à vélo</h2>
+
+              <div className="mb-6">
+                <label className="block font-semibold mb-3">
+                  Le logement propose-t-il un local à vélo ?
+                </label>
+
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="dispose_local_velo"
+                      value="true"
+                      checked={getField('section_equip_spe_exterieur.dispose_local_velo') === true}
+                      onChange={() => handleInputChange('section_equip_spe_exterieur.dispose_local_velo', true)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Oui</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="dispose_local_velo"
+                      value="false"
+                      checked={getField('section_equip_spe_exterieur.dispose_local_velo') === false}
+                      onChange={() => {
+                        handleInputChange('section_equip_spe_exterieur.dispose_local_velo', false)
+                        handleInputChange('section_equip_spe_exterieur.local_velo_photos', [])
+                        handleInputChange('section_equip_spe_exterieur.local_velo_video_acces', [])
+                        handleInputChange('section_equip_spe_exterieur.local_velo_type_acces', '')
+                      }}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span>Non</span>
+                  </label>
+                </div>
+
+                {/* Sous-bloc conditionnel avec fond bleu clair */}
+                {getField('section_equip_spe_exterieur.dispose_local_velo') === true && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
+                    {/* Type d'accès au local à vélo */}
+                    <div>
+                      <label className="block font-semibold mb-3">Type d'accès au local à vélo</label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="local_velo_type_acces"
+                            checked={getField('section_equip_spe_exterieur.local_velo_type_acces') === 'libre'}
+                            onChange={() => handleInputChange('section_equip_spe_exterieur.local_velo_type_acces', 'libre')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Libre</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="local_velo_type_acces"
+                            checked={getField('section_equip_spe_exterieur.local_velo_type_acces') === 'avec_cle'}
+                            onChange={() => handleInputChange('section_equip_spe_exterieur.local_velo_type_acces', 'avec_cle')}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                          <span>Avec clé</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <PhotoUpload
+                      fieldPath="section_equip_spe_exterieur.local_velo_photos"
+                      label="Photos du local à vélo"
+                      multiple={true}
+                      maxFiles={10}
+                      capture={true}
+                      acceptVideo={false}
+                    />
+
+                    <PhotoUpload
+                      fieldPath="section_equip_spe_exterieur.local_velo_video_acces"
+                      label="Vidéo d'accès au local à vélo"
+                      multiple={true}
+                      maxFiles={1}
+                      capture={true}
+                      acceptVideo={true}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
           {/* Indicateur de sauvegarde */}
           {saveStatus.saving && (

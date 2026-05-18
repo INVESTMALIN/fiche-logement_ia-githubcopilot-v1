@@ -1212,7 +1212,13 @@ const initialFormData = {
 
     // 🆕 ÉLÉMENTS ABÎMÉS - AUTRES PIÈCES
     autres_pieces_elements_abimes: null,       // Boolean: true/false/null
-    autres_pieces_elements_abimes_photos: []  // Array: URLs photos
+    autres_pieces_elements_abimes_photos: [],  // Array: URLs photos
+
+    // 🆕 LOCAL À VÉLO
+    dispose_local_velo: null,        // Boolean: true/false/null
+    local_velo_photos: [],           // Array: URLs photos
+    local_velo_video_acces: [],      // Array: URLs vidéo d'accès
+    local_velo_type_acces: ""        // String: "libre" | "avec_cle"
   },
 
   section_communs: {
