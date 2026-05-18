@@ -1131,6 +1131,11 @@ export const mapFormDataToSupabase = (formData) => {
     equip_spe_ext_autres_pieces_elements_abimes: formData.section_equip_spe_exterieur?.autres_pieces_elements_abimes ?? null,
     equip_spe_ext_autres_pieces_elements_abimes_photos: formData.section_equip_spe_exterieur?.autres_pieces_elements_abimes_photos || [],
 
+    equip_spe_ext_dispose_local_velo: formData.section_equip_spe_exterieur?.dispose_local_velo ?? null,
+    equip_spe_ext_local_velo_photos: formData.section_equip_spe_exterieur?.local_velo_photos || [],
+    equip_spe_ext_local_velo_video_acces: formData.section_equip_spe_exterieur?.local_velo_video_acces || [],
+    equip_spe_ext_local_velo_type_acces: formData.section_equip_spe_exterieur?.local_velo_type_acces || null,
+
     // Section Communs
     communs_dispose_espaces_communs: formData.section_communs?.dispose_espaces_communs ?? null,
     communs_description_generale: formData.section_communs?.description_generale || null,
@@ -2373,7 +2378,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
       buanderie_elements_abimes: supabaseData.equip_spe_ext_buanderie_elements_abimes ?? null,
       buanderie_elements_abimes_photos: supabaseData.equip_spe_ext_buanderie_elements_abimes_photos || [],
       autres_pieces_elements_abimes: supabaseData.equip_spe_ext_autres_pieces_elements_abimes ?? null,
-      autres_pieces_elements_abimes_photos: supabaseData.equip_spe_ext_autres_pieces_elements_abimes_photos || []
+      autres_pieces_elements_abimes_photos: supabaseData.equip_spe_ext_autres_pieces_elements_abimes_photos || [],
+      dispose_local_velo: supabaseData.equip_spe_ext_dispose_local_velo ?? null,
+      local_velo_photos: supabaseData.equip_spe_ext_local_velo_photos || [],
+      local_velo_video_acces: supabaseData.equip_spe_ext_local_velo_video_acces || [],
+      local_velo_type_acces: supabaseData.equip_spe_ext_local_velo_type_acces || ""
     },
 
 
