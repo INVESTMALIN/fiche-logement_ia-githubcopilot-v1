@@ -1563,7 +1563,7 @@ export default function FicheEquipExterieur() {
                         handleInputChange('section_equip_spe_exterieur.dispose_local_velo', false)
                         handleInputChange('section_equip_spe_exterieur.local_velo_photos', [])
                         handleInputChange('section_equip_spe_exterieur.local_velo_video_acces', [])
-                        handleInputChange('section_equip_spe_exterieur.local_velo_type_acces', null)
+                        handleInputChange('section_equip_spe_exterieur.local_velo_type_acces', '')
                       }}
                       className="w-4 h-4 cursor-pointer"
                     />
@@ -1613,7 +1613,7 @@ export default function FicheEquipExterieur() {
                     <PhotoUpload
                       fieldPath="section_equip_spe_exterieur.local_velo_video_acces"
                       label="Vidéo d'accès au local à vélo"
-                      multiple={false}
+                      multiple={true}
                       maxFiles={1}
                       capture={true}
                       acceptVideo={true}
