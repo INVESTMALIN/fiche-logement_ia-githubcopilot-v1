@@ -8,6 +8,27 @@ import FichePreviewModal from '../components/FichePreviewModal'
 import ReassignModal from '../components/ReassignModal'
 import { useAuth } from '../components/AuthContext'
 
+// 🔐 Appelle l'Edge Function admin-users (création / modification / activation
+// des comptes côté serveur via service_role). Normalise la réponse : les échecs
+// renvoyés en HTTP non-2xx arrivent dans `error.context`, on en extrait le JSON.
+async function invokeAdminUsers(action, payload) {
+  const { data, error } = await supabase.functions.invoke('admin-users', {
+    body: { action, payload }
+  })
+  let result = data
+  if (error) {
+    try {
+      result = await error.context.json()
+    } catch {
+      result = null
+    }
+  }
+  if (!result || result.success !== true) {
+    return { ok: false, error: result?.error || error?.message || 'Erreur inattendue.' }
+  }
+  return { ok: true, message: result.message || '' }
+}
+
 // ✅ Dropdown moderne avec portal
 function ModernDropdown({ items, onSelect, fiche }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -89,32 +110,32 @@ function EditUserModal({ user, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     prenom: user.prenom || '',
     nom: user.nom || '',
-    email: user.email || '',
     role: user.role || 'coordinateur'
   })
   const [loading, setLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setErrorMessage('')
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          prenom: formData.prenom,
-          nom: formData.nom,
-          role: formData.role,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
+      const result = await invokeAdminUsers('update', {
+        userId: user.id,
+        prenom: formData.prenom,
+        nom: formData.nom,
+        role: formData.role
+      })
 
-      if (error) throw error
+      if (!result.ok) {
+        setErrorMessage(result.error)
+        return
+      }
 
-      console.log('Utilisateur modifié avec succès')
       onSuccess()
     } catch (error) {
-      console.error('Erreur lors de la modification:', error)
+      setErrorMessage(error?.message || 'Erreur inattendue lors de la modification.')
     } finally {
       setLoading(false)
     }
@@ -152,7 +173,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
-              value={formData.email}
+              value={user.email || ''}
               disabled
               className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
             />
@@ -171,6 +192,12 @@ function EditUserModal({ user, onClose, onSuccess }) {
               <option value="super_admin">Super Admin</option>
             </select>
           </div>
+
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          )}
 
           <div className="flex gap-3 justify-end pt-4">
             <button
@@ -204,43 +231,30 @@ function NewUserModal({ onClose, onSuccess }) {
     role: 'coordinateur'
   })
   const [loading, setLoading] = useState(false)
-
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setErrorMessage('')
 
     try {
-      // 1. Créer l'utilisateur dans Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const result = await invokeAdminUsers('create', {
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        prenom: formData.prenom,
+        nom: formData.nom,
+        role: formData.role
       })
 
-      if (authError) throw authError
+      if (!result.ok) {
+        setErrorMessage(result.error)
+        return
+      }
 
-      // 2. Créer le profil dans la table profiles
-      // 2. Créer le profil dans la table profiles (avec upsert)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: authData.user.id,
-          email: formData.email,
-          prenom: formData.prenom,
-          nom: formData.nom,
-          role: formData.role,
-          active: true
-        })
-
-      if (profileError) throw profileError
-
-      if (profileError) throw profileError
-
-      console.log('Nouvel utilisateur créé avec succès')
       onSuccess()
-      onClose()
     } catch (error) {
-      console.error('Erreur lors de la création:', error)
+      setErrorMessage(error?.message || 'Erreur inattendue lors de la création.')
     } finally {
       setLoading(false)
     }
@@ -318,12 +332,18 @@ function NewUserModal({ onClose, onSuccess }) {
               <span className="text-blue-600 mr-2">📧</span>
               <div className="text-xs text-blue-700">
                 <p className="font-medium mb-1">Rappel :</p>
-                <p>1. L'utilisateur va recevoir un e-mail de confirmation.</p>
-                <p>2. Fournissez-lui le mot de passe temporaire.</p>
-                <p>3. Connexion possible après confirmation email.</p>
+                <p>1. L'utilisateur peut se connecter immédiatement.</p>
+                <p>2. Communiquez-lui le mot de passe temporaire.</p>
+                <p>3. Il pourra le changer depuis la page de connexion.</p>
               </div>
             </div>
           </div>
+
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          )}
 
           <div className="flex gap-3 justify-end pt-4">
             <button
@@ -719,13 +739,20 @@ function UsersTab({ users, onRefresh }) {
   // Fonction pour désactiver/activer un utilisateur
   const handleToggleUser = async (user) => {
     try {
+      // `active === false` est le seul état "désactivé" reconnu par l'UI : pour
+      // les lignes legacy où active est NULL/absent, le compte est traité comme
+      // actif → on bascule vers false. (Ne pas utiliser !user.active : NULL
+      // donnerait true et empêcherait de désactiver ces comptes.)
       const newStatus = user.active === false ? true : false
-      const { error } = await supabase
-        .from('profiles')
-        .update({ active: newStatus })
-        .eq('id', user.id)
+      const result = await invokeAdminUsers('toggleActive', {
+        userId: user.id,
+        active: newStatus
+      })
 
-      if (error) throw error
+      if (!result.ok) {
+        console.error('Erreur lors du changement de statut:', result.error)
+        return
+      }
 
       console.log(`Utilisateur ${newStatus ? 'activé' : 'désactivé'} avec succès`)
       onRefresh()
