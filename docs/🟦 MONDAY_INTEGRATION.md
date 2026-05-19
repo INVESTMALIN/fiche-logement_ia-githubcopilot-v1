@@ -38,6 +38,8 @@ Le token Monday est admin-global → l'inliner dans le bundle Vite (préfixe `VI
 
 **Normalisation `type_premiere_maintenance`** : les 3 labels `TYPES_MAINTENANCE` sont alignés sur ceux de la colonne Monday `color_mm3ftnef` → valeur envoyée telle quelle, aucune normalisation. Si un mismatch de label apparaît au test E2E (apostrophe typographique `'` vs droite `'`), ajouter une normalisation dédiée côté Edge Function sur le modèle de `normalizeTypePremierMenage`.
 
+**Whitelist guard `type_premiere_maintenance`** : `buildColumnValues` ne pousse la colonne `color_mm3ftnef` que si la valeur est `null` (vidage intentionnel) ou un des 3 labels `VALID_MAINTENANCE_LABELS`. Une valeur legacy (ancien label `TYPES_PASSAGE` écrit par l'UI Maintenance pré-refonte 14/05) est **omise** — sinon Monday rejette tout le `change_multiple_column_values` (mutation atomique) et les autres champs cessent de se synchroniser. Cleanup DB des valeurs legacy : [migration 2026-05-19](migrations/2026-05-19_cleanup_legacy_maintenance.sql).
+
 ---
 
 ## 🏗 Architecture

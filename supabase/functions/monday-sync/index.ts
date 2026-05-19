@@ -39,6 +39,18 @@ function normalizeTypePremierMenage(value: string | null): string | null {
   return value.replace(' / ', '/')
 }
 
+// Labels valides pour la colonne status Maintenance (color_mm3ftnef).
+// Doit rester aligné avec TYPES_MAINTENANCE (src/lib/avisGrilleHelpers.js).
+// Les fiches créées avant la refonte FicheAvis du 14/05 peuvent contenir un
+// ancien label TYPES_PASSAGE dans avis_type_premiere_maintenance : un tel label
+// n'existe pas dans la colonne Monday et ferait rejeter TOUT le
+// change_multiple_column_values (mutation atomique) → on le filtre.
+const VALID_MAINTENANCE_LABELS = new Set([
+  'Intervention propriétaire',
+  'Intervention artisan',
+  "Pas d'intervention"
+])
+
 // ============================================================
 // Types
 // ============================================================
@@ -155,12 +167,19 @@ function buildColumnValues(fields: SyncRequest['fields'], onlyKeys: FieldKey[] |
     out[COLUMN_IDS.statut] = normalized ? { label: normalized } : { label: null }
   }
   if (shouldPush('type_premiere_maintenance')) {
-    // Valeur envoyée telle quelle : les labels TYPES_MAINTENANCE côté front sont
-    // alignés sur ceux de la colonne Monday. Si un mismatch de label apparaît au
-    // test E2E (apostrophe typographique vs droite), ajouter ici une normalisation
-    // dédiée comme normalizeTypePremierMenage.
     const maintenance = fields.type_premiere_maintenance
-    out[COLUMN_IDS.maintenance] = maintenance ? { label: maintenance } : { label: null }
+    if (!maintenance) {
+      // null/vide → on vide la colonne (vidage intentionnel côté Fiche Logement)
+      out[COLUMN_IDS.maintenance] = { label: null }
+    } else if (VALID_MAINTENANCE_LABELS.has(maintenance)) {
+      out[COLUMN_IDS.maintenance] = { label: maintenance }
+    } else {
+      // Valeur legacy (ancien label TYPES_PASSAGE écrit par l'UI pré-refonte) :
+      // on OMET la colonne plutôt que de l'envoyer. Sinon Monday rejette tout le
+      // change_multiple_column_values et les autres champs ne sync plus non plus.
+      // On n'envoie pas {label:null} : ça écraserait une valeur Monday valide.
+      console.warn(`[monday-sync] valeur maintenance legacy ignorée (non whitelistée): "${maintenance}"`)
+    }
   }
   if (shouldPush('airbnb_mot_passe')) {
     out[COLUMN_IDS.airbnbPassword] = fields.airbnb_mot_passe ?? ''
