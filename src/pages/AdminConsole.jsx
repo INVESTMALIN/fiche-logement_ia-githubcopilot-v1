@@ -391,10 +391,15 @@ export default function AdminConsole() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Charger les données utilisateurs et fiches
-  const loadData = async () => {
+  // Charger les données utilisateurs et fiches.
+  // isInitial : seul le tout premier chargement (au montage) affiche le spinner
+  // plein écran. Les refresh déclenchés après une action admin re-fetchent en
+  // place, sans toggler `loading` — sinon l'early-return spinner démonterait
+  // UsersTab/FichesTab et leur state local (bandeau feedback, recherche) serait
+  // perdu à chaque action.
+  const loadData = async (isInitial = false) => {
     try {
-      setLoading(true)
+      if (isInitial) setLoading(true)
 
       // Charger tous les utilisateurs (profiles)
       const { data: profilesData, error: profilesError } = await supabase
@@ -423,7 +428,7 @@ export default function AdminConsole() {
     } catch (error) {
       console.error('Erreur chargement données console admin:', error)
     } finally {
-      setLoading(false)
+      if (isInitial) setLoading(false)
     }
   }
 
@@ -457,7 +462,7 @@ export default function AdminConsole() {
   }
 
   useEffect(() => {
-    loadData()
+    loadData(true)
   }, [])
 
   // Fonctions pour gérer le modal de prévisualisation
