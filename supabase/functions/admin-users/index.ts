@@ -73,12 +73,13 @@ async function handleCreate(service: SupabaseClient, payload: Record<string, unk
     return jsonResponse({ success: false, error: 'Champs manquants ou rôle invalide.' }, 400)
   }
 
-  // email_confirm: false → l'utilisateur devra confirmer son email avant de
-  // pouvoir se connecter (cohérent avec le réglage projet "Confirm email = ON").
+  // email_confirm: true → compte créé déjà confirmé : l'utilisateur (un
+  // collègue interne) peut se connecter immédiatement avec le mot de passe
+  // temporaire fourni par l'admin. Pas de friction de confirmation email.
   const { data, error } = await service.auth.admin.createUser({
     email,
     password,
-    email_confirm: false,
+    email_confirm: true,
     user_metadata: { prenom, nom, role }
   })
 
@@ -116,7 +117,7 @@ async function handleCreate(service: SupabaseClient, payload: Record<string, unk
   console.log(`[admin-users] create OK user=${newUser.id} email=${email} role=${role}`)
   return jsonResponse({
     success: true,
-    message: 'Utilisateur créé. Un email de confirmation a été envoyé.'
+    message: 'Utilisateur créé. Communiquez-lui le mot de passe temporaire.'
   })
 }
 
@@ -228,14 +229,23 @@ serve(async (req: Request) => {
     return jsonResponse({ success: false, error: 'Authentification requise.' }, 401)
   }
 
+  // Client anon : sert uniquement à valider le JWT et récupérer l'identité.
   const authClient = createClient(supabaseUrl, anonKey)
   const { data: { user }, error: userError } = await authClient.auth.getUser(token)
   if (userError || !user) {
     return jsonResponse({ success: false, error: 'Session invalide.' }, 401)
   }
 
-  // --- 2. Vérification du rôle (toujours re-vérifié en base, jamais via le front) ---
-  const { data: callerProfile, error: roleError } = await authClient
+  // --- 2. Client privilégié (bypass RLS) ---
+  const service = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
+
+  // --- 3. Vérification du rôle (toujours re-vérifié en base, jamais via le front) ---
+  // Lookup via le client service_role : le client anon ne transmet pas le JWT
+  // aux requêtes PostgREST, le SELECT tournerait en anonyme et serait filtré
+  // par RLS → 403 systématique.
+  const { data: callerProfile, error: roleError } = await service
     .from('profiles')
     .select('role')
     .eq('id', user.id)
@@ -248,7 +258,7 @@ serve(async (req: Request) => {
     }, 403)
   }
 
-  // --- 3. Parsing de la requête ---
+  // --- 4. Parsing de la requête ---
   let body: AdminRequest
   try {
     body = await req.json()
@@ -261,11 +271,6 @@ serve(async (req: Request) => {
   if (action !== 'create' && action !== 'update' && action !== 'toggleActive') {
     return jsonResponse({ success: false, error: 'Action inconnue.' }, 400)
   }
-
-  // --- 4. Client privilégié (bypass RLS) ---
-  const service = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  })
 
   // --- 5. Dispatch ---
   try {

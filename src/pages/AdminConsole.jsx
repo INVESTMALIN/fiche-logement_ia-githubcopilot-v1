@@ -332,9 +332,9 @@ function NewUserModal({ onClose, onSuccess }) {
               <span className="text-blue-600 mr-2">📧</span>
               <div className="text-xs text-blue-700">
                 <p className="font-medium mb-1">Rappel :</p>
-                <p>1. L'utilisateur va recevoir un e-mail de confirmation.</p>
-                <p>2. Fournissez-lui le mot de passe temporaire.</p>
-                <p>3. Connexion possible après confirmation email.</p>
+                <p>1. L'utilisateur peut se connecter immédiatement.</p>
+                <p>2. Communiquez-lui le mot de passe temporaire.</p>
+                <p>3. Il pourra le changer depuis la page de connexion.</p>
               </div>
             </div>
           </div>
