@@ -8,6 +8,7 @@ import {
   GRILLE_CRITERES,
   SECURITE_DANGERS,
   TYPES_PASSAGE,
+  TYPES_MAINTENANCE,
   computeGrilleStats
 } from '../lib/avisGrilleHelpers'
 
@@ -694,7 +695,7 @@ export default function FicheAvis() {
             <div>
               <p className="text-sm font-semibold text-gray-700 mb-2">🔧 Maintenance</p>
               <div className="flex flex-wrap gap-2">
-                {TYPES_PASSAGE.map((opt) => {
+                {TYPES_MAINTENANCE.map((opt) => {
                   const active = formData.type_premiere_maintenance === opt
                   return (
                     <button

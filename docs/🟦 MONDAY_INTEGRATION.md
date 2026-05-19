@@ -1,23 +1,25 @@
-# 🟦 Intégration Monday — Sync automatique 3 champs
+# 🟦 Intégration Monday — Sync automatique 4 champs
 
 **Projet** : Fiche Logement
-**Feature** : Synchronisation automatique de 3 champs Fiche Logement → Monday board `1272144935` (Clients propriétaires > Clients)
+**Feature** : Synchronisation automatique de 4 champs Fiche Logement → Monday board `1272144935` (Clients propriétaires > Clients)
 **Status** : 🚧 V1 livrée le 2026-05-15 — en attente du token et de la désactivation du scénario Kevin pour activation prod
-**Dernière mise à jour** : 2026-05-15
+**Dernière mise à jour** : 2026-05-19
 
 ---
 
 ## 🎯 Vue d'ensemble
 
 ### Objectif
-Remonter automatiquement vers Monday 3 champs remplis dans la Fiche Logement, à la finalisation initiale et à chaque modification post-finalisation. Premier usage d'**Edge Functions Supabase** dans le projet — pose les conventions pour les futures intégrations qui auraient besoin d'un secret côté serveur.
+Remonter automatiquement vers Monday 4 champs remplis dans la Fiche Logement, à la finalisation initiale et à chaque modification post-finalisation. Premier usage d'**Edge Functions Supabase** dans le projet — pose les conventions pour les futures intégrations qui auraient besoin d'un secret côté serveur.
 
 ### Pourquoi pas un appel direct depuis le front ?
 Le token Monday est admin-global → l'inliner dans le bundle Vite (préfixe `VITE_*`) l'exposerait à quiconque inspecte le JS de prod. C'est exactement le problème qu'on vient de corriger avec `VITE_LOOMKY_TOKEN` (commit `58fddff`). On passe donc par une Edge Function : token stocké comme **Edge Secret**, jamais visible côté client.
 
 ### Périmètre
-- **Dans le scope** : push 3 champs (statut Premiers Ménages + 2 mots de passe), trigger automatique au save, dirty-detection via snapshot.
-- **Hors scope** : `type_premiere_maintenance` (décision métier Julien : la maintenance est un suivi continu, pas un statut "premier passage"), retry asynchrone, audit log.
+- **Dans le scope** : push 4 champs (statut Premiers Ménages + statut Maintenance + 2 mots de passe), trigger automatique au save, dirty-detection via snapshot.
+- **Hors scope** : retry asynchrone, audit log.
+
+> **Note (2026-05-19)** : `type_premiere_maintenance` était initialement hors scope. Ajouté à la sync suite à la validation par Victoria de 3 labels métier dédiés (`Intervention propriétaire`, `Intervention artisan`, `Pas d'intervention`) — cf. `TYPES_MAINTENANCE` dans [src/lib/avisGrilleHelpers.js](../src/lib/avisGrilleHelpers.js).
 
 ---
 
@@ -26,12 +28,15 @@ Le token Monday est admin-global → l'inliner dans le bundle Vite (préfixe `VI
 | Champ source (DB) | Colonne Monday (label) | Type | Column ID |
 |---|---|---|---|
 | `avis_type_premier_menage` | Premiers Ménages | status | `statut47` |
+| `avis_type_premiere_maintenance` | Maintenance | status | `color_mm3ftnef` |
 | `airbnb_mot_passe` | MDP Airbnb Propriétaire | text | `text_mm2q5tw8` |
 | `booking_mot_passe` | MDP Booking Propriétaire | text | `text_mm2qaz6a` |
 
 **Lookup** : par colonne `num_ro` (type `numbers`) du board `1272144935`, valeur source = `section_logement.numero_bien`. API utilisée : `items_page_by_column_values`.
 
 **Normalisation `type_premier_menage`** : front stocke `'Vérification / Inventaire'` (avec espaces autour du slash, cf. `TYPES_PASSAGE` dans [src/lib/avisGrilleHelpers.js](../src/lib/avisGrilleHelpers.js)), Monday attend `'Vérification/Inventaire'`. Strip ` / ` → `/` côté Edge Function (`normalizeTypePremierMenage`).
+
+**Normalisation `type_premiere_maintenance`** : les 3 labels `TYPES_MAINTENANCE` sont alignés sur ceux de la colonne Monday `color_mm3ftnef` → valeur envoyée telle quelle, aucune normalisation. Si un mismatch de label apparaît au test E2E (apostrophe typographique `'` vs droite `'`), ajouter une normalisation dédiée côté Edge Function sur le modèle de `normalizeTypePremierMenage`.
 
 ---
 
@@ -110,9 +115,10 @@ monday_snapshot  JSONB  -- nullable, default NULL
 Format :
 ```json
 {
-  "type_premier_menage": "Vérification / Inventaire" | null,
-  "airbnb_mot_passe":    "..." | null,
-  "booking_mot_passe":   "..." | null
+  "type_premier_menage":       "Vérification / Inventaire" | null,
+  "type_premiere_maintenance": "Intervention artisan" | null,
+  "airbnb_mot_passe":          "..." | null,
+  "booking_mot_passe":         "..." | null
 }
 ```
 
@@ -179,7 +185,8 @@ Logs : `npx supabase functions logs monday-sync` (ou Dashboard → Functions →
 ### Scénarios à valider
 
 1. **Dry-run** sur fiche test → log payload, aucune écriture Monday
-2. **Push initial** (Brouillon → Complété, numero_bien connu) → 3 colonnes mises à jour côté Monday, normalisation `Vérification/Inventaire` correcte
+2. **Push initial** (Brouillon → Complété, numero_bien connu) → 4 colonnes mises à jour côté Monday, normalisation `Vérification/Inventaire` correcte
+2bis. **Maintenance** : sélection d'un des 3 labels `TYPES_MAINTENANCE` → colonne `color_mm3ftnef` mise à jour ; vérifier qu'aucun mismatch de label (apostrophe) ne fait échouer le push
 3. **Push partiel** (modif `type_premier_menage` sur fiche déjà Complété) → seule la colonne status est touchée
 4. **ITEM_NOT_FOUND** (numero_bien inexistant dans Monday) → save Supabase OK, snapshot DB pas mis à jour, warn console
 5. **Concurrence** : confirmer désactivation du scénario Kevin avant activation prod
@@ -231,9 +238,10 @@ mutation ($boardId: ID!, $itemId: ID!, $columnValues: JSON!) {
 `columnValues` est une **chaîne JSON** (pas un objet) :
 ```json
 {
-  "statut47":        { "label": "Classique" },
-  "text_mm2q5tw8":   "password_airbnb",
-  "text_mm2qaz6a":   "password_booking"
+  "statut47":         { "label": "Classique" },
+  "color_mm3ftnef":   { "label": "Intervention artisan" },
+  "text_mm2q5tw8":    "password_airbnb",
+  "text_mm2qaz6a":    "password_booking"
 }
 ```
 

@@ -1,9 +1,10 @@
 // supabase/functions/monday-sync/index.ts
 //
-// Sync 3 champs Fiche Logement → Monday (board 1272144935) :
-// - avis_type_premier_menage  → colonne Premiers Ménages       (status)
-// - airbnb_mot_passe          → colonne MDP Airbnb Propriétaire (text)
-// - booking_mot_passe         → colonne MDP Booking Propriétaire (text)
+// Sync 4 champs Fiche Logement → Monday (board 1272144935) :
+// - avis_type_premier_menage      → colonne Premiers Ménages       (status)
+// - avis_type_premiere_maintenance → colonne Maintenance           (status)
+// - airbnb_mot_passe              → colonne MDP Airbnb Propriétaire (text)
+// - booking_mot_passe             → colonne MDP Booking Propriétaire (text)
 //
 // Le token Monday admin-global est lu depuis Edge Secret `MONDAY_API_TOKEN`,
 // jamais exposé côté client.
@@ -22,8 +23,9 @@ const MONDAY_API = 'https://api.monday.com/v2'
 const BOARD_ID = '1272144935'
 
 const COLUMN_IDS = {
-  numeroBien: 'num_ro',           // numbers — clé de lookup
-  statut: 'statut47',             // status — Premiers Ménages
+  numeroBien: 'num_ro',            // numbers — clé de lookup
+  statut: 'statut47',              // status — Premiers Ménages
+  maintenance: 'color_mm3ftnef',   // status — Maintenance
   airbnbPassword: 'text_mm2q5tw8', // text — MDP Airbnb Propriétaire
   bookingPassword: 'text_mm2qaz6a' // text — MDP Booking Propriétaire
 } as const
@@ -40,13 +42,14 @@ function normalizeTypePremierMenage(value: string | null): string | null {
 // ============================================================
 // Types
 // ============================================================
-type FieldKey = 'type_premier_menage' | 'airbnb_mot_passe' | 'booking_mot_passe'
+type FieldKey = 'type_premier_menage' | 'type_premiere_maintenance' | 'airbnb_mot_passe' | 'booking_mot_passe'
 
 interface SyncRequest {
   ficheId: string
   numeroBien: number | string
   fields: {
     type_premier_menage: string | null
+    type_premiere_maintenance: string | null
     airbnb_mot_passe: string | null
     booking_mot_passe: string | null
   }
@@ -150,6 +153,14 @@ function buildColumnValues(fields: SyncRequest['fields'], onlyKeys: FieldKey[] |
   if (shouldPush('type_premier_menage')) {
     const normalized = normalizeTypePremierMenage(fields.type_premier_menage)
     out[COLUMN_IDS.statut] = normalized ? { label: normalized } : { label: null }
+  }
+  if (shouldPush('type_premiere_maintenance')) {
+    // Valeur envoyée telle quelle : les labels TYPES_MAINTENANCE côté front sont
+    // alignés sur ceux de la colonne Monday. Si un mismatch de label apparaît au
+    // test E2E (apostrophe typographique vs droite), ajouter ici une normalisation
+    // dédiée comme normalizeTypePremierMenage.
+    const maintenance = fields.type_premiere_maintenance
+    out[COLUMN_IDS.maintenance] = maintenance ? { label: maintenance } : { label: null }
   }
   if (shouldPush('airbnb_mot_passe')) {
     out[COLUMN_IDS.airbnbPassword] = fields.airbnb_mot_passe ?? ''

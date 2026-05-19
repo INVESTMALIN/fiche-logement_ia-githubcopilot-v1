@@ -125,6 +125,14 @@ export const TYPES_PASSAGE = [
   'Pas nécessaire'
 ]
 
+// Labels métier maintenance (validés Victoria) — alignés sur les labels Monday
+// de la colonne color_mm3ftnef. Distincts de TYPES_PASSAGE (réservé au ménage).
+export const TYPES_MAINTENANCE = [
+  'Intervention propriétaire',
+  'Intervention artisan',
+  "Pas d'intervention"
+]
+
 // Verdict global → label affichable + clé legacy stockée dans avis_logement_etat_general
 export const VERDICTS = [
   { key: 'excellent_etat', min: 40, label: 'Excellent état' },

@@ -1657,7 +1657,7 @@ export function FormProvider({ children }) {
   // 🟦 Sync Monday — déclenché en best-effort après un save réussi.
   // Logique alignée avec le pattern du trigger SQL notify_fiche_alerts :
   //   - statut === 'Complété' ET (transition Brouillon→Complété OU au moins
-  //     un des 3 champs surveillés a changé vs monday_snapshot)
+  //     un des 4 champs surveillés a changé vs monday_snapshot)
   //   - Push partiel possible (changedFields), full sinon (finalisation initiale).
   //   - Update monday_snapshot en DB + state APRÈS push réussi uniquement.
   //   - En cas d'échec : log + warn console (toast à brancher si besoin), pas de blocage.
