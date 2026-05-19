@@ -133,7 +133,7 @@ function EditUserModal({ user, onClose, onSuccess }) {
         return
       }
 
-      onSuccess()
+      onSuccess(result.message)
     } catch (error) {
       setErrorMessage(error?.message || 'Erreur inattendue lors de la modification.')
     } finally {
@@ -252,7 +252,7 @@ function NewUserModal({ onClose, onSuccess }) {
         return
       }
 
-      onSuccess()
+      onSuccess(result.message)
     } catch (error) {
       setErrorMessage(error?.message || 'Erreur inattendue lors de la création.')
     } finally {
@@ -730,34 +730,57 @@ export default function AdminConsole() {
 function UsersTab({ users, onRefresh }) {
   const [editModal, setEditModal] = useState({ isOpen: false, user: null })
   const [newUserModal, setNewUserModal] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [feedback, setFeedback] = useState(null)
+  const [confirmDeactivate, setConfirmDeactivate] = useState(null)
+  const [deactivating, setDeactivating] = useState(false)
+  const feedbackTimer = useRef(null)
+
+  // Bandeau de feedback global, masqué automatiquement après 4 s.
+  const showFeedback = (type, message) => {
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current)
+    setFeedback({ type, message })
+    feedbackTimer.current = setTimeout(() => setFeedback(null), 4000)
+  }
+  useEffect(() => () => {
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current)
+  }, [])
+
+  // Filtrage client : prénom / nom / email (insensible à la casse).
+  const query = searchTerm.toLowerCase()
+  const filteredUsers = users.filter(user => (
+    (user.prenom || '').toLowerCase().includes(query) ||
+    (user.nom || '').toLowerCase().includes(query) ||
+    (user.email || '').toLowerCase().includes(query)
+  ))
 
   // Fonction pour modifier un utilisateur
   const handleEditUser = (user) => {
     setEditModal({ isOpen: true, user })
   }
 
-  // Fonction pour désactiver/activer un utilisateur
+  // Désactive / réactive un utilisateur via l'Edge Function admin-users.
   const handleToggleUser = async (user) => {
+    // `active === false` est le seul état "désactivé" reconnu par l'UI : pour
+    // les lignes legacy où active est NULL/absent, le compte est traité comme
+    // actif → on bascule vers false. (Ne pas utiliser !user.active : NULL
+    // donnerait true et empêcherait de désactiver ces comptes.)
+    const newStatus = user.active === false ? true : false
     try {
-      // `active === false` est le seul état "désactivé" reconnu par l'UI : pour
-      // les lignes legacy où active est NULL/absent, le compte est traité comme
-      // actif → on bascule vers false. (Ne pas utiliser !user.active : NULL
-      // donnerait true et empêcherait de désactiver ces comptes.)
-      const newStatus = user.active === false ? true : false
       const result = await invokeAdminUsers('toggleActive', {
         userId: user.id,
         active: newStatus
       })
 
       if (!result.ok) {
-        console.error('Erreur lors du changement de statut:', result.error)
+        showFeedback('error', result.error)
         return
       }
 
-      console.log(`Utilisateur ${newStatus ? 'activé' : 'désactivé'} avec succès`)
       onRefresh()
+      showFeedback('success', result.message || (newStatus ? 'Utilisateur activé.' : 'Utilisateur désactivé.'))
     } catch (error) {
-      console.error('Erreur lors du changement de statut:', error)
+      showFeedback('error', error?.message || 'Erreur inattendue lors du changement de statut.')
     }
   }
 
@@ -781,7 +804,28 @@ function UsersTab({ users, onRefresh }) {
             + Nouvel utilisateur
           </button>
         </div>
+        <div className="mt-4 relative">
+          <input
+            type="text"
+            placeholder="Rechercher un utilisateur..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full sm:w-64 px-3 py-2 pl-9 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+          />
+          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        </div>
       </div>
+
+      {feedback && (
+        <div className="px-6 pt-4">
+          <div className={`p-3 rounded text-sm border ${feedback.type === 'success'
+            ? 'bg-green-50 border-green-200 text-green-700'
+            : 'bg-red-50 border-red-200 text-red-700'
+            }`}>
+            {feedback.type === 'success' ? '✅ ' : '❌ '}{feedback.message}
+          </div>
+        </div>
+      )}
 
       <div className="overflow-x-auto overflow-y-visible">
         <table className="w-full">
@@ -797,6 +841,9 @@ function UsersTab({ users, onRefresh }) {
                 Rôle
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Statut
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Créé le
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -805,7 +852,7 @@ function UsersTab({ users, onRefresh }) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {users.map(user => (
+            {filteredUsers.map(user => (
               <tr key={user.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -836,6 +883,14 @@ function UsersTab({ users, onRefresh }) {
                       user.role === 'admin' ? 'Admin' : 'Coordinateur'}
                   </span>
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.active === false
+                    ? 'bg-gray-100 text-gray-700'
+                    : 'bg-green-100 text-green-800'
+                    }`}>
+                    {user.active === false ? 'Inactif' : 'Actif'}
+                  </span>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(user.created_at).toLocaleDateString('fr-FR')}
                 </td>
@@ -848,7 +903,13 @@ function UsersTab({ users, onRefresh }) {
                       Modifier
                     </button>
                     <button
-                      onClick={() => handleToggleUser(user)}
+                      onClick={() => {
+                        if (user.active === false) {
+                          handleToggleUser(user)
+                        } else {
+                          setConfirmDeactivate(user)
+                        }
+                      }}
                       className={`px-3 py-1 rounded-lg font-medium transition-colors ${user.active === false
                         ? 'text-green-600 hover:text-green-700 hover:bg-green-50'
                         : 'text-red-600 hover:text-red-700 hover:bg-red-50'
@@ -869,9 +930,10 @@ function UsersTab({ users, onRefresh }) {
         <EditUserModal
           user={editModal.user}
           onClose={() => setEditModal({ isOpen: false, user: null })}
-          onSuccess={() => {
+          onSuccess={(message) => {
             onRefresh()
             setEditModal({ isOpen: false, user: null })
+            showFeedback('success', message || 'Utilisateur modifié.')
           }}
         />
       )}
@@ -880,11 +942,62 @@ function UsersTab({ users, onRefresh }) {
       {newUserModal && (
         <NewUserModal
           onClose={() => setNewUserModal(false)}
-          onSuccess={() => {
+          onSuccess={(message) => {
             onRefresh()
             setNewUserModal(false)
+            showFeedback('success', message || 'Utilisateur créé.')
           }}
         />
+      )}
+
+      {/* Modal de confirmation de désactivation */}
+      {confirmDeactivate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Désactiver l'utilisateur ?
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Êtes-vous sûr de vouloir désactiver{' '}
+              <strong>
+                {confirmDeactivate.prenom && confirmDeactivate.nom
+                  ? `${confirmDeactivate.prenom} ${confirmDeactivate.nom}`.trim()
+                  : confirmDeactivate.email}
+              </strong>
+              {' '}? Il ne pourra plus se connecter.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmDeactivate(null)}
+                disabled={deactivating}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={async () => {
+                  setDeactivating(true)
+                  try {
+                    await handleToggleUser(confirmDeactivate)
+                  } finally {
+                    setDeactivating(false)
+                    setConfirmDeactivate(null)
+                  }
+                }}
+                disabled={deactivating}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${deactivating
+                  ? 'bg-red-400 cursor-not-allowed text-white'
+                  : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
+              >
+                {deactivating && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                )}
+                {deactivating ? 'Désactivation...' : 'Désactiver'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
