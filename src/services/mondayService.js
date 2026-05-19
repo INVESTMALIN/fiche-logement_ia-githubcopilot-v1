@@ -1,10 +1,10 @@
 // src/services/mondayService.js
 //
-// Sync 3 champs Fiche Logement → Monday (board 1272144935) en best-effort,
+// Sync 4 champs Fiche Logement → Monday (board 1272144935) en best-effort,
 // via l'Edge Function `monday-sync` (token admin Monday gardé côté serveur).
 //
 // Flow :
-//   1. extractMondaySnapshot(formData) — extrait l'état actuel des 3 champs
+//   1. extractMondaySnapshot(formData) — extrait l'état actuel des 4 champs
 //   2. getMondayChangedFields(current, saved) — diff vs snapshot précédent
 //   3. pushToMonday(...) — appelle l'Edge Function ; ne throw jamais
 //
@@ -13,11 +13,12 @@
 import { supabase } from '../lib/supabaseClient'
 
 /**
- * Snapshot opérationnel : exactement les 3 champs qui seront envoyés à Monday.
+ * Snapshot opérationnel : exactement les 4 champs qui seront envoyés à Monday.
  */
 export function extractMondaySnapshot(formData) {
   return {
     type_premier_menage: formData?.section_avis?.type_premier_menage ?? null,
+    type_premiere_maintenance: formData?.section_avis?.type_premiere_maintenance ?? null,
     airbnb_mot_passe: formData?.section_airbnb?.mot_passe ?? null,
     booking_mot_passe: formData?.section_booking?.mot_passe ?? null
   }
@@ -40,7 +41,7 @@ export function getMondayChangedFields(current, saved) {
  * @param {Object} args
  * @param {string} args.ficheId
  * @param {number|string} args.numeroBien
- * @param {Object} args.snapshot — { type_premier_menage, airbnb_mot_passe, booking_mot_passe }
+ * @param {Object} args.snapshot — { type_premier_menage, type_premiere_maintenance, airbnb_mot_passe, booking_mot_passe }
  * @param {string[]|null} args.changedFields — null = push complet
  * @param {boolean} [args.dryRun=false]
  */

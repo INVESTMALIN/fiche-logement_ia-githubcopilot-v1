@@ -1,9 +1,10 @@
 // supabase/functions/monday-sync/index.ts
 //
-// Sync 3 champs Fiche Logement → Monday (board 1272144935) :
-// - avis_type_premier_menage  → colonne Premiers Ménages       (status)
-// - airbnb_mot_passe          → colonne MDP Airbnb Propriétaire (text)
-// - booking_mot_passe         → colonne MDP Booking Propriétaire (text)
+// Sync 4 champs Fiche Logement → Monday (board 1272144935) :
+// - avis_type_premier_menage      → colonne Premiers Ménages       (status)
+// - avis_type_premiere_maintenance → colonne Maintenance           (status)
+// - airbnb_mot_passe              → colonne MDP Airbnb Propriétaire (text)
+// - booking_mot_passe             → colonne MDP Booking Propriétaire (text)
 //
 // Le token Monday admin-global est lu depuis Edge Secret `MONDAY_API_TOKEN`,
 // jamais exposé côté client.
@@ -22,8 +23,9 @@ const MONDAY_API = 'https://api.monday.com/v2'
 const BOARD_ID = '1272144935'
 
 const COLUMN_IDS = {
-  numeroBien: 'num_ro',           // numbers — clé de lookup
-  statut: 'statut47',             // status — Premiers Ménages
+  numeroBien: 'num_ro',            // numbers — clé de lookup
+  statut: 'statut47',              // status — Premiers Ménages
+  maintenance: 'color_mm3ftnef',   // status — Maintenance
   airbnbPassword: 'text_mm2q5tw8', // text — MDP Airbnb Propriétaire
   bookingPassword: 'text_mm2qaz6a' // text — MDP Booking Propriétaire
 } as const
@@ -37,16 +39,29 @@ function normalizeTypePremierMenage(value: string | null): string | null {
   return value.replace(' / ', '/')
 }
 
+// Labels valides pour la colonne status Maintenance (color_mm3ftnef).
+// Doit rester aligné avec TYPES_MAINTENANCE (src/lib/avisGrilleHelpers.js).
+// Les fiches créées avant la refonte FicheAvis du 14/05 peuvent contenir un
+// ancien label TYPES_PASSAGE dans avis_type_premiere_maintenance : un tel label
+// n'existe pas dans la colonne Monday et ferait rejeter TOUT le
+// change_multiple_column_values (mutation atomique) → on le filtre.
+const VALID_MAINTENANCE_LABELS = new Set([
+  'Intervention propriétaire',
+  'Intervention artisan',
+  "Pas d'intervention"
+])
+
 // ============================================================
 // Types
 // ============================================================
-type FieldKey = 'type_premier_menage' | 'airbnb_mot_passe' | 'booking_mot_passe'
+type FieldKey = 'type_premier_menage' | 'type_premiere_maintenance' | 'airbnb_mot_passe' | 'booking_mot_passe'
 
 interface SyncRequest {
   ficheId: string
   numeroBien: number | string
   fields: {
     type_premier_menage: string | null
+    type_premiere_maintenance: string | null
     airbnb_mot_passe: string | null
     booking_mot_passe: string | null
   }
@@ -150,6 +165,21 @@ function buildColumnValues(fields: SyncRequest['fields'], onlyKeys: FieldKey[] |
   if (shouldPush('type_premier_menage')) {
     const normalized = normalizeTypePremierMenage(fields.type_premier_menage)
     out[COLUMN_IDS.statut] = normalized ? { label: normalized } : { label: null }
+  }
+  if (shouldPush('type_premiere_maintenance')) {
+    const maintenance = fields.type_premiere_maintenance
+    if (!maintenance) {
+      // null/vide → on vide la colonne (vidage intentionnel côté Fiche Logement)
+      out[COLUMN_IDS.maintenance] = { label: null }
+    } else if (VALID_MAINTENANCE_LABELS.has(maintenance)) {
+      out[COLUMN_IDS.maintenance] = { label: maintenance }
+    } else {
+      // Valeur legacy (ancien label TYPES_PASSAGE écrit par l'UI pré-refonte) :
+      // on OMET la colonne plutôt que de l'envoyer. Sinon Monday rejette tout le
+      // change_multiple_column_values et les autres champs ne sync plus non plus.
+      // On n'envoie pas {label:null} : ça écraserait une valeur Monday valide.
+      console.warn(`[monday-sync] valeur maintenance legacy ignorée (non whitelistée): "${maintenance}"`)
+    }
   }
   if (shouldPush('airbnb_mot_passe')) {
     out[COLUMN_IDS.airbnbPassword] = fields.airbnb_mot_passe ?? ''
