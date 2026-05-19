@@ -76,11 +76,15 @@ async function handleCreate(service: SupabaseClient, payload: Record<string, unk
   // email_confirm: true → compte créé déjà confirmé : l'utilisateur (un
   // collègue interne) peut se connecter immédiatement avec le mot de passe
   // temporaire fourni par l'admin. Pas de friction de confirmation email.
+  //
+  // ⚠️ `role` n'est PAS passé en user_metadata : ces métadonnées sont reprises
+  // telles quelles par le trigger handle_new_user et seraient contrôlables via
+  // un signup public. Le rôle est appliqué plus bas par un UPDATE service_role.
   const { data, error } = await service.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { prenom, nom, role }
+    user_metadata: { prenom, nom }
   })
 
   if (error) {
@@ -111,6 +115,22 @@ async function handleCreate(service: SupabaseClient, payload: Record<string, unk
     return jsonResponse({
       success: false,
       error: "Le compte a été créé mais son profil est introuvable (trigger handle_new_user). Contactez un administrateur technique."
+    }, 500)
+  }
+
+  // Application du rôle demandé. Le trigger force 'coordinateur' (cf. migration
+  // 2026-05-19_handle_new_user_metadata.sql) ; le rôle réel est écrit ici, dans
+  // le flux admin de confiance — l'appelant a déjà été vérifié super_admin.
+  const { error: roleUpdateError } = await service
+    .from('profiles')
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq('id', newUser.id)
+
+  if (roleUpdateError) {
+    console.error('[admin-users] application du rôle échouée pour', newUser.id, roleUpdateError.message)
+    return jsonResponse({
+      success: false,
+      error: "Le compte a été créé mais l'application du rôle a échoué. Corrigez le rôle manuellement."
     }, 500)
   }
 

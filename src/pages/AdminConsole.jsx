@@ -739,7 +739,11 @@ function UsersTab({ users, onRefresh }) {
   // Fonction pour désactiver/activer un utilisateur
   const handleToggleUser = async (user) => {
     try {
-      const newStatus = !user.active
+      // `active === false` est le seul état "désactivé" reconnu par l'UI : pour
+      // les lignes legacy où active est NULL/absent, le compte est traité comme
+      // actif → on bascule vers false. (Ne pas utiliser !user.active : NULL
+      // donnerait true et empêcherait de désactiver ces comptes.)
+      const newStatus = user.active === false ? true : false
       const result = await invokeAdminUsers('toggleActive', {
         userId: user.id,
         active: newStatus

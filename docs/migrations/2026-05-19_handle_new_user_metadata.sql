@@ -1,11 +1,14 @@
 -- Amélioration du trigger handle_new_user()
 --
--- La version actuelle ignore raw_user_meta_data et met prénom/nom/rôle en dur.
--- Conséquence : un compte créé via auth.admin.createUser() ne récupère jamais
--- son prénom/nom, même si l'Edge Function admin-users les passe en user_metadata.
+-- La version d'origine ignore raw_user_meta_data et met prénom/nom/rôle en dur.
+-- Nouvelle version : copie prénom/nom depuis les métadonnées si présentes.
 --
--- Nouvelle version : lit les métadonnées si présentes, sinon fallback aux
--- valeurs par défaut (chaîne vide pour prénom/nom, 'coordinateur' pour le rôle).
+-- ⚠️ Sécurité : le rôle n'est JAMAIS lu depuis raw_user_meta_data. Ces
+-- métadonnées sont contrôlées par l'utilisateur au signup (si le signup public
+-- est activé) — lire `role` ici permettrait à n'importe qui de s'auto-attribuer
+-- 'super_admin' et de contourner le flux admin. Le trigger force donc toujours
+-- 'coordinateur' ; le rôle réel est appliqué côté serveur par l'Edge Function
+-- admin-users (flux de confiance, appelant vérifié super_admin).
 --
 -- À jouer manuellement dans le SQL Editor Supabase après merge de la PR.
 
@@ -20,7 +23,7 @@ BEGIN
   VALUES (
     new.id,
     new.email,
-    COALESCE(new.raw_user_meta_data->>'role', 'coordinateur'),
+    'coordinateur',
     COALESCE(new.raw_user_meta_data->>'prenom', ''),
     COALESCE(new.raw_user_meta_data->>'nom', ''),
     true,
