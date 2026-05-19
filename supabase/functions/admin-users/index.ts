@@ -155,8 +155,8 @@ async function handleUpdate(service: SupabaseClient, payload: Record<string, unk
 // ============================================================
 // Action : toggleActive
 // ============================================================
-// Active / désactive un compte (soft delete). À la désactivation, révoque les
-// sessions actives pour que l'effet soit immédiat.
+// Active / désactive un compte (soft delete). Les sessions actives ne sont pas
+// révoquées — cf. note dans le corps de la fonction.
 async function handleToggleActive(service: SupabaseClient, payload: Record<string, unknown>): Promise<Response> {
   const userId = String(payload.userId ?? '')
   const active = payload.active
@@ -178,19 +178,11 @@ async function handleToggleActive(service: SupabaseClient, payload: Record<strin
     return jsonResponse({ success: false, error: 'Utilisateur introuvable.' }, 404)
   }
 
-  // Désactivation : on révoque les sessions actives. Best-effort — si la
-  // révocation échoue, le compte reste désactivé (le contrôle `active` au
-  // login bloque les reconnexions de toute façon).
-  if (active === false) {
-    try {
-      const { error: signOutError } = await service.auth.admin.signOut(userId, 'global')
-      if (signOutError) {
-        console.error('[admin-users] signOut échoué pour', userId, signOutError.message)
-      }
-    } catch (err) {
-      console.error('[admin-users] signOut exception pour', userId, err)
-    }
-  }
+  // Note : on ne révoque pas les sessions actives à la désactivation.
+  // L'API auth.admin.signOut attend un JWT valide, pas un userId.
+  // Limitation acceptée : un user désactivé garde sa session active
+  // jusqu'à expiration du JWT (max 1h). Le check `active` au login
+  // dans AuthContext.signIn bloque toute reconnexion.
 
   console.log(`[admin-users] toggleActive OK user=${userId} active=${active}`)
   return jsonResponse({
@@ -241,17 +233,25 @@ serve(async (req: Request) => {
     auth: { autoRefreshToken: false, persistSession: false }
   })
 
-  // --- 3. Vérification du rôle (toujours re-vérifié en base, jamais via le front) ---
+  // --- 3. Vérification du caller (toujours re-vérifié en base, jamais via le front) ---
   // Lookup via le client service_role : le client anon ne transmet pas le JWT
   // aux requêtes PostgREST, le SELECT tournerait en anonyme et serait filtré
   // par RLS → 403 systématique.
   const { data: callerProfile, error: roleError } = await service
     .from('profiles')
-    .select('role')
+    .select('role, active')
     .eq('id', user.id)
     .maybeSingle()
 
-  if (roleError || callerProfile?.role !== 'super_admin') {
+  if (roleError || !callerProfile) {
+    return jsonResponse({ success: false, error: 'Profil appelant introuvable.' }, 403)
+  }
+  // Un super_admin désactivé alors que son onglet est encore ouvert conserve un
+  // JWT valide jusqu'à 1h : on le rejette ici, avant tout dispatch.
+  if (callerProfile.active === false) {
+    return jsonResponse({ success: false, error: 'Votre compte a été désactivé.' }, 403)
+  }
+  if (callerProfile.role !== 'super_admin') {
     return jsonResponse({
       success: false,
       error: 'Accès refusé : action réservée aux super administrateurs.'
