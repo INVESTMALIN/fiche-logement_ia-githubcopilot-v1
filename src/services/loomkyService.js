@@ -78,6 +78,9 @@ export function normalizeFormDataToFiche(formData) {
         equipements_parking_sur_place_details: formData.section_equipements?.parking_sur_place_details || '',
         equipements_parking_payant_details: formData.section_equipements?.parking_payant_details || '',
 
+        // Consommables — pilote les tasks "produits ménagers obligatoires" dans buildResolvedChecklists
+        consommables_fournis_par_prestataire: formData.section_consommables?.fournis_par_prestataire ?? null,
+
         // Chambres (pour calculateBedCounts - 6 chambres possibles)
         ...generateChambresFlat(formData),
 
@@ -552,6 +555,14 @@ export function buildResolvedChecklists(fiche) {
         })
     }
 
+    // Task conditionnelle : produits ménagers fournis par le prestataire (cuisine)
+    if (fiche.consommables_fournis_par_prestataire === true) {
+        cuisineTasks.push({
+            name: "Produits ménagers : produit vitres et produit sol",
+            description: "Disponibles, en bon état et en quantité suffisante"
+        })
+    }
+
     checklists.push({
         name: "Cuisine",
         tasks: cuisineTasks,
@@ -680,6 +691,14 @@ export function buildResolvedChecklists(fiche) {
             })
         }
 
+        // Task conditionnelle : produits ménagers fournis par le prestataire (SDB)
+        if (fiche.consommables_fournis_par_prestataire === true) {
+            sdbTasks.push({
+                name: "Produits ménagers : produit SDB / multi-surfaces ou vinaigre ménager",
+                description: "Disponible, en bon état et en quantité suffisante"
+            })
+        }
+
         // Consommables en dernier
         sdbTasks.push({ name: "Consommables : 1 savon pour les mains", description: "Disponible, en bon état et en quantité suffisante" })
 
@@ -694,18 +713,31 @@ export function buildResolvedChecklists(fiche) {
     }
 
     // WC
+    const wcTasks = [
+        { name: "Vue d'ensemble des WC (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" },
+        { name: "Abattant", description: "Propre et désinfecté" },
+        { name: "Lunette de WC", description: "Propre et désinfectée" },
+        { name: "Cuvette de WC", description: "Propre et désinfectée. Sans trace de calcaire" },
+        { name: "Base de WC (arrondi en bas)", description: "Propre et désinfectée" },
+        { name: "Brosse de WC", description: "Propre et désinfectée" },
+        { name: "Poubelle de WC", description: "Vider et mettre sac neuf. Intérieur poubelle avec sac poubelle" }
+    ]
+
+    // Task conditionnelle : produits ménagers fournis par le prestataire (WC)
+    // Insérée avant l'item Consommables pour cohérence avec l'ordre Cuisine/SDB
+    if (fiche.consommables_fournis_par_prestataire === true) {
+        wcTasks.push({
+            name: "Produits ménagers : produit WC / Javel",
+            description: "Disponible, en bon état et en quantité suffisante"
+        })
+    }
+
+    // Consommables en dernier
+    wcTasks.push({ name: "Consommables", description: "2 rouleaux papier toilette. Disponible, en bon état et en quantité suffisante" })
+
     checklists.push({
         name: "WC",
-        tasks: [
-            { name: "Vue d'ensemble des WC (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" },
-            { name: "Abattant", description: "Propre et désinfecté" },
-            { name: "Lunette de WC", description: "Propre et désinfectée" },
-            { name: "Cuvette de WC", description: "Propre et désinfectée. Sans trace de calcaire" },
-            { name: "Base de WC (arrondi en bas)", description: "Propre et désinfectée" },
-            { name: "Brosse de WC", description: "Propre et désinfectée" },
-            { name: "Poubelle de WC", description: "Vider et mettre sac neuf. Intérieur poubelle avec sac poubelle" },
-            { name: "Consommables", description: "2 rouleaux papier toilette. Disponible, en bon état et en quantité suffisante" }
-        ],
+        tasks: wcTasks,
         isRequired: true,
         beforePhotosRequired: false,
         afterPhotosRequired: true
