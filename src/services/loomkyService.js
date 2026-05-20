@@ -78,8 +78,14 @@ export function normalizeFormDataToFiche(formData) {
         equipements_parking_sur_place_details: formData.section_equipements?.parking_sur_place_details || '',
         equipements_parking_payant_details: formData.section_equipements?.parking_payant_details || '',
 
-        // Consommables — pilote les tasks "produits ménagers obligatoires" dans buildResolvedChecklists
+        // Consommables — pilote les tasks "produits ménagers obligatoires" et "sur demande" dans buildResolvedChecklists
         consommables_fournis_par_prestataire: formData.section_consommables?.fournis_par_prestataire ?? null,
+        consommables_gel_douche: formData.section_consommables?.gel_douche ?? null,
+        consommables_shampoing: formData.section_consommables?.shampoing ?? null,
+        consommables_apres_shampoing: formData.section_consommables?.apres_shampoing ?? null,
+        consommables_pastilles_lave_vaisselle: formData.section_consommables?.pastilles_lave_vaisselle ?? null,
+        consommables_autre_consommable: formData.section_consommables?.autre_consommable ?? null,
+        consommables_autre_consommable_details: formData.section_consommables?.autre_consommable_details || '',
 
         // Chambres (pour calculateBedCounts - 6 chambres possibles)
         ...generateChambresFlat(formData),
@@ -565,6 +571,24 @@ export function buildResolvedChecklists(fiche) {
         })
     }
 
+    // Task conditionnelle : consommables "sur demande" cochés par le coordinateur (cuisine)
+    // Pastilles + autre consommable libre (si rempli). Affichée uniquement si le prestataire fournit les consommables et au moins un item est coché.
+    if (fiche.consommables_fournis_par_prestataire === true) {
+        const cuisineSurDemandeItems = []
+        if (fiche.consommables_pastilles_lave_vaisselle === true) {
+            cuisineSurDemandeItems.push("Pastilles, sel et liquide de rinçage pour lave-vaisselle")
+        }
+        if (fiche.consommables_autre_consommable === true && fiche.consommables_autre_consommable_details) {
+            cuisineSurDemandeItems.push(fiche.consommables_autre_consommable_details)
+        }
+        if (cuisineSurDemandeItems.length > 0) {
+            cuisineTasks.push({
+                name: `Consommables sur demande: ${cuisineSurDemandeItems.join(", ")}`,
+                description: "Disponibles, en bon état et en quantité suffisante"
+            })
+        }
+    }
+
     // Emplacement produits ménagers en toute dernière position
     cuisineTasks.push({ name: "Emplacement produits ménagers", description: "Ordonné et accessible" })
 
@@ -705,6 +729,21 @@ export function buildResolvedChecklists(fiche) {
                 name: "Consommables: Produit SDB / multi-surfaces ou vinaigre ménager",
                 description: "Disponible, en bon état et en quantité suffisante"
             })
+        }
+
+        // Task conditionnelle : consommables "sur demande" cochés par le coordinateur (SDB)
+        // Bloc affiché uniquement si le prestataire fournit les consommables ET qu'au moins un item est coché
+        if (fiche.consommables_fournis_par_prestataire === true) {
+            const sdbSurDemandeItems = []
+            if (fiche.consommables_gel_douche === true) sdbSurDemandeItems.push("Gel douche")
+            if (fiche.consommables_shampoing === true) sdbSurDemandeItems.push("Shampoing")
+            if (fiche.consommables_apres_shampoing === true) sdbSurDemandeItems.push("Après-shampoing")
+            if (sdbSurDemandeItems.length > 0) {
+                sdbTasks.push({
+                    name: `Consommables sur demande: ${sdbSurDemandeItems.join(", ")}`,
+                    description: "Disponibles, en bon état et en quantité suffisante"
+                })
+            }
         }
 
         checklists.push({
