@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Mic, FolderOpen, Diff, CheckCircle, AlertCircle, Loader2, ChevronDown, TriangleAlert } from 'lucide-react'
+import { Mic, FolderOpen, Diff, CheckCircle, AlertCircle, Loader2, ChevronDown, TriangleAlert, Construction, HelpCircle } from 'lucide-react'
 import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
@@ -144,7 +144,10 @@ export default function FicheCuisine2() {
   ]
 
   // --- Mode state ---
-  const [manualExpanded, setManualExpanded] = useState(false)
+  // Saisie manuelle ouverte par défaut : accès direct aux compteurs sans clic supplémentaire
+  const [manualExpanded, setManualExpanded] = useState(true)
+  // Aide "Comment utiliser la saisie vocale" — repliée par défaut
+  const [howItWorksExpanded, setHowItWorksExpanded] = useState(false)
 
   // --- Vocal mode state ---
   const [vocalSubMode, setVocalSubMode] = useState('micro') // 'micro' | 'upload'
@@ -297,9 +300,48 @@ export default function FicheCuisine2() {
                 <Mic className="w-4 h-4 text-blue-700" />
                 <span className="text-base font-semibold text-blue-800">Saisie vocale</span>
                 <span className="text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded">Recommandé</span>
+                <span className="text-[10px] uppercase tracking-wide font-semibold text-yellow-900 bg-yellow-100 border border-yellow-300 px-2 py-0.5 rounded flex items-center gap-1">
+                  <Construction className="w-3 h-3" /> En développement
+                </span>
               </div>
 
               <div className="p-4 space-y-4">
+                {/* Warning DEV — la fonctionnalité est encore expérimentale */}
+                <div className="p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg flex items-start gap-3">
+                  <Construction className="w-5 h-5 text-yellow-900 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-yellow-900">FONCTIONNALITÉ EN DÉVELOPPEMENT</p>
+                    <p className="text-xs text-yellow-800 mt-1">
+                      La saisie vocale peut encore avoir de petits bugs. En cas de souci, utilisez la saisie manuelle ci-dessous.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Aide "Comment ça marche" — repliable */}
+                <div className="border border-blue-200 rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setHowItWorksExpanded((prev) => !prev)}
+                    className="w-full flex items-center justify-between px-3 py-2 bg-blue-50 hover:bg-blue-100 transition-colors"
+                    aria-expanded={howItWorksExpanded}
+                  >
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4 text-blue-700" />
+                      <span className="text-sm font-semibold text-blue-800">Comment utiliser la saisie vocale</span>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-blue-700 transition-transform ${howItWorksExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                  {howItWorksExpanded && (
+                    <ul className="px-4 py-3 space-y-2 text-sm text-gray-700 list-disc list-inside bg-white">
+                      <li>Appuyez et <strong>maintenez le bouton enfoncé</strong> pour parler. Relâchez pour envoyer.</li>
+                      <li>Vous pouvez faire l'inventaire <strong>en plusieurs fois</strong>. À chaque enregistrement, les ustensiles détectés s'ajoutent à ceux déjà saisis.</li>
+                      <li>Énumérez naturellement, ex : « j'ai 4 assiettes plates, 2 bols, une cocotte-minute, un économe... ».</li>
+                      <li>Vous pouvez aussi <strong>uploader un fichier audio</strong> au lieu d'enregistrer en direct.</li>
+                      <li>La saisie manuelle ci-dessous reste disponible pour ajuster les quantités après coup.</li>
+                    </ul>
+                  )}
+                </div>
+
                 {webhookMissing ? (
                   <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
                     <TriangleAlert className="w-4 h-4 mt-0.5 shrink-0" />
