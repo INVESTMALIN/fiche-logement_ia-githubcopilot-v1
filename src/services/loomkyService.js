@@ -578,8 +578,12 @@ export function buildResolvedChecklists(fiche) {
         if (fiche.consommables_pastilles_lave_vaisselle === true) {
             cuisineSurDemandeItems.push("Pastilles, sel et liquide de rinçage pour lave-vaisselle")
         }
-        if (fiche.consommables_autre_consommable === true && fiche.consommables_autre_consommable_details) {
-            cuisineSurDemandeItems.push(fiche.consommables_autre_consommable_details)
+        if (fiche.consommables_autre_consommable === true) {
+            // Trim pour ignorer les saisies whitespace-only (sinon "Consommables sur demande:    " orphelin)
+            const autreTrimmed = (fiche.consommables_autre_consommable_details || '').trim()
+            if (autreTrimmed) {
+                cuisineSurDemandeItems.push(autreTrimmed)
+            }
         }
         if (cuisineSurDemandeItems.length > 0) {
             cuisineTasks.push({
