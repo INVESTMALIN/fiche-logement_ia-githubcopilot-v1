@@ -300,9 +300,6 @@ export default function FicheCuisine2() {
                 <Mic className="w-4 h-4 text-blue-700" />
                 <span className="text-base font-semibold text-blue-800">Saisie vocale</span>
                 <span className="text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded">Recommandé</span>
-                <span className="text-[10px] uppercase tracking-wide font-semibold text-yellow-900 bg-yellow-100 border border-yellow-300 px-2 py-0.5 rounded flex items-center gap-1">
-                  <Construction className="w-3 h-3" /> En développement
-                </span>
               </div>
 
               <div className="p-4 space-y-4">
@@ -337,6 +334,7 @@ export default function FicheCuisine2() {
                       <li>Vous pouvez faire l'inventaire <strong>en plusieurs fois</strong>. À chaque enregistrement, les ustensiles détectés s'ajoutent à ceux déjà saisis.</li>
                       <li>Énumérez naturellement, ex : « j'ai 4 assiettes plates, 2 bols, une cocotte-minute, un économe... ».</li>
                       <li>Vous pouvez aussi <strong>uploader un fichier audio</strong> au lieu d'enregistrer en direct.</li>
+                      <li>Les ustensiles se mettent à jour automatiquement ci-dessous</li>
                       <li>La saisie manuelle ci-dessous reste disponible pour ajuster les quantités après coup.</li>
                     </ul>
                   )}
