@@ -404,55 +404,82 @@ export default function FicheFinalisation() {
                     )}
                   </div>
 
-                  {/* Champ token */}
-                  <div>
-                    <label className="block font-semibold mb-1 text-sm">
-                      Token Loomky <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="Token JWT Loomky (disponible dans Monday)"
-                      value={loomkyToken}
-                      onChange={(e) => setLoomkyToken(e.target.value)}
-                      className="w-full p-2 border rounded font-mono text-sm"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Copiez le token de la conciergerie depuis Monday.</p>
-                  </div>
+                  {/* Sous-cas 2a : checklists déjà créées → l'API Loomky refuse les doublons (409 Conflict),
+                      on masque le bouton de (re)création et le champ token, seul "Voir dans Loomky" reste accessible */}
+                  {formData.loomky_checklist_ids?.length > 0 ? (
+                    <>
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800 flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                          <span>
+                            Les checklists ont déjà été créées sur Loomky et ne peuvent pas être recréées depuis cette interface
+                            (l'API Loomky refuse les doublons de nom). Pour les modifier, intervenir directement dans Loomky.
+                          </span>
+                        </p>
+                      </div>
 
-                  {/* Erreur */}
-                  {loomkyStatus.error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-800 flex items-center gap-2"><XCircle className="w-4 h-4" /> {loomkyStatus.error}</p>
-                    </div>
-                  )}
+                      <div className="flex items-center gap-3">
+                        <a
+                          href={`https://app.loomky.com/index/rentals/edit/informations/general?propertyId=${formData.loomky_property_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-purple-700 border border-purple-300 hover:bg-purple-50 transition-all"
+                        >
+                          <ExternalLink className="w-4 h-4" /> Voir dans Loomky
+                        </a>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Sous-cas 2b : pas encore créées → token + bouton "Créer les checklists" */}
+                      <div>
+                        <label className="block font-semibold mb-1 text-sm">
+                          Token Loomky <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="password"
+                          placeholder="Token JWT Loomky (disponible dans Monday)"
+                          value={loomkyToken}
+                          onChange={(e) => setLoomkyToken(e.target.value)}
+                          className="w-full p-2 border rounded font-mono text-sm"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Copiez le token de la conciergerie depuis Monday.</p>
+                      </div>
 
-                  {/* Boutons */}
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleCreateChecklists}
-                      disabled={loomkyStatus.syncing || !loomkyToken.trim()}
-                      className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-white transition-all ${loomkyStatus.syncing || !loomkyToken.trim()
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-purple-600 hover:bg-purple-700'
-                        }`}
-                    >
-                      {loomkyStatus.syncing ? (
-                        <><Loader2 className="w-5 h-5 animate-spin" />Création en cours...</>
-                      ) : formData.loomky_checklist_ids?.length > 0 ? (
-                        <><RefreshCw className="w-5 h-5" />Recréer les checklists</>
-                      ) : (
-                        <><RefreshCw className="w-5 h-5" />Créer les checklists</>
+                      {/* Erreur */}
+                      {loomkyStatus.error && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-800 flex items-center gap-2"><XCircle className="w-4 h-4" /> {loomkyStatus.error}</p>
+                        </div>
                       )}
-                    </button>
-                    <a
-                      href={`https://app.loomky.com/index/rentals/edit/informations/general?propertyId=${formData.loomky_property_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-purple-700 border border-purple-300 hover:bg-purple-50 transition-all"
-                    >
-                      <ExternalLink className="w-4 h-4" /> Voir dans Loomky
-                    </a>
-                  </div>
+
+                      {/* Boutons */}
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleCreateChecklists}
+                          disabled={loomkyStatus.syncing || !loomkyToken.trim()}
+                          className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-white transition-all ${loomkyStatus.syncing || !loomkyToken.trim()
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-purple-600 hover:bg-purple-700'
+                            }`}
+                        >
+                          {loomkyStatus.syncing ? (
+                            <><Loader2 className="w-5 h-5 animate-spin" />Création en cours...</>
+                          ) : (
+                            <><RefreshCw className="w-5 h-5" />Créer les checklists</>
+                          )}
+                        </button>
+                        <a
+                          href={`https://app.loomky.com/index/rentals/edit/informations/general?propertyId=${formData.loomky_property_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium text-purple-700 border border-purple-300 hover:bg-purple-50 transition-all"
+                        >
+                          <ExternalLink className="w-4 h-4" /> Voir dans Loomky
+                        </a>
+                      </div>
+                    </>
+                  )}
 
                 </div>
               )}
