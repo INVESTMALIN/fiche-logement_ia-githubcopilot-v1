@@ -27,6 +27,52 @@ const BASE_URL = LOOMKY_CONFIG[CURRENT_ENV].BASE_URL
 // Pas de valeur par défaut = sécurité + testabilité
 
 /**
+ * Normalise un numéro de téléphone vers le format E.164 strict attendu par l'API Loomky.
+ *
+ * L'API Loomky rejette tout numéro qui n'est pas en E.164 (`+<indicatif><digits>` sans
+ * séparateurs) avec une erreur 400 "Invalid phone number format". On normalise donc
+ * juste avant l'envoi — la fiche et la DB gardent la saisie utilisateur brute (lisible).
+ *
+ * Hypothèse métier : un numéro qui commence par `0` est assumé français → préfixé `+33`.
+ * Un numéro qui commence déjà par `+` est respecté (juste nettoyé des séparateurs).
+ * Tout le reste retourne `''` pour laisser le fallback `+33700000000` côté appelant
+ * prendre le relais (filet de sécurité — l'API exige un téléphone non vide).
+ *
+ * Cas non couverts par design (à signaler si rencontrés en prod) :
+ *  - Numéros commençant par `0033` (vieux format intl français) → traités comme "français
+ *    qui commence par 0" et donneraient `+33033699999999`. Très rare en pratique.
+ *  - Numéros sans préfixe `0` ni `+` (ex: `33699999999` brut) → retournent `''` (fallback).
+ *
+ * @param {string|null|undefined} phone - Saisie utilisateur brute
+ * @returns {string} - Numéro E.164 (`+...`) ou `''` si non normalisable
+ */
+export function normalizePhoneForLoomky(phone) {
+    if (!phone || typeof phone !== 'string') return ''
+    const trimmed = phone.trim()
+    if (!trimmed) return ''
+
+    // On garde la trace d'un `+` initial avant de strip les séparateurs,
+    // pour distinguer "+33..." (international) de "0033..." (qui serait perdu sinon).
+    const hasPlus = trimmed.startsWith('+')
+    const digitsOnly = trimmed.replace(/\D/g, '')
+
+    if (!digitsOnly) return '' // garbage type "abc" ou "+++" → fallback sécurité
+
+    if (hasPlus) {
+        // Déjà international, on respecte tel quel après cleanup des séparateurs
+        return `+${digitsOnly}`
+    }
+
+    if (digitsOnly.startsWith('0')) {
+        // Assumé français : remplace le 0 initial par +33
+        return `+33${digitsOnly.slice(1)}`
+    }
+
+    // Ni `+` ni `0` au début → format non reconnu, on laisse le fallback gérer
+    return ''
+}
+
+/**
  * Normalise formData (nested UI) → fiche flat (comme Supabase)
  * Pour que buildPropertyPayload() reçoive la structure attendue
  */
@@ -1624,11 +1670,15 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
         }
     }
 
+    // Normalisation E.164 avant envoi à Loomky (qui rejette les autres formats avec une 400).
+    // Si la normalisation retourne `''` (vide / non reconnu / garbage), le fallback prend le relais.
+    const normalizedPhone = normalizePhoneForLoomky(fiche.proprietaire_telephone)
+
     const payload = {
         email,
         firstName: fiche.proprietaire_prenom || '',
         lastName: fiche.proprietaire_nom || '',
-        phone: fiche.proprietaire_telephone || '+33700000000',
+        phone: normalizedPhone || '+33700000000',
         address: {
             street: fiche.proprietaire_adresse_rue || '',
             city: fiche.proprietaire_adresse_ville || '',
