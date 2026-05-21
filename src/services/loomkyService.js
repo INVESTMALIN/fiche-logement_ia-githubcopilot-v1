@@ -44,6 +44,10 @@ export function normalizeFormDataToFiche(formData) {
         proprietaire_nom: formData.section_proprietaire?.nom || '',
         proprietaire_prenom: formData.section_proprietaire?.prenom || '',
         proprietaire_email: formData.section_proprietaire?.email || '',
+
+        // `|| null` (pas `|| ''`) pour cohérence avec le mapping DB (cf. supabaseHelpers.js).
+        // Une saisie vide retombe sur le fallback hardcodé dans createPropertyOwnerOnLoomky.
+        proprietaire_telephone: formData.section_proprietaire?.telephone || null,
         proprietaire_adresse_rue: formData.section_proprietaire?.adresse?.rue || '',
         proprietaire_adresse_complement: formData.section_proprietaire?.adresse?.complement || '',
         proprietaire_adresse_ville: formData.section_proprietaire?.adresse?.ville || '',
