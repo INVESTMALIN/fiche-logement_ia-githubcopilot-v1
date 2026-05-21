@@ -230,9 +230,9 @@ export default function FicheEmailOutlook() {
                                 <p className="text-xs text-gray-500 mt-1">Copiez le token de la conciergerie depuis Monday.</p>
                             </div>
 
-                            {/* Statut — caché pendant la création (loomkyStep set lignes 44/61/82) et pendant la modal de succès,
+                            {/* Statut — caché pendant la création (loomkyStep défini) et pendant la modal de succès,
                                 pour préserver l'ordre perçu : spinner → modal → (fermeture) → bloc vert.
-                                La persistance immédiate du loomky_property_id après l'étape 1 (cf. l. 52) reste intacte. */}
+                                La persistance immédiate du loomky_property_id après l'étape 1 reste intacte. */}
                             {formData.loomky_property_id && !loomkyStep && !successModal && (
                                 <div className="bg-green-50 border border-green-200 rounded-lg overflow-hidden">
                                     <div className="p-3">
