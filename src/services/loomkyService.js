@@ -570,7 +570,6 @@ export function buildResolvedChecklists(fiche) {
     // === Bloc Consommables groupé en fin de checklist (préfixe "Consommables:" pour homogénéité) ===
     cuisineTasks.push({ name: "Consommables: Éponge, liquide vaisselle, savon pour les mains", description: "Disponibles, en bon état et en quantité suffisante" })
     cuisineTasks.push({ name: "Consommables: Essuie-tout, sel, sucre, poivre", description: "Disponibles, en bon état et en quantité suffisante" })
-    cuisineTasks.push({ name: "Consommables: Autres produits si demandés par le propriétaire (pastille lave-vaisselle, bouteille d'eau, gâteaux etc.)", description: "Disponibles, en bon état et en quantité suffisante" })
 
     // Task conditionnelle : produits ménagers fournis par le prestataire (cuisine)
     if (fiche.consommables_fournis_par_prestataire === true) {
@@ -625,6 +624,9 @@ export function buildResolvedChecklists(fiche) {
             description: "Disponibles, en bon état et en quantité suffisante"
         })
     }
+
+    cuisineTasks.push({ name: "Consommables: Autres produits si demandés par le propriétaire (pastille lave-vaisselle, bouteille d'eau, gâteaux etc.)", description: "Disponibles, en bon état et en quantité suffisante" })
+
 
     // Emplacement produits ménagers en toute dernière position
     cuisineTasks.push({ name: "Emplacement produits ménagers", description: "Ordonné et accessible" })
