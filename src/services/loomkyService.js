@@ -33,18 +33,24 @@ const BASE_URL = LOOMKY_CONFIG[CURRENT_ENV].BASE_URL
  * séparateurs) avec une erreur 400 "Invalid phone number format". On normalise donc
  * juste avant l'envoi — la fiche et la DB gardent la saisie utilisateur brute (lisible).
  *
- * Hypothèse métier : un numéro qui commence par `0` est assumé français → préfixé `+33`.
- * Un numéro qui commence déjà par `+` est respecté (juste nettoyé des séparateurs).
- * Tout le reste retourne `''` pour laisser le fallback `+33700000000` côté appelant
- * prendre le relais (filet de sécurité — l'API exige un téléphone non vide).
+ * Hypothèse métier :
+ *  - `+...` (international) → respecté, juste cleané des séparateurs
+ *  - `00...` (vieux format intl, sémantiquement équivalent à `+`) → les deux `0` initiaux
+ *    sont remplacés par `+` (ex: `0033699999988` → `+33699999988`)
+ *  - `0...` → assumé français, le `0` initial est remplacé par `+33`
+ *  - Tout le reste retourne `''` pour laisser le fallback `+33700000000` côté appelant
+ *    prendre le relais (filet de sécurité — l'API exige un téléphone non vide).
+ *
+ * Validation longueur : si le numéro normalisé fait moins de 11 caractères (`+` + indicatif +
+ * chiffres), on retourne `''`. Filet de sécurité ultime côté envoi API ; la vraie validation
+ * à la saisie (avec message d'alerte au coordinateur) viendra dans une PR séparée.
  *
  * Cas non couverts par design (à signaler si rencontrés en prod) :
- *  - Numéros commençant par `0033` (vieux format intl français) → traités comme "français
- *    qui commence par 0" et donneraient `+33033699999999`. Très rare en pratique.
- *  - Numéros sans préfixe `0` ni `+` (ex: `33699999999` brut) → retournent `''` (fallback).
+ *  - Numéros sans préfixe `0` ni `+` ni `00` (ex: `33699999999` brut) → retournent `''`
+ *    (fallback). Signe d'une saisie incomplète côté coordinateur.
  *
  * @param {string|null|undefined} phone - Saisie utilisateur brute
- * @returns {string} - Numéro E.164 (`+...`) ou `''` si non normalisable
+ * @returns {string} - Numéro E.164 (`+...`) ou `''` si non normalisable / trop court
  */
 export function normalizePhoneForLoomky(phone) {
     if (!phone || typeof phone !== 'string') return ''
@@ -58,18 +64,27 @@ export function normalizePhoneForLoomky(phone) {
 
     if (!digitsOnly) return '' // garbage type "abc" ou "+++" → fallback sécurité
 
+    let normalized = ''
     if (hasPlus) {
         // Déjà international, on respecte tel quel après cleanup des séparateurs
-        return `+${digitsOnly}`
-    }
-
-    if (digitsOnly.startsWith('0')) {
+        normalized = `+${digitsOnly}`
+    } else if (digitsOnly.startsWith('00')) {
+        // Vieux format intl (`00<indicatif><digits>`) équivalent à `+`.
+        // ⚠️ Branche `00` testée AVANT `0` sinon `0033...` serait intercepté et deviendrait `+33033...`
+        normalized = `+${digitsOnly.slice(2)}`
+    } else if (digitsOnly.startsWith('0')) {
         // Assumé français : remplace le 0 initial par +33
-        return `+33${digitsOnly.slice(1)}`
+        normalized = `+33${digitsOnly.slice(1)}`
+    } else {
+        // Ni `+` ni `0` ni `00` au début → format non reconnu, on laisse le fallback gérer
+        return ''
     }
 
-    // Ni `+` ni `0` au début → format non reconnu, on laisse le fallback gérer
-    return ''
+    // Validation longueur minimale : un E.164 valide fait au moins 11 caractères
+    // (préfixe pays + chiffres). Filtre les saisies tronquées type `+33699` ou `06 99`.
+    if (normalized.length < 11) return ''
+
+    return normalized
 }
 
 /**
