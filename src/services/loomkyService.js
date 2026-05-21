@@ -44,8 +44,9 @@ export function normalizeFormDataToFiche(formData) {
         proprietaire_nom: formData.section_proprietaire?.nom || '',
         proprietaire_prenom: formData.section_proprietaire?.prenom || '',
         proprietaire_email: formData.section_proprietaire?.email || '',
-        // `|| null` (et non `?? null` ni `|| ''`) pour que les saisies vides retombent sur le fallback
-        // hardcodé '+33700000000' de createPropertyOwnerOnLoomky (l. 1627). Même pattern que supabaseHelpers.js:24.
+
+        // `|| null` (pas `|| ''`) pour cohérence avec le mapping DB (cf. supabaseHelpers.js).
+        // Une saisie vide retombe sur le fallback hardcodé dans createPropertyOwnerOnLoomky.
         proprietaire_telephone: formData.section_proprietaire?.telephone || null,
         proprietaire_adresse_rue: formData.section_proprietaire?.adresse?.rue || '',
         proprietaire_adresse_complement: formData.section_proprietaire?.adresse?.complement || '',
