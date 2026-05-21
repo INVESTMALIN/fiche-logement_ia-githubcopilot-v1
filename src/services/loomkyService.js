@@ -97,6 +97,38 @@ export function normalizeFormDataToFiche(formData) {
         consommables_cafe_autre: formData.section_consommables?.cafe_autre ?? null,
         consommables_cafe_autre_details: formData.section_consommables?.cafe_autre_details || '',
 
+        // Cuisine 1 — équipements (pilote les tasks conditionnelles d'équipements dans la checklist Cuisine de buildResolvedChecklists)
+        // Liste alignée sur les 18 colonnes DB cf. supabaseHelpers.js:801-818
+        cuisine_1_equipements_refrigerateur: formData.section_cuisine_1?.equipements_refrigerateur ?? null,
+        cuisine_1_equipements_congelateur: formData.section_cuisine_1?.equipements_congelateur ?? null,
+        cuisine_1_equipements_mini_refrigerateur: formData.section_cuisine_1?.equipements_mini_refrigerateur ?? null,
+        cuisine_1_equipements_cuisiniere: formData.section_cuisine_1?.equipements_cuisiniere ?? null,
+        cuisine_1_equipements_plaque_cuisson: formData.section_cuisine_1?.equipements_plaque_cuisson ?? null,
+        cuisine_1_equipements_four: formData.section_cuisine_1?.equipements_four ?? null,
+        cuisine_1_equipements_micro_ondes: formData.section_cuisine_1?.equipements_micro_ondes ?? null,
+        cuisine_1_equipements_lave_vaisselle: formData.section_cuisine_1?.equipements_lave_vaisselle ?? null,
+        cuisine_1_equipements_cafetiere: formData.section_cuisine_1?.equipements_cafetiere ?? null,
+        cuisine_1_equipements_bouilloire: formData.section_cuisine_1?.equipements_bouilloire ?? null,
+        cuisine_1_equipements_grille_pain: formData.section_cuisine_1?.equipements_grille_pain ?? null,
+        cuisine_1_equipements_hotte: formData.section_cuisine_1?.equipements_hotte ?? null,
+        cuisine_1_equipements_blender: formData.section_cuisine_1?.equipements_blender ?? null,
+        cuisine_1_equipements_cuiseur_riz: formData.section_cuisine_1?.equipements_cuiseur_riz ?? null,
+        cuisine_1_equipements_machine_pain: formData.section_cuisine_1?.equipements_machine_pain ?? null,
+        cuisine_1_equipements_lave_linge: formData.section_cuisine_1?.equipements_lave_linge ?? null,
+        cuisine_1_equipements_autre: formData.section_cuisine_1?.equipements_autre ?? null,
+        cuisine_1_equipements_autre_details: formData.section_cuisine_1?.equipements_autre_details || '',
+
+        // Cuisine 1 — types de cafetière (enrichissent la task "Cafetière (...)" avec les types entre parenthèses)
+        // Liste alignée sur les 8 colonnes DB cf. supabaseHelpers.js:868-875
+        cuisine_1_cafetiere_type_filtre: formData.section_cuisine_1?.cafetiere_type_filtre ?? null,
+        cuisine_1_cafetiere_type_expresso: formData.section_cuisine_1?.cafetiere_type_expresso ?? null,
+        cuisine_1_cafetiere_type_piston: formData.section_cuisine_1?.cafetiere_type_piston ?? null,
+        cuisine_1_cafetiere_type_keurig: formData.section_cuisine_1?.cafetiere_type_keurig ?? null,
+        cuisine_1_cafetiere_type_nespresso: formData.section_cuisine_1?.cafetiere_type_nespresso ?? null,
+        cuisine_1_cafetiere_type_manuelle: formData.section_cuisine_1?.cafetiere_type_manuelle ?? null,
+        cuisine_1_cafetiere_type_bar_grain: formData.section_cuisine_1?.cafetiere_type_bar_grain ?? null,
+        cuisine_1_cafetiere_type_bar_moulu: formData.section_cuisine_1?.cafetiere_type_bar_moulu ?? null,
+
         // Chambres (pour calculateBedCounts - 6 chambres possibles)
         ...generateChambresFlat(formData),
 
@@ -517,11 +549,25 @@ export function buildResolvedChecklists(fiche) {
     }
 
     if (fiche.cuisine_1_equipements_cuisiniere === true) {
-        cuisineTasks.push({ name: "Cuisinière", description: "Propre, désinfecté et fonctionnel. Aucune nourriture à l'intérieur. Le congélateur est décongelé (pas de bloc de glace)" })
+        // Description corrigée : la version précédente avait un copier-coller depuis Congélateur ("Le congélateur est décongelé")
+        cuisineTasks.push({ name: "Cuisinière", description: "Propre, désinfectée et fonctionnelle. Aucune nourriture à l'intérieur. Plaques et fours nettoyés." })
     }
 
-    if (fiche.cuisine_1_equipements_cafetiere === true || fiche.cuisine_1_equipements_machine_cafe === true) {
-        cuisineTasks.push({ name: "Cafetière", description: "Propre, désinfectée et fonctionnelle. Aucune capsule ou café à l'intérieur. L'eau a été vidée. Elle ne présente pas de traces de calcaire" })
+    if (fiche.cuisine_1_equipements_cafetiere === true) {
+        // Enrichissement du name avec les types cochés entre parenthèses (ex: "Cafetière (Nespresso, Piston)").
+        // Si aucun type n'est coché → "Cafetière" tout court (pas de parenthèses vides).
+        // Note : la branche morte `|| cuisine_1_equipements_machine_cafe === true` a été supprimée (clé inexistante en DB et dans le formData).
+        const cafetiereTypes = []
+        if (fiche.cuisine_1_cafetiere_type_filtre === true) cafetiereTypes.push("Filtre")
+        if (fiche.cuisine_1_cafetiere_type_expresso === true) cafetiereTypes.push("Expresso")
+        if (fiche.cuisine_1_cafetiere_type_piston === true) cafetiereTypes.push("Piston")
+        if (fiche.cuisine_1_cafetiere_type_keurig === true) cafetiereTypes.push("Keurig")
+        if (fiche.cuisine_1_cafetiere_type_nespresso === true) cafetiereTypes.push("Nespresso")
+        if (fiche.cuisine_1_cafetiere_type_manuelle === true) cafetiereTypes.push("Manuelle")
+        if (fiche.cuisine_1_cafetiere_type_bar_grain === true) cafetiereTypes.push("Bar à grain")
+        if (fiche.cuisine_1_cafetiere_type_bar_moulu === true) cafetiereTypes.push("Bar moulu")
+        const cafetiereName = cafetiereTypes.length > 0 ? `Cafetière (${cafetiereTypes.join(", ")})` : "Cafetière"
+        cuisineTasks.push({ name: cafetiereName, description: "Propre, désinfectée et fonctionnelle. Aucune capsule ou café à l'intérieur. L'eau a été vidée. Elle ne présente pas de traces de calcaire" })
     }
 
     if (fiche.cuisine_1_equipements_bouilloire === true) {
@@ -560,11 +606,15 @@ export function buildResolvedChecklists(fiche) {
         cuisineTasks.push({ name: "Micro-ondes", description: "Intérieur propre et désinfecté. Micro-ondes fonctionnel. Aucune nourriture n'a été laissée à l'intérieur" })
     }
 
-    if (fiche.cuisine_1_equipements_autre === true && fiche.cuisine_1_equipements_autre_details) {
-        cuisineTasks.push({
-            name: fiche.cuisine_1_equipements_autre_details,
-            description: "Intérieur propre et désinfecté. Appareil fonctionnel"
-        })
+    if (fiche.cuisine_1_equipements_autre === true) {
+        // Trim défensif pour ignorer les saisies whitespace-only (sinon tâche avec name vide visuellement — cf. fix Codex P2 PR #12)
+        const autreTrimmed = (fiche.cuisine_1_equipements_autre_details || '').trim()
+        if (autreTrimmed) {
+            cuisineTasks.push({
+                name: autreTrimmed,
+                description: "Intérieur propre et désinfecté. Appareil fonctionnel"
+            })
+        }
     }
 
     // === Bloc Consommables groupé en fin de checklist (préfixe "Consommables:" pour homogénéité) ===
