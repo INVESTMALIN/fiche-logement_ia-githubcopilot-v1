@@ -87,6 +87,16 @@ export function normalizeFormDataToFiche(formData) {
         consommables_autre_consommable: formData.section_consommables?.autre_consommable ?? null,
         consommables_autre_consommable_details: formData.section_consommables?.autre_consommable_details || '',
 
+        // Consommables café — pilote la task "Consommables café: ..." dans la checklist Cuisine (indépendant du toggle prestataire)
+        consommables_cafe_nespresso: formData.section_consommables?.cafe_nespresso ?? null,
+        consommables_cafe_senseo: formData.section_consommables?.cafe_senseo ?? null,
+        consommables_cafe_tassimo: formData.section_consommables?.cafe_tassimo ?? null,
+        consommables_cafe_soluble: formData.section_consommables?.cafe_soluble ?? null,
+        consommables_cafe_moulu: formData.section_consommables?.cafe_moulu ?? null,
+        consommables_cafe_grain: formData.section_consommables?.cafe_grain ?? null,
+        consommables_cafe_autre: formData.section_consommables?.cafe_autre ?? null,
+        consommables_cafe_autre_details: formData.section_consommables?.cafe_autre_details || '',
+
         // Chambres (pour calculateBedCounts - 6 chambres possibles)
         ...generateChambresFlat(formData),
 
@@ -591,6 +601,30 @@ export function buildResolvedChecklists(fiche) {
                 description: "Disponibles, en bon état et en quantité suffisante"
             })
         }
+    }
+
+    // Task conditionnelle : types de café cochés par le coordinateur (équipement cuisine)
+    // Indépendant du toggle prestataire — c'est une info d'équipement, pas un consommable sur demande.
+    // Ordre d'affichage figé selon l'ordre des cases dans FicheConsommables.
+    const cafeItems = []
+    if (fiche.consommables_cafe_nespresso === true) cafeItems.push("Nespresso")
+    if (fiche.consommables_cafe_senseo === true) cafeItems.push("Senseo")
+    if (fiche.consommables_cafe_tassimo === true) cafeItems.push("Tassimo")
+    if (fiche.consommables_cafe_soluble === true) cafeItems.push("Café soluble")
+    if (fiche.consommables_cafe_moulu === true) cafeItems.push("Café moulu")
+    if (fiche.consommables_cafe_grain === true) cafeItems.push("Café grain")
+    if (fiche.consommables_cafe_autre === true) {
+        // Trim pour ignorer les saisies whitespace-only (sinon "Autre : " orphelin — cf. fix Codex P2 PR #12)
+        const cafeAutreTrimmed = (fiche.consommables_cafe_autre_details || '').trim()
+        if (cafeAutreTrimmed) {
+            cafeItems.push(`Autre : ${cafeAutreTrimmed}`)
+        }
+    }
+    if (cafeItems.length > 0) {
+        cuisineTasks.push({
+            name: `Consommables café: ${cafeItems.join(", ")}`,
+            description: "Disponibles, en bon état et en quantité suffisante"
+        })
     }
 
     // Emplacement produits ménagers en toute dernière position
