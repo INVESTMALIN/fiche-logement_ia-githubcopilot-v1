@@ -132,6 +132,9 @@ export function normalizeFormDataToFiche(formData) {
         // Chambres (pour calculateBedCounts - 6 chambres possibles)
         ...generateChambresFlat(formData),
 
+        // Salles de bain (équipements - 6 SDB possibles, pilote les tasks conditionnelles dans la boucle SDB de buildResolvedChecklists)
+        ...generateSallesDeBainFlat(formData),
+
         // Loomky sync fields
         loomky_property_id: formData.loomky_property_id,
         loomky_checklist_ids: formData.loomky_checklist_ids,
@@ -159,6 +162,38 @@ export function generateChambresFlat(formData) {
     }
 
     return chambresFlat
+}
+
+/**
+ * Helper pour aplatir les équipements des 6 SDB possibles.
+ * section_salle_de_bains.salle_de_bain_${i}.equipements_* → salle_de_bains_salle_de_bain_${i}_equipements_*
+ * Liste alignée sur les 12 colonnes DB par SDB cf. supabaseHelpers.js:682-693 (idem SDB 2-6 jusqu'à l. 793).
+ * Note : la colonne DB `_douche_baignoire_com` est tronquée (limite de longueur) alors que le champ source
+ * dans la fiche est `equipements_douche_baignoire_combinees` — mapping explicite ci-dessous, identique
+ * à ce que fait mapFormDataToSupabase pour rester symétrique.
+ */
+export function generateSallesDeBainFlat(formData) {
+    const sdbFlat = {}
+
+    for (let i = 1; i <= 6; i++) {
+        const sdb = formData.section_salle_de_bains?.[`salle_de_bain_${i}`] || {}
+        const prefix = `salle_de_bains_salle_de_bain_${i}_equipements`
+
+        sdbFlat[`${prefix}_douche`] = sdb.equipements_douche ?? null
+        sdbFlat[`${prefix}_baignoire`] = sdb.equipements_baignoire ?? null
+        sdbFlat[`${prefix}_douche_baignoire_com`] = sdb.equipements_douche_baignoire_combinees ?? null
+        sdbFlat[`${prefix}_double_vasque`] = sdb.equipements_double_vasque ?? null
+        sdbFlat[`${prefix}_wc`] = sdb.equipements_wc ?? null
+        sdbFlat[`${prefix}_bidet`] = sdb.equipements_bidet ?? null
+        sdbFlat[`${prefix}_chauffage`] = sdb.equipements_chauffage ?? null
+        sdbFlat[`${prefix}_lave_linge`] = sdb.equipements_lave_linge ?? null
+        sdbFlat[`${prefix}_seche_cheveux`] = sdb.equipements_seche_cheveux ?? null
+        sdbFlat[`${prefix}_seche_serviette`] = sdb.equipements_seche_serviette ?? null
+        sdbFlat[`${prefix}_autre`] = sdb.equipements_autre ?? null
+        sdbFlat[`${prefix}_autre_details`] = sdb.equipements_autre_details || ''
+    }
+
+    return sdbFlat
 }
 
 // ============================================
@@ -749,46 +784,46 @@ export function buildResolvedChecklists(fiche) {
     const nombreSDB = fiche.visite_nombre_salles_bains ? parseInt(fiche.visite_nombre_salles_bains) : 1
 
     for (let i = 1; i <= Math.min(nombreSDB, 6); i++) {
+        // Ordre cible : Vue d'ensemble → (douche/baignoire/combo + joints) → Lavabo → (double vasque, bidet)
+        //   → Tiroirs/placards → Tapis de bain → (chauffage, sèche-serviette, sèche-cheveux, lave-linge)
+        //   → Poubelle → (Autre) → Consommables en dernier.
+        // Les tâches standalone "Parois ou rideau de douche" et "Rideau de baignoire" ont été retirées :
+        // leur contenu est désormais absorbé par la description enrichie de Douche/Baignoire/Combo
+        // ("Vérifier également : parois/rideau/faïence, robinetterie, évacuation").
         const sdbTasks = [
             { name: "Vue d'ensemble (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" }
         ]
 
-        // Tasks conditionnelles : Douche / Baignoire / Combo
+        // Tasks conditionnelles : Douche / Baignoire / Combo (XOR préservé : si combo, pas de douche ni baignoire séparées)
         const hasDouche = fiche[`salle_de_bains_salle_de_bain_${i}_equipements_douche`] === true
         const hasBaignoire = fiche[`salle_de_bains_salle_de_bain_${i}_equipements_baignoire`] === true
         const hasCombo = fiche[`salle_de_bains_salle_de_bain_${i}_equipements_douche_baignoire_com`] === true
 
+        // Description enrichie commune à Douche, Baignoire et Combo (cf. brief Victoria)
+        const ducheBaignoireDesc = "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation et eau chaude fonctionnelle. Vérifier également : parois/rideau/faïence, robinetterie, évacuation."
+
         if (hasCombo) {
-            sdbTasks.push({ name: "Douche-baignoire", description: "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation et eau chaude fonctionnelle" })
+            sdbTasks.push({ name: "Douche-baignoire", description: ducheBaignoireDesc })
         } else {
             if (hasDouche) {
-                sdbTasks.push({ name: "Douche", description: "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation et eau chaude fonctionnelle" })
+                sdbTasks.push({ name: "Douche", description: ducheBaignoireDesc })
             }
             if (hasBaignoire) {
-                sdbTasks.push({ name: "Baignoire", description: "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation et eau chaude fonctionnelle" })
+                sdbTasks.push({ name: "Baignoire", description: ducheBaignoireDesc })
             }
         }
 
-        // Joints et parois (conditionnels selon douche)
+        // Joints (conditionnel sur douche || combo — pas sur baignoire seule)
         if (hasDouche || hasCombo) {
             sdbTasks.push({ name: "Joints et baguettes des portes de douche", description: "Propre et sans traces ou décoloration" })
-            sdbTasks.push({ name: "Parois ou rideau de douche", description: "Propres et essuyés. Sans traces de calcaire ou de décoloration" })
         }
 
-        // Rideau baignoire (conditionnel)
-        if (hasBaignoire && !hasCombo) {
-            sdbTasks.push({ name: "Rideau de baignoire (si présent)", description: "Propres et essuyés. Sans traces de calcaire ou de décoloration" })
-        }
-
-        // Tasks standard
+        // Lavabo (statique)
         sdbTasks.push({ name: "Lavabo", description: "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation fonctionnelle et eau chaude fonctionnelle" })
-        sdbTasks.push({ name: "Intérieurs des tiroirs/placards", description: "Rangé, sans éléments oubliés et vue sèche-cheveux accessible" })
-        sdbTasks.push({ name: "Tapis de bain", description: "Propre et placé : roulé sur le lavabo ou plié sur sèche serviette ou plié sur rebord de baignoire" })
-        sdbTasks.push({ name: "Intérieur poubelle avec sac poubelle", description: "Vidée et remplacée. Propre et désinfectée" })
 
-        // Task conditionnelle : Sèche-serviettes
-        if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_seche_serviette`] === true) {
-            sdbTasks.push({ name: "Sèche serviettes", description: "Propre, dépoussiéré et fonctionnel. Laissé éteint" })
+        // Task conditionnelle : Double vasque
+        if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_double_vasque`] === true) {
+            sdbTasks.push({ name: "Double vasque", description: "Propre et sans traces de calcaire. Avec bondes ouvertes et nettoyées. Évacuation et eau chaude fonctionnelles" })
         }
 
         // Task conditionnelle : Bidet
@@ -796,17 +831,42 @@ export function buildResolvedChecklists(fiche) {
             sdbTasks.push({ name: "Bidet", description: "Propre et sans traces de calcaire. Avec bonde ouverte et nettoyée. Évacuation fonctionnelle et eau chaude fonctionnelle" })
         }
 
+        // Tasks statiques (rangement + tapis)
+        sdbTasks.push({ name: "Intérieurs des tiroirs/placards", description: "Rangé, sans éléments oubliés et vue sèche-cheveux accessible" })
+        sdbTasks.push({ name: "Tapis de bain", description: "Propre et placé : roulé sur le lavabo ou plié sur sèche serviette ou plié sur rebord de baignoire" })
+
         // Task conditionnelle : Chauffage
         if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_chauffage`] === true) {
             sdbTasks.push({ name: "Chauffage", description: "Réglage à 18° à partir du 1er Novembre et éteint à partir du 1er Avril. Etat fonctionnel" })
         }
 
-        // Task conditionnelle : Autre équipement
-        if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_autre`] === true && fiche[`salle_de_bains_salle_de_bain_${i}_equipements_autre_details`]) {
-            sdbTasks.push({
-                name: fiche[`salle_de_bains_salle_de_bain_${i}_equipements_autre_details`],
-                description: "Propre, désinfecté et fonctionnel"
-            })
+        // Task conditionnelle : Sèche-serviette
+        if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_seche_serviette`] === true) {
+            sdbTasks.push({ name: "Sèche-serviette", description: "Propre, dépoussiéré et fonctionnel. Laissé éteint" })
+        }
+
+        // Task conditionnelle : Sèche-cheveux
+        if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_seche_cheveux`] === true) {
+            sdbTasks.push({ name: "Sèche-cheveux", description: "Propre, dépoussiéré et fonctionnel. Cordon enroulé et rangé" })
+        }
+
+        // Task conditionnelle : Lave-linge (indépendant du lave-linge cuisine, peut coexister)
+        if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_lave_linge`] === true) {
+            sdbTasks.push({ name: "Lave-linge", description: "Intérieur propre et désinfecté. Lave-linge fonctionnel. Aucun linge n'a été laissé à l'intérieur. Le filtre a été nettoyé. L'intérieur ne présente pas de traces de calcaire" })
+        }
+
+        // Poubelle (statique)
+        sdbTasks.push({ name: "Intérieur poubelle avec sac poubelle", description: "Vidée et remplacée. Propre et désinfectée" })
+
+        // Task conditionnelle : Autre équipement (avec trim défensif — cf. fix Codex P2 PR #12)
+        if (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_autre`] === true) {
+            const autreTrimmed = (fiche[`salle_de_bains_salle_de_bain_${i}_equipements_autre_details`] || '').trim()
+            if (autreTrimmed) {
+                sdbTasks.push({
+                    name: autreTrimmed,
+                    description: "Propre, désinfecté et fonctionnel"
+                })
+            }
         }
 
         // === Bloc Consommables groupé en fin de checklist ===
