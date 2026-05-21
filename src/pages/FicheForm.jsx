@@ -1,11 +1,27 @@
+import { useState } from 'react'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import { useForm } from '../components/FormContext'
 import Button from '../components/Button'
 import { useNavigate } from 'react-router-dom';
+import { normalizePhoneForLoomky } from '../services/loomkyService'
+
+/**
+ * Téléphone propriétaire optionnel. Si saisi, doit être un numéro français valide.
+ * On réutilise le helper backend normalizePhoneForLoomky pour garantir que ce qui passe
+ * la validation ici sera accepté côté API Loomky (cohérence front/back, pas de regex
+ * parallèle qui pourrait diverger). Un numéro français normalisé est `+33` + 9 chiffres
+ * = 12 caractères ; tout autre indicatif (ex: `+32` belge) est rejeté.
+ */
+function isValidFrenchPhone(value) {
+  if (!value || !value.trim()) return true // optionnel : champ vide = valide
+  const normalized = normalizePhoneForLoomky(value)
+  return normalized.startsWith('+33') && normalized.length === 12
+}
 
 export default function FicheForm() {
   const navigate = useNavigate();
+  const [phoneError, setPhoneError] = useState('')
   const {
     next,
     back,
@@ -20,6 +36,20 @@ export default function FicheForm() {
 
   const handleInputChange = (fieldPath, value) => {
     updateField(fieldPath, value)
+  }
+
+  const handlePhoneChange = (value) => {
+    handleInputChange('section_proprietaire.telephone', value)
+    // Reset l'erreur dès la frappe pour ne pas être agressif ; la validation refire au blur.
+    if (phoneError) setPhoneError('')
+  }
+
+  const handlePhoneBlur = (value) => {
+    setPhoneError(
+      isValidFrenchPhone(value)
+        ? ''
+        : 'Format invalide. Numéro français attendu (ex : 06 12 34 56 78).'
+    )
   }
 
   const handleCancel = () => {
@@ -89,7 +119,7 @@ export default function FicheForm() {
             />
           </div>
 
-          {/* Téléphone */}
+          {/* Téléphone — validation au blur (champ optionnel mais format français exigé si saisi) */}
           <div className="mb-4">
             <label className="block font-semibold mb-1">Téléphone</label>
             <input
@@ -97,8 +127,12 @@ export default function FicheForm() {
               placeholder="+33 6 00 00 00 00"
               className="w-full p-2 border rounded"
               value={getField('section_proprietaire.telephone')}
-              onChange={(e) => handleInputChange('section_proprietaire.telephone', e.target.value)}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              onBlur={(e) => handlePhoneBlur(e.target.value)}
             />
+            {phoneError && (
+              <p className="text-sm text-red-600 mt-1">{phoneError}</p>
+            )}
           </div>
 
           {/* Adresse */}
