@@ -412,8 +412,7 @@ export default function FicheFinalisation() {
                         <p className="text-sm text-blue-800 flex items-start gap-2">
                           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                           <span>
-                            Les checklists ont déjà été créées sur Loomky et ne peuvent pas être recréées depuis cette interface
-                            (l'API Loomky refuse les doublons de nom). Pour les modifier, intervenir directement dans Loomky.
+                            Les checklists ont déjà été créées sur Loomky. Pour les modifier, intervenir directement dans Loomky.
                           </span>
                         </p>
                       </div>
