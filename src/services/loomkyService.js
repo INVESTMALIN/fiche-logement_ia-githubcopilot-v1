@@ -162,6 +162,20 @@ export function normalizeFormDataToFiche(formData) {
         consommables_cafe_autre: formData.section_consommables?.cafe_autre ?? null,
         consommables_cafe_autre_details: formData.section_consommables?.cafe_autre_details || '',
 
+        // Salon / Salle à manger — équipements (pilote les tasks conditionnelles dans LES DEUX checklists Salon et Salle à manger de buildResolvedChecklists).
+        // Source unique `section_salon_sam` (page unique côté Fiche Logement), consommée par deux checklists distinctes côté Loomky.
+        // Climatisation et Chauffage sont volontairement présents dans Salon ET SAM : une seule case source pilote l'affichage dans les deux pièces côté ménage.
+        // Liste limitée aux 9 clés réellement consommées par buildResolvedChecklists — les autres champs `salon_sam_*` mappés en DB (cheminee, jeux_societe, livres_*, stores_*, volets, autre) ne pilotent aucune task et restent hors scope ici.
+        salon_sam_equipements_table_basse: formData.section_salon_sam?.equipements_table_basse ?? null,
+        salon_sam_equipements_canape: formData.section_salon_sam?.equipements_canape ?? null,
+        salon_sam_equipements_fauteuils: formData.section_salon_sam?.equipements_fauteuils ?? null,
+        salon_sam_equipements_climatisation: formData.section_salon_sam?.equipements_climatisation ?? null,
+        salon_sam_equipements_chauffage: formData.section_salon_sam?.equipements_chauffage ?? null,
+        salon_sam_equipements_television: formData.section_salon_sam?.equipements_television ?? null,
+        salon_sam_equipements_canape_lit: formData.section_salon_sam?.equipements_canape_lit ?? null,
+        salon_sam_equipements_table_manger: formData.section_salon_sam?.equipements_table_manger ?? null,
+        salon_sam_equipements_chaises: formData.section_salon_sam?.equipements_chaises ?? null,
+
         // Cuisine 1 — équipements (pilote les tasks conditionnelles d'équipements dans la checklist Cuisine de buildResolvedChecklists)
         // Liste alignée sur les 18 colonnes DB cf. supabaseHelpers.js:801-818
         cuisine_1_equipements_refrigerateur: formData.section_cuisine_1?.equipements_refrigerateur ?? null,
