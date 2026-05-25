@@ -210,6 +210,9 @@ export function normalizeFormDataToFiche(formData) {
 }
 
 // Helper pour mapper les 6 chambres
+// Couvre les 8 compteurs de lits (consommés par calculateBedCounts) + les 5 équipements
+// conditionnels consommés par la boucle Chambres de buildResolvedChecklists.
+// Pattern booléen `?? null` identique à generateSallesDeBainFlat pour préserver le tri-état.
 export function generateChambresFlat(formData) {
     const chambresFlat = {}
 
@@ -224,6 +227,14 @@ export function generateChambresFlat(formData) {
         chambresFlat[`chambres_chambre_${i}_lit_queen_160_200`] = chambre.lit_queen_160_200 || 0
         chambresFlat[`chambres_chambre_${i}_lit_king_180_200`] = chambre.lit_king_180_200 || 0
         chambresFlat[`chambres_chambre_${i}_canape_lit_double`] = chambre.canape_lit_double || 0
+
+        // Équipements conditionnels chambre (pilotent les tasks conditionnelles de la checklist Chambre dans buildResolvedChecklists).
+        // Liste alignée sur les colonnes DB cf. supabaseHelpers.js (mapping section_chambres.chambre_X.equipements_*).
+        chambresFlat[`chambres_chambre_${i}_equipements_espace_rangement`] = chambre.equipements_espace_rangement ?? null
+        chambresFlat[`chambres_chambre_${i}_equipements_climatisation`] = chambre.equipements_climatisation ?? null
+        chambresFlat[`chambres_chambre_${i}_equipements_chauffage`] = chambre.equipements_chauffage ?? null
+        chambresFlat[`chambres_chambre_${i}_equipements_draps_fournis`] = chambre.equipements_draps_fournis ?? null
+        chambresFlat[`chambres_chambre_${i}_equipements_oreillers_couvertures_sup`] = chambre.equipements_oreillers_couvertures_sup ?? null
     }
 
     return chambresFlat
@@ -810,11 +821,23 @@ export function buildResolvedChecklists(fiche) {
     } else {
         // Chambres classiques (1 à 6)
         for (let i = 1; i <= Math.min(nombreChambres, 6); i++) {
+            // Description "Lits" enrichie si le linge de lit est fourni (cf. brief Victoria).
+            // Pas une task séparée : on garde l'ordre des tâches inchangé.
+            const litsDescription = fiche[`chambres_chambre_${i}_equipements_draps_fournis`] === true
+                ? "Faits avec serviettes roulées sur les lits (1 grande et 1 petite par personne). Linge de lit fourni propre, sans taches ni odeurs"
+                : "Faits avec serviettes roulées sur les lits (1 grande et 1 petite par personne)"
+
             const chambreTasks = [
                 { name: "Vue d'ensemble (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" },
-                { name: "Lits", description: "Faits avec serviettes roulées sur les lits (1 grande et 1 petite par personne)" },
-                { name: "Dessous de lits", description: "Dépoussiérés et nettoyés. Sans éléments oubliés" }
+                { name: "Lits", description: litsDescription }
             ]
+
+            // Task conditionnelle : Oreillers et couvertures supplémentaires (juste après Lits)
+            if (fiche[`chambres_chambre_${i}_equipements_oreillers_couvertures_sup`] === true) {
+                chambreTasks.push({ name: "Oreillers et couvertures supplémentaires", description: "Présents, propres et rangés. Sans taches ni odeurs" })
+            }
+
+            chambreTasks.push({ name: "Dessous de lits", description: "Dépoussiérés et nettoyés. Sans éléments oubliés" })
 
             // Task conditionnelle : Placards/commodes
             if (fiche[`chambres_chambre_${i}_equipements_espace_rangement`] === true) {
