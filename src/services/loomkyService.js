@@ -131,6 +131,9 @@ export function normalizeFormDataToFiche(formData) {
         visite_nombre_chambres: formData.section_visite?.nombre_chambres || formData.section_logement?.caracteristiques?.nombreChambres || '',
         visite_nombre_salles_bains: formData.section_visite?.nombre_salles_bains || '',
 
+        // Visite — pièce buanderie (clé d'activation du bloc Buanderie / Stockage dans buildResolvedChecklists)
+        visite_pieces_buanderie: formData.section_visite?.pieces_buanderie ?? null,
+
         // Équipements - WiFi
         equipements_wifi_statut: formData.section_equipements?.wifi_statut || '',
         equipements_wifi_nom_reseau: formData.section_equipements?.wifi_nom_reseau || '',
@@ -142,6 +145,14 @@ export function normalizeFormDataToFiche(formData) {
         equipements_parking_rue_details: formData.section_equipements?.parking_rue_details || '',
         equipements_parking_sur_place_details: formData.section_equipements?.parking_sur_place_details || '',
         equipements_parking_payant_details: formData.section_equipements?.parking_payant_details || '',
+
+        // Équipements - buanderie (pilote les tasks conditionnelles de la checklist Buanderie / Stockage dans buildResolvedChecklists).
+        // Décision métier : source unique = section Équipements globale du logement, conditionnel simple (case cochée = tâche affichée).
+        // Aucune déduction inter-sections — un lave-linge déjà coché en cuisine ou SDB n'affecte PAS l'affichage en buanderie.
+        // Le réagencement de la saisie du linge dans la fiche fera l'objet d'une discussion séparée (hors scope).
+        equipements_lave_linge: formData.section_equipements?.lave_linge ?? null,
+        equipements_seche_linge: formData.section_equipements?.seche_linge ?? null,
+        equipements_etendoir: formData.section_equipements?.etendoir ?? null,
 
         // Consommables — pilote les tasks "produits ménagers obligatoires" et "sur demande" dans buildResolvedChecklists
         consommables_fournis_par_prestataire: formData.section_consommables?.fournis_par_prestataire ?? null,
@@ -1057,19 +1068,15 @@ export function buildResolvedChecklists(fiche) {
             buanderieTasks.push({ name: "Sèche linge", description: "Propre et fonctionnel. Sans linge à l'intérieur" })
         }
 
-        // Task conditionnelle : Lit bébé (avec type dynamique)
-        if ((fiche.bebe_equipements || []).includes('Lit bébé')) {
-            const typeLit = fiche.bebe_lit_bebe_type || "Lit bébé"
-            buanderieTasks.push({
-                name: "Lit bébé",
-                description: `${typeLit} propre et rangé. Sans linge à l'intérieur`
-            })
-        }
-
         // Task conditionnelle : Étendoir
         if (fiche.equipements_etendoir === true) {
             buanderieTasks.push({ name: "Etendoir à linge", description: "Propre et rangé. Sans linge étendu" })
         }
+
+        // Note : l'ancienne task conditionnelle "Lit bébé" (basée sur bebe_equipements + bebe_lit_bebe_type)
+        // a été retirée volontairement. Le lit parapluie est saisi côté chambres, pas en équipements globaux —
+        // il n'a pas de sens métier dans la checklist Buanderie. Le mapping bebe_* reste intact côté DB / formData
+        // pour les autres consommateurs (PDF, validation).
 
         // Task standard : Espace de stockage (toujours présent)
         buanderieTasks.push({ name: "Espace de stockage (linge et consommables)", description: "Linge et consommables ordonnés" })
