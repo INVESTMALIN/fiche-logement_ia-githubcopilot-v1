@@ -131,8 +131,11 @@ export function normalizeFormDataToFiche(formData) {
         visite_nombre_chambres: formData.section_visite?.nombre_chambres || formData.section_logement?.caracteristiques?.nombreChambres || '',
         visite_nombre_salles_bains: formData.section_visite?.nombre_salles_bains || '',
 
-        // Visite — pièce buanderie (clé d'activation du bloc Buanderie / Stockage dans buildResolvedChecklists)
+        // Visite — pièces conditionnelles (clés d'activation des blocs Buanderie / Stockage et Autres pièces ou matériel dans buildResolvedChecklists)
         visite_pieces_buanderie: formData.section_visite?.pieces_buanderie ?? null,
+        visite_pieces_autre: formData.section_visite?.pieces_autre ?? null,
+        // `_details` aligné sur le pattern `|| ''` des autres champs texte "autre" dans normalizeFormDataToFiche (cuisine, consommables).
+        visite_pieces_autre_details: formData.section_visite?.pieces_autre_details || '',
 
         // Équipements - WiFi
         equipements_wifi_statut: formData.section_equipements?.wifi_statut || '',
@@ -224,6 +227,18 @@ export function normalizeFormDataToFiche(formData) {
 
         // Salles de bain (équipements - 6 SDB possibles, pilote les tasks conditionnelles dans la boucle SDB de buildResolvedChecklists)
         ...generateSallesDeBainFlat(formData),
+
+        // Équipements spécifiques / extérieurs — pilote les tasks conditionnelles de la checklist "Autres pièces ou matériel" dans buildResolvedChecklists.
+        // Scope limité aux 7 clés réellement consommées par le bloc "Autres pièces" — les clés `dispose_exterieur` / `dispose_piscine` et leurs sous-champs
+        // (exterieur_type_espace, exterieur_equipements, piscine_type, etc.) seront ajoutées dans les PR suivantes (Extérieurs et Piscine).
+        equip_spe_ext_dispose_salle_cinema: formData.section_equip_spe_exterieur?.dispose_salle_cinema ?? null,
+        equip_spe_ext_dispose_salle_sport: formData.section_equip_spe_exterieur?.dispose_salle_sport ?? null,
+        equip_spe_ext_dispose_salle_jeux: formData.section_equip_spe_exterieur?.dispose_salle_jeux ?? null,
+        equip_spe_ext_dispose_jacuzzi: formData.section_equip_spe_exterieur?.dispose_jacuzzi ?? null,
+        equip_spe_ext_dispose_sauna: formData.section_equip_spe_exterieur?.dispose_sauna ?? null,
+        equip_spe_ext_dispose_hammam: formData.section_equip_spe_exterieur?.dispose_hammam ?? null,
+        // Tableau de strings (`'Billard'`, `'Baby Foot'`, `'Ping Pong'`) — orthographe/casse alignée sur la source FicheEquipExterieur.jsx
+        equip_spe_ext_salle_jeux_equipements: formData.section_equip_spe_exterieur?.salle_jeux_equipements || [],
 
         // Loomky sync fields
         loomky_property_id: formData.loomky_property_id,
@@ -1159,12 +1174,17 @@ export function buildResolvedChecklists(fiche) {
         })
     }
 
-    // Autre pièce (champ libre)
-    if (fiche.visite_pieces_autre === true && fiche.visite_pieces_autre_details) {
-        autresPiecesTasks.push({
-            name: `Vue d'ensemble de ${fiche.visite_pieces_autre_details}`,
-            description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, matériel rangé et fonctionnel. Matériel au complet"
-        })
+    // Autre pièce (champ libre) — libellé générique au pluriel avec le contenu du champ entre parenthèses.
+    // Trim défensif pour ignorer les saisies whitespace-only (sinon "(  )" orphelin — même pattern que les champs "autre" cuisine/SDB).
+    // Pas de split sur virgules : le contenu est repris brut tel que saisi par le coordinateur.
+    if (fiche.visite_pieces_autre === true) {
+        const autrePieceTrimmed = (fiche.visite_pieces_autre_details || '').trim()
+        if (autrePieceTrimmed) {
+            autresPiecesTasks.push({
+                name: `Vue d'ensemble des autres pièces (${autrePieceTrimmed})`,
+                description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, matériel rangé et fonctionnel. Matériel au complet"
+            })
+        }
     }
 
     // Ajouter la checklist si au moins une task existe
