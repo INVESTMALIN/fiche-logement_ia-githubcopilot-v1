@@ -763,7 +763,7 @@ export function buildResolvedChecklists(fiche) {
     }
 
     if (fiche.cuisine_1_equipements_lave_linge === true) {
-        cuisineTasks.push({ name: "Lave linge", description: "Propre, désinfecté et fonctionnel. Aucune linge n'a été laissée à l'intérieur. Le filtre a été nettoyé. L'intérieur ne présente pas de traces de calcaire" })
+        cuisineTasks.push({ name: "Lave linge", description: "Propre, désinfecté et fonctionnel. Aucun linge n'a été laissé à l'intérieur. Le filtre a été nettoyé. L'intérieur ne présente pas de traces de calcaire" })
     }
 
     if (fiche.cuisine_1_equipements_four === true) {
