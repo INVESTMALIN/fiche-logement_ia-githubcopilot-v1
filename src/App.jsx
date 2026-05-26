@@ -23,6 +23,9 @@ import HelpButton from './components/HelpButton'
 import TestGuideAgent from './pages/TestGuideAgent'
 import SimulationLoomky from './pages/SimulationLoomky'
 
+// Aide / tutoriels
+import AideMicro from './pages/AideMicro'
+
 
 
 export default function App() {
@@ -99,6 +102,9 @@ export default function App() {
           <Route path="/print-pdf" element={<PrintPDF />} />
 
           <Route path="/print-pdf-menage" element={<PrintPDFMenage />} />
+
+          {/* Tuto autorisation micro — page d'aide publique (partageable) */}
+          <Route path="/aide-micro" element={<AideMicro />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

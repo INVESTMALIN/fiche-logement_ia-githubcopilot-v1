@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Mic, FolderOpen, Diff, CheckCircle, AlertCircle, Loader2, ChevronDown, TriangleAlert, Construction, HelpCircle, X } from 'lucide-react'
+import { Mic, FolderOpen, Diff, CheckCircle, AlertCircle, Loader2, ChevronDown, TriangleAlert, Construction, HelpCircle, X, Sparkles } from 'lucide-react'
 import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
@@ -335,16 +335,24 @@ export default function FicheCuisine2() {
                   <Mic className="w-4 h-4 text-blue-700 flex-shrink-0" />
                   <span className="text-base font-semibold text-blue-800">Saisie vocale</span>
                 </div>
-                <span className="mt-1.5 text-xs font-medium text-yellow-800 bg-yellow-100 border border-yellow-300 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                  <Construction className="w-3 h-3 flex-shrink-0" />
-                  En développement
+                <span className="mt-1.5 text-xs font-medium text-green-800 bg-green-100 border border-green-300 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 flex-shrink-0" />
+                  Nouvelle fonctionnalité
                 </span>
               </div>
 
               <div className="p-4 space-y-4">
                 {/* Note DEV discrète */}
                 <p className="text-xs text-gray-500">
-                  La saisie vocale peut encore avoir de petits bugs. En cas de souci, vous pouvez utiliser la saisie manuelle ci-dessous à tout moment.
+                  La saisie vocale peut encore avoir de petits bugs. En cas de souci, vous pouvez utiliser la saisie manuelle ci-dessous à tout moment.{' '}
+                  <a
+                    href="/aide-micro"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-700 underline hover:text-blue-900"
+                  >
+                    Besoin d'aide avec le micro&nbsp;?
+                  </a>
                 </p>
 
                 {/* Aide "Comment ça marche" — repliable */}
@@ -362,14 +370,30 @@ export default function FicheCuisine2() {
                     <ChevronDown className={`w-4 h-4 text-blue-700 transition-transform ${howItWorksExpanded ? 'rotate-180' : ''}`} />
                   </button>
                   {howItWorksExpanded && (
-                    <ul className="px-4 py-3 space-y-2 text-sm text-gray-700 list-disc list-inside bg-white">
-                      <li>Appuyez et <strong>maintenez le bouton enfoncé</strong> pour parler. Relâchez pour envoyer.</li>
-                      <li>Vous pouvez faire l'inventaire <strong>en plusieurs fois</strong>. À chaque enregistrement, les ustensiles détectés s'ajoutent à ceux déjà saisis.</li>
-                      <li>Énumérez naturellement, ex : « j'ai 4 assiettes plates, 2 bols, une cocotte-minute, un économe... ».</li>
-                      <li>Vous pouvez aussi <strong>uploader un fichier audio</strong> au lieu d'enregistrer en direct.</li>
-                      <li>Les ustensiles se mettent à jour automatiquement ci-dessous</li>
-                      <li>La saisie manuelle ci-dessous reste disponible pour ajuster les quantités après coup.</li>
-                    </ul>
+                    <div className="px-4 py-3 bg-white space-y-3">
+                      <ul className="space-y-2 text-sm text-gray-700 list-disc list-inside">
+                        <li>
+                          <strong>Autorisez l'accès au micro</strong> quand votre navigateur le demande.{' '}
+                          <a
+                            href="/aide-micro"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-700 underline hover:text-blue-900"
+                          >
+                            Besoin d'aide&nbsp;?
+                          </a>
+                        </li>
+                        <li>Appuyez et <strong>maintenez le bouton enfoncé</strong> pour parler. Relâchez pour envoyer.</li>
+                        <li>Vous pouvez faire l'inventaire <strong>en plusieurs fois</strong>. À chaque enregistrement, les ustensiles détectés s'ajoutent à ceux déjà saisis.</li>
+                        <li>Énumérez naturellement, ex : « j'ai 4 assiettes plates, 2 bols, une cocotte-minute, un économe... ».</li>
+                        <li>Vous pouvez aussi <strong>uploader un fichier audio</strong> au lieu d'enregistrer en direct.</li>
+                        <li>Les ustensiles se mettent à jour automatiquement ci-dessous.</li>
+                        <li>La saisie manuelle ci-dessous reste disponible pour ajuster les quantités après coup.</li>
+                      </ul>
+                      <p className="text-sm text-purple-800 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                        Cette fonctionnalité est en <strong>version bêta</strong>. Testez-la sans hésiter, vos retours nous sont précieux pour l'améliorer.
+                      </p>
+                    </div>
                   )}
                 </div>
 
