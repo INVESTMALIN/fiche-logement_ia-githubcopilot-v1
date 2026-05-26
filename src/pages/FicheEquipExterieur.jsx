@@ -506,7 +506,7 @@ export default function FicheEquipExterieur() {
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {[
-                      'Table extérieure', 'Chaises', 'Chaises longues', 'Barbecue', 'Parasol',
+                      'Table extérieure', 'Chaises', 'Chaises longues', 'Barbecue', 'Plancha', 'Parasol',
                       'Produits pour la plage', 'Brasero', 'Hamac', 'Jeux pour enfants',
                       'Éclairage extérieur', 'Brise-vue', 'Clôture', 'Douche extérieure',
                       'Moustiquaire', 'Store banne électrique', 'Store banne manuel', 'Autre'
