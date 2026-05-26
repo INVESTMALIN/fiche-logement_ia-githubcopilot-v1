@@ -247,7 +247,6 @@ export function normalizeFormDataToFiche(formData) {
         equip_spe_ext_exterieur_type_espace: formData.section_equip_spe_exterieur?.exterieur_type_espace || [],
         // Tableau de strings — valeurs consommées par buildResolvedChecklists : `'Barbecue'`, `'Plancha'`, `'Brasero'`, `'Table extérieure'`, `'Jeux pour enfants'`, `'Produits pour la plage'`, `'Autre'`.
         // Note : la liste saisissable dans FicheEquipExterieur.jsx contient d'autres valeurs (Chaises, Parasol, Hamac, etc.) qui n'ont pas de task associée — voulu, on garde le comportement actuel.
-        // Note 2 : `'Plancha'` est consommé par le code mais n'apparaît PAS dans la liste de saisie actuelle. Code conservé tel quel comme demandé par le brief — la case sera ajoutée plus tard côté saisie si nécessaire.
         equip_spe_ext_exterieur_equipements: formData.section_equip_spe_exterieur?.exterieur_equipements || [],
         // `_autre_details` aligné sur le pattern `|| ''` des autres champs texte "autre" dans normalizeFormDataToFiche (cuisine, consommables, visite).
         equip_spe_ext_exterieur_equipements_autre_details: formData.section_equip_spe_exterieur?.exterieur_equipements_autre_details || '',
