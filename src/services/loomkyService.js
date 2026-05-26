@@ -228,9 +228,10 @@ export function normalizeFormDataToFiche(formData) {
         // Salles de bain (équipements - 6 SDB possibles, pilote les tasks conditionnelles dans la boucle SDB de buildResolvedChecklists)
         ...generateSallesDeBainFlat(formData),
 
-        // Équipements spécifiques / extérieurs — pilote les tasks conditionnelles de la checklist "Autres pièces ou matériel" dans buildResolvedChecklists.
-        // Scope limité aux 7 clés réellement consommées par le bloc "Autres pièces" — les clés `dispose_exterieur` / `dispose_piscine` et leurs sous-champs
-        // (exterieur_type_espace, exterieur_equipements, piscine_type, etc.) seront ajoutées dans les PR suivantes (Extérieurs et Piscine).
+        // Équipements spécifiques / extérieurs — pilote les tasks conditionnelles des checklists "Autres pièces ou matériel" et "Extérieurs" dans buildResolvedChecklists.
+        // Les clés `dispose_piscine` et ses sous-champs (piscine_type, etc.) restent à ajouter dans la PR Piscine à venir.
+
+        // --- Autres pièces ou matériel (7 clés) ---
         equip_spe_ext_dispose_salle_cinema: formData.section_equip_spe_exterieur?.dispose_salle_cinema ?? null,
         equip_spe_ext_dispose_salle_sport: formData.section_equip_spe_exterieur?.dispose_salle_sport ?? null,
         equip_spe_ext_dispose_salle_jeux: formData.section_equip_spe_exterieur?.dispose_salle_jeux ?? null,
@@ -239,6 +240,17 @@ export function normalizeFormDataToFiche(formData) {
         equip_spe_ext_dispose_hammam: formData.section_equip_spe_exterieur?.dispose_hammam ?? null,
         // Tableau de strings (`'Billard'`, `'Baby Foot'`, `'Ping Pong'`) — orthographe/casse alignée sur la source FicheEquipExterieur.jsx
         equip_spe_ext_salle_jeux_equipements: formData.section_equip_spe_exterieur?.salle_jeux_equipements || [],
+
+        // --- Extérieurs (4 clés) ---
+        equip_spe_ext_dispose_exterieur: formData.section_equip_spe_exterieur?.dispose_exterieur ?? null,
+        // Tableau de strings (`'Balcon'`, `'Terrasse'`, `'Jardin'`, `'Patio'`) — `'Aucun'` saisissable mais sans task associée côté checklist. Casse alignée sur FicheEquipExterieur.jsx:468.
+        equip_spe_ext_exterieur_type_espace: formData.section_equip_spe_exterieur?.exterieur_type_espace || [],
+        // Tableau de strings — valeurs consommées par buildResolvedChecklists : `'Barbecue'`, `'Plancha'`, `'Brasero'`, `'Table extérieure'`, `'Jeux pour enfants'`, `'Produits pour la plage'`, `'Autre'`.
+        // Note : la liste saisissable dans FicheEquipExterieur.jsx contient d'autres valeurs (Chaises, Parasol, Hamac, etc.) qui n'ont pas de task associée — voulu, on garde le comportement actuel.
+        // Note 2 : `'Plancha'` est consommé par le code mais n'apparaît PAS dans la liste de saisie actuelle. Code conservé tel quel comme demandé par le brief — la case sera ajoutée plus tard côté saisie si nécessaire.
+        equip_spe_ext_exterieur_equipements: formData.section_equip_spe_exterieur?.exterieur_equipements || [],
+        // `_autre_details` aligné sur le pattern `|| ''` des autres champs texte "autre" dans normalizeFormDataToFiche (cuisine, consommables, visite).
+        equip_spe_ext_exterieur_equipements_autre_details: formData.section_equip_spe_exterieur?.exterieur_equipements_autre_details || '',
 
         // Loomky sync fields
         loomky_property_id: formData.loomky_property_id,
@@ -1255,12 +1267,17 @@ export function buildResolvedChecklists(fiche) {
             exterieurTasks.push({ name: "Produits pour la plage", description: "Nettoyé et rangé" })
         }
 
-        // Autre équipement (champ libre)
-        if (equipementsExt.includes('Autre') && fiche.equip_spe_ext_exterieur_equipements_autre_details) {
-            exterieurTasks.push({
-                name: fiche.equip_spe_ext_exterieur_equipements_autre_details,
-                description: "Nettoyé et rangé"
-            })
+        // Autre équipement (champ libre).
+        // Trim défensif pour ignorer les saisies whitespace-only (sinon task avec name vide visuellement —
+        // même pattern que les champs "autre" cuisine/SDB et que visite_pieces_autre_details en PR #23).
+        if (equipementsExt.includes('Autre')) {
+            const autreTrimmed = (fiche.equip_spe_ext_exterieur_equipements_autre_details || '').trim()
+            if (autreTrimmed) {
+                exterieurTasks.push({
+                    name: autreTrimmed,
+                    description: "Nettoyé et rangé"
+                })
+            }
         }
 
         checklists.push({
