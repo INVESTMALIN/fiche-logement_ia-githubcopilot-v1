@@ -228,8 +228,7 @@ export function normalizeFormDataToFiche(formData) {
         // Salles de bain (équipements - 6 SDB possibles, pilote les tasks conditionnelles dans la boucle SDB de buildResolvedChecklists)
         ...generateSallesDeBainFlat(formData),
 
-        // Équipements spécifiques / extérieurs — pilote les tasks conditionnelles des checklists "Autres pièces ou matériel" et "Extérieurs" dans buildResolvedChecklists.
-        // Les clés `dispose_piscine` et ses sous-champs (piscine_type, etc.) restent à ajouter dans la PR Piscine à venir.
+        // Équipements spécifiques / extérieurs — pilote les tasks conditionnelles des checklists "Autres pièces ou matériel", "Extérieurs" et "Piscine" dans buildResolvedChecklists.
 
         // --- Autres pièces ou matériel (7 clés) ---
         equip_spe_ext_dispose_salle_cinema: formData.section_equip_spe_exterieur?.dispose_salle_cinema ?? null,
@@ -250,6 +249,13 @@ export function normalizeFormDataToFiche(formData) {
         equip_spe_ext_exterieur_equipements: formData.section_equip_spe_exterieur?.exterieur_equipements || [],
         // `_autre_details` aligné sur le pattern `|| ''` des autres champs texte "autre" dans normalizeFormDataToFiche (cuisine, consommables, visite).
         equip_spe_ext_exterieur_equipements_autre_details: formData.section_equip_spe_exterieur?.exterieur_equipements_autre_details || '',
+
+        // --- Piscine (2 clés) ---
+        // Double condition côté buildResolvedChecklists : dispose_piscine === true ET piscine_type === 'Privée'.
+        // Une piscine publique/partagée (copropriété, résidence) n'est pas nettoyée par la femme de ménage du logement — pas de task.
+        equip_spe_ext_dispose_piscine: formData.section_equip_spe_exterieur?.dispose_piscine ?? null,
+        // Radio à 2 valeurs côté saisie : `'Privée'` (P majuscule, accent é) ou `'Publique ou partagée'`. Casse strictement alignée sur FicheEquipExterieur.jsx:728 et sur le test `=== 'Privée'` du consommateur.
+        equip_spe_ext_piscine_type: formData.section_equip_spe_exterieur?.piscine_type || '',
 
         // Loomky sync fields
         loomky_property_id: formData.loomky_property_id,
