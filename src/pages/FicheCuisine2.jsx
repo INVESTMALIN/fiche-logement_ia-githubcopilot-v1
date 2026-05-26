@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import { Mic, FolderOpen, Diff, CheckCircle, AlertCircle, Loader2, ChevronDown, TriangleAlert, Construction, HelpCircle } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Mic, FolderOpen, Diff, CheckCircle, AlertCircle, Loader2, ChevronDown, TriangleAlert, Construction, HelpCircle, X } from 'lucide-react'
 import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
@@ -157,6 +157,42 @@ export default function FicheCuisine2() {
   const mediaRecorderRef = useRef(null)
   const chunksRef = useRef([])
 
+  // Auto-dismiss du message d'erreur vocal après 6 s + fermeture manuelle via la croix.
+  // Le timer est mémorisé pour pouvoir être annulé (nouvelle erreur, clic croix, démontage) — évite les timers orphelins.
+  const vocalErrorTimerRef = useRef(null)
+
+  const showVocalError = (message) => {
+    // Annule un éventuel timer en cours avant d'en armer un nouveau (cas : deux erreurs rapprochées).
+    if (vocalErrorTimerRef.current) {
+      clearTimeout(vocalErrorTimerRef.current)
+    }
+    setVocalError(message)
+    setVocalStatus('error')
+    vocalErrorTimerRef.current = setTimeout(() => {
+      setVocalStatus(null)
+      setVocalError(null)
+      vocalErrorTimerRef.current = null
+    }, 6000)
+  }
+
+  const dismissVocalError = () => {
+    if (vocalErrorTimerRef.current) {
+      clearTimeout(vocalErrorTimerRef.current)
+      vocalErrorTimerRef.current = null
+    }
+    setVocalStatus(null)
+    setVocalError(null)
+  }
+
+  // Nettoyage au démontage du composant pour éviter un setState sur composant démonté si l'utilisateur quitte la page pendant le délai.
+  useEffect(() => {
+    return () => {
+      if (vocalErrorTimerRef.current) {
+        clearTimeout(vocalErrorTimerRef.current)
+      }
+    }
+  }, [])
+
   const [uploadFile, setUploadFile] = useState(null)
 
   // --- Mic handlers ---
@@ -242,8 +278,7 @@ export default function FicheCuisine2() {
 
       if (parsed && typeof parsed === 'object') {
         if (Object.keys(parsed).length === 0) {
-          setVocalError('Aucun ustensile détecté, veuillez vérifier votre micro.')
-          setVocalStatus('error')
+          showVocalError('Aucun ustensile détecté, veuillez vérifier votre micro.')
           return
         }
         // Appliquer chaque clé dans section_cuisine_2
@@ -265,11 +300,10 @@ export default function FicheCuisine2() {
     } catch (err) {
       clearTimeout(timeoutId)
       if (err.name === 'AbortError') {
-        setVocalError('Timeout : pas de réponse après 30 secondes.')
+        showVocalError('Timeout : pas de réponse après 30 secondes.')
       } else {
-        setVocalError(err.message || 'Erreur inconnue.')
+        showVocalError(err.message || 'Erreur inconnue.')
       }
-      setVocalStatus('error')
     }
   }
 
@@ -296,23 +330,22 @@ export default function FicheCuisine2() {
 
             {/* ===================== MODE VOCAL ===================== */}
             <div className="border border-blue-200 rounded-xl overflow-hidden">
-              <div className="bg-blue-50 px-4 py-3 flex items-center gap-2">
-                <Mic className="w-4 h-4 text-blue-700" />
-                <span className="text-base font-semibold text-blue-800">Saisie vocale</span>
-                <span className="text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded">Recommandé</span>
+              <div className="bg-blue-50 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Mic className="w-4 h-4 text-blue-700 flex-shrink-0" />
+                  <span className="text-base font-semibold text-blue-800">Saisie vocale</span>
+                </div>
+                <span className="mt-1.5 text-xs font-medium text-yellow-800 bg-yellow-100 border border-yellow-300 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                  <Construction className="w-3 h-3 flex-shrink-0" />
+                  En développement
+                </span>
               </div>
 
               <div className="p-4 space-y-4">
-                {/* Warning DEV — la fonctionnalité est encore expérimentale */}
-                <div className="p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg flex items-start gap-3">
-                  <Construction className="w-5 h-5 text-yellow-900 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-yellow-900">FONCTIONNALITÉ EN DÉVELOPPEMENT</p>
-                    <p className="text-xs text-yellow-800 mt-1">
-                      La saisie vocale peut encore avoir de petits bugs. En cas de souci, utilisez la saisie manuelle ci-dessous.
-                    </p>
-                  </div>
-                </div>
+                {/* Note DEV discrète */}
+                <p className="text-xs text-gray-500">
+                  La saisie vocale peut encore avoir de petits bugs. En cas de souci, vous pouvez utiliser la saisie manuelle ci-dessous à tout moment.
+                </p>
 
                 {/* Aide "Comment ça marche" — repliable */}
                 <div className="border border-blue-200 rounded-lg overflow-hidden">
@@ -357,7 +390,7 @@ export default function FicheCuisine2() {
                           : 'bg-white text-gray-600 hover:bg-gray-50'
                           }`}
                       >
-                        <Mic className="w-4 h-4 shrink-0" /> Microphone
+                        <Mic className="w-4 h-4 shrink-0" /> Micro
                       </button>
                       <button
                         type="button"
@@ -367,7 +400,7 @@ export default function FicheCuisine2() {
                           : 'bg-white text-gray-600 hover:bg-gray-50'
                           }`}
                       >
-                        <FolderOpen className="w-4 h-4 shrink-0" /> Fichier audio
+                        <FolderOpen className="w-4 h-4 shrink-0" /> Fichier
                       </button>
                     </div>
 
@@ -438,7 +471,17 @@ export default function FicheCuisine2() {
                 {vocalStatus === 'error' && (
                   <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
                     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                    <span>{vocalError}</span>
+                    {/* `flex-1 min-w-0` : le texte prend toute la largeur dispo et peut wrap sans pousser la croix hors du bloc */}
+                    <span className="flex-1 min-w-0">{vocalError}</span>
+                    {/* `shrink-0` : la croix garde sa taille, `p-1 -m-1` : zone cliquable confortable au doigt sans casser l'alignement visuel */}
+                    <button
+                      type="button"
+                      onClick={dismissVocalError}
+                      className="shrink-0 -mt-1 -mr-1 p-1 rounded text-red-700 hover:bg-red-100 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-red-300"
+                      aria-label="Fermer le message d'erreur"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 )}
                 {vocalStatus === 'success' && (
