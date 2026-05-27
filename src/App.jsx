@@ -18,11 +18,6 @@ import PrintPDFMenage from './pages/PrintPDFMenage'
 import DuplicateAlertModal from './components/DuplicateAlertModal'
 import HelpButton from './components/HelpButton'
 
-
-// Test page for Guide Agent et API Loomky
-import TestGuideAgent from './pages/TestGuideAgent'
-import SimulationLoomky from './pages/SimulationLoomky'
-
 // Aide / tutoriels
 import AideMicro from './pages/AideMicro'
 
@@ -44,24 +39,6 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/update-password" element={<UpdatePassword />} />
           <Route path="/confirm-signup" element={<ConfirmSignup />} />
-
-          <Route
-            path="/test-guide-agent"
-            element={
-              <ProtectedRoute>
-                <TestGuideAgent />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/simulation-loomky"
-            element={
-              <ProtectedRoute>
-                <SimulationLoomky />
-              </ProtectedRoute>
-            }
-          />
 
           <Route
             path="/"
