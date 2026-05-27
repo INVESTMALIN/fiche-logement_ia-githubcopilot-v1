@@ -777,7 +777,7 @@ export function buildResolvedChecklists(fiche) {
     // Task conditionnelle : produits ménagers fournis par le prestataire (cuisine)
     if (fiche.consommables_fournis_par_prestataire === true) {
         cuisineTasks.push({
-            name: "Consommables: Produit vitres,  multi-surfaces et produit sol",
+            name: "Consommables: Produit vitres, multi-surfaces et produit sol",
             description: "Disponibles, en bon état et en quantité suffisante"
         })
     }
