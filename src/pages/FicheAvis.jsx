@@ -12,6 +12,27 @@ import {
   computeGrilleStats
 } from '../lib/avisGrilleHelpers'
 
+// Liste fermée des activités de maintenance (libellés métier figés, alignés
+// sur la future remontée Monday — ne pas modifier sans validation produit).
+const ACTIVITES_MAINTENANCE = [
+  'Electricité',
+  'Plomberie',
+  'Serrurerie',
+  'Jardinerie / Paysagisme',
+  'Multi-Services / Homme à tout faire',
+  'Anti nuisibles',
+  'Autres'
+]
+
+const EMPTY_CONTACT_MAINTENANCE = {
+  nom_prenom: '',
+  societe: '',
+  activite: '',
+  telephone: '',
+  email: '',
+  commentaire: ''
+}
+
 const StyledCheckboxGrid = ({ options, values, path, onChange }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
     {options.map(({ key, label }) => (
@@ -74,6 +95,38 @@ export default function FicheAvis() {
   const setTypePassage = (kind, value) => {
     const field = kind === 'menage' ? 'type_premier_menage' : 'type_premiere_maintenance'
     handleChange(`section_avis.${field}`, value)
+  }
+
+  // 🔧 Contacts de maintenance — toggle racine + CRUD sur la liste.
+  // On passe le tableau entier à updateField (cohérent avec quartier_types,
+  // logement_ambiance, etc.) car le helper FormContext.updateField ne sait pas
+  // muter un élément d'array via dot-path.
+  const toggleContactsMaintenance = (checked) => {
+    if (checked) {
+      handleChange('section_avis.a_contacts_maintenance', true)
+    } else {
+      handleChange('section_avis.a_contacts_maintenance', false)
+      handleChange('section_avis.contacts_maintenance', [])
+    }
+  }
+
+  const addContactMaintenance = () => {
+    const current = formData.contacts_maintenance || []
+    handleChange('section_avis.contacts_maintenance', [...current, { ...EMPTY_CONTACT_MAINTENANCE }])
+  }
+
+  const removeContactMaintenance = (index) => {
+    const current = formData.contacts_maintenance || []
+    handleChange(
+      'section_avis.contacts_maintenance',
+      current.filter((_, i) => i !== index)
+    )
+  }
+
+  const updateContactMaintenance = (index, field, value) => {
+    const current = formData.contacts_maintenance || []
+    const next = current.map((c, i) => (i === index ? { ...c, [field]: value } : c))
+    handleChange('section_avis.contacts_maintenance', next)
   }
 
   const verdictPalette = {
@@ -712,6 +765,145 @@ export default function FicheAvis() {
                     </button>
                   )
                 })}
+              </div>
+
+              {/* 📇 Contacts de maintenance fournis par le propriétaire */}
+              <div className="mt-5 pt-5 border-t border-gray-200">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.a_contacts_maintenance === true}
+                    onChange={(e) => toggleContactsMaintenance(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-primary cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-900">
+                    Le propriétaire a des contacts de maintenance à nous fournir
+                  </span>
+                </label>
+
+                {formData.a_contacts_maintenance === true && (
+                  <div className="mt-4 space-y-4">
+                    {(formData.contacts_maintenance || []).length === 0 && (
+                      <p className="text-sm text-text-muted italic">
+                        Aucun contact saisi pour le moment.
+                      </p>
+                    )}
+
+                    {(formData.contacts_maintenance || []).map((contact, index) => (
+                      <div
+                        key={index}
+                        className="rounded-xl border border-gray-200 bg-gray-50 p-4"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Contact #{index + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeContactMaintenance(index)}
+                            className="text-xs font-medium text-red-600 hover:text-red-800 hover:underline"
+                          >
+                            🗑️ Supprimer
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Nom et prénom
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              value={contact.nom_prenom || ''}
+                              onChange={(e) =>
+                                updateContactMaintenance(index, 'nom_prenom', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Société
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              value={contact.societe || ''}
+                              onChange={(e) =>
+                                updateContactMaintenance(index, 'societe', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Activité
+                            </label>
+                            <select
+                              className="w-full p-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              value={contact.activite || ''}
+                              onChange={(e) =>
+                                updateContactMaintenance(index, 'activite', e.target.value)
+                              }
+                            >
+                              <option value="">— Sélectionner —</option>
+                              {ACTIVITES_MAINTENANCE.map((act) => (
+                                <option key={act} value={act}>{act}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Téléphone
+                            </label>
+                            <input
+                              type="tel"
+                              className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              value={contact.telephone || ''}
+                              onChange={(e) =>
+                                updateContactMaintenance(index, 'telephone', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Email
+                            </label>
+                            <input
+                              type="email"
+                              className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              value={contact.email || ''}
+                              onChange={(e) =>
+                                updateContactMaintenance(index, 'email', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Commentaire
+                            </label>
+                            <textarea
+                              rows="2"
+                              className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                              value={contact.commentaire || ''}
+                              onChange={(e) =>
+                                updateContactMaintenance(index, 'commentaire', e.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={addContactMaintenance}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-dashed border-primary text-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <span className="text-lg leading-none">+</span>
+                      <span>Ajouter un contact</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

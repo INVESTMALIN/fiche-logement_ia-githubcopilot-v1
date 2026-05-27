@@ -191,6 +191,11 @@ export const mapFormDataToSupabase = (formData) => {
     avis_type_premier_menage: formData.section_avis?.type_premier_menage || null,
     avis_type_premiere_maintenance: formData.section_avis?.type_premiere_maintenance || null,
 
+    // 🔧 Contacts de maintenance fournis par le propriétaire
+    avis_a_contacts_maintenance: formData.section_avis?.a_contacts_maintenance ?? null,
+    avis_contacts_maintenance: formData.section_avis?.a_contacts_maintenance === true
+      ? (formData.section_avis?.contacts_maintenance || [])
+      : [],
 
     avis_atouts_lumineux: formData.section_avis?.atouts_logement?.lumineux ?? null,
     avis_atouts_central: formData.section_avis?.atouts_logement?.central ?? null,
@@ -1402,6 +1407,12 @@ export const mapSupabaseToFormData = (supabaseData) => {
       // 🏷️ Type de 1er passage
       type_premier_menage: supabaseData.avis_type_premier_menage || null,
       type_premiere_maintenance: supabaseData.avis_type_premiere_maintenance || null,
+
+      // 🔧 Contacts de maintenance fournis par le propriétaire
+      a_contacts_maintenance: supabaseData.avis_a_contacts_maintenance ?? null,
+      contacts_maintenance: Array.isArray(supabaseData.avis_contacts_maintenance)
+        ? supabaseData.avis_contacts_maintenance
+        : [],
 
       atouts_logement: {
         // Anciens atouts (déjà mappés)

@@ -649,7 +649,10 @@ const PDFTemplate = ({ formData }) => {
               'securite_dangers',
               'type_premier_menage', 'type_premiere_maintenance',
               // Les anciennes valeurs sont dérivées de la grille → masquées du PDF (verdict global affiché à la place)
-              'logement_etat_general', 'logement_proprete'
+              'logement_etat_general', 'logement_proprete',
+              // Contacts maintenance : destination Monday (lot séparé), pas le PDF.
+              // Sans exclusion, le tableau d'objets s'affiche en "[object Object]".
+              'a_contacts_maintenance', 'contacts_maintenance'
             ]
             if (avisExcluded.includes(fieldKey)) return
           }
