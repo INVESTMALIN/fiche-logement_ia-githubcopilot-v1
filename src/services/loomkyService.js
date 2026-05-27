@@ -589,21 +589,6 @@ export function buildResolvedChecklists(fiche) {
         { name: "Vue d'ensemble (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" }
     ]
 
-    // Task conditionnelle : Table basse
-    if (fiche.salon_sam_equipements_table_basse === true) {
-        salonTasks.push({ name: "Table basse", description: "Surface essuyée et rangée" })
-    }
-
-    // Task conditionnelle : Canapé
-    if (fiche.salon_sam_equipements_canape === true) {
-        salonTasks.push({ name: "Canapé", description: "Canapé propre, aspiré, dépoussiéré et détaché" })
-    }
-
-    // Task conditionnelle : Fauteuils
-    if (fiche.salon_sam_equipements_fauteuils === true) {
-        salonTasks.push({ name: "Fauteuils", description: "Fauteuils propre, aspiré, dépoussiéré et détaché" })
-    }
-
     // Task conditionnelle : Climatisation
     if (fiche.salon_sam_equipements_climatisation === true) {
         salonTasks.push({ name: "Climatisation", description: "Réglage à 18° à partir du 1er novembre et éteint à partir du 1er avril. Etat fonctionnel" })
@@ -792,7 +777,7 @@ export function buildResolvedChecklists(fiche) {
     // Task conditionnelle : produits ménagers fournis par le prestataire (cuisine)
     if (fiche.consommables_fournis_par_prestataire === true) {
         cuisineTasks.push({
-            name: "Consommables: Produit vitres et produit sol",
+            name: "Consommables: Produit vitres,  multi-surfaces et produit sol",
             description: "Disponibles, en bon état et en quantité suffisante"
         })
     }
@@ -845,9 +830,6 @@ export function buildResolvedChecklists(fiche) {
 
     cuisineTasks.push({ name: "Consommables: Autres produits si demandés par le propriétaire (pastille lave-vaisselle, bouteille d'eau, gâteaux etc.)", description: "Disponibles, en bon état et en quantité suffisante" })
 
-
-    // Emplacement produits ménagers en toute dernière position
-    cuisineTasks.push({ name: "Emplacement produits ménagers", description: "Ordonné et accessible" })
 
     checklists.push({
         name: "Cuisine",
@@ -1017,13 +999,6 @@ export function buildResolvedChecklists(fiche) {
         // === Bloc Consommables groupé en fin de checklist ===
         sdbTasks.push({ name: "Consommables: 1 savon pour les mains", description: "Disponible, en bon état et en quantité suffisante" })
 
-        // Task conditionnelle : produits ménagers fournis par le prestataire (SDB)
-        if (fiche.consommables_fournis_par_prestataire === true) {
-            sdbTasks.push({
-                name: "Consommables: Produit SDB / multi-surfaces ou vinaigre ménager",
-                description: "Disponible, en bon état et en quantité suffisante"
-            })
-        }
 
         // Task conditionnelle : consommables "sur demande" cochés par le coordinateur (SDB)
         // Bloc affiché uniquement si le prestataire fournit les consommables ET qu'au moins un item est coché
@@ -1105,10 +1080,11 @@ export function buildResolvedChecklists(fiche) {
             buanderieTasks.push({ name: "Etendoir à linge", description: "Propre et rangé. Sans linge étendu" })
         }
 
-        // Note : l'ancienne task conditionnelle "Lit bébé" (basée sur bebe_equipements + bebe_lit_bebe_type)
-        // a été retirée volontairement. Le lit parapluie est saisi côté chambres, pas en équipements globaux —
-        // il n'a pas de sens métier dans la checklist Buanderie. Le mapping bebe_* reste intact côté DB / formData
-        // pour les autres consommateurs (PDF, validation).
+        // Task standard : Aspirateur (toujours présent)
+        buanderieTasks.push({ name: "Aspirateur", description: "Propre, vidé et rangé. En état de fonctionnement" })
+
+        // Task standard : Seau et serpillère (toujours présent)
+        buanderieTasks.push({ name: "Seau et serpillère", description: "Propres, rincés et rangés" })
 
         // Task standard : Espace de stockage (toujours présent)
         buanderieTasks.push({ name: "Espace de stockage (linge et consommables)", description: "Linge et consommables ordonnés" })
