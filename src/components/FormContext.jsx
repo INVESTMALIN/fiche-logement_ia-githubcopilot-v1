@@ -230,6 +230,10 @@ const initialFormData = {
     type_premier_menage: null,
     type_premiere_maintenance: null,
 
+    // 🔧 Contacts de maintenance fournis par le propriétaire
+    a_contacts_maintenance: null,                // Boolean: true/false/null
+    contacts_maintenance: [],                    // Array d'objets contact (cf. supabaseHelpers)
+
     atouts_logement: {
       lumineux: null,
       central: null,
