@@ -1732,85 +1732,146 @@ export function FormProvider({ children }) {
   }
 
   // 🟦 Sync Monday Contacts Maintenance — CREATE-only, idempotent par _localId.
-  // Logique :
-  //   - Skip si fiche pas Complété (la sync ne se déclenche qu'à partir de la
-  //     finalisation initiale, comme le snapshot Monday).
-  //   - Filtre les contacts éligibles (nom_prenom non vide, _localId présent,
-  //     pas encore de monday_item_id) → si liste vide, skip.
-  //   - Fire-and-forget : on n'attend pas avant de rendre la main au caller,
-  //     la finalisation n'est jamais bloquée par cette sync.
-  //   - À la réception des résultats, patch local du state pour graver les
-  //     monday_item_id obtenus (la DB est déjà patchée par l'Edge Function via
-  //     service role). On ne touche QUE le champ monday_item_id sur les
-  //     contacts identifiés par _localId — toute édition en cours côté front
-  //     est préservée.
-  //   - En cas d'échec partiel ou total, set mondayContactsToast pour que
-  //     FicheAvis affiche le toast d'erreur.
-  const triggerMondayContactsSync = (savedData) => {
-    if (!savedData) return
-    if (savedData.statut !== 'Complété') return
+  //
+  // Modèle de déclenchement (post follow-up PR sur la robustesse) :
+  //   - Pendant brouillon → AUCUN appel à l'Edge Function. Le coordinateur
+  //     remplit / supprime / fait des pauses, peu importe.
+  //   - À la transition Brouillon → Complété (finalisation initiale) →
+  //     push automatique groupé via `triggerMondayContactsSync` (filet de
+  //     sécurité, le coordinateur n'a rien à faire). Géré dans `updateStatut`.
+  //   - Post-finalisation (fiche déjà Complété, ajout/modif post-finalisation) →
+  //     bouton manuel "Synchroniser" dans FicheAvis qui appelle
+  //     `syncContactsToMondayManual()`. Pas d'auto-trigger sur les saves
+  //     post-finalisation (sinon l'autosave 5s pousserait des contacts
+  //     incomplets, observé en prod).
+  //
+  // Cœur factorisé `_pushContactsCore` partagé entre les deux paths :
+  //   - Filtre contacts éligibles (cf. pickContactsToPush — nom_prenom +
+  //     telephone + activite tous renseignés, _localId présent, pas de
+  //     monday_item_id).
+  //   - Invoke Edge Function via pushContactsToMonday (normalise les
+  //     téléphones en E.164 au boundary).
+  //   - Patch local du state : on ne touche QUE monday_item_id sur les
+  //     contacts ciblés par _localId, toute édition en cours est préservée.
+  //   - En cas d'échec partiel ou total → setMondayContactsToast.
+  //   - Retourne { success, pushedCount, failedCount, results } pour que le
+  //     caller manuel puisse en faire ce qu'il veut (loader, toast, etc.).
+  const _pushContactsCore = async (data) => {
+    if (!data?.id) {
+      return { success: false, pushedCount: 0, failedCount: 0 }
+    }
+    const toPush = pickContactsToPush(data.section_avis?.contacts_maintenance)
+    if (toPush.length === 0) {
+      return { success: true, pushedCount: 0, failedCount: 0 }
+    }
 
-    const contactsRaw = savedData.section_avis?.contacts_maintenance
-    const toPush = pickContactsToPush(contactsRaw)
-    if (toPush.length === 0) return
+    try {
+      const res = await pushContactsToMonday({ ficheId: data.id, contacts: toPush })
+      const results = Array.isArray(res?.results) ? res.results : []
 
-    pushContactsToMonday({ ficheId: savedData.id, contacts: toPush })
-      .then((res) => {
-        const results = Array.isArray(res?.results) ? res.results : []
-
-        // Patch local : on grave les monday_item_id réussis sur les bons
-        // contacts identifiés par _localId. On ne touche qu'à ce champ pour
-        // ne pas écraser une édition en cours (autre champ, autre contact).
-        const successById = new Map()
-        for (const r of results) {
-          if (r?._localId && r?.monday_item_id) {
-            successById.set(r._localId, r.monday_item_id)
-          }
+      // Patch local : on grave les monday_item_id réussis sur les bons
+      // contacts identifiés par _localId. On ne touche qu'à ce champ pour
+      // ne pas écraser une édition en cours (autre champ, autre contact).
+      const successById = new Map()
+      for (const r of results) {
+        if (r?._localId && r?.monday_item_id) {
+          successById.set(r._localId, r.monday_item_id)
         }
-        if (successById.size > 0) {
-          setFormData(prev => {
-            const contacts = prev?.section_avis?.contacts_maintenance
-            if (!Array.isArray(contacts)) return prev
-            return {
-              ...prev,
-              section_avis: {
-                ...prev.section_avis,
-                contacts_maintenance: contacts.map(c => {
-                  if (!c || typeof c !== 'object') return c
-                  const itemId = successById.get(c._localId)
-                  return itemId && !c.monday_item_id ? { ...c, monday_item_id: itemId } : c
-                })
-              }
+      }
+      if (successById.size > 0) {
+        setFormData(prev => {
+          const contacts = prev?.section_avis?.contacts_maintenance
+          if (!Array.isArray(contacts)) return prev
+          return {
+            ...prev,
+            section_avis: {
+              ...prev.section_avis,
+              contacts_maintenance: contacts.map(c => {
+                if (!c || typeof c !== 'object') return c
+                const itemId = successById.get(c._localId)
+                return itemId && !c.monday_item_id ? { ...c, monday_item_id: itemId } : c
+              })
             }
-          })
-        }
+          }
+        })
+      }
 
-        // Erreur globale (réseau, server config) : aucun result, on toast quand même.
-        // Erreur par contact : remontée si au moins un échec.
-        const failed = results.filter(r => !r?.monday_item_id)
-        const networkFailure = !Array.isArray(res?.results)
-        if (networkFailure || failed.length > 0) {
-          const failedCount = networkFailure ? toPush.length : failed.length
-          setMondayContactsToast({
-            type: 'error',
-            failedCount,
-            total: toPush.length,
-            timestamp: Date.now()
-          })
-          console.warn(`[Monday contacts] ${failedCount}/${toPush.length} échec(s) — ${res?.message || ''}`)
-        } else {
-          console.log(`[Monday contacts] OK — ${toPush.length} contact(s) poussé(s) pour fiche=${savedData.id}`)
-        }
-      })
-      .catch(err => {
-        console.warn('[Monday contacts] Unexpected error:', err)
+      // Erreur globale (réseau, server config) : aucun result → on toast.
+      // Erreur par contact : remontée si au moins un échec.
+      const failed = results.filter(r => !r?.monday_item_id)
+      const networkFailure = !Array.isArray(res?.results)
+      const failedCount = networkFailure ? toPush.length : failed.length
+
+      if (failedCount > 0) {
         setMondayContactsToast({
           type: 'error',
-          failedCount: toPush.length,
+          failedCount,
           total: toPush.length,
           timestamp: Date.now()
         })
+        console.warn(`[Monday contacts] ${failedCount}/${toPush.length} échec(s) — ${res?.message || ''}`)
+      } else {
+        console.log(`[Monday contacts] OK — ${toPush.length} contact(s) poussé(s) pour fiche=${data.id}`)
+      }
+
+      return {
+        success: failedCount === 0,
+        pushedCount: successById.size,
+        failedCount,
+        results
+      }
+    } catch (err) {
+      console.warn('[Monday contacts] Unexpected error:', err)
+      setMondayContactsToast({
+        type: 'error',
+        failedCount: toPush.length,
+        total: toPush.length,
+        timestamp: Date.now()
       })
+      return { success: false, pushedCount: 0, failedCount: toPush.length }
+    }
+  }
+
+  // Auto-trigger : appelé uniquement à la TRANSITION Brouillon → Complété
+  // (finalisation initiale). Fire-and-forget, ne bloque pas la finalisation.
+  // Une re-finalisation (déjà Complété → Complété) ou un save post-finalisation
+  // ne déclenche PAS cette sync — c'est le rôle du bouton manuel dans FicheAvis.
+  const triggerMondayContactsSync = (savedData, wasCompleteBeforeSave) => {
+    if (!savedData) return
+    if (savedData.statut !== 'Complété') return
+    if (wasCompleteBeforeSave) return // post-finalisation = sync manuelle uniquement
+
+    _pushContactsCore(savedData).catch(err => {
+      console.warn('[Monday contacts] trigger error (should not happen):', err)
+    })
+  }
+
+  // Manual trigger : utilisé par le bouton "Synchroniser" dans FicheAvis.
+  // Sauvegarde la fiche d'abord (flush l'état local vers la DB — l'Edge
+  // Function lit avis_contacts_maintenance par _localId, un contact en
+  // local non-encore-sauvé échouerait sinon avec "introuvable"), puis
+  // pousse. Retourne une promise pour que le bouton puisse afficher un loader.
+  const syncContactsToMondayManual = async () => {
+    if (!formData?.id) {
+      return { success: false, error: 'NO_FICHE', message: 'Aucune fiche chargée' }
+    }
+    if (formData.statut !== 'Complété') {
+      return { success: false, error: 'NOT_FINALIZED', message: 'La fiche doit être finalisée pour synchroniser manuellement' }
+    }
+
+    // 1. Save d'abord pour s'assurer que les contacts en cours d'édition
+    //    sont bien dans la DB (l'Edge Function les cherche par _localId).
+    const saveResult = await handleSave()
+    if (!saveResult.success) {
+      return {
+        success: false,
+        error: 'SAVE_FAILED',
+        message: saveResult.error || 'Échec de la sauvegarde avant sync'
+      }
+    }
+
+    // 2. Push sur la base des données fraîchement persistées.
+    return await _pushContactsCore(saveResult.data)
   }
 
   const handleSave = async (customData = {}) => {
@@ -1871,8 +1932,11 @@ export function FormProvider({ children }) {
 
         // 🟦 Sync Monday — best effort, fire-and-forget, ne bloque jamais le save
         triggerMondaySync(result.data, wasCompleteBeforeSave)
-        // 🟦 Sync Monday Contacts — idem, push CREATE-only des contacts maintenance
-        triggerMondayContactsSync(result.data)
+        // ⚠️ Plus de triggerMondayContactsSync ici : couplé à l'autosave 5s, il
+        // poussait des contacts incomplets vers Monday (observé en prod après
+        // PR #30). La sync auto est désormais EXCLUSIVEMENT à la transition
+        // Brouillon → Complété (cf. updateStatut). Post-finalisation = bouton
+        // manuel "Synchroniser" dans FicheAvis.
 
         return { success: true, data: result.data };
       } else {
@@ -1939,8 +2003,10 @@ export function FormProvider({ children }) {
         // 🟦 Sync Monday — déclenchée ici aussi car finaliserFiche() passe par updateStatut.
         // À la transition Brouillon → Complété, on push le snapshot complet.
         triggerMondaySync(result.data, wasCompleteBeforeSave)
-        // 🟦 Sync Monday Contacts — CREATE-only des contacts maintenance saisis
-        triggerMondayContactsSync(result.data)
+        // 🟦 Sync Monday Contacts — UNIQUEMENT à la transition Brouillon → Complété
+        // (filet de sécurité pour la finalisation initiale). Post-finalisation =
+        // bouton manuel "Synchroniser" dans FicheAvis, pas d'auto-trigger ici.
+        triggerMondayContactsSync(result.data, wasCompleteBeforeSave)
 
         return { success: true, data: result.data };
       } else {
@@ -2177,7 +2243,11 @@ export function FormProvider({ children }) {
 
       // 🟦 Toast Monday Contacts Maintenance (consommé par FicheAvis)
       mondayContactsToast,
-      clearMondayContactsToast
+      clearMondayContactsToast,
+
+      // 🟦 Sync Monday Contacts — déclenchement manuel (bouton FicheAvis
+      // post-finalisation). Promise<{ success, pushedCount, failedCount, ... }>.
+      syncContactsToMondayManual
     }}>
       {children}
     </FormContext.Provider>

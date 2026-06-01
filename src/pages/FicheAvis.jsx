@@ -11,6 +11,7 @@ import {
   TYPES_MAINTENANCE,
   computeGrilleStats
 } from '../lib/avisGrilleHelpers'
+import { pickContactsToPush } from '../services/mondayContactsService'
 
 // Liste fermée des activités de maintenance (libellés métier figés, alignés
 // sur la future remontée Monday — ne pas modifier sans validation produit).
@@ -76,7 +77,16 @@ export default function FicheAvis() {
     saveStatus,
     mondayContactsToast,
     clearMondayContactsToast,
+    syncContactsToMondayManual,
   } = useForm()
+
+  // Statut global de la fiche (FicheAvis travaille sur formData scope
+  // section_avis ci-dessous, donc on récupère le statut séparément).
+  const ficheStatut = getField('statut')
+
+  // État local du bouton "Synchroniser" — empêche les doubles clics et
+  // affiche un loader pendant l'aller-retour Edge Function.
+  const [isSyncingContacts, setIsSyncingContacts] = useState(false)
 
   const formData = getField('section_avis')
   const atouts = formData.atouts_logement || {}
@@ -153,6 +163,37 @@ export default function FicheAvis() {
     const current = formData.contacts_maintenance || []
     const next = current.map((c, i) => (i === index ? { ...c, [field]: value } : c))
     handleChange('section_avis.contacts_maintenance', next)
+  }
+
+  // Contacts éligibles au push Monday (mêmes critères que côté service :
+  // nom_prenom + telephone + activite renseignés, _localId présent, pas de
+  // monday_item_id). Utilisé pour conditionner la visibilité du bouton
+  // "Synchroniser" et son libellé.
+  const contactsToPushCount = useMemo(
+    () => pickContactsToPush(formData.contacts_maintenance || []).length,
+    [formData.contacts_maintenance]
+  )
+
+  // Bouton visible uniquement post-finalisation ET s'il y a au moins un
+  // contact à synchroniser. En brouillon, la sync se fera automatiquement à
+  // la finalisation, donc pas de bouton (UI épurée).
+  const canSyncContactsToMonday =
+    ficheStatut === 'Complété' &&
+    formData.a_contacts_maintenance === true &&
+    contactsToPushCount > 0
+
+  const handleSyncContactsToMonday = async () => {
+    if (isSyncingContacts) return
+    setIsSyncingContacts(true)
+    try {
+      await syncContactsToMondayManual()
+      // Succès → les badges apparaissent automatiquement sur les contacts
+      // qui ont reçu un monday_item_id (patch state local côté FormContext).
+      // Échec → mondayContactsToast est déjà set par _pushContactsCore et le
+      // mini-toast d'erreur existant l'affichera.
+    } finally {
+      setIsSyncingContacts(false)
+    }
   }
 
   const verdictPalette = {
@@ -931,14 +972,36 @@ export default function FicheAvis() {
                       </div>
                     ))}
 
-                    <button
-                      type="button"
-                      onClick={addContactMaintenance}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-dashed border-primary text-primary hover:bg-primary/5 transition-colors"
-                    >
-                      <span className="text-lg leading-none">+</span>
-                      <span>Ajouter un contact</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={addContactMaintenance}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full border border-dashed border-primary text-primary hover:bg-primary/5 transition-colors"
+                      >
+                        <span className="text-lg leading-none">+</span>
+                        <span>Ajouter un contact</span>
+                      </button>
+
+                      {/* 🟦 Synchronisation manuelle vers Monday — visible uniquement
+                          post-finalisation, lorsqu'au moins un contact passe le filtre
+                          (nom_prenom + telephone + activite renseignés, pas encore poussé).
+                          En brouillon, la sync se fera automatiquement à la finalisation. */}
+                      {canSyncContactsToMonday && (
+                        <button
+                          type="button"
+                          onClick={handleSyncContactsToMonday}
+                          disabled={isSyncingContacts || saveStatus.saving}
+                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <span aria-hidden="true">{isSyncingContacts ? '⏳' : '🟦'}</span>
+                          <span>
+                            {isSyncingContacts
+                              ? 'Synchronisation...'
+                              : `Synchroniser ${contactsToPushCount} contact${contactsToPushCount > 1 ? 's' : ''} vers Monday`}
+                          </span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

@@ -758,6 +758,57 @@ export const SPECIAL_VALIDATIONS = {
         return errors
     },
 
+    // Validation des contacts de maintenance : si le coordinateur a coché
+    // "Le propriétaire a des contacts de maintenance à nous fournir", chaque
+    // contact doit avoir nom_prenom + telephone + activite renseignés.
+    // Email et commentaire restent optionnels.
+    //
+    // Sans ces 3 champs, le contact n'a pas d'utilité dans le board Monday
+    // "Artisans / Maintenance" (impossible à appeler, impossible à classer).
+    // La règle est strictement alignée avec mondayContactsService.pickContactsToPush :
+    // ce qui bloque la finalisation correspond exactement à ce qui sera poussé.
+    validateContactsMaintenance: (formData) => {
+        const errors = []
+        const avis = formData.section_avis
+
+        if (!avis || avis.a_contacts_maintenance !== true) return errors
+
+        const contacts = Array.isArray(avis.contacts_maintenance) ? avis.contacts_maintenance : []
+
+        contacts.forEach((contact, index) => {
+            if (!contact || typeof contact !== 'object') return
+
+            const numero = index + 1
+            const nomPrenom = (contact.nom_prenom || '').trim()
+            const telephone = (contact.telephone || '').trim()
+            const activite = (contact.activite || '').trim()
+
+            if (!nomPrenom) {
+                errors.push({
+                    section: 'avis',
+                    field: `section_avis.contacts_maintenance[${index}].nom_prenom`,
+                    message: `Contact maintenance #${numero} : le nom et prénom sont obligatoires`
+                })
+            }
+            if (!telephone) {
+                errors.push({
+                    section: 'avis',
+                    field: `section_avis.contacts_maintenance[${index}].telephone`,
+                    message: `Contact maintenance #${numero} : le téléphone est obligatoire`
+                })
+            }
+            if (!activite) {
+                errors.push({
+                    section: 'avis',
+                    field: `section_avis.contacts_maintenance[${index}].activite`,
+                    message: `Contact maintenance #${numero} : l'activité est obligatoire`
+                })
+            }
+        })
+
+        return errors
+    },
+
     // Validation salon : au moins UN équipement coché
     validateSalon: (formData) => {
         const errors = []
@@ -876,8 +927,9 @@ export const validateRequiredFields = (formData) => {
     const salleErrors = SPECIAL_VALIDATIONS.validateSallesDeBains(formData)
     const cuisineErrors = SPECIAL_VALIDATIONS.validateCuisine(formData)
     const salonErrors = SPECIAL_VALIDATIONS.validateSalon(formData)
+    const contactsMaintenanceErrors = SPECIAL_VALIDATIONS.validateContactsMaintenance(formData)
         // Fusionner les erreurs spéciales
-        ;[...lingeErrors, ...visiteErrors, ...chambreErrors, ...salleErrors, ...cuisineErrors, ...salonErrors].forEach(error => {
+        ;[...lingeErrors, ...visiteErrors, ...chambreErrors, ...salleErrors, ...cuisineErrors, ...salonErrors, ...contactsMaintenanceErrors].forEach(error => {
             if (!errors[error.section]) errors[error.section] = []
             errors[error.section].push({
                 field: error.field,
