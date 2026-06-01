@@ -52,17 +52,17 @@ La V1.1 sépare donc clairement les deux moments où on a une intention claire d
 
 ## ✅ Validation des contacts à la finalisation
 
-Si `avis_a_contacts_maintenance === true`, chaque contact dans `avis_contacts_maintenance` doit avoir les **trois champs suivants non vides** (trimés) pour permettre la finalisation :
+Si `avis_a_contacts_maintenance === true`, chaque contact dans `avis_contacts_maintenance` doit avoir les **trois champs suivants** renseignés pour permettre la finalisation :
 
-- `nom_prenom`
-- `telephone`
-- `activite`
+- `nom_prenom` — non vide (trimé)
+- `telephone` — **normalisable en E.164** (cf. `isPhoneE164Normalizable` dans `src/lib/phoneHelpers.js`). Pas seulement non vide : un numéro non reconnu (ex: `33699999988` sans `0`/`+`/`00`) deviendrait `''` après normalisation et l'item Monday serait créé sans téléphone, orphelin définitif en CREATE-only. Deux messages d'erreur distincts (vide vs format non reconnu) pour guider la correction.
+- `activite` — non vide (trimé)
 
 `email` et `commentaire` restent optionnels.
 
 Implémentation : `SPECIAL_VALIDATIONS.validateContactsMaintenance` dans `src/lib/validationConfig.js`. Les erreurs remontent en section `avis` via `validateRequiredFields` et s'affichent dans le panneau d'erreurs de `FicheFinalisation` (pattern identique aux autres validations spéciales : visite, chambres, salles de bains, etc.).
 
-**Cohérence amont / aval** : `pickContactsToPush` côté `src/services/mondayContactsService.js` applique **exactement la même règle**. Conséquence : un contact qui bloque la finalisation est par définition un contact qui ne serait pas pushé (ils sont rejetés au même endroit), et un contact pushable est un contact qui n'aurait pas bloqué la finalisation. Pas de cas bizarre.
+**Cohérence amont / aval** : `pickContactsToPush` côté `src/services/mondayContactsService.js` applique **exactement la même règle**, y compris la normalisabilité E.164 du téléphone. Conséquence : un contact qui bloque la finalisation est par définition un contact qui ne serait pas pushé (ils sont rejetés au même endroit), et un contact pushable est un contact qui n'aurait pas bloqué la finalisation. Pas de cas bizarre où le filtre laisserait passer un téléphone non normalisable que la validation rejette (ou inversement).
 
 ---
 
@@ -74,7 +74,11 @@ Pourquoi : le parser de la colonne `phone` Monday devine le pays sur un numéro 
 
 La normalisation se fait **au boundary** côté `pushContactsToMonday` (juste avant l'`invoke`), pas en upstream. Le state React et la base de données conservent la saisie brute du coordinateur (lisible et éditable).
 
-Si la normalisation retourne `''` (saisie tronquée, format non reconnu) — cas qui ne devrait normalement jamais se produire post-finalisation car le filtre `pickContactsToPush` rejette les contacts au `telephone` vide — l'Edge Function omet la colonne `phone` côté Monday (item créé sans téléphone, l'équipe peut compléter à la main).
+Si la normalisation retourne `''` (saisie tronquée, format non reconnu), il s'agit d'un cas **qui ne peut jamais arriver en pratique** parce que :
+- La validation à la finalisation bloque déjà tout contact dont `telephone` n'est pas normalisable E.164 (cf. règle des 3 champs ci-dessus).
+- `pickContactsToPush` rejette en plus tout contact dont `telephone` n'est pas normalisable, comme filet de sécurité côté bouton manuel.
+
+Si malgré tout un téléphone vide arrivait à l'Edge Function (bug ou bypass), elle omettrait la colonne `phone` côté Monday (item créé sans téléphone, l'équipe peut compléter à la main). Defense in depth.
 
 ---
 
@@ -345,7 +349,8 @@ Logs : `npx supabase functions logs monday-contacts-sync`
 7. **Téléphone `0699999988` saisi** → envoyé en `+33699999988` à Monday, drapeau France propre dans le board.
 8. **Téléphone `+33 6 99 99 99 88` saisi** → cleanup des séparateurs, envoyé en `+33699999988`. Idem.
 9. **Téléphone `0033699999988` saisi** → `+33699999988`. Idem.
-10. **Téléphone tronqué `06 99`** → `normalizePhoneE164` retourne `''`, mais le filtre `pickContactsToPush` a déjà rejeté ce contact en amont via la validation des 3 champs (telephone strictement non vide trimé). Ne devrait jamais arriver à l'Edge Function.
+10. **Téléphone tronqué `06 99`** → `normalizePhoneE164` retourne `''`, donc `isPhoneE164Normalizable` retourne `false`. À la finalisation : message d'erreur "le téléphone n'est pas dans un format reconnu" + finalisation bloquée. Post-finalisation : `pickContactsToPush` exclut le contact (bouton "Synchroniser" caché ou count à jour). Ne devrait donc jamais arriver à l'Edge Function.
+10bis. **Téléphone `33699999988` sans préfixe `0`/`+`/`00`** → idem cas 10. Pris en charge par la même règle "normalisable E.164" — c'est ce qui a déclenché ce correctif.
 
 **Cas Monday API**
 

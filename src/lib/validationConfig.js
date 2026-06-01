@@ -3,6 +3,8 @@
  * Utilisé lors de la finalisation pour vérifier que tous les champs requis sont remplis
  */
 
+import { isPhoneE164Normalizable } from './phoneHelpers'
+
 // ========================================
 // CHAMPS OBLIGATOIRES SIMPLES (toujours requis)
 // ========================================
@@ -763,6 +765,14 @@ export const SPECIAL_VALIDATIONS = {
     // contact doit avoir nom_prenom + telephone + activite renseignés.
     // Email et commentaire restent optionnels.
     //
+    // Téléphone : la règle stricte est "normalisable en E.164" (et pas juste
+    // "non vide"), parce qu'un téléphone non reconnu (ex: `33699999988` sans
+    // `0`/`+`/`00`) deviendrait `''` après normalisation côté boundary
+    // pushContactsToMonday → l'item Monday serait créé sans téléphone et
+    // resterait orphelin en CREATE-only. On force donc le coordinateur à
+    // corriger la saisie avant de pouvoir finaliser. Deux messages distincts
+    // (vide vs format non reconnu) pour aider à la correction.
+    //
     // Sans ces 3 champs, le contact n'a pas d'utilité dans le board Monday
     // "Artisans / Maintenance" (impossible à appeler, impossible à classer).
     // La règle est strictement alignée avec mondayContactsService.pickContactsToPush :
@@ -795,6 +805,12 @@ export const SPECIAL_VALIDATIONS = {
                     section: 'avis',
                     field: `section_avis.contacts_maintenance[${index}].telephone`,
                     message: `Contact maintenance #${numero} : le téléphone est obligatoire`
+                })
+            } else if (!isPhoneE164Normalizable(telephone)) {
+                errors.push({
+                    section: 'avis',
+                    field: `section_avis.contacts_maintenance[${index}].telephone`,
+                    message: `Contact maintenance #${numero} : le téléphone n'est pas dans un format reconnu (ex : 06 12 34 56 78, +33 6 12 34 56 78)`
                 })
             }
             if (!activite) {

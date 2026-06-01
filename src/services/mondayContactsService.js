@@ -13,7 +13,7 @@
 // via le bouton "Synchroniser" dans FicheAvis post-finalisation).
 
 import { supabase } from '../lib/supabaseClient'
-import { normalizePhoneE164 } from '../lib/phoneHelpers'
+import { normalizePhoneE164, isPhoneE164Normalizable } from '../lib/phoneHelpers'
 
 /**
  * Renvoie les contacts qui doivent être poussés vers Monday.
@@ -21,7 +21,11 @@ import { normalizePhoneE164 } from '../lib/phoneHelpers'
  * Critères de "validité métier" — identiques à la règle de validation à la
  * finalisation (cf. validationConfig.SPECIAL_VALIDATIONS.validateContactsMaintenance) :
  *   - `nom_prenom` non vide (trimé)
- *   - `telephone` non vide (trimé)
+ *   - `telephone` **normalisable en E.164** (cf. isPhoneE164Normalizable).
+ *     Pas seulement non vide : un téléphone non reconnu par le helper
+ *     (ex: `33699999988` sans `0`/`+`/`00`) deviendrait `''` après
+ *     normalisation et l'item Monday serait créé sans téléphone — orphelin
+ *     définitif en CREATE-only.
  *   - `activite` non vide (trimé)
  *
  * Critères techniques :
@@ -42,7 +46,7 @@ export function pickContactsToPush(contacts) {
     if (typeof c._localId !== 'string' || c._localId.length === 0) return false
     if (c.monday_item_id) return false
     if (typeof c.nom_prenom !== 'string' || c.nom_prenom.trim().length === 0) return false
-    if (typeof c.telephone !== 'string' || c.telephone.trim().length === 0) return false
+    if (!isPhoneE164Normalizable(c.telephone)) return false
     if (typeof c.activite !== 'string' || c.activite.trim().length === 0) return false
     return true
   })

@@ -69,3 +69,26 @@ export function normalizePhoneE164(phone) {
 
     return normalized
 }
+
+/**
+ * Prédicat : vrai si la valeur est normalisable en E.164 par `normalizePhoneE164`.
+ *
+ * À utiliser partout où la sémantique métier est "téléphone valide" — ce qui
+ * dans ce projet veut dire "exploitable par les APIs aval (Loomky, Monday)".
+ * Un téléphone non vide mais non reconnu (ex: `33699999988` sans `0`, sans
+ * `+`, sans `00`) renvoie `false`, exactement comme un téléphone vide :
+ * dans les deux cas l'API aval recevrait du vide, ce qui n'est pas ce qu'on
+ * veut.
+ *
+ * Utilisé en deux endroits pour la cohérence amont/aval des contacts
+ * maintenance :
+ *   - `validateContactsMaintenance` (validationConfig.js) — bloque la
+ *     finalisation
+ *   - `pickContactsToPush` (mondayContactsService.js) — exclut du push
+ *
+ * @param {string|null|undefined} phone - Saisie utilisateur brute
+ * @returns {boolean}
+ */
+export function isPhoneE164Normalizable(phone) {
+    return normalizePhoneE164(phone) !== ''
+}
