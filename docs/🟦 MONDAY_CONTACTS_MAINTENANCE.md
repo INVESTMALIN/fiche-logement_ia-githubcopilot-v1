@@ -2,8 +2,8 @@
 
 **Projet** : Fiche Logement
 **Feature** : Remontée des contacts maintenance saisis en `FicheAvis` vers le board Monday `5096884596` ("Artisans / Maintenance")
-**Status** : 🚧 V1 livrée le 2026-06-01 — en attente du déploiement de l'Edge Function en prod
-**Dernière mise à jour** : 2026-06-01
+**Status** : V1.1 livrée le 2026-06-02 — déclenchement durci suite à un test en prod (autosave qui poussait des contacts incomplets)
+**Dernière mise à jour** : 2026-06-02
 
 ---
 
@@ -22,8 +22,63 @@ Quand un coordinateur finalise une fiche qui contient des contacts maintenance f
 Même raison que `monday-sync` : le token Monday est admin-global, on le garde côté serveur (`MONDAY_API_TOKEN` Edge Secret).
 
 ### Périmètre
-- **Dans le scope** : CREATE séquentiel des contacts non encore poussés, à la finalisation initiale et aux saves post-finalisation. Badge UI sur les contacts synchronisés. Toast d'erreur en cas d'échec partiel.
-- **Hors scope** (à confirmer si besoin futur) : update d'un item après création, delete d'item, sync bidirectionnelle Monday → fiche, UI de retry manuel.
+- **Dans le scope** : CREATE séquentiel des contacts non encore poussés, déclenché automatiquement à la transition Brouillon → Complété (finalisation initiale) **uniquement**, ou manuellement via le bouton "Synchroniser" dans `FicheAvis` post-finalisation. Validation des 3 champs requis avant finalisation. Badge UI sur les contacts synchronisés. Toast d'erreur en cas d'échec partiel.
+- **Hors scope** (à confirmer si besoin futur) : update d'un item après création, delete d'item, sync bidirectionnelle Monday → fiche.
+
+---
+
+## 🚦 Modèle de déclencheur
+
+Trois états, trois comportements :
+
+| État de la fiche | Sync Monday Contacts |
+|---|---|
+| **Brouillon** (`statut !== 'Complété'`) | **Aucune sync.** Le coordinateur remplit, modifie, supprime, fait des pauses : la section contacts est complètement muette côté Monday. Aucun appel à l'Edge Function, aucun risque de pousser un contact incomplet. |
+| **Transition Brouillon → Complété** (clic "Finaliser la fiche") | **Push automatique groupé** de tous les contacts valides (cf. règle de validation ci-dessous). Filet de sécurité : le coordinateur n'a rien à faire de spécial. Géré dans `FormContext.updateStatut` en fire-and-forget. |
+| **Déjà finalisée** (`statut === 'Complété'`) | **Pas d'auto-trigger.** Un bouton "Synchroniser N contacts vers Monday" apparaît dans `FicheAvis` dès qu'au moins un contact est éligible et pas encore poussé. Le coordinateur clique pour pousser. |
+
+### Pourquoi ce découpage ?
+
+Le premier essai V1 (PR #30) déclenchait la sync sur **chaque** save post-finalisation, autosave inclus. L'autosave a un debounce 5s, donc le scénario observé en prod était :
+1. Coordinateur ajoute un nouveau contact post-finalisation
+2. Tape "Jean Dupont" dans `nom_prenom`, va répondre au téléphone
+3. 5s plus tard, autosave → push vers Monday avec uniquement `nom_prenom`
+4. Le contact reçoit son `monday_item_id`, CREATE-only → les modifs ultérieures (société, téléphone, activité) **ne seront jamais synchronisées**
+5. Résultat sur le board : un item avec juste un nom, et impossible de le compléter automatiquement
+
+La V1.1 sépare donc clairement les deux moments où on a une intention claire de pousser (finalisation = engagement, clic manuel = décision explicite) du moment où le coordinateur est encore en train de saisir.
+
+---
+
+## ✅ Validation des contacts à la finalisation
+
+Si `avis_a_contacts_maintenance === true`, chaque contact dans `avis_contacts_maintenance` doit avoir les **trois champs suivants** renseignés pour permettre la finalisation :
+
+- `nom_prenom` — non vide (trimé)
+- `telephone` — **normalisable en E.164** (cf. `isPhoneE164Normalizable` dans `src/lib/phoneHelpers.js`). Pas seulement non vide : un numéro non reconnu (ex: `33699999988` sans `0`/`+`/`00`) deviendrait `''` après normalisation et l'item Monday serait créé sans téléphone, orphelin définitif en CREATE-only. Deux messages d'erreur distincts (vide vs format non reconnu) pour guider la correction.
+- `activite` — non vide (trimé)
+
+`email` et `commentaire` restent optionnels.
+
+Implémentation : `SPECIAL_VALIDATIONS.validateContactsMaintenance` dans `src/lib/validationConfig.js`. Les erreurs remontent en section `avis` via `validateRequiredFields` et s'affichent dans le panneau d'erreurs de `FicheFinalisation` (pattern identique aux autres validations spéciales : visite, chambres, salles de bains, etc.).
+
+**Cohérence amont / aval** : `pickContactsToPush` côté `src/services/mondayContactsService.js` applique **exactement la même règle**, y compris la normalisabilité E.164 du téléphone. Conséquence : un contact qui bloque la finalisation est par définition un contact qui ne serait pas pushé (ils sont rejetés au même endroit), et un contact pushable est un contact qui n'aurait pas bloqué la finalisation. Pas de cas bizarre où le filtre laisserait passer un téléphone non normalisable que la validation rejette (ou inversement).
+
+---
+
+## 📞 Normalisation E.164 du téléphone
+
+Avant tout push Monday, le `telephone` de chaque contact est normalisé au format E.164 strict (`+33...` pour les numéros français) via `normalizePhoneE164` (`src/lib/phoneHelpers.js`, helper partagé avec Loomky qui a la même exigence).
+
+Pourquoi : le parser de la colonne `phone` Monday devine le pays sur un numéro brut sans préfixe international et le résultat est **inconsistant** — observé en prod : deux numéros français quasi identiques (`0774710000` vs `0774710002`) affichés avec un drapeau Vietnam pour l'un, un drapeau France pour l'autre. Avec un E.164 strict, Monday lit le pays directement dans le préfixe.
+
+La normalisation se fait **au boundary** côté `pushContactsToMonday` (juste avant l'`invoke`), pas en upstream. Le state React et la base de données conservent la saisie brute du coordinateur (lisible et éditable).
+
+Si la normalisation retourne `''` (saisie tronquée, format non reconnu), il s'agit d'un cas **qui ne peut jamais arriver en pratique** parce que :
+- La validation à la finalisation bloque déjà tout contact dont `telephone` n'est pas normalisable E.164 (cf. règle des 3 champs ci-dessus).
+- `pickContactsToPush` rejette en plus tout contact dont `telephone` n'est pas normalisable, comme filet de sécurité côté bouton manuel.
+
+Si malgré tout un téléphone vide arrivait à l'Edge Function (bug ou bypass), elle omettrait la colonne `phone` côté Monday (item créé sans téléphone, l'équipe peut compléter à la main). Defense in depth.
 
 ---
 
@@ -65,13 +120,20 @@ Même raison que `monday-sync` : le token Monday est admin-global, on le garde c
 
 ```
 src/
+├── lib/
+│   ├── phoneHelpers.js              ← normalizePhoneE164 (partagé avec Loomky)
+│   └── validationConfig.js          ← SPECIAL_VALIDATIONS.validateContactsMaintenance
 ├── services/
-│   └── mondayContactsService.js     ← Client : pickContactsToPush + invoke Edge Function
+│   └── mondayContactsService.js     ← Client : pickContactsToPush (filtre 3 champs)
+│                                       + pushContactsToMonday (normalise E.164 au boundary)
 └── components/
-    └── FormContext.jsx               ← Hook triggerMondayContactsSync (handleSave + updateStatut)
-                                       + état partagé mondayContactsToast
+    └── FormContext.jsx               ← _pushContactsCore (factorisé) +
+                                       triggerMondayContactsSync (auto, transition only) +
+                                       syncContactsToMondayManual (bouton manuel) +
+                                       état partagé mondayContactsToast
 src/pages/
-└── FicheAvis.jsx                     ← Saisie + badge sync + mini toast d'erreur
+└── FicheAvis.jsx                     ← Saisie + badge sync + bouton "Synchroniser" +
+                                       mini toast d'erreur
 
 supabase/
 └── functions/
@@ -83,29 +145,44 @@ docs/
 └── 🟦 MONDAY_CONTACTS_MAINTENANCE.md ← Ce document
 ```
 
-### Flux complet
+### Flux — Path A : finalisation initiale (Brouillon → Complété)
 
 ```
-[FicheFinalisation] User clique "Finaliser"
+[FicheFinalisation] User clique "Finaliser la fiche"
+   → validateRequiredFields(formData)
+      → si contacts maintenance incomplets → BLOCAGE finalisation (cf. règle de validation)
    → updateStatut('Complété')
       → saveFiche() (commit Supabase normal)
-      → triggerMondaySync(...)                  [feature monday-sync existante]
-      → triggerMondayContactsSync(savedData)    [NOUVEAU]
-         → pickContactsToPush(contacts)
-            → filtre : nom_prenom non vide + _localId + pas de monday_item_id
-         → si liste vide → skip
-         → pushContactsToMonday({ ficheId, contacts })
-            → supabase.functions.invoke('monday-contacts-sync', { body })
-               → [Edge Function]
-                  → vérifie MONDAY_API_TOKEN + SUPABASE_SERVICE_ROLE_KEY
-                  → pour chaque contact (séquentiel) :
-                     - create_item(board, group, name, columnValues)
-                     - lit fiches.avis_contacts_maintenance
-                     - patche le contact par _localId, ajoute monday_item_id
-                     - UPDATE fiches.avis_contacts_maintenance
-                  → return { success, results: [{ _localId, monday_item_id? | error?, message? }] }
-            → patch local du state FormContext (monday_item_id par _localId)
-            → si au moins un échec : setMondayContactsToast(...)
+      → triggerMondaySync(...)                              [feature monday-sync existante]
+      → triggerMondayContactsSync(savedData, wasComplete)   [SI !wasComplete UNIQUEMENT]
+         → _pushContactsCore(savedData)                     [cœur factorisé]
+            → pickContactsToPush(contacts)
+               → filtre : nom_prenom + telephone + activite (tous trimés non vides)
+                         + _localId présent + pas de monday_item_id
+            → si liste vide → skip
+            → pushContactsToMonday({ ficheId, contacts })
+               → normalise les telephone en E.164 au boundary
+               → supabase.functions.invoke('monday-contacts-sync', { body })
+                  → [Edge Function]
+                     → ownership check (JWT + RLS), pré-CREATE SELECT, etc. cf. plus bas
+                     → pour chaque contact : create_item + compare-and-set DB
+                  → return { success, results: [...] }
+               → patch local du state FormContext (monday_item_id par _localId)
+               → si au moins un échec : setMondayContactsToast(...)
+```
+
+### Flux — Path B : sync manuelle post-finalisation (bouton "Synchroniser")
+
+```
+[FicheAvis] Fiche déjà Complété, user a ajouté/complété un contact
+   → bouton "Synchroniser N contacts vers Monday" visible
+     (visible ssi statut === 'Complété' ET pickContactsToPush(contacts).length > 0)
+   → user clique
+      → syncContactsToMondayManual()
+         → handleSave() (flush du state vers DB pour que l'Edge Function trouve
+                          les contacts par _localId)
+         → si save OK → _pushContactsCore(saveResult.data)  [même cœur que Path A]
+         → si save KO → retour erreur, pas de push
 ```
 
 ### Idempotence : pourquoi `_localId` ?
@@ -120,11 +197,12 @@ Le `_localId` est aussi la **clé de lookup** côté Edge Function pour graver l
 
 ### Garde-fous
 
-- **Fiche pas Complété** → sync ne se déclenche jamais (cohérent avec `monday-sync`).
-- **Aucun contact à pousser** (liste vide après filtre) → skip avant l'invoke, aucun appel réseau.
+- **Fiche en brouillon** → AUCUN appel à l'Edge Function, ni auto, ni manuel (le bouton "Synchroniser" est caché). La sync ne démarre qu'à partir de la finalisation initiale.
+- **Auto-trigger limité à la transition** → un save post-finalisation (auto ou manuel) ne re-déclenche pas le push automatiquement. Garde-fou explicite ajouté en V1.1 pour éviter le scénario "autosave pousse un contact incomplet" observé en prod.
+- **Aucun contact à pousser** (liste vide après filtre 3 champs + idempotence) → skip avant l'invoke, aucun appel réseau. Côté FicheAvis, le bouton "Synchroniser" est caché.
 - **Network error / Edge Function down** → toast d'erreur + `console.warn`. Le save Supabase a déjà réussi, la finalisation n'est jamais bloquée.
 - **Monday API error sur un contact** → l'item est marqué `error: MONDAY_API_ERROR`, les autres contacts continuent. Le badge n'apparaît pas → signal visuel de retry.
-- **DB patch fail après create_item OK** → l'item Monday existe mais la fiche ne le sait pas. **Risque de doublon** au prochain save (le contact sera ré-envoyé). Non couvert par l'idempotence renforcée serveur — celle-ci se base sur le `monday_item_id` en DB, qui est précisément ce que ce scénario échoue à écrire. À surveiller dans les logs Edge Function (`DB_WRITE_ERROR`). Cas rare en pratique (la DB est OK ou pas).
+- **DB patch fail après create_item OK** → l'item Monday existe mais la fiche ne le sait pas. **Risque de doublon** au prochain push manuel (le contact sera ré-envoyé via le bouton "Synchroniser"). Non couvert par l'idempotence renforcée serveur — celle-ci se base sur le `monday_item_id` en DB, qui est précisément ce que ce scénario échoue à écrire. À surveiller dans les logs Edge Function (`DB_WRITE_ERROR`). Cas rare en pratique (la DB est OK ou pas).
 - **Contact supprimé entre l'invoke et le DB patch** → `findIndex(_localId) === -1` → l'item Monday est créé mais reste **orphelin** côté Monday (pas de monday_item_id côté fiche). Pas de mécanisme de cleanup côté code (CREATE only). L'équipe peut le supprimer à la main côté board.
 
 ### Sécurité — ownership check côté Edge Function
@@ -156,7 +234,7 @@ Deux risques résiduels connus sont assumés pour V1, justifiés par le contexte
 
 **1. `DB_WRITE_ERROR` après `create_item` OK**
 
-Si la création de l'item côté Monday réussit mais que l'UPDATE DB qui suit échoue (perte réseau Supabase, indisponibilité ponctuelle, etc.), l'item Monday existe sans qu'aucun `monday_item_id` ne soit gravé en DB. Au prochain save, le contact sera ré-envoyé et un nouvel item Monday sera créé → doublon sur le board, le premier item devient orphelin.
+Si la création de l'item côté Monday réussit mais que l'UPDATE DB qui suit échoue (perte réseau Supabase, indisponibilité ponctuelle, etc.), l'item Monday existe sans qu'aucun `monday_item_id` ne soit gravé en DB. Au prochain push manuel (bouton "Synchroniser"), le contact sera ré-envoyé et un nouvel item Monday sera créé → doublon sur le board, le premier item devient orphelin.
 
 Non couvert par l'idempotence renforcée serveur, par construction : c'est précisément le `monday_item_id` en DB qui sert de clé d'idempotence, et c'est ce que ce scénario échoue à écrire. Détectable côté Edge Function logs (`DB_WRITE_ERROR`).
 
@@ -257,14 +335,34 @@ Logs : `npx supabase functions logs monday-contacts-sync`
 
 ### Scénarios à valider
 
-1. **Push initial** (Brouillon → Complété avec 2 contacts saisis) → 2 items créés côté Monday, 2 badges verts côté fiche, monday_item_id gravé en DB.
-2. **Push partiel post-finalisation** (fiche Complété, ajout d'un 3e contact) → seul le nouveau contact est poussé (les 2 premiers ont déjà un `monday_item_id`).
-3. **Activité vide** → l'item est créé sans colonne Activité, l'équipe la complètera à la main.
-4. **Activité legacy / inconnue** → warn console, colonne omise, autres champs poussés normalement.
-5. **Téléphone vide / format invalide** → colonne omise (si vide) ou envoyée brute (si présente, à l'équipe de corriger côté Monday).
-6. **Network error** → toast d'erreur ("X/Y contacts non remontés"), badge absent, retry au prochain save.
-7. **Suppression d'un contact déjà poussé côté fiche** → Monday garde l'item (pas de delete côté code).
-8. **Édition d'un contact déjà poussé côté fiche** → Monday garde l'ancienne version (pas d'update côté code).
+**Modèle de déclencheur (V1.1)**
+
+1. **Brouillon, 1 contact rempli partiellement** → autosave 5s déclenché, AUCUN appel à `monday-contacts-sync` (vérifier dans les Network DevTools). Aucun item Monday créé.
+2. **Brouillon → tentative de finaliser avec contact incomplet** (nom_prenom OK, telephone OU activite manquant) → blocage de la finalisation avec message d'erreur dans le panneau de `FicheFinalisation` ("Contact maintenance #N : le téléphone/l'activité est obligatoire").
+3. **Brouillon → finalisation avec 2 contacts valides** → push automatique groupé, 2 items créés côté Monday, 2 badges verts côté fiche.
+4. **Fiche déjà Complété, ajout d'un 3e contact valide** → bouton "Synchroniser 1 contact vers Monday" apparaît. Aucun push tant que le coordinateur n'a pas cliqué (même si l'autosave passe par là).
+5. **Clic sur "Synchroniser"** → fiche sauvée d'abord (saveStatus → "Sauvegarde en cours..."), puis push, badge sur le nouveau contact, bouton se cache.
+6. **Fiche déjà Complété, ajout d'un contact incomplet** → bouton "Synchroniser" caché tant que les 3 champs ne sont pas tous remplis. Pas de blocage côté UX (le contact est juste pas pushable).
+
+**Normalisation E.164**
+
+7. **Téléphone `0699999988` saisi** → envoyé en `+33699999988` à Monday, drapeau France propre dans le board.
+8. **Téléphone `+33 6 99 99 99 88` saisi** → cleanup des séparateurs, envoyé en `+33699999988`. Idem.
+9. **Téléphone `0033699999988` saisi** → `+33699999988`. Idem.
+10. **Téléphone tronqué `06 99`** → `normalizePhoneE164` retourne `''`, donc `isPhoneE164Normalizable` retourne `false`. À la finalisation : message d'erreur "le téléphone n'est pas dans un format reconnu" + finalisation bloquée. Post-finalisation : `pickContactsToPush` exclut le contact (bouton "Synchroniser" caché ou count à jour). Ne devrait donc jamais arriver à l'Edge Function.
+10bis. **Téléphone `33699999988` sans préfixe `0`/`+`/`00`** → idem cas 10. Pris en charge par la même règle "normalisable E.164" — c'est ce qui a déclenché ce correctif.
+
+**Cas Monday API**
+
+11. **Activité legacy / inconnue** (modification de la liste côté Monday) → warn console côté Edge Function, colonne omise, autres champs poussés normalement.
+12. **Network error** → toast d'erreur ("X/Y contacts non remontés"), badge absent, retry possible via le bouton "Synchroniser" (visible car contacts toujours pushable).
+13. **Suppression d'un contact déjà poussé côté fiche** → Monday garde l'item (CREATE only, pas de delete côté code).
+14. **Édition d'un contact déjà poussé côté fiche** → Monday garde l'ancienne version (CREATE only, pas d'update côté code). Le badge reste affiché sur le contact côté fiche.
+
+**Idempotence**
+
+15. **Double-clic rapide sur "Synchroniser"** → le bouton est désactivé pendant l'aller-retour (état `isSyncingContacts`). Pas de double push.
+16. **Push partiel** (fiche avec contacts déjà poussés + nouveaux contacts) → seuls les nouveaux passent le filtre, les anciens ont déjà un `monday_item_id`.
 
 ---
 

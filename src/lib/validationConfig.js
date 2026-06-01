@@ -3,6 +3,8 @@
  * Utilisé lors de la finalisation pour vérifier que tous les champs requis sont remplis
  */
 
+import { isPhoneE164Normalizable } from './phoneHelpers'
+
 // ========================================
 // CHAMPS OBLIGATOIRES SIMPLES (toujours requis)
 // ========================================
@@ -758,6 +760,71 @@ export const SPECIAL_VALIDATIONS = {
         return errors
     },
 
+    // Validation des contacts de maintenance : si le coordinateur a coché
+    // "Le propriétaire a des contacts de maintenance à nous fournir", chaque
+    // contact doit avoir nom_prenom + telephone + activite renseignés.
+    // Email et commentaire restent optionnels.
+    //
+    // Téléphone : la règle stricte est "normalisable en E.164" (et pas juste
+    // "non vide"), parce qu'un téléphone non reconnu (ex: `33699999988` sans
+    // `0`/`+`/`00`) deviendrait `''` après normalisation côté boundary
+    // pushContactsToMonday → l'item Monday serait créé sans téléphone et
+    // resterait orphelin en CREATE-only. On force donc le coordinateur à
+    // corriger la saisie avant de pouvoir finaliser. Deux messages distincts
+    // (vide vs format non reconnu) pour aider à la correction.
+    //
+    // Sans ces 3 champs, le contact n'a pas d'utilité dans le board Monday
+    // "Artisans / Maintenance" (impossible à appeler, impossible à classer).
+    // La règle est strictement alignée avec mondayContactsService.pickContactsToPush :
+    // ce qui bloque la finalisation correspond exactement à ce qui sera poussé.
+    validateContactsMaintenance: (formData) => {
+        const errors = []
+        const avis = formData.section_avis
+
+        if (!avis || avis.a_contacts_maintenance !== true) return errors
+
+        const contacts = Array.isArray(avis.contacts_maintenance) ? avis.contacts_maintenance : []
+
+        contacts.forEach((contact, index) => {
+            if (!contact || typeof contact !== 'object') return
+
+            const numero = index + 1
+            const nomPrenom = (contact.nom_prenom || '').trim()
+            const telephone = (contact.telephone || '').trim()
+            const activite = (contact.activite || '').trim()
+
+            if (!nomPrenom) {
+                errors.push({
+                    section: 'avis',
+                    field: `section_avis.contacts_maintenance[${index}].nom_prenom`,
+                    message: `Contact maintenance #${numero} : le nom et prénom sont obligatoires`
+                })
+            }
+            if (!telephone) {
+                errors.push({
+                    section: 'avis',
+                    field: `section_avis.contacts_maintenance[${index}].telephone`,
+                    message: `Contact maintenance #${numero} : le téléphone est obligatoire`
+                })
+            } else if (!isPhoneE164Normalizable(telephone)) {
+                errors.push({
+                    section: 'avis',
+                    field: `section_avis.contacts_maintenance[${index}].telephone`,
+                    message: `Contact maintenance #${numero} : le téléphone n'est pas dans un format reconnu (ex : 06 12 34 56 78, +33 6 12 34 56 78)`
+                })
+            }
+            if (!activite) {
+                errors.push({
+                    section: 'avis',
+                    field: `section_avis.contacts_maintenance[${index}].activite`,
+                    message: `Contact maintenance #${numero} : l'activité est obligatoire`
+                })
+            }
+        })
+
+        return errors
+    },
+
     // Validation salon : au moins UN équipement coché
     validateSalon: (formData) => {
         const errors = []
@@ -876,8 +943,9 @@ export const validateRequiredFields = (formData) => {
     const salleErrors = SPECIAL_VALIDATIONS.validateSallesDeBains(formData)
     const cuisineErrors = SPECIAL_VALIDATIONS.validateCuisine(formData)
     const salonErrors = SPECIAL_VALIDATIONS.validateSalon(formData)
+    const contactsMaintenanceErrors = SPECIAL_VALIDATIONS.validateContactsMaintenance(formData)
         // Fusionner les erreurs spéciales
-        ;[...lingeErrors, ...visiteErrors, ...chambreErrors, ...salleErrors, ...cuisineErrors, ...salonErrors].forEach(error => {
+        ;[...lingeErrors, ...visiteErrors, ...chambreErrors, ...salleErrors, ...cuisineErrors, ...salonErrors, ...contactsMaintenanceErrors].forEach(error => {
             if (!errors[error.section]) errors[error.section] = []
             errors[error.section].push({
                 field: error.field,
