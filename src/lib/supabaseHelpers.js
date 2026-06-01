@@ -2,6 +2,29 @@
 import { supabase, safeSupabaseQuery } from './supabaseClient'
 import { computeGrilleStats, proprietyFromGrilleNote } from './avisGrilleHelpers'
 
+// Identifiant technique stable d'un contact maintenance. Voir
+// FicheAvis.generateLocalId — mêmes garanties, dupliqué ici pour éviter une
+// dépendance circulaire (FicheAvis → FormContext → supabaseHelpers).
+// Sert au backfill des contacts pré-PR-30 (saisis dans #29, sans _localId).
+const generateContactLocalId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+// Backfill des _localId manquants sur une liste de contacts maintenance.
+// Idempotent : un contact qui a déjà un _localId valide est laissé tel quel.
+// Tous les autres champs (y compris monday_item_id) passent en passthrough.
+const backfillContactsLocalIds = (contacts) => {
+  if (!Array.isArray(contacts)) return []
+  return contacts.map(c => {
+    if (!c || typeof c !== 'object') return c
+    if (typeof c._localId === 'string' && c._localId.length > 0) return c
+    return { ...c, _localId: generateContactLocalId() }
+  })
+}
+
 // 🔄 Mapping FormContext → Colonnes Supabase
 export const mapFormDataToSupabase = (formData) => {
   console.log('🔍 formData.guide_acces_pdf_url:', formData.guide_acces_pdf_url)
@@ -193,8 +216,12 @@ export const mapFormDataToSupabase = (formData) => {
 
     // 🔧 Contacts de maintenance fournis par le propriétaire
     avis_a_contacts_maintenance: formData.section_avis?.a_contacts_maintenance ?? null,
+    // Backfill défensif : si un contact arrive ici sans _localId (cas
+    // théorique — addContactMaintenance en ajoute toujours un, et
+    // mapSupabaseToFormData backfille au load), on le complète pour préserver
+    // l'idempotence côté push Monday.
     avis_contacts_maintenance: formData.section_avis?.a_contacts_maintenance === true
-      ? (formData.section_avis?.contacts_maintenance || [])
+      ? backfillContactsLocalIds(formData.section_avis?.contacts_maintenance || [])
       : [],
 
     avis_atouts_lumineux: formData.section_avis?.atouts_logement?.lumineux ?? null,
@@ -1410,9 +1437,15 @@ export const mapSupabaseToFormData = (supabaseData) => {
 
       // 🔧 Contacts de maintenance fournis par le propriétaire
       a_contacts_maintenance: supabaseData.avis_a_contacts_maintenance ?? null,
-      contacts_maintenance: Array.isArray(supabaseData.avis_contacts_maintenance)
-        ? supabaseData.avis_contacts_maintenance
-        : [],
+      // Backfill _localId au load : contacts pré-PR-30 (sauvés via #29 sans
+      // identifiant technique) en reçoivent un. Persisté au prochain save via
+      // le passthrough de mapFormDataToSupabase → l'idempotence Monday tient
+      // dès que le user touche à la fiche.
+      contacts_maintenance: backfillContactsLocalIds(
+        Array.isArray(supabaseData.avis_contacts_maintenance)
+          ? supabaseData.avis_contacts_maintenance
+          : []
+      ),
 
       atouts_logement: {
         // Anciens atouts (déjà mappés)

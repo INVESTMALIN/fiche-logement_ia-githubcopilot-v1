@@ -127,6 +127,27 @@ Le `_localId` est aussi la **clé de lookup** côté Edge Function pour graver l
 - **DB patch fail après create_item OK** → l'item Monday existe mais la fiche ne le sait pas. **Risque de doublon** au prochain save (le contact sera ré-envoyé). À surveiller dans les logs Edge Function (`DB_WRITE_ERROR`). Cas rare en pratique (la DB est OK ou pas).
 - **Contact supprimé entre l'invoke et le DB patch** → `findIndex(_localId) === -1` → l'item Monday est créé mais reste **orphelin** côté Monday (pas de monday_item_id côté fiche). Pas de mécanisme de cleanup côté code (CREATE only). L'équipe peut le supprimer à la main côté board.
 
+### Sécurité — ownership check côté Edge Function
+
+Le `ficheId` arrive dans le payload front. Sans vérification, un utilisateur authentifié pourrait passer le `ficheId` d'un autre utilisateur et faire pousser des items Monday sur sa fiche (l'Edge Function écrit en DB via service role qui bypass RLS). On vérifie donc avant tout CREATE Monday et toute écriture DB que le caller a le droit de lire cette fiche :
+
+1. Lecture du `Authorization` header (le JS client Supabase y attache automatiquement le JWT du user connecté).
+2. Création d'un client Supabase signé avec ce JWT + la clé `SUPABASE_ANON_KEY`.
+3. `SELECT id FROM fiches WHERE id = ficheId` sous RLS.
+4. Si la requête renvoie 0 ligne (fiche inexistante OU non accessible au caller) → `403 FORBIDDEN`, aucun call Monday, aucune écriture DB.
+
+L'ownership s'appuie 100 % sur les policies RLS existantes (`coordinateur_own_fiches`, `super_admin_all_fiches`). Un super_admin peut donc pousser sur n'importe quelle fiche, ce qui est cohérent avec ses droits d'édition existants. Le client service-role n'est utilisé qu'après le check, uniquement pour les UPDATE de `monday_item_id`.
+
+### Backfill `_localId` pour contacts pré-PR-30
+
+Les contacts saisis via la PR #29 (saisie initiale, avant cette PR) ne portent pas de `_localId`. Sans backfill, ils seraient skippés à vie par `pickContactsToPush` (qui exige un `_localId` non vide pour l'idempotence).
+
+On backfille dans `mapSupabaseToFormData` (chemin obligatoire au load et au retour de `saveFiche`) : tout contact sans `_localId` en reçoit un (UUID front, ou fallback `c-<base36>-<random>` sinon). Le `_localId` est ensuite persisté en DB au premier save (passthrough via `mapFormDataToSupabase`).
+
+Conséquence pratique : la première fois qu'une fiche existante est ouverte puis sauvegardée (manuellement, par l'auto-save sur édition, ou par la finalisation), ses contacts pré-PR-30 deviennent éligibles à la sync Monday. Si le user ne touche pas à la fiche, le `_localId` est régénéré à chaque load → mais comme aucun save n'a lieu et aucun push non plus, ce n'est pas un problème d'idempotence.
+
+Backfill aussi appliqué défensivement dans `mapFormDataToSupabase` (au cas où un chemin contournerait `mapSupabaseToFormData`).
+
 ---
 
 ## 🗄 Base de données
@@ -161,7 +182,7 @@ Les deux derniers champs sont absents tant que le contact n'a pas été poussé.
 
 ### Setup initial
 
-Le secret `MONDAY_API_TOKEN` est déjà en place (utilisé par `monday-sync`). Les autres secrets (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) sont automatiquement injectés par Supabase dans les Edge Functions.
+Le secret `MONDAY_API_TOKEN` est déjà en place (utilisé par `monday-sync`). Les autres secrets (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` — ce dernier requis pour le client RLS de l'ownership check) sont automatiquement injectés par Supabase dans les Edge Functions.
 
 ### Déploiement de l'Edge Function
 

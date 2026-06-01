@@ -97,7 +97,7 @@ interface SyncResponse {
 
 interface SyncFatalError {
   success: false
-  error: 'UNAUTHORIZED' | 'BAD_REQUEST' | 'SERVER_CONFIG'
+  error: 'UNAUTHORIZED' | 'FORBIDDEN' | 'BAD_REQUEST' | 'SERVER_CONFIG'
   message: string
 }
 
@@ -302,9 +302,30 @@ serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   // @ts-ignore — Deno global
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('[monday-contacts-sync] SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquant')
-    return jsonResponse({ success: false, error: 'SERVER_CONFIG', message: 'Server config: Supabase service role absent' }, 500)
+  // @ts-ignore — Deno global
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+  if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+    console.error('[monday-contacts-sync] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / SUPABASE_ANON_KEY manquant')
+    return jsonResponse({ success: false, error: 'SERVER_CONFIG', message: 'Server config: clés Supabase incomplètes' }, 500)
+  }
+
+  // ⚠️ Auth — le runtime Edge vérifie déjà la SIGNATURE du JWT (verify_jwt = true
+  // par défaut), donc on est certain que le caller est un user Supabase
+  // authentifié. MAIS le ficheId vient du payload front : sans vérification
+  // d'ownership, un user A pourrait passer le ficheId d'un user B et stamper
+  // des items Monday + des monday_item_id sur la fiche de B (l'Edge Function
+  // écrit en DB via service role qui bypass RLS).
+  //
+  // On s'appuie sur les policies RLS existantes côté table `fiches` :
+  //   - coordinateur_own_fiches  (user_id = auth.uid())
+  //   - super_admin_all_fiches   (super_admin)
+  // En créant un client Supabase avec la clé anon + le header Authorization
+  // du caller, les requêtes tournent sous le JWT du user → RLS bouchonne
+  // les fiches qu'il n'a pas le droit de voir. Si le SELECT renvoie 0 ligne,
+  // on retourne 403 sans toucher à Monday ni à la DB.
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader) {
+    return jsonResponse({ success: false, error: 'UNAUTHORIZED', message: 'Authorization header manquant' }, 401)
   }
 
   let body: SyncRequest
@@ -321,6 +342,41 @@ serve(async (req: Request) => {
     return jsonResponse({ success: false, error: 'BAD_REQUEST', message: 'contacts vide ou invalide' }, 400)
   }
 
+  // Client "user" : sous RLS. Sert UNIQUEMENT au check d'ownership.
+  const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false }
+  })
+  const { data: ownerCheck, error: ownerErr } = await userClient
+    .from('fiches')
+    .select('id')
+    .eq('id', body.ficheId)
+    .maybeSingle()
+
+  if (ownerErr) {
+    // Erreur DB (réseau, etc.) — pas une décision d'autorisation. On loggue
+    // et on retourne 502 pour distinguer du 403 (caller pas autorisé).
+    console.error('[monday-contacts-sync] ownership check failed:', ownerErr)
+    return jsonResponse({
+      success: false,
+      error: 'SERVER_CONFIG',
+      message: `Ownership check failed: ${ownerErr.message}`
+    }, 502)
+  }
+  if (!ownerCheck) {
+    // RLS a filtré → soit la fiche n'existe pas, soit le caller n'y a pas
+    // accès. Dans les deux cas on refuse sans rien divulguer.
+    console.warn(`[monday-contacts-sync] ownership refused for fiche=${body.ficheId}`)
+    return jsonResponse({
+      success: false,
+      error: 'FORBIDDEN',
+      message: 'Fiche introuvable ou accès refusé'
+    }, 403)
+  }
+
+  // Client "service role" : bypass RLS. Sert UNIQUEMENT pour le patch DB
+  // monday_item_id après chaque CREATE Monday (besoin de write sur des champs
+  // que la user ne peut pas forcément écrire selon les policies updates).
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false }
   })
