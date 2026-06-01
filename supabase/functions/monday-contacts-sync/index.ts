@@ -203,28 +203,71 @@ async function createMondayItem(token: string, contact: ContactInput): Promise<s
 }
 
 // ============================================================
-// DB : patch atomique du monday_item_id sur le bon contact
+// DB : lookup atomique du monday_item_id d'un contact par _localId
 // ============================================================
-// Stratégie : on lit le tableau actuel, on patche l'élément ciblé par
-// `_localId`, on ré-écrit. Lecture/écriture séquentielles par contact :
-// chaque succès Monday est gravé immédiatement avant de tenter le suivant,
-// ce qui sécurise l'atomicité par contact (si le 2e push échoue ou crashe,
-// le 1er a déjà son monday_item_id en DB).
+// Utilisé deux fois :
+//   1. Pré-CREATE : avant de pousser un item Monday, on relit la DB pour voir
+//      si une invocation concurrente n'a pas déjà gravé un monday_item_id sur
+//      ce même contact. Si oui → skip le CREATE pour éviter un doublon dans
+//      le board Monday.
+//   2. Indirectement via patchMondayItemIdInDB qui fait son propre re-read
+//      avant l'UPDATE (compare-and-set, cf. plus bas).
+async function readContactMondayItemId(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  ficheId: string,
+  localId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('fiches')
+    .select('avis_contacts_maintenance')
+    .eq('id', ficheId)
+    .single()
+
+  if (error) {
+    throw new Error(`DB read failed: ${error.message}`)
+  }
+
+  const arr = Array.isArray(data?.avis_contacts_maintenance)
+    ? data.avis_contacts_maintenance
+    : []
+
+  const found = arr.find(
+    // deno-lint-ignore no-explicit-any
+    (c: any) => c && typeof c === 'object' && c._localId === localId
+  )
+  if (!found) return null
+
+  const id = (found as { monday_item_id?: unknown }).monday_item_id
+  return typeof id === 'string' && id.length > 0 ? id : null
+}
+
+// ============================================================
+// DB : compare-and-set du monday_item_id sur le bon contact
+// ============================================================
+// Stratégie : lecture → vérification que monday_item_id est toujours absent →
+// patch. Si une invocation concurrente a gagné la course entre notre SELECT
+// (ou notre CREATE Monday) et ce UPDATE, on n'écrase PAS le monday_item_id
+// officiel. Sémantique "first writer wins" déterministe.
 //
-// Race condition possible : l'utilisateur édite la fiche front pendant
-// qu'on est en train de patcher. Le save Supabase suivant côté front
-// repartira du snapshot complet (incluant monday_item_id qu'on a écrit ici
-// — il sera dans `mapSupabaseToFormData` au prochain reload). Pour le state
-// React en cours d'édition, on compte sur le patch local côté front
-// (setFormData ciblant uniquement le champ monday_item_id par _localId)
-// pour ne pas écraser les modifs en cours.
+// Retourne l'ID effectif :
+//   - mondayItemId si on a écrit (cas nominal)
+//   - l'ID préexistant si on a détecté un concurrent qui a gagné (l'item
+//     qu'on vient de créer côté Monday devient orphelin — on log un warning
+//     pour monitoring, pas de delete côté Monday)
+//
+// Lance si :
+//   - la lecture DB échoue (réseau, etc.)
+//   - le contact ciblé n'existe plus dans le tableau (supprimé côté front
+//     entre l'invoke et maintenant)
+//   - l'écriture DB échoue
 async function patchMondayItemIdInDB(
   // deno-lint-ignore no-explicit-any
   supabase: any,
   ficheId: string,
   localId: string,
   mondayItemId: string
-): Promise<void> {
+): Promise<string> {
   const { data: row, error: readErr } = await supabase
     .from('fiches')
     .select('avis_contacts_maintenance')
@@ -244,12 +287,22 @@ async function patchMondayItemIdInDB(
     (c: any) => c && typeof c === 'object' && c._localId === localId
   )
   if (idx === -1) {
-    // Le contact a été supprimé côté front entre le moment où on a reçu la
-    // requête et maintenant. On a déjà créé l'item Monday — il restera
-    // orphelin (CREATE only, pas de delete). On ne gravera rien en DB.
-    // Pas une vraie erreur du point de vue de l'utilisateur, mais on remonte
-    // l'info dans les logs.
+    // Contact supprimé côté front entre l'invoke et maintenant. L'item
+    // Monday créé reste orphelin (CREATE only, pas de delete).
     throw new Error(`Contact _localId=${localId} introuvable dans la fiche (probablement supprimé entre-temps)`)
+  }
+
+  // Compare-and-set : si une invocation concurrente a déjà gravé un
+  // monday_item_id, on conserve le sien et on signale notre item comme
+  // doublon orphelin. L'item qu'on vient de créer côté Monday existe mais
+  // n'est référencé nulle part dans la fiche.
+  const existing = current[idx] as { monday_item_id?: unknown }
+  if (typeof existing.monday_item_id === 'string' && existing.monday_item_id.length > 0) {
+    console.warn(
+      `[monday-contacts-sync] RACE detected fiche=${ficheId} _localId=${localId} ` +
+      `existing=${existing.monday_item_id} our_orphan=${mondayItemId}`
+    )
+    return existing.monday_item_id
   }
 
   const patched = current.map(
@@ -265,6 +318,8 @@ async function patchMondayItemIdInDB(
   if (writeErr) {
     throw new Error(`DB write failed: ${writeErr.message}`)
   }
+
+  return mondayItemId
 }
 
 // ============================================================
@@ -403,6 +458,20 @@ serve(async (req: Request) => {
 
   // Boucle séquentielle : chaque contact est traité indépendamment.
   // Un échec sur un contact n'arrête pas les suivants (résilience par item).
+  //
+  // 🛡 Idempotence renforcée serveur (anti-doublon Monday) :
+  //   1. Pré-CREATE : on relit la DB par _localId. Si monday_item_id déjà
+  //      gravé par une invocation concurrente terminée, on skip le CREATE
+  //      et on retourne l'ID existant comme succès (état de vérité = DB,
+  //      pas le payload entrant).
+  //   2. patchMondayItemIdInDB est en compare-and-set : si une invocation
+  //      concurrente a gagné la course entre notre SELECT et notre UPDATE,
+  //      on conserve son ID en DB et le nôtre devient orphelin sur le board
+  //      Monday (warn loggué pour monitoring).
+  // Cette double protection ferme la quasi-totalité des fenêtres de race.
+  // Reste un cas résiduel où deux invocations seraient strictement
+  // simultanées sur l'appel HTTP Monday lui-même → orphelin sur le board,
+  // visible dans les logs.
   for (const contact of body.contacts) {
     const localId = contact?._localId
     const nomPrenom = (contact?.nom_prenom || '').trim()
@@ -416,6 +485,30 @@ serve(async (req: Request) => {
       continue
     }
 
+    // 1) Pré-CREATE : la DB fait foi. Si un monday_item_id existe déjà,
+    // ne pas re-créer un item Monday.
+    let existingItemId: string | null
+    try {
+      existingItemId = await readContactMondayItemId(supabase, body.ficheId, localId)
+    } catch (err) {
+      console.error(`[monday-contacts-sync] pre-CREATE read failed (_localId=${localId}):`, err)
+      results.push({
+        _localId: localId,
+        error: 'DB_WRITE_ERROR',
+        message: err instanceof Error ? err.message : String(err)
+      })
+      continue
+    }
+    if (existingItemId) {
+      console.log(
+        `[monday-contacts-sync] SKIP (already pushed) fiche=${body.ficheId} ` +
+        `_localId=${localId} mondayItem=${existingItemId}`
+      )
+      results.push({ _localId: localId, monday_item_id: existingItemId })
+      continue
+    }
+
+    // 2) CREATE Monday.
     let itemId: string
     try {
       itemId = await createMondayItem(mondayToken, contact)
@@ -429,13 +522,16 @@ serve(async (req: Request) => {
       continue
     }
 
+    // 3) Compare-and-set en DB. L'ID effectif peut différer de l'ID qu'on
+    // vient de créer si une invocation concurrente a gagné la course.
+    let effectiveItemId: string
     try {
-      await patchMondayItemIdInDB(supabase, body.ficheId, localId, itemId)
+      effectiveItemId = await patchMondayItemIdInDB(supabase, body.ficheId, localId, itemId)
     } catch (err) {
       console.error(`[monday-contacts-sync] DB patch failed (_localId=${localId}, mondayItem=${itemId}):`, err)
       // L'item Monday a été créé mais la DB n'a pas été patchée. On le remonte
-      // au front, qui pourra retenter au prochain save — risque de doublon
-      // côté Monday si l'utilisateur retente, à surveiller (cf. doc).
+      // au front, qui pourra retenter au prochain save — la protection pré-CREATE
+      // évitera de re-créer un doublon si la DB a été patchée entre-temps.
       results.push({
         _localId: localId,
         error: 'DB_WRITE_ERROR',
@@ -444,8 +540,13 @@ serve(async (req: Request) => {
       continue
     }
 
-    results.push({ _localId: localId, monday_item_id: itemId })
-    console.log(`[monday-contacts-sync] OK fiche=${body.ficheId} localId=${localId} mondayItem=${itemId}`)
+    results.push({ _localId: localId, monday_item_id: effectiveItemId })
+    if (effectiveItemId === itemId) {
+      console.log(`[monday-contacts-sync] OK fiche=${body.ficheId} localId=${localId} mondayItem=${effectiveItemId}`)
+    } else {
+      // patchMondayItemIdInDB a déjà loggué le warning RACE détaillé.
+      console.log(`[monday-contacts-sync] OK (raced) fiche=${body.ficheId} localId=${localId} kept=${effectiveItemId}`)
+    }
   }
 
   const allOk = results.every(r => 'monday_item_id' in r)

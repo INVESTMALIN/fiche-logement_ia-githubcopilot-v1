@@ -124,7 +124,7 @@ Le `_localId` est aussi la **clé de lookup** côté Edge Function pour graver l
 - **Aucun contact à pousser** (liste vide après filtre) → skip avant l'invoke, aucun appel réseau.
 - **Network error / Edge Function down** → toast d'erreur + `console.warn`. Le save Supabase a déjà réussi, la finalisation n'est jamais bloquée.
 - **Monday API error sur un contact** → l'item est marqué `error: MONDAY_API_ERROR`, les autres contacts continuent. Le badge n'apparaît pas → signal visuel de retry.
-- **DB patch fail après create_item OK** → l'item Monday existe mais la fiche ne le sait pas. **Risque de doublon** au prochain save (le contact sera ré-envoyé). À surveiller dans les logs Edge Function (`DB_WRITE_ERROR`). Cas rare en pratique (la DB est OK ou pas).
+- **DB patch fail après create_item OK** → l'item Monday existe mais la fiche ne le sait pas. **Risque de doublon** au prochain save (le contact sera ré-envoyé). Non couvert par l'idempotence renforcée serveur — celle-ci se base sur le `monday_item_id` en DB, qui est précisément ce que ce scénario échoue à écrire. À surveiller dans les logs Edge Function (`DB_WRITE_ERROR`). Cas rare en pratique (la DB est OK ou pas).
 - **Contact supprimé entre l'invoke et le DB patch** → `findIndex(_localId) === -1` → l'item Monday est créé mais reste **orphelin** côté Monday (pas de monday_item_id côté fiche). Pas de mécanisme de cleanup côté code (CREATE only). L'équipe peut le supprimer à la main côté board.
 
 ### Sécurité — ownership check côté Edge Function
@@ -137,6 +137,18 @@ Le `ficheId` arrive dans le payload front. Sans vérification, un utilisateur au
 4. Si la requête renvoie 0 ligne (fiche inexistante OU non accessible au caller) → `403 FORBIDDEN`, aucun call Monday, aucune écriture DB.
 
 L'ownership s'appuie 100 % sur les policies RLS existantes (`coordinateur_own_fiches`, `super_admin_all_fiches`). Un super_admin peut donc pousser sur n'importe quelle fiche, ce qui est cohérent avec ses droits d'édition existants. Le client service-role n'est utilisé qu'après le check, uniquement pour les UPDATE de `monday_item_id`.
+
+### Idempotence renforcée côté serveur (anti-doublon Monday)
+
+Le payload front peut être obsolète lors de saves concurrents : entre le moment où le state React lit `contacts_maintenance` et celui où l'Edge Function le reçoit, une autre invocation peut avoir déjà poussé certains contacts vers Monday. Sans protection serveur, on créerait des doublons d'items sur le board.
+
+L'Edge Function fait donc **deux contrôles serveur**, la DB étant l'état de vérité :
+
+1. **Pré-CREATE SELECT** : avant chaque `create_item`, on relit `avis_contacts_maintenance` et on cherche le contact par `_localId`. S'il a déjà un `monday_item_id` (gravé par une invocation concurrente déjà terminée), on **skip** le `create_item` et on retourne cet ID au front comme succès. Aucun nouvel item Monday n'est créé.
+
+2. **Compare-and-set côté UPDATE DB** : `patchMondayItemIdInDB` re-lit la fiche juste avant l'écriture. Si une invocation concurrente a gagné la course entre notre SELECT et notre UPDATE (les deux SELECT ont vu "vide", les deux ont créé un item Monday, on est le second à arriver au UPDATE), on **n'écrase pas** le `monday_item_id` officiel. On retourne celui qui est en DB comme ID effectif, et l'item qu'on vient de créer côté Monday devient orphelin sur le board (warn loggué pour monitoring). Sémantique **"first writer wins"** déterministe.
+
+Cette double protection ferme la quasi-totalité des fenêtres de race. Reste un cas résiduel où deux invocations seraient strictement simultanées sur l'appel HTTP Monday lui-même → 1 orphelin sur le board, signalé par un log `RACE detected` dans les Edge Function logs.
 
 ### Backfill `_localId` pour contacts pré-PR-30
 
