@@ -150,6 +150,28 @@ L'Edge Function fait donc **deux contrôles serveur**, la DB étant l'état de v
 
 Cette double protection ferme la quasi-totalité des fenêtres de race. Reste un cas résiduel où deux invocations seraient strictement simultanées sur l'appel HTTP Monday lui-même → 1 orphelin sur le board, signalé par un log `RACE detected` dans les Edge Function logs.
 
+### Trade-offs assumés en V1
+
+Deux risques résiduels connus sont assumés pour V1, justifiés par le contexte de production : 5 à 10 fiches finalisées par jour, moins de 10 coordinateurs actifs.
+
+**1. `DB_WRITE_ERROR` après `create_item` OK**
+
+Si la création de l'item côté Monday réussit mais que l'UPDATE DB qui suit échoue (perte réseau Supabase, indisponibilité ponctuelle, etc.), l'item Monday existe sans qu'aucun `monday_item_id` ne soit gravé en DB. Au prochain save, le contact sera ré-envoyé et un nouvel item Monday sera créé → doublon sur le board, le premier item devient orphelin.
+
+Non couvert par l'idempotence renforcée serveur, par construction : c'est précisément le `monday_item_id` en DB qui sert de clé d'idempotence, et c'est ce que ce scénario échoue à écrire. Détectable côté Edge Function logs (`DB_WRITE_ERROR`).
+
+**2. TOCTOU strictement simultané sur le compare-and-set**
+
+Le compare-and-set côté `patchMondayItemIdInDB` n'est pas atomique au niveau Postgres : il fait un `SELECT` puis un `UPDATE` côté Node, sans transaction qui couvre le call HTTP Monday entre les deux. Deux invocations qui interleavent leur read et leur write au niveau Postgres peuvent toutes les deux passer le check applicatif (les deux reads voient `monday_item_id` absent) et finir par créer un doublon Monday avant que l'une n'écrive son ID en écrasant l'autre.
+
+La mitigation actuelle (`RACE detected` log) couvre uniquement le sous-cas **read-after-commit** : la seconde invocation lit après que la première a déjà committé, voit le `monday_item_id` existant, et refuse d'écraser. Le sous-cas **read-before-commit des deux côtés** reste résiduel : aucun warn ne se déclenche, last writer wins en DB, 1 item Monday devient orphelin.
+
+**Justification de l'acceptation V1**
+
+Le scénario demande deux invocations strictement simultanées de l'Edge Function sur la même fiche, avec des contacts non encore synchronisés des deux côtés, et un interleave Postgres au caractère près. Probabilité négligeable au volume actuel.
+
+**Follow-up identifié si on observe des doublons en prod** : ajouter une RPC Postgres qui fait le compare-and-set atomique sur le JSONB (`UPDATE ... WHERE NOT EXISTS (SELECT 1 FROM jsonb_array_elements(...) WHERE _localId = $1 AND monday_item_id IS NOT NULL) RETURNING ...`). L'Edge Function passerait par cette RPC plutôt que par un SELECT + UPDATE séparés. Coût d'implémentation faible mais inutile tant qu'aucun pattern de doublon n'est observé.
+
 ### Backfill `_localId` pour contacts pré-PR-30
 
 Les contacts saisis via la PR #29 (saisie initiale, avant cette PR) ne portent pas de `_localId`. Sans backfill, ils seraient skippés à vie par `pickContactsToPush` (qui exige un `_localId` non vide pour l'idempotence).
