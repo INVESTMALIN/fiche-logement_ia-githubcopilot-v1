@@ -6,6 +6,7 @@ import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
+import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
 
 const FormContext = createContext()
 
@@ -1280,6 +1281,12 @@ export function FormProvider({ children }) {
 
   const [duplicateAlert, setDuplicateAlert] = useState(null)
 
+  // 🟦 Toast Monday Contacts — état partagé (set par triggerMondayContactsSync,
+  // consommé par un mini composant local dans FicheAvis). null = pas de toast.
+  // Shape : { type: 'error', failedCount: number, total: number, timestamp: number }
+  const [mondayContactsToast, setMondayContactsToast] = useState(null)
+  const clearMondayContactsToast = useCallback(() => setMondayContactsToast(null), [])
+
   const sections = [
     "Propriétaire", "Logement", "Avis", "Clefs", "Airbnb", "Booking", 'E-mail Outlook', "Réglementation",
     "Exigences", "Gestion linge", "Équipements", "Consommables", "Visite",
@@ -1724,6 +1731,88 @@ export function FormProvider({ children }) {
       })
   }
 
+  // 🟦 Sync Monday Contacts Maintenance — CREATE-only, idempotent par _localId.
+  // Logique :
+  //   - Skip si fiche pas Complété (la sync ne se déclenche qu'à partir de la
+  //     finalisation initiale, comme le snapshot Monday).
+  //   - Filtre les contacts éligibles (nom_prenom non vide, _localId présent,
+  //     pas encore de monday_item_id) → si liste vide, skip.
+  //   - Fire-and-forget : on n'attend pas avant de rendre la main au caller,
+  //     la finalisation n'est jamais bloquée par cette sync.
+  //   - À la réception des résultats, patch local du state pour graver les
+  //     monday_item_id obtenus (la DB est déjà patchée par l'Edge Function via
+  //     service role). On ne touche QUE le champ monday_item_id sur les
+  //     contacts identifiés par _localId — toute édition en cours côté front
+  //     est préservée.
+  //   - En cas d'échec partiel ou total, set mondayContactsToast pour que
+  //     FicheAvis affiche le toast d'erreur.
+  const triggerMondayContactsSync = (savedData) => {
+    if (!savedData) return
+    if (savedData.statut !== 'Complété') return
+
+    const contactsRaw = savedData.section_avis?.contacts_maintenance
+    const toPush = pickContactsToPush(contactsRaw)
+    if (toPush.length === 0) return
+
+    pushContactsToMonday({ ficheId: savedData.id, contacts: toPush })
+      .then((res) => {
+        const results = Array.isArray(res?.results) ? res.results : []
+
+        // Patch local : on grave les monday_item_id réussis sur les bons
+        // contacts identifiés par _localId. On ne touche qu'à ce champ pour
+        // ne pas écraser une édition en cours (autre champ, autre contact).
+        const successById = new Map()
+        for (const r of results) {
+          if (r?._localId && r?.monday_item_id) {
+            successById.set(r._localId, r.monday_item_id)
+          }
+        }
+        if (successById.size > 0) {
+          setFormData(prev => {
+            const contacts = prev?.section_avis?.contacts_maintenance
+            if (!Array.isArray(contacts)) return prev
+            return {
+              ...prev,
+              section_avis: {
+                ...prev.section_avis,
+                contacts_maintenance: contacts.map(c => {
+                  if (!c || typeof c !== 'object') return c
+                  const itemId = successById.get(c._localId)
+                  return itemId && !c.monday_item_id ? { ...c, monday_item_id: itemId } : c
+                })
+              }
+            }
+          })
+        }
+
+        // Erreur globale (réseau, server config) : aucun result, on toast quand même.
+        // Erreur par contact : remontée si au moins un échec.
+        const failed = results.filter(r => !r?.monday_item_id)
+        const networkFailure = !Array.isArray(res?.results)
+        if (networkFailure || failed.length > 0) {
+          const failedCount = networkFailure ? toPush.length : failed.length
+          setMondayContactsToast({
+            type: 'error',
+            failedCount,
+            total: toPush.length,
+            timestamp: Date.now()
+          })
+          console.warn(`[Monday contacts] ${failedCount}/${toPush.length} échec(s) — ${res?.message || ''}`)
+        } else {
+          console.log(`[Monday contacts] OK — ${toPush.length} contact(s) poussé(s) pour fiche=${savedData.id}`)
+        }
+      })
+      .catch(err => {
+        console.warn('[Monday contacts] Unexpected error:', err)
+        setMondayContactsToast({
+          type: 'error',
+          failedCount: toPush.length,
+          total: toPush.length,
+          timestamp: Date.now()
+        })
+      })
+  }
+
   const handleSave = async (customData = {}) => {
 
     // DEBUG
@@ -1782,6 +1871,8 @@ export function FormProvider({ children }) {
 
         // 🟦 Sync Monday — best effort, fire-and-forget, ne bloque jamais le save
         triggerMondaySync(result.data, wasCompleteBeforeSave)
+        // 🟦 Sync Monday Contacts — idem, push CREATE-only des contacts maintenance
+        triggerMondayContactsSync(result.data)
 
         return { success: true, data: result.data };
       } else {
@@ -1848,6 +1939,8 @@ export function FormProvider({ children }) {
         // 🟦 Sync Monday — déclenchée ici aussi car finaliserFiche() passe par updateStatut.
         // À la transition Brouillon → Complété, on push le snapshot complet.
         triggerMondaySync(result.data, wasCompleteBeforeSave)
+        // 🟦 Sync Monday Contacts — CREATE-only des contacts maintenance saisis
+        triggerMondayContactsSync(result.data)
 
         return { success: true, data: result.data };
       } else {
@@ -2080,7 +2173,11 @@ export function FormProvider({ children }) {
       handleOpenExisting,
       handleCreateNew,
       handleCancelDuplicate,
-      checkForDuplicate
+      checkForDuplicate,
+
+      // 🟦 Toast Monday Contacts Maintenance (consommé par FicheAvis)
+      mondayContactsToast,
+      clearMondayContactsToast
     }}>
       {children}
     </FormContext.Provider>

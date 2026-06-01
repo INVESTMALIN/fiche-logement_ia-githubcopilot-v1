@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
@@ -33,6 +33,18 @@ const EMPTY_CONTACT_MAINTENANCE = {
   commentaire: ''
 }
 
+// Identifiant technique stable du contact, persisté dans le JSONB. Sert
+// d'ancre pour l'idempotence de la remontée Monday (cf. mondayContactsService) :
+// l'Edge Function patche le monday_item_id sur le contact via ce _localId.
+// crypto.randomUUID requires un contexte sécurisé (HTTPS ou localhost) —
+// fallback minimal sinon, suffisant car cet ID n'est jamais cryptographique.
+const generateLocalId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
 const StyledCheckboxGrid = ({ options, values, path, onChange }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
     {options.map(({ key, label }) => (
@@ -62,6 +74,8 @@ export default function FicheAvis() {
     updateField,
     handleSave,
     saveStatus,
+    mondayContactsToast,
+    clearMondayContactsToast,
   } = useForm()
 
   const formData = getField('section_avis')
@@ -71,6 +85,15 @@ export default function FicheAvis() {
   const handleChange = (field, value) => updateField(field, value)
 
   const [checklistOpen, setChecklistOpen] = useState(false)
+
+  // Auto-dismiss du toast Monday Contacts au bout de 10s. Le user peut aussi
+  // le fermer manuellement. On clear l'état partagé dans FormContext pour
+  // qu'il ne re-apparaisse pas en re-rendant.
+  useEffect(() => {
+    if (!mondayContactsToast) return
+    const t = setTimeout(() => clearMondayContactsToast(), 10000)
+    return () => clearTimeout(t)
+  }, [mondayContactsToast, clearMondayContactsToast])
 
   const grilleStats = useMemo(() => computeGrilleStats(formData), [formData])
   const securiteDangers = formData.securite_dangers || []
@@ -112,7 +135,10 @@ export default function FicheAvis() {
 
   const addContactMaintenance = () => {
     const current = formData.contacts_maintenance || []
-    handleChange('section_avis.contacts_maintenance', [...current, { ...EMPTY_CONTACT_MAINTENANCE }])
+    handleChange('section_avis.contacts_maintenance', [
+      ...current,
+      { ...EMPTY_CONTACT_MAINTENANCE, _localId: generateLocalId() }
+    ])
   }
 
   const removeContactMaintenance = (index) => {
@@ -791,13 +817,24 @@ export default function FicheAvis() {
 
                     {(formData.contacts_maintenance || []).map((contact, index) => (
                       <div
-                        key={index}
+                        key={contact._localId || index}
                         className="rounded-xl border border-gray-200 bg-gray-50 p-4"
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Contact #{index + 1}
-                          </span>
+                        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                              Contact #{index + 1}
+                            </span>
+                            {contact.monday_item_id && (
+                              <span
+                                title="Ce contact a été remonté vers le board Monday Artisans / Maintenance"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200"
+                              >
+                                <span aria-hidden="true">✓</span>
+                                <span>Synchronisé Monday</span>
+                              </span>
+                            )}
+                          </div>
                           <button
                             type="button"
                             onClick={() => removeContactMaintenance(index)}
@@ -1116,6 +1153,38 @@ export default function FicheAvis() {
           <div className="h-20"></div>
         </div>
       </div>
+
+      {/* 🟦 Toast Monday Contacts — erreur de sync (fire-and-forget côté FormContext) */}
+      {mondayContactsToast?.type === 'error' && (
+        <div
+          role="alert"
+          className="fixed bottom-6 right-6 z-50 max-w-sm rounded-lg border border-red-300 bg-white shadow-lg p-4 flex items-start gap-3"
+        >
+          <span className="text-xl leading-none" aria-hidden="true">⚠️</span>
+          <div className="flex-1 text-sm text-gray-800">
+            <p className="font-semibold text-red-700 mb-1">
+              Sync Monday partielle
+            </p>
+            <p className="text-gray-700">
+              {mondayContactsToast.failedCount === mondayContactsToast.total
+                ? `${mondayContactsToast.failedCount} contact${mondayContactsToast.failedCount > 1 ? 's' : ''} n'${mondayContactsToast.failedCount > 1 ? 'ont' : 'a'} pas pu être remonté${mondayContactsToast.failedCount > 1 ? 's' : ''} vers Monday.`
+                : `${mondayContactsToast.failedCount}/${mondayContactsToast.total} contacts n'ont pas pu être remontés vers Monday.`}
+              {' '}
+              <span className="text-gray-600">
+                Réessayez en sauvegardant à nouveau la fiche.
+              </span>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={clearMondayContactsToast}
+            className="text-gray-400 hover:text-gray-700 text-lg leading-none"
+            aria-label="Fermer"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   )
 }
