@@ -151,10 +151,72 @@ export default function FicheSalonSam() {
               </div>
             )}
 
-            {/* 3bis. Canapé-lit - Vidéo (conditionnel) */}
+            {/* 3bis. Canapé-lit - Sous-options + vidéo (conditionnel) */}
             {formData.equipements_canape_lit === true && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <PhotoUpload 
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
+                <label className="block font-semibold">
+                  Précisions sur le canapé-lit
+                </label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="flex items-center gap-3 cursor-pointer hover:bg-white/60 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={formData.canape_lit_simple === true}
+                      onChange={(e) => handleCheckboxChange('section_salon_sam.canape_lit_simple', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">Canapé-lit simple</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer hover:bg-white/60 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={formData.canape_lit_double === true}
+                      onChange={(e) => handleCheckboxChange('section_salon_sam.canape_lit_double', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">Canapé-lit double</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer hover:bg-white/60 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={formData.canape_lit_autre_type === true}
+                      onChange={(e) => handleCheckboxChange('section_salon_sam.canape_lit_autre_type', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">Autre type de lit</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer hover:bg-white/60 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={formData.canape_lit_equipements === true}
+                      onChange={(e) => handleCheckboxChange('section_salon_sam.canape_lit_equipements', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">Équipements du lit</span>
+                  </label>
+                </div>
+
+                {/* Champ conditionnel "Autre type de lit" */}
+                {formData.canape_lit_autre_type === true && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Préciser le type de lit
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="ex. clic-clac, futon, BZ, banquette gigogne…"
+                      value={formData.canape_lit_autre_type_details || ""}
+                      onChange={(e) => handleInputChange('section_salon_sam.canape_lit_autre_type_details', e.target.value)}
+                      className="w-full p-3 border rounded-lg"
+                    />
+                  </div>
+                )}
+
+                <PhotoUpload
                   fieldPath="section_salon_sam.canape_lit_video"
                   label="Vidéo du canapé-lit (ouverture/fermeture)"
                   multiple={true}
