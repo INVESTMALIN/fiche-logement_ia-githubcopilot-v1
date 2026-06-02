@@ -59,7 +59,7 @@ const PDFTemplate = ({ formData }) => {
       'quartier_defavorise': 'Quartier défavorisé (secteur avec des conditions de vie moins favorables)',
       'quartier_rural': 'Zone rurale (campagne isolée, éloignée des commodités et transports)',
       'quartier_village': 'Village (centre-bourg avec commerces de proximité, ambiance locale)',
-      'quartier_balneaire': 'Bord de mer / Station Balnéaire',
+      'quartier_balneaire': 'Bord de mer / Station Balnéaire (proche plage, côte, activités saisonnières ou touristiques)',
 
       // 🏘️ ÉVALUATION QUARTIER - Sécurité
       'securise': 'Sécurisé (quartier calme)',
