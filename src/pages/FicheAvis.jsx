@@ -337,7 +337,8 @@ export default function FicheAvis() {
                   { key: 'quartier_intermediaire', label: 'Quartier intermédiaire (familial, moyen de gamme)' },
                   { key: 'quartier_defavorise', label: 'Quartier défavorisé (secteur avec des conditions de vie moins favorables) ⚠️' },
                   { key: 'quartier_rural', label: 'Zone rurale (campagne isolée, éloignée des commodités et transports)' },
-                  { key: 'quartier_village', label: 'Village (centre-bourg avec commerces de proximité, ambiance locale)' }
+                  { key: 'quartier_village', label: 'Village (centre-bourg avec commerces de proximité, ambiance locale)' },
+                  { key: 'quartier_balneaire', label: 'Bord de mer / Station Balnéaire (proche plage, côte, activités saisonnières ou touristiques)' },
                 ].map(({ key, label }) => (
                   <label
                     key={key}
