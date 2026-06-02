@@ -1088,7 +1088,12 @@ const initialFormData = {
     // Cheminée type (conditionnel si cheminee cochée)
     cheminee_type: "",                    // Radio
 
-    // CANAPÉ-LIT - Vidéo (conditionnel)
+    // CANAPÉ-LIT - Sous-options (conditionnel si equipements_canape_lit cochée)
+    canape_lit_simple: null,              // Checkbox bool : canapé-lit simple
+    canape_lit_double: null,              // Checkbox bool : canapé-lit double
+    canape_lit_autre_type: null,          // Checkbox bool : autre type de lit
+    canape_lit_autre_type_details: "",    // Textarea (conditionnel si canape_lit_autre_type)
+    canape_lit_equipements: null,         // Checkbox bool : équipements du lit fournis
     canape_lit_video: [],                 // Array: URLs vidéos
 
     // Autres équipements (obligatoire)

@@ -1034,7 +1034,12 @@ export const mapFormDataToSupabase = (formData) => {
     // Cheminée type (conditionnel)
     salon_sam_cheminee_type: formData.section_salon_sam?.cheminee_type || null,
 
-    // Canapé-lit - Vidéo (conditionnel)
+    // Canapé-lit - Sous-options (conditionnel si equipements_canape_lit cochée)
+    salon_sam_canape_lit_simple: formData.section_salon_sam?.canape_lit_simple ?? null,
+    salon_sam_canape_lit_double: formData.section_salon_sam?.canape_lit_double ?? null,
+    salon_sam_canape_lit_autre_type: formData.section_salon_sam?.canape_lit_autre_type ?? null,
+    salon_sam_canape_lit_autre_type_details: formData.section_salon_sam?.canape_lit_autre_type_details || null,
+    salon_sam_canape_lit_equipements: formData.section_salon_sam?.canape_lit_equipements ?? null,
     salon_sam_canape_lit_video: formData.section_salon_sam?.canape_lit_video || [],
 
     // Autres équipements détails (obligatoire)
@@ -2298,7 +2303,12 @@ export const mapSupabaseToFormData = (supabaseData) => {
       // Cheminée type (conditionnel)
       cheminee_type: supabaseData.salon_sam_cheminee_type || "",
 
-      // CANAPÉ-LIT - Vidéo (conditionnel)
+      // CANAPÉ-LIT - Sous-options (conditionnel si equipements_canape_lit cochée)
+      canape_lit_simple: supabaseData.salon_sam_canape_lit_simple ?? null,
+      canape_lit_double: supabaseData.salon_sam_canape_lit_double ?? null,
+      canape_lit_autre_type: supabaseData.salon_sam_canape_lit_autre_type ?? null,
+      canape_lit_autre_type_details: supabaseData.salon_sam_canape_lit_autre_type_details || "",
+      canape_lit_equipements: supabaseData.salon_sam_canape_lit_equipements ?? null,
       canape_lit_video: supabaseData.salon_sam_canape_lit_video || [],
 
       // Autres équipements détails (obligatoire)
