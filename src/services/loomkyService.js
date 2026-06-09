@@ -26,7 +26,7 @@ const LOOMKY_CONFIG = {
 }
 
 // Utiliser DEV pour l'instant
-const CURRENT_ENV = 'DEV' // TODO PROD: basculer en PROD une fois credentials prêts
+const CURRENT_ENV = 'PROD' // DEV / PROD: pour basculer en DEV ou PROD
 const BASE_URL = LOOMKY_CONFIG[CURRENT_ENV].BASE_URL
 
 // ⚠️ IMPORTANT: Le token n'est JAMAIS hardcodé
