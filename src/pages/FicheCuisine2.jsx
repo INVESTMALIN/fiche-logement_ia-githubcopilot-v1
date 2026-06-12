@@ -262,8 +262,7 @@ export default function FicheCuisine2() {
 
     // Nouvelle sélection valide : on réinitialise l'état vocal
     setUploadFile(file)
-    setVocalError(null)
-    setVocalStatus(null)
+    dismissVocalError()
   }
 
   const handleUploadSend = async () => {
