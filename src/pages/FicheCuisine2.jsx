@@ -8,6 +8,21 @@ import PhotoUpload from '../components/PhotoUpload'
 
 const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_VOICE_INVENTORY
 
+// Taille maximum acceptée pour un fichier audio uploadé (25 Mo).
+// Garde-fou anti-régression : empêche l'envoi d'une vraie vidéo MP4 lourde qui
+// ferait exploser Make et Gemini en aval. Les notes vocales (même au format MP4
+// audio-only) ne pèsent que quelques Mo, on est donc très large.
+const MAX_AUDIO_SIZE_MB = 25
+const MAX_AUDIO_SIZE_BYTES = MAX_AUDIO_SIZE_MB * 1024 * 1024
+
+// Formats proposés au sélecteur de fichier.
+// `audio/*` couvre les audios "purs" (MP3, M4A, WAV...). On ajoute explicitement
+// `.mp4` / `video/mp4` car les notes vocales WhatsApp iPhone sont encapsulées dans
+// un conteneur MP4 audio-only que Windows classe en `video/mp4` : sans cet ajout,
+// le dialog navigateur les masque. `.m4a` est ajouté par sécurité (MIME variable
+// selon l'OS).
+const AUDIO_ACCEPT = 'audio/*,video/mp4,.mp4,.m4a'
+
 // Défini hors du composant pour éviter un nouveau type à chaque render (anti-pattern React)
 function CounterInput({ label, value, onCounterClick }) {
   return (
@@ -233,8 +248,20 @@ export default function FicheCuisine2() {
 
   // --- Upload handlers ---
   const handleFileChange = (e) => {
-    setUploadFile(e.target.files[0] || null)
-    setVocalResult(null)
+    const file = e.target.files[0] || null
+
+    // Garde-fou taille : rejet dès la sélection du fichier (feedback immédiat +
+    // protection du pipeline aval contre une vraie vidéo MP4 lourde).
+    if (file && file.size > MAX_AUDIO_SIZE_BYTES) {
+      const sizeMo = (file.size / (1024 * 1024)).toFixed(1).replace('.', ',')
+      setUploadFile(null)
+      e.target.value = '' // permet de re-sélectionner le même fichier après correction
+      showVocalError(`Fichier trop volumineux (${sizeMo} Mo). Taille maximum acceptée : ${MAX_AUDIO_SIZE_MB} Mo.`)
+      return
+    }
+
+    // Nouvelle sélection valide : on réinitialise l'état vocal
+    setUploadFile(file)
     setVocalError(null)
     setVocalStatus(null)
   }
@@ -242,7 +269,6 @@ export default function FicheCuisine2() {
   const handleUploadSend = async () => {
     if (!uploadFile) return
     setVocalStatus('processing')
-    setVocalResult(null)
     setVocalError(null)
     await sendAudio(uploadFile, uploadFile.name)
   }
@@ -465,10 +491,14 @@ export default function FicheCuisine2() {
                       <div className="space-y-3">
                         <p className="text-sm text-gray-500">
                           Sélectionnez un fichier audio puis cliquez sur Envoyer.
+                          <br />
+                          <span className="text-xs">
+                            Formats acceptés : audio classiques (MP3, M4A, WAV…) et notes vocales WhatsApp iPhone (MP4 audio). Taille maximum : {MAX_AUDIO_SIZE_MB} Mo.
+                          </span>
                         </p>
                         <input
                           type="file"
-                          accept="audio/*"
+                          accept={AUDIO_ACCEPT}
                           onChange={handleFileChange}
                           className="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                         />
