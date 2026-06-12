@@ -230,9 +230,10 @@ export default function FicheCuisine2() {
 
       mediaRecorder.start()
       setIsRecording(true)
-      setVocalStatus(null)
-
-      setVocalError(null)
+      // Annule proprement un éventuel timer d'erreur encore actif avant l'enregistrement
+      // (même cas que côté upload : éviter qu'il se réveille pendant le 'processing'
+      // déclenché au relâchement et masque le spinner).
+      dismissVocalError()
     } catch (err) {
       setVocalError('Impossible d\'accéder au microphone : ' + err.message)
     }
@@ -267,8 +268,11 @@ export default function FicheCuisine2() {
 
   const handleUploadSend = async () => {
     if (!uploadFile) return
+    // Annule proprement un éventuel timer d'erreur encore actif AVANT de passer en
+    // 'processing' : sinon il pourrait se réveiller pendant l'envoi et masquer le
+    // spinner (cas : erreur affichée, puis nouvel envoi valide dans les 6 s).
+    dismissVocalError()
     setVocalStatus('processing')
-    setVocalError(null)
     await sendAudio(uploadFile, uploadFile.name)
   }
 
