@@ -108,6 +108,17 @@ export default function FicheReglementation() {
   const dpeDepensesMax = formData.dpe_depenses_max ?? ""
   const showDpeDepenses = classeDpe === 'F' || classeDpe === 'G'
 
+  // Changement de classe DPE : si on quitte F/G, on purge la fourchette de
+  // dépenses pour ne pas laisser une estimation fantôme dans le state
+  // (sinon persistée par mapFormDataToSupabase et affichable au PDF / par l'agent).
+  const handleClasseDpeChange = (value) => {
+    updateField('section_reglementation.classe_dpe', value)
+    if (value !== 'F' && value !== 'G') {
+      updateField('section_reglementation.dpe_depenses_min', '')
+      updateField('section_reglementation.dpe_depenses_max', '')
+    }
+  }
+
   // Documents checklist
   const documentsData = formData.documents || {}
 
@@ -276,7 +287,7 @@ export default function FicheReglementation() {
               <label className="block font-semibold mb-1">Classe DPE</label>
               <select
                 value={classeDpe}
-                onChange={(e) => updateField('section_reglementation.classe_dpe', e.target.value)}
+                onChange={(e) => handleClasseDpeChange(e.target.value)}
                 className="w-full p-2 border rounded"
               >
                 <option value="">Veuillez sélectionner</option>
