@@ -101,7 +101,40 @@ export default function FicheReglementation() {
   const dateExpiration = formData.date_expiration_changement || ""
   const numeroDeclaration = formData.numero_declaration || ""
   const detailsReglementation = formData.details_reglementation || ""
-  
+
+  // DPE
+  const classeDpe = formData.classe_dpe || ""
+  const dpeDepensesMin = formData.dpe_depenses_min ?? ""
+  const dpeDepensesMax = formData.dpe_depenses_max ?? ""
+  const showDpeDepenses = classeDpe === 'F' || classeDpe === 'G'
+
+  // Changement de classe DPE : si on quitte F/G, on purge la fourchette de
+  // dépenses pour ne pas laisser une estimation fantôme dans le state
+  // (sinon persistée par mapFormDataToSupabase et affichable au PDF / par l'agent).
+  const handleClasseDpeChange = (value) => {
+    updateField('section_reglementation.classe_dpe', value)
+    if (value !== 'F' && value !== 'G') {
+      updateField('section_reglementation.dpe_depenses_min', '')
+      updateField('section_reglementation.dpe_depenses_max', '')
+    }
+  }
+
+  // Dépenses énergétiques : entier positif ou nul uniquement (€/an). On accepte
+  // la valeur entière (ou le champ vidé) ou on ignore la saisie. Toute entrée
+  // invalide — décimale, exposant, signe, texte — est rejetée telle quelle, sans
+  // jamais être transformée (pas de concaténation de chiffres type 1500.50 → 150050).
+  const handleDepensesChange = (field, rawValue) => {
+    if (rawValue === '' || /^\d+$/.test(rawValue)) {
+      updateField(`section_reglementation.${field}`, rawValue)
+    }
+  }
+
+  // Fourchette incohérente (borne basse > borne haute) : signalé inline, non bloquant.
+  const dpeFourchetteIncoherente =
+    dpeDepensesMin !== "" &&
+    dpeDepensesMax !== "" &&
+    parseInt(dpeDepensesMin, 10) > parseInt(dpeDepensesMax, 10)
+
   // Documents checklist
   const documentsData = formData.documents || {}
 
@@ -261,6 +294,93 @@ export default function FicheReglementation() {
                 rows={4}
                 className="w-full p-2 border rounded"
               />
+            </div>
+
+            <hr className="border-gray-300" />
+
+            {/* Classe DPE - TOUJOURS VISIBLE (facultatif) */}
+            <div>
+              <label className="block font-semibold mb-1">Classe DPE</label>
+              <select
+                value={classeDpe}
+                onChange={(e) => handleClasseDpeChange(e.target.value)}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Veuillez sélectionner</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="G">G</option>
+                <option value="Non communiqué">Non communiqué</option>
+              </select>
+
+              {/* Bloc explicatif repliable */}
+              <details className="mt-2">
+                <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700">
+                  En savoir plus
+                </summary>
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-700 space-y-2">
+                  <p>
+                    La classe énergétique doit obligatoirement figurer sur l'annonce de location.
+                    Pour un logement classé F ou G, l'annonce doit en plus afficher la mention
+                    « Logement à consommation énergétique excessive » et une estimation des
+                    dépenses énergétiques annuelles. Nous collectons donc ces informations ici
+                    pour que l'annonce soit conforme, même si le champ reste facultatif dans la fiche.
+                  </p>
+                  <a
+                    href="https://www.economie.gouv.fr/particuliers/gerer-mon-argent/investir-dans-limmobilier/ce-quil-faut-savoir-sur-le-diagnostic-de-performance-energetique-dpe"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-blue-600 hover:text-blue-700 underline"
+                  >
+                    En savoir plus sur le DPE
+                  </a>
+                </div>
+              </details>
+
+              {/* Estimation des dépenses énergétiques annuelles - uniquement F ou G */}
+              {showDpeDepenses && (
+                <div className="mt-4 space-y-3 bg-orange-50 p-4 rounded-lg border-l-4 border-orange-400">
+                  <p className="text-sm text-orange-800 font-medium">
+                    Logement classé {classeDpe} : estimation des dépenses énergétiques annuelles
+                    (fourchette indiquée sur le DPE).
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-semibold mb-1">Dépenses min (€ / an)</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={dpeDepensesMin}
+                        onChange={(e) => handleDepensesChange('dpe_depenses_min', e.target.value)}
+                        placeholder="ex. 1500"
+                        className="w-full p-2 border rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold mb-1">Dépenses max (€ / an)</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={dpeDepensesMax}
+                        onChange={(e) => handleDepensesChange('dpe_depenses_max', e.target.value)}
+                        placeholder="ex. 2030"
+                        className="w-full p-2 border rounded"
+                      />
+                    </div>
+                  </div>
+                  {dpeFourchetteIncoherente && (
+                    <p className="text-red-600 text-sm mt-1">
+                      ⚠️ La dépense minimale ne peut pas être supérieure à la dépense maximale.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <hr className="border-gray-300" />

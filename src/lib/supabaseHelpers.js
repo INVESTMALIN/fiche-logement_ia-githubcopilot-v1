@@ -135,6 +135,11 @@ export const mapFormDataToSupabase = (formData) => {
     reglementation_ville_declaration_simple: formData.section_reglementation?.ville_declaration_simple || null,
     reglementation_details: formData.section_reglementation?.details_reglementation || null,
 
+    // DPE (facultatif)
+    reglementation_classe_dpe: formData.section_reglementation?.classe_dpe || null,
+    reglementation_dpe_depenses_min: formData.section_reglementation?.dpe_depenses_min ? parseInt(formData.section_reglementation.dpe_depenses_min) : null,
+    reglementation_dpe_depenses_max: formData.section_reglementation?.dpe_depenses_max ? parseInt(formData.section_reglementation.dpe_depenses_max) : null,
+
     // Documents checklist
     reglementation_documents_carte_identite: formData.section_reglementation?.documents?.carte_identite ?? null,
     reglementation_documents_rib: formData.section_reglementation?.documents?.rib ?? null,
@@ -1362,6 +1367,11 @@ export const mapSupabaseToFormData = (supabaseData) => {
       numero_declaration: supabaseData.reglementation_numero_declaration || "",
       ville_declaration_simple: supabaseData.reglementation_ville_declaration_simple || "",
       details_reglementation: supabaseData.reglementation_details || "",
+
+      // DPE (facultatif)
+      classe_dpe: supabaseData.reglementation_classe_dpe || "",
+      dpe_depenses_min: supabaseData.reglementation_dpe_depenses_min ?? "",
+      dpe_depenses_max: supabaseData.reglementation_dpe_depenses_max ?? "",
 
       // Documents checklist
       documents: {

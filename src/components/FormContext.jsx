@@ -153,6 +153,13 @@ const initialFormData = {
     numero_declaration: "",
     ville_declaration_simple: "",
     details_reglementation: "",
+
+    // 🔋 DPE : "" = non renseigné, "A".."G", "Non communiqué" = réponse explicite
+    classe_dpe: "",
+    // Estimation dépenses énergétiques annuelles (€/an), fourchette — uniquement F/G
+    dpe_depenses_min: "",
+    dpe_depenses_max: "",
+
     documents: {
       carte_identite: false,
       rib: false,
