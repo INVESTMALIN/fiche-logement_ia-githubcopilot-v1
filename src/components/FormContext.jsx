@@ -278,6 +278,11 @@ const initialFormData = {
 
     atouts_logement_autre: "",
     autres_caracteristiques: "",
+
+    // 👁️ Vue depuis le logement (multi-sélection, clés stables — cf. optionsVue dans FicheAvis)
+    // Array de clés type ["vue_mer", "vue_montagne"]. "vue_aucune" = évalué, rien à valoriser.
+    vue_types: [],
+
     types_voyageurs: {
       duo_amoureux: null,
       nomades_numeriques: null,

@@ -264,6 +264,9 @@ export const mapFormDataToSupabase = (formData) => {
     avis_atouts_logement_autre: formData.section_avis?.atouts_logement_autre || null,
     avis_autres_caracteristiques: formData.section_avis?.autres_caracteristiques || null,
 
+    // 👁️ Vue depuis le logement (array de clés — cf. optionsVue dans FicheAvis)
+    avis_vue_types: formData.section_avis?.vue_types || [],
+
     avis_voyageurs_duo_amoureux: formData.section_avis?.types_voyageurs?.duo_amoureux ?? null,
     avis_voyageurs_nomades_numeriques: formData.section_avis?.types_voyageurs?.nomades_numeriques ?? null,
     avis_voyageurs_aventuriers_independants: formData.section_avis?.types_voyageurs?.aventuriers_independants ?? null,
@@ -1497,6 +1500,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
 
       atouts_logement_autre: supabaseData.avis_atouts_logement_autre || "",
       autres_caracteristiques: supabaseData.avis_autres_caracteristiques || "",
+
+      // 👁️ Vue depuis le logement
+      vue_types: supabaseData.avis_vue_types || [],
 
       types_voyageurs: {
         duo_amoureux: supabaseData.avis_voyageurs_duo_amoureux ?? null,
