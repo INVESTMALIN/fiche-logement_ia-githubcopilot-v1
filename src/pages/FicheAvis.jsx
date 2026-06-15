@@ -588,9 +588,8 @@ export default function FicheAvis() {
                         return (
                           <label
                             key={n.val}
-                            className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                              checked ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary hover:bg-primary/5'
-                            }`}
+                            className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${checked ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                              }`}
                           >
                             <input
                               type="radio"
@@ -637,9 +636,8 @@ export default function FicheAvis() {
                   <p className="text-3xl font-bold leading-none">{grilleStats.total} / 45</p>
                 </div>
                 <span
-                  className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${
-                    grilleStats.verdict ? verdictPalette[grilleStats.verdict] : 'bg-white/20 text-white'
-                  }`}
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap ${grilleStats.verdict ? verdictPalette[grilleStats.verdict] : 'bg-white/20 text-white'
+                    }`}
                 >
                   {grilleStats.verdictLabel || (grilleStats.filled > 0 ? `En cours (${grilleStats.filled}/9)` : 'À compléter')}
                 </span>
@@ -666,9 +664,8 @@ export default function FicheAvis() {
                 return (
                   <label
                     key={item.key}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 border rounded-lg cursor-pointer text-sm transition-colors ${
-                      checked ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-primary hover:bg-primary/5'
-                    }`}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 border rounded-lg cursor-pointer text-sm transition-colors ${checked ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                      }`}
                   >
                     <input
                       type="checkbox"
@@ -820,11 +817,10 @@ export default function FicheAvis() {
                       key={opt}
                       type="button"
                       onClick={() => setTypePassage('menage', active ? null : opt)}
-                      className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors ${
-                        active
+                      className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors ${active
                           ? 'bg-primary text-accent border-primary'
                           : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-primary/5 hover:text-primary'
-                      }`}
+                        }`}
                     >
                       {opt}
                     </button>
@@ -843,11 +839,10 @@ export default function FicheAvis() {
                       key={opt}
                       type="button"
                       onClick={() => setTypePassage('maintenance', active ? null : opt)}
-                      className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors ${
-                        active
+                      className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors ${active
                           ? 'bg-primary text-accent border-primary'
                           : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-primary/5 hover:text-primary'
-                      }`}
+                        }`}
                     >
                       {opt}
                     </button>
@@ -1168,7 +1163,6 @@ export default function FicheAvis() {
           {/* 👁️ Vue depuis le logement */}
           <div className="bg-white rounded-xl p-6 shadow mb-6">
             <h2 className="text-base font-semibold mb-1">Vue depuis le logement</h2>
-            <p className="text-sm text-gray-500 mb-4">Section importante pour la rédaction de l'annonce.</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {optionsVue.map(({ key, label }) => (
