@@ -119,12 +119,14 @@ export default function FicheReglementation() {
     }
   }
 
-  // Dépenses énergétiques : entiers positifs ou nuls uniquement. On retire à la
-  // source tout caractère non-chiffre (signe -, décimales) → une valeur négative
-  // tapée ou collée n'est jamais retenue dans le state.
+  // Dépenses énergétiques : entier positif ou nul uniquement (€/an). On accepte
+  // la valeur entière (ou le champ vidé) ou on ignore la saisie. Toute entrée
+  // invalide — décimale, exposant, signe, texte — est rejetée telle quelle, sans
+  // jamais être transformée (pas de concaténation de chiffres type 1500.50 → 150050).
   const handleDepensesChange = (field, rawValue) => {
-    const sanitized = String(rawValue).replace(/[^\d]/g, '')
-    updateField(`section_reglementation.${field}`, sanitized)
+    if (rawValue === '' || /^\d+$/.test(rawValue)) {
+      updateField(`section_reglementation.${field}`, rawValue)
+    }
   }
 
   // Fourchette incohérente (borne basse > borne haute) : signalé inline, non bloquant.
@@ -350,9 +352,9 @@ export default function FicheReglementation() {
                     <div>
                       <label className="block font-semibold mb-1">Dépenses min (€ / an)</label>
                       <input
-                        type="number"
-                        min="0"
-                        step="1"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={dpeDepensesMin}
                         onChange={(e) => handleDepensesChange('dpe_depenses_min', e.target.value)}
                         placeholder="ex. 1500"
@@ -362,9 +364,9 @@ export default function FicheReglementation() {
                     <div>
                       <label className="block font-semibold mb-1">Dépenses max (€ / an)</label>
                       <input
-                        type="number"
-                        min="0"
-                        step="1"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={dpeDepensesMax}
                         onChange={(e) => handleDepensesChange('dpe_depenses_max', e.target.value)}
                         placeholder="ex. 2030"
