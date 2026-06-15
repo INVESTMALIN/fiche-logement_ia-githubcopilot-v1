@@ -119,6 +119,20 @@ export default function FicheReglementation() {
     }
   }
 
+  // Dépenses énergétiques : entiers positifs ou nuls uniquement. On retire à la
+  // source tout caractère non-chiffre (signe -, décimales) → une valeur négative
+  // tapée ou collée n'est jamais retenue dans le state.
+  const handleDepensesChange = (field, rawValue) => {
+    const sanitized = String(rawValue).replace(/[^\d]/g, '')
+    updateField(`section_reglementation.${field}`, sanitized)
+  }
+
+  // Fourchette incohérente (borne basse > borne haute) : signalé inline, non bloquant.
+  const dpeFourchetteIncoherente =
+    dpeDepensesMin !== "" &&
+    dpeDepensesMax !== "" &&
+    parseInt(dpeDepensesMin, 10) > parseInt(dpeDepensesMax, 10)
+
   // Documents checklist
   const documentsData = formData.documents || {}
 
@@ -338,8 +352,9 @@ export default function FicheReglementation() {
                       <input
                         type="number"
                         min="0"
+                        step="1"
                         value={dpeDepensesMin}
-                        onChange={(e) => updateField('section_reglementation.dpe_depenses_min', e.target.value)}
+                        onChange={(e) => handleDepensesChange('dpe_depenses_min', e.target.value)}
                         placeholder="ex. 1500"
                         className="w-full p-2 border rounded"
                       />
@@ -349,13 +364,19 @@ export default function FicheReglementation() {
                       <input
                         type="number"
                         min="0"
+                        step="1"
                         value={dpeDepensesMax}
-                        onChange={(e) => updateField('section_reglementation.dpe_depenses_max', e.target.value)}
+                        onChange={(e) => handleDepensesChange('dpe_depenses_max', e.target.value)}
                         placeholder="ex. 2030"
                         className="w-full p-2 border rounded"
                       />
                     </div>
                   </div>
+                  {dpeFourchetteIncoherente && (
+                    <p className="text-red-600 text-sm mt-1">
+                      ⚠️ La dépense minimale ne peut pas être supérieure à la dépense maximale.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
