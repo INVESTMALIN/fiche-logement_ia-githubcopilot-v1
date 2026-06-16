@@ -4,8 +4,8 @@
 // retries ; détecte les réponses "200 mais vide" avec remark timeout. Le
 // caller (buildFacts) dégrade en `null` si tout échoue — jamais un crash.
 
-import { haversine } from './util.ts'
-import { POP_MIN_VILLE_NOTABLE, VILLE_NOTABLE_RADIUS } from './config.ts'
+import { haversine, normalizeText } from './util.ts'
+import { POP_MIN_VILLE_NOTABLE, VILLE_NOTABLE_MIN_DISTANCE_M, VILLE_NOTABLE_RADIUS } from './config.ts'
 
 export interface TownCandidate {
   nom: string
@@ -66,17 +66,31 @@ export async function nearestNotableTown(lat: number, lon: number, excludeName: 
     + `node(around:${VILLE_NOTABLE_RADIUS},${lat},${lon})[place~"^(city|town)$"][population];`
     + `);out tags center 300;`
   const r = await overpass(q)
-  const exclude = String(excludeName || '').toLowerCase().trim()
+  // Normalisation des DEUX côtés avant comparaison (accents/tirets/espaces/casse) :
+  // la saisie fiche "Nimes" ou "Saint Etienne" doit exclure "Nîmes"/"Saint-Étienne" côté OSM.
+  const exclude = normalizeText(excludeName)
   // deno-lint-ignore no-explicit-any
-  const cands: TownCandidate[] = (r.elements || [])
+  const cands = (r.elements || [])
     .map((el: any) => {
       const c = el.type === 'node' ? [el.lat, el.lon] : el.center ? [el.center.lat, el.center.lon] : null
       const pop = parseInt(String(el.tags?.population || '').replace(/\D/g, ''), 10)
-      return { nom: el.tags?.name as string, population: Number.isFinite(pop) ? pop : 0, lat: c?.[0], lon: c?.[1] }
+      const tlat: number | undefined = c?.[0]
+      const tlon: number | undefined = c?.[1]
+      return {
+        nom: (el.tags?.name as string) || '',
+        population: Number.isFinite(pop) ? pop : 0,
+        lat: tlat,
+        lon: tlon,
+        straight_m: tlat != null && tlon != null ? haversine(lat, lon, tlat, tlon) : Number.POSITIVE_INFINITY,
+      }
     })
-    .filter((e: TownCandidate) =>
-      !!e.nom && e.lat != null && e.population >= POP_MIN_VILLE_NOTABLE && e.nom.toLowerCase() !== exclude)
-    .map((e: TownCandidate) => ({ ...e, straight_m: haversine(lat, lon, e.lat, e.lon) }))
-    .sort((a: TownCandidate & { straight_m: number }, b: TownCandidate & { straight_m: number }) => a.straight_m - b.straight_m)
-  return cands[0] || null
+    .filter((e) =>
+      e.nom !== '' &&
+      Number.isFinite(e.straight_m) &&
+      e.population >= POP_MIN_VILLE_NOTABLE &&
+      e.straight_m >= VILLE_NOTABLE_MIN_DISTANCE_M && // garde-fou : jamais la commune du bien
+      normalizeText(e.nom) !== exclude)
+    .sort((a, b) => a.straight_m - b.straight_m)
+  const best = cands[0]
+  return best ? { nom: best.nom, population: best.population, lat: best.lat as number, lon: best.lon as number } : null
 }

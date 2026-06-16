@@ -41,6 +41,13 @@ export const GARE_RADII = [15000, 60000]
 /** "Ville/bourg notable" = population significative & reconnaissable (≥ seuil). */
 export const POP_MIN_VILLE_NOTABLE = 20000
 export const VILLE_NOTABLE_RADIUS = 45000
+/**
+ * Garde-fou : une "ville notable" plus proche que ce seuil est rejetée. Protège
+ * le symptôme "ancre macro = commune du bien à temps quasi nul" même si le
+ * rapprochement de nom ratait (saisie fiche très éloignée du nom OSM). Une
+ * vraie ville voisine distincte a son centroïde bien au-delà.
+ */
+export const VILLE_NOTABLE_MIN_DISTANCE_M = 1500
 
 /**
  * Aéroports commerciaux (France + frontaliers couramment utilisés). OSM classe

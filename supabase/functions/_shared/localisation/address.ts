@@ -2,6 +2,7 @@
 
 import type { Adresse } from './types.ts'
 import { PAYS } from './config.ts'
+import { normalizeText } from './util.ts'
 
 /** Texte envoyé au géocodeur Geoapify (rue = ancre, jamais en sortie publique). */
 export function geocodeText(a: Adresse): string {
@@ -12,24 +13,14 @@ export function geocodeText(a: Adresse): string {
     .join(', ')
 }
 
-function norm(s: string): string {
-  return (s || '')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '') // retire les accents
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .replace(/\s+/g, ' ')
-}
-
 /**
  * Clé stable d'une adresse (rue|code_postal|ville normalisés). Sert à décider
  * du recompute : clé identique = adresse inchangée → on réutilise les faits
  * sans rappeler Geoapify. Le complément est volontairement ignoré (n'influe
- * pas sur la position géocodée).
+ * pas sur la position géocodée). Utilise le normaliseur partagé `normalizeText`.
  */
 export function adresseKey(a: Adresse): string {
-  return [norm(a.rue), norm(a.code_postal), norm(a.ville)].join('|')
+  return [normalizeText(a.rue), normalizeText(a.code_postal), normalizeText(a.ville)].join('|')
 }
 
 /**

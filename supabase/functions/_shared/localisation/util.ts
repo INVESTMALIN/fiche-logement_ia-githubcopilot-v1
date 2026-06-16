@@ -33,3 +33,20 @@ export function leg(distance_m: number | null | undefined, duree_s: number | nul
 }
 
 export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
+/**
+ * Normalise une chaîne pour comparaison/clé robuste : retire accents et
+ * ponctuation, abaisse la casse, réduit les espaces. UN SEUL normaliseur
+ * partagé pour tout rapprochement de chaînes — clé d'adresse (recompute) ET
+ * comparaison d'une saisie humaine (fiche) à une donnée canonique (OSM/Geoapify).
+ * Ex. "Saint-Étienne" et "Saint Etienne" → "saint etienne" ; "Nîmes" → "nimes".
+ */
+export function normalizeText(s: string): string {
+  return (s || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+}
