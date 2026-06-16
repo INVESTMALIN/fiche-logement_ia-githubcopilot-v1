@@ -25,6 +25,12 @@ import type { Adresse, Aeroport, BuildResult, Faits, Poi, TransportStop, VilleNo
 
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
+// Budget de temps global du fallback de routing POI (matrix indisponible).
+// Garantit que la function termine et upserte même si chaque route individuelle
+// pend jusqu'à son timeout réseau. Combiné au fait qu'on ne route que le top N
+// gardé par catégorie, le pire cas reste : budget + 1 appel en vol (~budget+12s).
+const FALLBACK_ROUTING_BUDGET_MS = 15000
+
 function nearestAirport(lat: number, lon: number): (Airport & { straight_m: number }) | null {
   return AIRPORTS
     .map((a) => ({ ...a, straight_m: haversine(lat, lon, a.lat, a.lon) }))
@@ -63,32 +69,56 @@ export async function buildLocalisationFacts(
     matrixLegs = await geo.routeMatrixWalk(origin, allTargets)
   } catch (e) {
     routing = 'individual'
-    degraded.push(`route_matrix KO → routes individuelles: ${msg(e)}`)
-  }
-
-  if (matrixLegs) {
-    let i = 0
-    for (const gr of groups) for (const it of gr.items) it.walk = matrixLegs[i++] ?? null
-  } else {
-    // Fallback : route marche individuelle (acceptable car 1×/logement).
-    for (const gr of groups) {
-      for (const it of gr.items) {
-        it.walk = await geo.routeOne(origin, it, 'walk').catch(() => null)
-      }
-    }
+    degraded.push(`route_matrix KO → fallback routes individuelles bornées: ${msg(e)}`)
   }
 
   const pois: Record<string, Poi[]> = {}
-  for (const gr of groups) {
-    pois[gr.key] = gr.items
-      .map((it) => ({
-        nom: it.name,
-        _sort: it.walk?.distance ?? it.straight_m,
-        marche: it.walk ? leg(it.walk.distance, it.walk.time) : null,
-      }))
-      .sort((a, b) => a._sort - b._sort)
-      .slice(0, gr.keep)
-      .map(({ _sort, ...rest }) => rest)
+  if (matrixLegs) {
+    // Chemin nominal : 1 appel matrix (borné, 1 requête quel que soit le nombre
+    // de cibles) → temps de marche réel pour tous les candidats → tri par
+    // distance de marche réelle → top N.
+    let i = 0
+    for (const gr of groups) for (const it of gr.items) it.walk = matrixLegs[i++] ?? null
+    for (const gr of groups) {
+      pois[gr.key] = gr.items
+        .map((it) => ({
+          nom: it.name,
+          _sort: it.walk?.distance ?? it.straight_m,
+          marche: it.walk ? leg(it.walk.distance, it.walk.time) : null,
+        }))
+        .sort((a, b) => a._sort - b._sort)
+        .slice(0, gr.keep)
+        .map(({ _sort, ...rest }) => rest)
+    }
+  } else {
+    // Chemin dégradé (matrix indisponible) : router ~40 candidats bruts × 7
+    // catégories en séquentiel ferait exploser le wall-clock (chaque route peut
+    // pendre jusqu'à son timeout). On borne le coût en DEUX temps :
+    //   1) on ne route que le top N par catégorie, ordonné à vol d'oiseau
+    //      (tradeoff validé : on sacrifie la précision de l'ordre, jamais
+    //      l'enrichissement) ;
+    //   2) budget de temps global : passé le budget, les POI restants tombent
+    //      en marche=null et sont comptés dans degraded.
+    // → la function termine et upserte toujours, même si tout pend.
+    const start = Date.now()
+    let skipped = 0
+    for (const gr of groups) {
+      const kept = gr.items.slice().sort((a, b) => a.straight_m - b.straight_m).slice(0, gr.keep)
+      const entries: Poi[] = []
+      for (const it of kept) {
+        let marche: Leg | null = null
+        if (Date.now() - start < FALLBACK_ROUTING_BUDGET_MS) {
+          const r = await geo.routeOne(origin, it, 'walk').catch(() => null)
+          marche = r ? leg(r.distance, r.time) : null
+        }
+        if (!marche) skipped++
+        entries.push({ nom: it.name, marche })
+      }
+      pois[gr.key] = entries
+    }
+    if (skipped > 0) {
+      degraded.push(`pois: ${skipped} temps de marche non calculés (fallback borné, budget ${FALLBACK_ROUTING_BUDGET_MS} ms)`)
+    }
   }
 
   // 3) Transport — arrêt bus/tram le plus proche + gare (rayon large),
