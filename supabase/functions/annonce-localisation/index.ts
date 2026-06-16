@@ -27,6 +27,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { buildLocalisationFacts } from '../_shared/localisation/buildFacts.ts'
 import { adresseKey, isGeocodable } from '../_shared/localisation/address.ts'
 import { GeocodeError } from '../_shared/localisation/geoapify.ts'
+import { scrubApiKey } from '../_shared/localisation/util.ts'
 import type { Adresse } from '../_shared/localisation/types.ts'
 
 const CORS_HEADERS = {
@@ -159,9 +160,13 @@ serve(async (req: Request) => {
   try {
     result = await buildLocalisationFacts(adresse, geoapifyKey, nowISO)
   } catch (e) {
+    // Filet anti-fuite : le build est le seul chemin qui porte des erreurs
+    // Geoapify (URL avec apiKey). Déjà redacté à la source, scrub en plus ici
+    // avant log ET réponse.
     const code = e instanceof GeocodeError ? 'GEOCODE_FAILED' : 'BUILD_FAILED'
-    console.error(`[annonce-localisation] build KO fiche=${ficheId}:`, msg(e))
-    return json({ success: false, error: code, message: msg(e) }, 502)
+    const safe = scrubApiKey(msg(e))
+    console.error(`[annonce-localisation] build KO fiche=${ficheId}:`, safe)
+    return json({ success: false, error: code, message: safe }, 502)
   }
 
   const row = {

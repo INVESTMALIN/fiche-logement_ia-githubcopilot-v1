@@ -37,29 +37,47 @@ type Json = any
 export class GeoapifyClient {
   constructor(private readonly apiKey: string) {}
 
+  // Retire le secret d'une chaîne : la valeur exacte de la clé ET tout motif
+  // `apiKey=...` (au cas où l'URL apparaisse encodée/tronquée autrement).
   private redact(s: string): string {
-    return s.split(this.apiKey).join('***KEY***')
+    return s
+      .split(this.apiKey).join('***KEY***')
+      .replace(/(apikey=)[^&\s)"']+/gi, '$1***KEY***')
   }
 
+  // Point de redaction UNIQUE pour tout appel GET. Le try/catch enveloppe le
+  // fetch lui-même : un échec réseau (DNS/TLS/timeout) rejette AVANT toute
+  // branche de statut, et l'erreur Deno peut contenir l'URL complète — donc
+  // apiKey=... Aucune erreur brute ne sort d'ici ; le message redacté est ce
+  // qui finira potentiellement en meta.degraded (persisté), en réponse ou en log.
   private async getJSON(url: string, label: string): Promise<Json> {
-    const res = await fetch(url, { signal: AbortSignal.timeout(GEOAPIFY_TIMEOUT_MS) })
-    const body = await res.text()
-    if (!res.ok) throw new Error(`[geoapify:${label}] HTTP ${res.status} — ${this.redact(body).slice(0, 180)}`)
-    await sleep(120) // courtoisie quota (free tier)
-    return JSON.parse(body)
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(GEOAPIFY_TIMEOUT_MS) })
+      const body = await res.text()
+      if (!res.ok) throw new Error(`HTTP ${res.status} — ${body.slice(0, 180)}`)
+      await sleep(120) // courtoisie quota (free tier)
+      return JSON.parse(body)
+    } catch (e) {
+      throw new Error(`[geoapify:${label}] ${this.redact(e instanceof Error ? e.message : String(e))}`)
+    }
   }
 
+  // Idem GET : redaction à la source, fetch inclus.
   private async postJSON(url: string, payload: unknown, label: string): Promise<Json> {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(GEOAPIFY_TIMEOUT_MS),
-    })
-    const body = await res.text()
-    if (!res.ok) throw new Error(`[geoapify:${label}] HTTP ${res.status} — ${this.redact(body).slice(0, 180)}`)
-    await sleep(120)
-    return JSON.parse(body)
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(GEOAPIFY_TIMEOUT_MS),
+      })
+      const body = await res.text()
+      if (!res.ok) throw new Error(`HTTP ${res.status} — ${body.slice(0, 180)}`)
+      await sleep(120)
+      return JSON.parse(body)
+    } catch (e) {
+      throw new Error(`[geoapify:${label}] ${this.redact(e instanceof Error ? e.message : String(e))}`)
+    }
   }
 
   async geocode(text: string): Promise<GeocodeRaw> {

@@ -9,7 +9,7 @@
 import { GeoapifyClient, type PlaceItem, type RouteLeg } from './geoapify.ts'
 import { nearestNotableTown } from './overpass.ts'
 import { geocodeText } from './address.ts'
-import { haversine, leg, type Leg } from './util.ts'
+import { haversine, leg, scrubApiKey, type Leg } from './util.ts'
 import {
   AIRPORTS,
   ARRET_CATS,
@@ -164,7 +164,9 @@ export async function buildLocalisationFacts(
       geocode_confidence: g.rank?.confidence ?? null,
       geocode_result_type: g.result_type ?? null,
       population_min_ville_notable: POP_MIN_VILLE_NOTABLE,
-      degraded,
+      // Filet anti-fuite avant persistance : aucune note ne doit contenir de
+      // secret (en plus de la redaction à la source dans le client Geoapify).
+      degraded: degraded.map(scrubApiKey),
       generated_at: nowISO,
     },
   }

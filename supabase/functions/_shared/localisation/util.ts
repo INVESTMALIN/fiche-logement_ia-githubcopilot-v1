@@ -50,3 +50,13 @@ export function normalizeText(s: string): string {
     .trim()
     .replace(/\s+/g, ' ')
 }
+
+/**
+ * Filet anti-fuite : retire tout `apiKey=...` d'une chaîne, sans avoir besoin
+ * de connaître la valeur. Défense en profondeur appliquée aux surfaces qui
+ * SORTENT du serveur ou sont PERSISTÉES (meta.degraded, corps de réponse), en
+ * complément de la redaction à la source dans le client Geoapify.
+ */
+export function scrubApiKey(s: string): string {
+  return (s || '').replace(/(apikey=)[^&\s)"']+/gi, '$1***')
+}
