@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS fiche_localisation_faits (
   geocode_result_type   text,
   -- Palette de faits prête à consommer (POI, transport, ancres macro)
   faits                 jsonb       NOT NULL,
+  -- Version du contrat des faits → invalidation du cache : une ligne dont la
+  -- version diffère de la version courante du code est recalculée même à
+  -- adresse identique (sinon des faits périmés seraient resservis indéfiniment).
+  schema_version        int         NOT NULL DEFAULT 1,
   source                text        NOT NULL DEFAULT 'geoapify',
   computed_at           timestamptz NOT NULL DEFAULT now(),
   created_at            timestamptz NOT NULL DEFAULT now(),
@@ -51,6 +55,12 @@ COMMENT ON COLUMN fiche_localisation_faits.adresse_key IS
   'Clé normalisée de l''adresse (détection de changement pour le recompute).';
 COMMENT ON COLUMN fiche_localisation_faits.faits IS
   'Palette de faits (POI nommés, transport, ancres macro). Ne contient jamais la rue.';
+COMMENT ON COLUMN fiche_localisation_faits.schema_version IS
+  'Version du contrat des faits. Réutilisation seulement si égale à la version du code, sinon recalcul (invalidation de cache aux changements de contrat).';
+
+-- Idempotence : si la table préexiste (run antérieur sans la colonne), l'ajoute.
+ALTER TABLE fiche_localisation_faits
+  ADD COLUMN IF NOT EXISTS schema_version int NOT NULL DEFAULT 1;
 
 -- ============================================================
 -- RLS : lecture pour le propriétaire de la fiche + super_admin (même modèle

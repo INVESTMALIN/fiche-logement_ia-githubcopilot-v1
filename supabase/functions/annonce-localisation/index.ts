@@ -28,6 +28,7 @@ import { buildLocalisationFacts } from '../_shared/localisation/buildFacts.ts'
 import { adresseKey, isGeocodable } from '../_shared/localisation/address.ts'
 import { GeocodeError } from '../_shared/localisation/geoapify.ts'
 import { scrubApiKey } from '../_shared/localisation/util.ts'
+import { FAITS_SCHEMA_VERSION } from '../_shared/localisation/config.ts'
 import type { Adresse } from '../_shared/localisation/types.ts'
 
 const CORS_HEADERS = {
@@ -56,16 +57,13 @@ serve(async (req: Request) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   // @ts-ignore — Deno global
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-  // @ts-ignore — Deno global
-  const geoapifyKey = Deno.env.get('GEOAPIFY_API_KEY')
 
+  // Supabase est nécessaire à TOUS les chemins (même la réutilisation lit la DB).
+  // La clé Geoapify, elle, n'est requise QUE pour un recalcul → vérifiée plus
+  // bas, juste avant le build (cf. chemin réutilisation sans clé).
   if (!supabaseUrl || !serviceKey || !anonKey) {
     console.error('[annonce-localisation] clés Supabase incomplètes')
     return json({ success: false, error: 'SERVER_CONFIG', message: 'Config serveur Supabase incomplète' }, 500)
-  }
-  if (!geoapifyKey) {
-    console.error('[annonce-localisation] secret GEOAPIFY_API_KEY manquant')
-    return json({ success: false, error: 'SERVER_CONFIG', message: 'Secret Geoapify absent côté serveur' }, 500)
   }
 
   const authHeader = req.headers.get('Authorization')
@@ -125,10 +123,11 @@ serve(async (req: Request) => {
   }
   const key = adresseKey(adresse)
 
-  // Réutilisation si une ligne existe avec la même clé d'adresse (sauf force).
+  // Lecture de la ligne existante (sert à décider réutilisation vs recalcul,
+  // sur la clé d'adresse ET la version de schéma).
   const { data: existing, error: exErr } = await service
     .from('fiche_localisation_faits')
-    .select('adresse_key, faits, computed_at')
+    .select('adresse_key, schema_version, faits, computed_at')
     .eq('fiche_id', ficheId)
     .maybeSingle()
   if (exErr) {
@@ -136,8 +135,11 @@ serve(async (req: Request) => {
     return json({ success: false, error: 'DB_READ_ERROR', message: exErr.message }, 500)
   }
 
-  if (!force && existing && existing.adresse_key === key) {
-    console.log(`[annonce-localisation] REUSE (adresse inchangée) fiche=${ficheId} — aucun appel Geoapify`)
+  // Réutilisation seulement si l'adresse correspond ET que la version de schéma
+  // stockée est la version courante du code. Sinon (contrat des faits modifié)
+  // les faits sont périmés → recalcul. `force` court-circuite toujours.
+  if (!force && existing && existing.adresse_key === key && existing.schema_version === FAITS_SCHEMA_VERSION) {
+    console.log(`[annonce-localisation] REUSE (adresse + version inchangées) fiche=${ficheId} — aucun appel Geoapify`)
     return json({
       success: true,
       ficheId,
@@ -152,6 +154,16 @@ serve(async (req: Request) => {
   if (!isGeocodable(adresse)) {
     console.warn(`[annonce-localisation] adresse insuffisante fiche=${ficheId}`)
     return json({ success: false, error: 'ADDRESS_INSUFFICIENT', message: 'Adresse insuffisante pour géocoder (ville requise)' }, 422)
+  }
+
+  // Clé Geoapify requise UNIQUEMENT ici (recalcul). On la lit et on fail loud
+  // juste avant le build → pendant une rotation de secret / un deploy sans clé,
+  // les fiches déjà calculées continuent de servir leurs faits (chemin REUSE).
+  // @ts-ignore — Deno global
+  const geoapifyKey = Deno.env.get('GEOAPIFY_API_KEY')
+  if (!geoapifyKey) {
+    console.error('[annonce-localisation] secret GEOAPIFY_API_KEY manquant (recalcul requis)')
+    return json({ success: false, error: 'SERVER_CONFIG', message: 'Secret Geoapify absent côté serveur (recalcul requis)' }, 500)
   }
 
   // Recalcul Geoapify.
@@ -178,6 +190,7 @@ serve(async (req: Request) => {
     geocode_confidence: result.geocode.confidence,
     geocode_result_type: result.geocode.result_type,
     faits: result.faits,
+    schema_version: FAITS_SCHEMA_VERSION,
     source: 'geoapify',
     computed_at: nowISO,
     updated_at: nowISO,
