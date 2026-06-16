@@ -9,7 +9,7 @@
 import { GeoapifyClient, type PlaceItem, type RouteLeg } from './geoapify.ts'
 import { nearestNotableTown } from './overpass.ts'
 import { geocodeText } from './address.ts'
-import { haversine, leg } from './util.ts'
+import { haversine, leg, type Leg } from './util.ts'
 import {
   AIRPORTS,
   ARRET_CATS,
@@ -96,8 +96,8 @@ export async function buildLocalisationFacts(
   const arret = await nearestStop(geo, origin, ARRET_CATS, ARRET_RADII, degraded, 'arret')
   const gare = await nearestStop(geo, origin, GARE_CATS, GARE_RADII, degraded, 'gare')
   const transport = {
-    arret_proche: await twoModes(geo, origin, arret),
-    gare_proche: await twoModes(geo, origin, gare),
+    arret_proche: await twoModes(geo, origin, arret, degraded, 'arret'),
+    gare_proche: await twoModes(geo, origin, gare, degraded, 'gare'),
   }
 
   // 4) Ancres macro — voiture seule. Ville notable (Overpass, dégradable),
@@ -106,8 +106,8 @@ export async function buildLocalisationFacts(
   try {
     const tc = await nearestNotableTown(origin.lat, origin.lon, adresse.ville)
     if (tc) {
-      const d = await geo.routeOne(origin, tc, 'drive').catch(() => null)
-      ville_notable = { nom: tc.nom, voiture: d ? leg(d.distance, d.time) : null, population: tc.population }
+      const voiture = await routeLeg(geo, origin, tc, 'drive', degraded, 'ancres_macro.ville_notable')
+      ville_notable = { nom: tc.nom, voiture, population: tc.population }
     }
   } catch (e) {
     degraded.push(`ville_notable indisponible (Overpass): ${msg(e)}`)
@@ -116,8 +116,8 @@ export async function buildLocalisationFacts(
   let aeroport: Aeroport | null = null
   const ap = nearestAirport(origin.lat, origin.lon)
   if (ap) {
-    const d = await geo.routeOne(origin, ap, 'drive').catch(() => null)
-    aeroport = { nom: ap.name, voiture: d ? leg(d.distance, d.time) : null, iata: ap.iata }
+    const voiture = await routeLeg(geo, origin, ap, 'drive', degraded, 'ancres_macro.aeroport')
+    aeroport = { nom: ap.name, voiture, iata: ap.iata }
   }
 
   const faits: Faits = {
@@ -179,13 +179,40 @@ async function twoModes(
   geo: GeoapifyClient,
   origin: { lat: number; lon: number },
   stop: PlaceItem | null,
+  degraded: string[],
+  label: string,
 ): Promise<TransportStop | null> {
+  // stop null = absence réelle d'arrêt/gare dans le rayon → légitimement vide,
+  // PAS une panne, donc rien dans degraded.
   if (!stop) return null
-  const w = await geo.routeOne(origin, stop, 'walk').catch(() => null)
-  const d = await geo.routeOne(origin, stop, 'drive').catch(() => null)
-  return {
-    nom: stop.name,
-    marche: w ? leg(w.distance, w.time) : null,
-    voiture: d ? leg(d.distance, d.time) : null,
+  const marche = await routeLeg(geo, origin, stop, 'walk', degraded, `transport.${label}`)
+  const voiture = await routeLeg(geo, origin, stop, 'drive', degraded, `transport.${label}`)
+  return { nom: stop.name, marche, voiture }
+}
+
+/**
+ * Calcule un leg de trajet et NOTE toute panne dans `degraded` avant de
+ * renvoyer null : échec d'appel (timeout, quota, HTTP) OU réponse 200 sans
+ * itinéraire. À n'appeler que quand l'ancre/le POI existe — l'absence d'ancre
+ * (pas d'arrêt/gare/etc. dans le rayon) est gérée en amont et ne passe jamais
+ * par ici. Ainsi `meta.degraded` distingue "on a essayé et ça a cassé" (noté)
+ * d'une "absence réelle" (non notée).
+ */
+async function routeLeg(
+  geo: GeoapifyClient,
+  origin: { lat: number; lon: number },
+  dest: { lat: number; lon: number },
+  mode: 'walk' | 'drive',
+  degraded: string[],
+  label: string,
+): Promise<Leg | null> {
+  try {
+    const r = await geo.routeOne(origin, dest, mode)
+    if (r) return leg(r.distance, r.time)
+    degraded.push(`${label}.${mode} routing sans itinéraire`)
+    return null
+  } catch (e) {
+    degraded.push(`${label}.${mode} routing KO: ${msg(e)}`)
+    return null
   }
 }
