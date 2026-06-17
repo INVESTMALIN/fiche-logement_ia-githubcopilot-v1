@@ -75,6 +75,19 @@ Deno.test('Doublon cinéma réconcilié en un seul signal', () => {
   assertEquals(mapFicheToContrat({}).modele.equipements.salle_cinema, false)
 })
 
+Deno.test('PMR : false = déclencheur code (phrase canon), jamais false côté modèle', () => {
+  const non = mapFicheToContrat({ equipements_accessible_mobilite_reduite: false })
+  assertEquals(non.code.note_etat_triggers.pmr_accessible, false) // déclenche la phrase canon
+  assertEquals(non.modele.equipements.pmr.accessible, null) // jamais false côté modèle
+  const oui = mapFicheToContrat({ equipements_accessible_mobilite_reduite: true, equipements_pmr_details: 'Rampe + ascenseur' })
+  assertEquals(oui.modele.equipements.pmr.accessible, true)
+  assertEquals(oui.modele.equipements.pmr.details, 'Rampe + ascenseur')
+  assertEquals(oui.code.note_etat_triggers.pmr_accessible, true)
+  const inconnu = mapFicheToContrat({})
+  assertEquals(inconnu.code.note_etat_triggers.pmr_accessible, null)
+  assertEquals(inconnu.modele.equipements.pmr.accessible, null)
+})
+
 Deno.test('Fêtes/fumeurs : "non" par défaut, "oui" si explicite, exposés en code ET modèle', () => {
   const vide = mapFicheToContrat({})
   assertEquals(vide.code.regles_calculees.fetes_autorisees, false)

@@ -91,6 +91,20 @@ function reconcileSalleCinema(f: FicheRow): boolean {
   return isTrue(f, 'equipements_cinema') || isTrue(f, 'equip_spe_ext_dispose_salle_cinema')
 }
 
+/**
+ * PMR (zone modèle) : cas POSITIF uniquement. accessible=true → exposé avec ses
+ * détails ; false ou null → null. Le "non accessible PMR" (false) est un
+ * déclencheur de phrase canon en zone code (note_etat_triggers.pmr_accessible),
+ * jamais formulé librement par le modèle.
+ */
+function pmrPositif(f: FicheRow): { accessible: true | null; details: string | null } {
+  const accessible = bool(f, 'equipements_accessible_mobilite_reduite') === true
+  return {
+    accessible: accessible ? true : null,
+    details: accessible ? txt(f, 'equipements_pmr_details') : null,
+  }
+}
+
 // ───────────────────── Sous-mappers ─────────────────────
 
 function mapChambres(f: FicheRow): ChambreContrat[] {
@@ -183,7 +197,7 @@ function mapEquipements(f: FicheRow): ModeleZone['equipements'] {
     tourne_disque: bool(f, 'equipements_tourne_disque'),
     piano: { present: bool(f, 'equipements_piano'), type: txt(f, 'equipements_piano_type') },
     compacteur_dechets: bool(f, 'equipements_compacteur_dechets'),
-    pmr: { accessible: bool(f, 'equipements_accessible_mobilite_reduite'), details: txt(f, 'equipements_pmr_details') },
+    pmr: pmrPositif(f),
     wifi_present: txt(f, 'equipements_wifi_statut') === 'oui',
     parking: {
       type: txt(f, 'equipements_parking_type'),
@@ -344,6 +358,8 @@ function mapCode(f: FicheRow): CodeZone {
       grille_notes: grilleNotes,
       securite_dangers: arr(f, 'avis_securite_dangers'),
       securite_danger_detecte: isTrue(f, 'avis_securite_danger_detecte') || arr(f, 'avis_securite_dangers').length > 0,
+      // Tri-état : false → phrase canon "non accessible PMR" ; true/null → rien.
+      pmr_accessible: bool(f, 'equipements_accessible_mobilite_reduite'),
     },
     note_quartier_triggers: {
       quartier_securite: txt(f, 'avis_quartier_securite'),

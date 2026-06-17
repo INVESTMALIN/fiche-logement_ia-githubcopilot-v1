@@ -61,7 +61,9 @@ export interface ModeleZone {
     tourne_disque: boolean | null
     piano: { present: boolean | null; type: string | null }
     compacteur_dechets: boolean | null
-    pmr: { accessible: boolean | null; details: string | null }
+    // Cas POSITIF uniquement (true|null) : le "non accessible PMR" (false) est
+    // un déclencheur de phrase canon en zone code, jamais exposé au modèle.
+    pmr: { accessible: true | null; details: string | null }
     wifi_present: boolean // présence seulement (jamais identifiants)
     parking: { type: string | null; sur_place_types: string[]; payant_type: string | null }
     cuisine: {
@@ -155,6 +157,9 @@ export interface CodeZone {
     grille_notes: Record<string, number | null>
     securite_dangers: string[]
     securite_danger_detecte: boolean
+    // Accessibilité PMR en tri-état : false → phrase canon "non accessible PMR" ;
+    // true / null → rien. Le négatif est géré ici (code), pas vu par le modèle.
+    pmr_accessible: boolean | null
   }
   note_quartier_triggers: {
     quartier_securite: string | null
