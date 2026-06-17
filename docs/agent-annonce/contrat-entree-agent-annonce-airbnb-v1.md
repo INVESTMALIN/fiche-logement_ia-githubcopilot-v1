@@ -143,8 +143,9 @@ Triés par distance de marche réelle (réseau, pas vol d'oiseau). Noms réels u
 ### Transport
 
 - **Arrêt le plus proche** (bus, tram), quelle que soit la distance. Dédupliqué par nom (un même arrêt remonte plusieurs fois, un seul gardé).
+- **Métro le plus proche**, via une requête **dédiée** (jamais fusionnée avec l'arrêt bus/tram, sinon une bouche de métro serait masquée par un arrêt de bus plus proche). Couvre le métro et les VAL/light rail (Rennes, Lille, Toulouse). Vide en ville sans métro = absence légitime.
 - **Gare la plus proche**, via une requête dédiée à rayon large (une gare peut être à plusieurs km en zone rurale).
-- Les deux avec temps à pied et en voiture.
+- Les trois avec temps à pied et en voiture.
 
 ### Ancres macro (pour « comment se déplacer »)
 
