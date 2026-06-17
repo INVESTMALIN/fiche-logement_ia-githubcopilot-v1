@@ -127,6 +127,19 @@ Deno.test('animaux_acceptes gère le radio texte "non"/"oui"', () => {
   assertEquals(mapFicheToContrat({ exigences_animaux_acceptes: 'oui' }).modele.regles_internes.animaux_acceptes, true)
 })
 
+Deno.test('Studio : couchage de l\'espace nuit lu même si nombre_chambres=0', () => {
+  const studio = mapFicheToContrat({
+    logement_typologie: 'Studio',
+    visite_nombre_chambres: '0',
+    chambres_chambre_1_lit_double_140_190: 1,
+  })
+  assertEquals(studio.modele.identite.chambres.length, 1)
+  assertEquals(studio.modele.identite.chambres[0].lits, [{ type: 'Lit double 140×190', nombre: 1 }])
+  // L'override est studio-spécifique : un non-studio à 0 chambre ne lit pas chambre_1.
+  const t2 = mapFicheToContrat({ logement_typologie: 'T2', visite_nombre_chambres: '0', chambres_chambre_1_lit_double_140_190: 1 })
+  assertEquals(t2.modele.identite.chambres.length, 0)
+})
+
 Deno.test('SDB combinée douche/baignoire → douche ET baignoire présentes (jamais tout-false)', () => {
   const c = mapFicheToContrat({
     visite_nombre_salles_bains: '1',
