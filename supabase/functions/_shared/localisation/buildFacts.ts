@@ -270,12 +270,15 @@ function nudgeToward(
 }
 
 /**
- * Temps voiture vers l'aéroport, avec rattrapage. Si la coordonnée curée tombe
- * sur un point non routable (piste/aire → routing "sans itinéraire"), on retente
- * UNE fois vers un point nudgé ~1,5 km vers l'origine : il se raccroche au réseau
- * routier (l'origine est un bien réel donc routable, sur le même réseau). Évite
- * un voiture:null sur un aéroport pourtant accessible en voiture. Portée: ancre
- * aéroport uniquement — ne touche pas aux arrêts/métro/gare/POI.
+ * Temps voiture vers l'aéroport, avec rattrapage. Même discipline que routeLeg
+ * pour la tentative directe : une EXCEPTION = panne API (timeout/quota/HTTP) →
+ * notée KO, jamais nudgée ; un retour NULL = vraie absence de route (coord sur
+ * une aire non routable) → SEUL cas qui déclenche le rattrapage. Le retry nudgé
+ * (~1,5 km vers l'origine, qui se raccroche au réseau routier) est délégué à
+ * routeLeg, qui note correctement KO vs sans itinéraire s'il échoue à son tour
+ * et ne note rien s'il réussit. Évite un voiture:null sur un aéroport pourtant
+ * accessible en voiture. Portée: ancre aéroport uniquement — ne touche pas aux
+ * arrêts/métro/gare/POI.
  */
 async function airportDrive(
   geo: GeoapifyClient,
@@ -283,11 +286,16 @@ async function airportDrive(
   airport: { lat: number; lon: number },
   degraded: string[],
 ): Promise<Leg | null> {
-  const direct = await geo.routeOne(origin, airport, 'drive').catch(() => null)
+  let direct: RouteLeg | null
+  try {
+    direct = await geo.routeOne(origin, airport, 'drive')
+  } catch (e) {
+    // Panne API : ce n'est PAS une coord non routable → on ne nudge pas, on note.
+    degraded.push(`ancres_macro.aeroport.drive routing KO: ${msg(e)}`)
+    return null
+  }
   if (direct) return leg(direct.distance, direct.time)
+  // Vraie absence de route sur la coord curée → rattrapage vers un point nudgé.
   const nudged = nudgeToward(airport, origin, 1500)
-  const retry = await geo.routeOne(origin, nudged, 'drive').catch(() => null)
-  if (retry) return leg(retry.distance, retry.time)
-  degraded.push('ancres_macro.aeroport.drive routing sans itinéraire (après rattrapage)')
-  return null
+  return await routeLeg(geo, origin, nudged, 'drive', degraded, 'ancres_macro.aeroport')
 }
