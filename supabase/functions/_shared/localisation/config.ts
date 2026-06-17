@@ -64,6 +64,12 @@ export const VILLE_NOTABLE_MIN_DISTANCE_M = 1500
  * mal les aérodromes (Colmar-Houssen a un IATA mais zéro vol commercial) et les
  * requêtes Overpass grand rayon sont peu fiables → liste statique stable.
  * On prend le plus proche à vol d'oiseau, puis temps voiture via Geoapify.
+ *
+ * ⚠️ Coordonnées LANDSIDE routables, pas le centre de piste/aire : un point sur
+ * l'aire ne se raccroche pas au réseau routier → drive routing "sans itinéraire".
+ * Filet de sécurité runtime : rattrapage par nudge vers l'origine (cf.
+ * `airportDrive` dans buildFacts), pour qu'une coord non routable ne produise
+ * jamais un voiture:null sur un aéroport pourtant accessible en voiture.
  */
 export interface Airport {
   name: string
@@ -74,7 +80,9 @@ export interface Airport {
 
 export const AIRPORTS: Airport[] = [
   { name: 'Paris-Charles de Gaulle', iata: 'CDG', lat: 49.0097, lon: 2.5479 },
-  { name: 'Paris-Orly', iata: 'ORY', lat: 48.7233, lon: 2.3794 },
+  // lon corrigé 2.3794 → 2.3744 : l'ancien point tombait sur l'aire d'Orly
+  // (non routable) → voiture:null. Point landside vérifié routable depuis Paris.
+  { name: 'Paris-Orly', iata: 'ORY', lat: 48.7233, lon: 2.3744 },
   { name: 'Paris-Beauvais', iata: 'BVA', lat: 49.4544, lon: 2.1128 },
   { name: 'Lyon-Saint-Exupéry', iata: 'LYS', lat: 45.7256, lon: 5.0811 },
   { name: 'Marseille-Provence', iata: 'MRS', lat: 43.4393, lon: 5.2214 },
