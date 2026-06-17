@@ -48,9 +48,11 @@ Deno.test('Consommables : champ vide ne génère aucune absence', () => {
   assertEquals(nonFournis.modele.equipements.consommables.fournis, false)
 })
 
-Deno.test('Self check-in déduit de la serrure/codes (sans la mécanique)', () => {
+Deno.test('Self check-in déduit des 4 sources (sans la mécanique)', () => {
   assertEquals(mapFicheToContrat({ clefs_boite_type: 'TTlock' }).modele.equipements.self_checkin, true)
   assertEquals(mapFicheToContrat({ clefs_digicode: true }).modele.equipements.self_checkin, true)
+  assertEquals(mapFicheToContrat({ clefs_interphone: true }).modele.equipements.self_checkin, true)
+  assertEquals(mapFicheToContrat({ clefs_tempo_gache: true }).modele.equipements.self_checkin, true)
   assertEquals(mapFicheToContrat({}).modele.equipements.self_checkin, false)
 })
 

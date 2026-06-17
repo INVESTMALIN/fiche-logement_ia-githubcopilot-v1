@@ -72,11 +72,18 @@ function reconcileAscenseur(f: FicheRow, acces: string | null): boolean | null {
 }
 
 /**
- * Arrivée autonome déduite de la serrure connectée + codes. On ne sort QUE le
- * booléen (jamais le type de boîte, ni les codes, ni l'emplacement).
+ * Arrivée autonome déduite des 4 sources d'accès autonome listées par la
+ * gap-analysis (§3) : boîte à clés / serrure connectée (`boiteType`), digicode,
+ * interphone, tempo-gâche. On ne sort QUE le booléen (jamais le type de boîte,
+ * ni les codes, ni l'emplacement de la boîte).
  */
 function deduceSelfCheckin(f: FicheRow): boolean {
-  return !!txt(f, 'clefs_boite_type') || isTrue(f, 'clefs_digicode')
+  return (
+    !!txt(f, 'clefs_boite_type') ||
+    isTrue(f, 'clefs_digicode') ||
+    isTrue(f, 'clefs_interphone') ||
+    isTrue(f, 'clefs_tempo_gache')
+  )
 }
 
 /** Doublon cinéma réconcilié en un seul signal. */
