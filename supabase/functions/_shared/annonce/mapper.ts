@@ -106,21 +106,41 @@ function mapChambres(f: FicheRow): ChambreContrat[] {
   return out
 }
 
+// Set positif "produits toilette + ménage" exposable (contrat L51, présence
+// seule). Le café (`consommables_cafe_*`) est VOLONTAIREMENT absent : règle de
+// prod (un consommable offert n'est jamais affiché, le prestataire pourrait
+// l'oublier) ; la machine à café reste exposée comme équipement (cuisine.cafetiere).
+const CONSOMMABLES: { col: string; label: string }[] = [
+  { col: 'gel_douche', label: 'Gel douche' },
+  { col: 'shampoing', label: 'Shampoing' },
+  { col: 'apres_shampoing', label: 'Après-shampoing' },
+  { col: 'pastilles_lave_vaisselle', label: 'Pastilles lave-vaisselle' },
+]
+
 /**
- * Consommables (zone modèle) : QUE du positif. On expose seulement les produits
- * de toilette réellement présents, et uniquement si le prestataire fournit
- * explicitement (`=== true`). Section non répondue (null/absent) OU
- * explicitement "non fourni" → même résultat : aucune liste, aucun signal. Pas
- * de booléen `fournis` côté modèle → le modèle ne reçoit jamais d'absence sur
- * les consommables (on ne lui sert pas un négatif qu'il faudrait rattraper).
+ * Consommables (zone modèle) : QUE du positif. La liste des consommables
+ * réellement présents (toilette + ménage, café exclu), et uniquement si le
+ * prestataire fournit explicitement (`=== true`). Section non répondue
+ * (null/absent) OU explicitement "non fourni" → même résultat : aucune liste,
+ * aucun signal. Pas de booléen `fournis` côté modèle → le modèle ne reçoit
+ * jamais d'absence sur les consommables.
  */
-function mapConsommables(f: FicheRow): { produits_toilette: string[] } {
-  const fourniExplicitement = isTrue(f, 'consommables_fournis_par_prestataire')
-  const produits = fourniExplicitement
-    ? ['gel_douche', 'shampoing', 'apres_shampoing'].filter((k) => isTrue(f, `consommables_${k}`))
-    : []
-  return { produits_toilette: produits }
+function mapConsommables(f: FicheRow): { produits: string[] } {
+  if (!isTrue(f, 'consommables_fournis_par_prestataire')) return { produits: [] }
+  const produits = CONSOMMABLES.filter((c) => isTrue(f, `consommables_${c.col}`)).map((c) => c.label)
+  // "Autre consommable" : présence + libellé saisi (sinon l'item n'a aucun sens).
+  if (isTrue(f, 'consommables_autre_consommable')) {
+    const detail = txt(f, 'consommables_autre_consommable_details')
+    produits.push(detail ? `Autre : ${detail}` : 'Autre consommable')
+  }
+  return { produits }
 }
+
+// Règles calculées : "non" par défaut, "oui" SEULEMENT si la fiche le dit
+// explicitement (=== true). Le modèle reçoit le RÉSULTAT et l'habille (zone
+// modèle), il ne décide jamais ; le calcul reste déterministe ici.
+const fetesAutorisees = (f: FicheRow): boolean => isTrue(f, 'equipements_fetes_autorisees')
+const fumeursAcceptes = (f: FicheRow): boolean => isTrue(f, 'equipements_fumeurs_acceptes')
 
 function mapSallesDeBains(f: FicheRow): SalleDeBainContrat[] {
   const n = Math.min(6, Math.max(0, num(f, 'visite_nombre_salles_bains') ?? 0))
@@ -289,6 +309,9 @@ function mapModele(f: FicheRow): ModeleZone {
     regles_internes: {
       animaux_acceptes: boolish(f, 'exigences_animaux_acceptes'),
       animaux_commentaire: txt(f, 'exigences_animaux_commentaire'),
+      // Résultats calculés (mêmes valeurs qu'en zone code) : le modèle les habille.
+      fetes_autorisees: fetesAutorisees(f),
+      fumeurs_acceptes: fumeursAcceptes(f),
       // Équipements sécurité HORS caméras (les caméras = zone code, traitement déterministe).
       securite_rassurante: arr(f, 'securite_equipements').filter(
         (e) => e !== CAMERA_EXTERIEURE && e !== CAMERA_INTERIEURE_COMMUNS,
@@ -333,9 +356,9 @@ function mapCode(f: FicheRow): CodeZone {
       interieures_communs: securiteEquip.includes(CAMERA_INTERIEURE_COMMUNS),
     },
     regles_calculees: {
-      // "non" par défaut ; "oui" SEULEMENT si la fiche le dit explicitement (=== true).
-      fetes_autorisees: isTrue(f, 'equipements_fetes_autorisees'),
-      fumeurs_acceptes: isTrue(f, 'equipements_fumeurs_acceptes'),
+      // Source déterministe ; le résultat est aussi exposé en zone modèle (regles_internes).
+      fetes_autorisees: fetesAutorisees(f),
+      fumeurs_acceptes: fumeursAcceptes(f),
     },
   }
 }

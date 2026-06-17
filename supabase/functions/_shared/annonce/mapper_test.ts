@@ -36,20 +36,27 @@ Deno.test('Atout piscine sans section piscine ne crée pas de piscine', () => {
   assert(c.modele.atouts.atouts_logement.includes('piscine')) // reste un signal d'emphase
 })
 
-Deno.test('Consommables : que du positif, jamais de négatif ni d\'absence', () => {
-  // Fourni explicitement → liste des produits réellement présents.
+Deno.test('Consommables : positif élargi (toilette + ménage), café exclu, jamais de négatif', () => {
+  // Fourni explicitement → produits réellement présents (toilette + ménage).
   const fourni = mapFicheToContrat({
     consommables_fournis_par_prestataire: true,
     consommables_gel_douche: false,
     consommables_shampoing: true,
+    consommables_pastilles_lave_vaisselle: true,
   })
-  assertEquals(fourni.modele.equipements.consommables.produits_toilette, ['shampoing'])
-  // Explicitement "non fourni" → aucune liste, aucun signal.
+  assertEquals(fourni.modele.equipements.consommables.produits, ['Shampoing', 'Pastilles lave-vaisselle'])
+  // Cas Codex : ménage seul (pas de toilette) → signal préservé, pas écrasé.
+  const menage = mapFicheToContrat({ consommables_fournis_par_prestataire: true, consommables_pastilles_lave_vaisselle: true })
+  assertEquals(menage.modele.equipements.consommables.produits, ['Pastilles lave-vaisselle'])
+  // Café fourni → JAMAIS exposé (règle de prod), même si fourni=true.
+  const cafe = mapFicheToContrat({ consommables_fournis_par_prestataire: true, consommables_cafe_nespresso: true })
+  assertEquals(cafe.modele.equipements.consommables.produits, [])
+  // Explicitement "non fourni" → aucune liste.
   const nonFourni = mapFicheToContrat({ consommables_fournis_par_prestataire: false, consommables_gel_douche: true })
-  assertEquals(nonFourni.modele.equipements.consommables.produits_toilette, [])
+  assertEquals(nonFourni.modele.equipements.consommables.produits, [])
   // Section non répondue (null/absent) → MÊME résultat, aucune absence.
   const inconnu = mapFicheToContrat({ consommables_gel_douche: true })
-  assertEquals(inconnu.modele.equipements.consommables.produits_toilette, [])
+  assertEquals(inconnu.modele.equipements.consommables.produits, [])
   // Aucun booléen `fournis` exposé au modèle.
   assert(!('fournis' in fourni.modele.equipements.consommables))
 })
@@ -68,11 +75,16 @@ Deno.test('Doublon cinéma réconcilié en un seul signal', () => {
   assertEquals(mapFicheToContrat({}).modele.equipements.salle_cinema, false)
 })
 
-Deno.test('Fêtes/fumeurs : "non" par défaut, "oui" seulement si explicite', () => {
+Deno.test('Fêtes/fumeurs : "non" par défaut, "oui" si explicite, exposés en code ET modèle', () => {
   const vide = mapFicheToContrat({})
   assertEquals(vide.code.regles_calculees.fetes_autorisees, false)
   assertEquals(vide.code.regles_calculees.fumeurs_acceptes, false)
-  assertEquals(mapFicheToContrat({ equipements_fetes_autorisees: true }).code.regles_calculees.fetes_autorisees, true)
+  assertEquals(vide.modele.regles_internes.fetes_autorisees, false)
+  assertEquals(vide.modele.regles_internes.fumeurs_acceptes, false)
+  const oui = mapFicheToContrat({ equipements_fetes_autorisees: true, equipements_fumeurs_acceptes: true })
+  assertEquals(oui.code.regles_calculees.fetes_autorisees, true)
+  assertEquals(oui.modele.regles_internes.fetes_autorisees, true)
+  assertEquals(oui.modele.regles_internes.fumeurs_acceptes, true)
 })
 
 Deno.test('Caméras : détectées en zone code, exclues de securite_rassurante', () => {

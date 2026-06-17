@@ -81,10 +81,11 @@ export interface ModeleZone {
     }
     salles_de_bains: SalleDeBainContrat[]
     linge_fourni: boolean | null
-    // Que du POSITIF : la liste des produits de toilette présents, uniquement si
-    // le prestataire fournit explicitement. Aucun booléen `fournis` exposé → ni
-    // un "non répondu" ni un "non fourni" ne peut devenir une absence côté modèle.
-    consommables: { produits_toilette: string[] }
+    // Que du POSITIF : la liste des consommables présents (produits toilette +
+    // ménage, présence seule — café exclu par règle de prod), uniquement si le
+    // prestataire fournit explicitement. Aucun booléen `fournis` exposé → ni un
+    // "non répondu" ni un "non fourni" ne peut devenir une absence côté modèle.
+    consommables: { produits: string[] }
     table_a_manger: { present: boolean; nombre_places: number | null }
     canape_lit: boolean
     exterieur: {
@@ -128,6 +129,10 @@ export interface ModeleZone {
   regles_internes: {
     animaux_acceptes: boolean | null
     animaux_commentaire: string | null
+    // Résultats des règles calculées (le CALCUL non-par-défaut reste en zone
+    // code) : le modèle reçoit la valeur finale et l'habille, il ne décide jamais.
+    fetes_autorisees: boolean
+    fumeurs_acceptes: boolean
     securite_rassurante: string[] // équipements sécurité HORS caméras
   }
 }
