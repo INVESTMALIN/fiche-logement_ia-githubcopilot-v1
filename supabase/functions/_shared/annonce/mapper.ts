@@ -247,6 +247,8 @@ function mapEquipements(f: FicheRow): ModeleZone['equipements'] {
       dimensions: txt(f, 'equip_spe_ext_piscine_dimensions'),
       caracteristiques: arr(f, 'equip_spe_ext_piscine_caracteristiques'),
       disponibilite: txt(f, 'equip_spe_ext_piscine_disponibilite'),
+      periode_disponibilite: txt(f, 'equip_spe_ext_piscine_periode_disponibilite'),
+      periode_chauffage: txt(f, 'equip_spe_ext_piscine_periode_chauffage'),
     },
     jacuzzi: {
       present: bool(f, 'equip_spe_ext_dispose_jacuzzi'),
@@ -258,6 +260,7 @@ function mapEquipements(f: FicheRow): ModeleZone['equipements'] {
     cuisine_exterieure: {
       present: bool(f, 'equip_spe_ext_dispose_cuisine_exterieure'),
       type: txt(f, 'equip_spe_ext_cuisine_ext_type'),
+      superficie: txt(f, 'equip_spe_ext_cuisine_ext_superficie'),
       caracteristiques: arr(f, 'equip_spe_ext_cuisine_ext_caracteristiques'),
     },
     salle_sport: bool(f, 'equip_spe_ext_dispose_salle_sport'),
@@ -279,6 +282,7 @@ function mapModele(f: FicheRow): ModeleZone {
   return {
     identite: {
       type_propriete: txt(f, 'logement_type_propriete'),
+      type_precision: txt(f, 'logement_type_autre_precision'),
       typologie: txt(f, 'logement_typologie'),
       surface_m2: num(f, 'logement_surface'),
       nombre_chambres: num(f, 'visite_nombre_chambres'),
@@ -318,6 +322,7 @@ function mapModele(f: FicheRow): ModeleZone {
         jouets_tranches_age: arr(f, 'bebe_jouets_tranches_age'),
         lit_bebe_type: txt(f, 'bebe_lit_bebe_type'),
         chaise_haute: !!txt(f, 'bebe_chaise_haute_type'),
+        stores_occultants: bool(f, 'bebe_lit_stores_occultants'),
       },
     },
     regles_internes: {

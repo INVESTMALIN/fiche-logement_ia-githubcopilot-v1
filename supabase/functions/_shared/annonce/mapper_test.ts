@@ -127,6 +127,24 @@ Deno.test('animaux_acceptes gère le radio texte "non"/"oui"', () => {
   assertEquals(mapFicheToContrat({ exigences_animaux_acceptes: 'oui' }).modele.regles_internes.animaux_acceptes, true)
 })
 
+Deno.test('Complétude : type "Autre" → précision concrète conservée', () => {
+  const c = mapFicheToContrat({ logement_type_propriete: 'Autre', logement_type_autre_precision: 'Chalet' })
+  assertEquals(c.modele.identite.type_propriete, 'Autre')
+  assertEquals(c.modele.identite.type_precision, 'Chalet')
+})
+
+Deno.test('Complétude : piscine saisonnière → période + période de chauffage', () => {
+  const c = mapFicheToContrat({
+    equip_spe_ext_dispose_piscine: true,
+    equip_spe_ext_piscine_disponibilite: 'Disponible à certaines périodes',
+    equip_spe_ext_piscine_periode_disponibilite: 'Mai à septembre',
+    equip_spe_ext_piscine_caracteristiques: ['Chauffée'],
+    equip_spe_ext_piscine_periode_chauffage: 'Juin à août',
+  })
+  assertEquals(c.modele.equipements.piscine.periode_disponibilite, 'Mai à septembre')
+  assertEquals(c.modele.equipements.piscine.periode_chauffage, 'Juin à août')
+})
+
 Deno.test('Localisation enrichie = placeholder (câblée à la PR suivante)', () => {
   assertEquals(mapFicheToContrat({}).modele.localisation.enrichissement, null)
 })

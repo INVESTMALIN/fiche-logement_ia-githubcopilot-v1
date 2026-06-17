@@ -27,6 +27,9 @@ export interface SalleDeBainContrat {
 export interface ModeleZone {
   identite: {
     type_propriete: string | null
+    // Sous-type concret quand type_propriete = "Autre" (ex. chalet, péniche,
+    // tiny house). À utiliser à la place du libellé générique "Autre".
+    type_precision: string | null
     typologie: string | null
     surface_m2: number | null
     nombre_chambres: number | null
@@ -104,11 +107,13 @@ export interface ModeleZone {
       dimensions: string | null
       caracteristiques: string[]
       disponibilite: string | null
+      periode_disponibilite: string | null // si piscine saisonnière
+      periode_chauffage: string | null // si "Chauffée" parmi les caractéristiques
     }
     jacuzzi: { present: boolean | null; acces: string | null; taille: string | null }
     sauna: { present: boolean | null; acces: string | null }
     hammam: { present: boolean | null; acces: string | null }
-    cuisine_exterieure: { present: boolean | null; type: string | null; caracteristiques: string[] }
+    cuisine_exterieure: { present: boolean | null; type: string | null; superficie: string | null; caracteristiques: string[] }
     salle_sport: boolean | null
     salle_cinema: boolean // réconcilié (equipements.cinema OU dispose_salle_cinema)
     salle_jeux: { present: boolean | null; equipements: string[] }
@@ -126,7 +131,7 @@ export interface ModeleZone {
     types_voyageurs: string[]
     types_voyageurs_autre: string | null
     teletravail: { equipements: string[]; debit: { speedtest: string | null; ethernet: boolean | null } }
-    bebe: { equipements: string[]; jouets_tranches_age: string[]; lit_bebe_type: string | null; chaise_haute: boolean }
+    bebe: { equipements: string[]; jouets_tranches_age: string[]; lit_bebe_type: string | null; chaise_haute: boolean; stores_occultants: boolean | null }
   }
   regles_internes: {
     animaux_acceptes: boolean | null
