@@ -19,6 +19,7 @@ export interface ChambreContrat {
 
 export interface SalleDeBainContrat {
   nom: string | null
+  acces: string | null // privé / partagé — distinction demandée par le prompt
   seche_cheveux: boolean
   baignoire: boolean
   douche: boolean

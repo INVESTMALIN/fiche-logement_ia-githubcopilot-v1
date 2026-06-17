@@ -143,12 +143,14 @@ Deno.test('Studio : couchage de l\'espace nuit lu même si nombre_chambres=0', (
 Deno.test('SDB combinée douche/baignoire → douche ET baignoire présentes (jamais tout-false)', () => {
   const c = mapFicheToContrat({
     visite_nombre_salles_bains: '1',
+    salle_de_bains_salle_de_bain_1_acces: 'Privée',
     salle_de_bains_salle_de_bain_1_equipements_douche_baignoire_com: true,
     salle_de_bains_salle_de_bain_1_equipements_douche: false,
     salle_de_bains_salle_de_bain_1_equipements_baignoire: false,
   })
   assertEquals(c.modele.equipements.salles_de_bains[0].douche, true)
   assertEquals(c.modele.equipements.salles_de_bains[0].baignoire, true)
+  assertEquals(c.modele.equipements.salles_de_bains[0].acces, 'Privée') // privé/partagé forwardé
 })
 
 Deno.test('Complétude : type "Autre" → précision concrète conservée', () => {

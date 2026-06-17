@@ -190,6 +190,7 @@ function mapSallesDeBains(f: FicheRow): SalleDeBainContrat[] {
     const combine = isTrue(f, p + 'equipements_douche_baignoire_com')
     out.push({
       nom: txt(f, p + 'nom_description'),
+      acces: txt(f, p + 'acces'),
       seche_cheveux: isTrue(f, p + 'equipements_seche_cheveux'),
       baignoire: isTrue(f, p + 'equipements_baignoire') || combine,
       douche: isTrue(f, p + 'equipements_douche') || combine,
