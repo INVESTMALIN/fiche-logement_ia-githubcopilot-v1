@@ -17,6 +17,8 @@ import {
   FAITS_SCHEMA_VERSION,
   GARE_CATS,
   GARE_RADII,
+  METRO_CATS,
+  METRO_RADII,
   POI_GROUPS,
   POP_MIN_VILLE_NOTABLE,
   type Airport,
@@ -121,12 +123,15 @@ export async function buildLocalisationFacts(
     }
   }
 
-  // 3) Transport — arrêt bus/tram le plus proche + gare (rayon large),
-  //    chacun avec temps à pied ET en voiture.
+  // 3) Transport — arrêt bus/tram + métro (créneau dédié) + gare (rayon large),
+  //    chacun avec temps à pied ET en voiture. Le métro a SA propre requête pour
+  //    qu'une bouche de métro ne soit pas masquée par un arrêt de bus plus proche.
   const arret = await nearestStop(geo, origin, ARRET_CATS, ARRET_RADII, degraded, 'arret')
+  const metro = await nearestStop(geo, origin, METRO_CATS, METRO_RADII, degraded, 'metro')
   const gare = await nearestStop(geo, origin, GARE_CATS, GARE_RADII, degraded, 'gare')
   const transport = {
     arret_proche: await twoModes(geo, origin, arret, degraded, 'arret'),
+    metro_proche: await twoModes(geo, origin, metro, degraded, 'metro'),
     gare_proche: await twoModes(geo, origin, gare, degraded, 'gare'),
   }
 

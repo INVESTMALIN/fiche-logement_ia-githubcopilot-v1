@@ -34,6 +34,16 @@ export const POI_GROUPS: PoiGroup[] = [
 export const ARRET_CATS = ['public_transport.bus,public_transport.tram']
 export const ARRET_RADII = [2000, 8000]
 
+/**
+ * Métro : requête DÉDIÉE (jamais fusionnée avec l'arrêt bus/tram, sinon une
+ * bouche de métro proche serait masquée par un arrêt de bus encore plus proche).
+ * `subway` couvre les métros classiques ; `light_rail` attrape les VAL et
+ * assimilés (Rennes, Lille, Toulouse). Vide en ville sans métro = absence
+ * légitime (pas de degraded). Rayons urbains progressifs.
+ */
+export const METRO_CATS = ['public_transport.subway,public_transport.light_rail']
+export const METRO_RADII = [3000, 12000]
+
 /** Gare : requête dédiée à rayon large (une gare peut être à plusieurs km). */
 export const GARE_CATS = ['public_transport.train']
 export const GARE_RADII = [15000, 60000]
@@ -98,4 +108,7 @@ export const AIRPORTS: Airport[] = [
   { name: 'Barcelone-El Prat', iata: 'BCN', lat: 41.2974, lon: 2.0833 },
 ]
 
-export const FAITS_SCHEMA_VERSION = 1
+// v2 : ajout du créneau "métro le plus proche" dans transport. Le bump invalide
+// le cache → les fiches déjà calculées (schema_version 1) se recalculent avec le
+// métro au prochain appel.
+export const FAITS_SCHEMA_VERSION = 2

@@ -44,6 +44,7 @@ export interface Faits {
   pois: Record<string, Poi[]>
   transport: {
     arret_proche: TransportStop | null
+    metro_proche: TransportStop | null
     gare_proche: TransportStop | null
   }
   ancres_macro: {
