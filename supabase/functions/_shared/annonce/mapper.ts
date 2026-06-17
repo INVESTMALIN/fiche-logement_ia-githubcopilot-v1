@@ -160,6 +160,24 @@ function mapConsommables(f: FicheRow): { produits: string[] } {
 const fetesAutorisees = (f: FicheRow): boolean => isTrue(f, 'equipements_fetes_autorisees')
 const fumeursAcceptes = (f: FicheRow): boolean => isTrue(f, 'equipements_fumeurs_acceptes')
 
+/**
+ * Équipement bébé. La présence d'un équipement vient de la VRAIE source : la
+ * case cochée dans le tableau `bebe_equipements`. Les sous-détails (type, dispo,
+ * prix) sont optionnels et non requis → ne jamais déduire une présence de leur
+ * seul remplissage (ex. "Chaise haute" cochée mais type vide = état valide).
+ */
+function mapBebe(f: FicheRow): ModeleZone['cible_voyageurs']['bebe'] {
+  const equipements = arr(f, 'bebe_equipements')
+  return {
+    equipements,
+    jouets_tranches_age: arr(f, 'bebe_jouets_tranches_age'),
+    lit_bebe_type: txt(f, 'bebe_lit_bebe_type'),
+    // Source = case cochée ; le type n'est qu'un détail optionnel (OR pour garder le signal).
+    chaise_haute: equipements.includes('Chaise haute') || !!txt(f, 'bebe_chaise_haute_type'),
+    stores_occultants: bool(f, 'bebe_lit_stores_occultants'),
+  }
+}
+
 function mapSallesDeBains(f: FicheRow): SalleDeBainContrat[] {
   const n = Math.min(6, Math.max(0, num(f, 'visite_nombre_salles_bains') ?? 0))
   const out: SalleDeBainContrat[] = []
@@ -326,13 +344,7 @@ function mapModele(f: FicheRow): ModeleZone {
         equipements: arr(f, 'teletravail_equipements'),
         debit: { speedtest: txt(f, 'teletravail_speedtest_resultat'), ethernet: bool(f, 'teletravail_ethernet_disponible') },
       },
-      bebe: {
-        equipements: arr(f, 'bebe_equipements'),
-        jouets_tranches_age: arr(f, 'bebe_jouets_tranches_age'),
-        lit_bebe_type: txt(f, 'bebe_lit_bebe_type'),
-        chaise_haute: !!txt(f, 'bebe_chaise_haute_type'),
-        stores_occultants: bool(f, 'bebe_lit_stores_occultants'),
-      },
+      bebe: mapBebe(f),
     },
     regles_internes: {
       animaux_acceptes: boolish(f, 'exigences_animaux_acceptes'),

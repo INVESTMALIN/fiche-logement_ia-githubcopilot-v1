@@ -169,6 +169,15 @@ Deno.test('Complétude : piscine saisonnière → période + période de chauffa
   assertEquals(c.modele.equipements.piscine.periode_chauffage, 'Juin à août')
 })
 
+Deno.test('Bébé : chaise haute dérivée de la case cochée, pas du seul type optionnel', () => {
+  // Cochée dans le tableau mais type vide (état valide) → présence quand même.
+  assertEquals(mapFicheToContrat({ bebe_equipements: ['Chaise haute'] }).modele.cible_voyageurs.bebe.chaise_haute, true)
+  // Type rempli (OR de secours) → présence aussi.
+  assertEquals(mapFicheToContrat({ bebe_chaise_haute_type: 'Pliante' }).modele.cible_voyageurs.bebe.chaise_haute, true)
+  // Ni coché ni type → false.
+  assertEquals(mapFicheToContrat({ bebe_equipements: ['Lit bébé'] }).modele.cible_voyageurs.bebe.chaise_haute, false)
+})
+
 Deno.test('Localisation enrichie = placeholder (câblée à la PR suivante)', () => {
   assertEquals(mapFicheToContrat({}).modele.localisation.enrichissement, null)
 })
