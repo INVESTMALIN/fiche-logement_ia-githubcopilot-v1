@@ -151,7 +151,7 @@ export async function buildLocalisationFacts(
   let aeroport: Aeroport | null = null
   const ap = nearestAirport(origin.lat, origin.lon)
   if (ap) {
-    const voiture = await routeLeg(geo, origin, ap, 'drive', degraded, 'ancres_macro.aeroport')
+    const voiture = await airportDrive(geo, origin, ap, degraded)
     aeroport = { nom: ap.name, voiture, iata: ap.iata }
   }
 
@@ -252,4 +252,42 @@ async function routeLeg(
     degraded.push(`${label}.${mode} routing KO: ${msg(e)}`)
     return null
   }
+}
+
+/**
+ * Décale un point d'environ `meters` mètres vers une cible (interpolation
+ * lat/lon, suffisante à cette échelle de quelques km).
+ */
+function nudgeToward(
+  p: { lat: number; lon: number },
+  toward: { lat: number; lon: number },
+  meters: number,
+): { lat: number; lon: number } {
+  const tot = haversine(p.lat, p.lon, toward.lat, toward.lon)
+  if (tot === 0) return p
+  const f = Math.min(1, meters / tot)
+  return { lat: p.lat + (toward.lat - p.lat) * f, lon: p.lon + (toward.lon - p.lon) * f }
+}
+
+/**
+ * Temps voiture vers l'aéroport, avec rattrapage. Si la coordonnée curée tombe
+ * sur un point non routable (piste/aire → routing "sans itinéraire"), on retente
+ * UNE fois vers un point nudgé ~1,5 km vers l'origine : il se raccroche au réseau
+ * routier (l'origine est un bien réel donc routable, sur le même réseau). Évite
+ * un voiture:null sur un aéroport pourtant accessible en voiture. Portée: ancre
+ * aéroport uniquement — ne touche pas aux arrêts/métro/gare/POI.
+ */
+async function airportDrive(
+  geo: GeoapifyClient,
+  origin: { lat: number; lon: number },
+  airport: { lat: number; lon: number },
+  degraded: string[],
+): Promise<Leg | null> {
+  const direct = await geo.routeOne(origin, airport, 'drive').catch(() => null)
+  if (direct) return leg(direct.distance, direct.time)
+  const nudged = nudgeToward(airport, origin, 1500)
+  const retry = await geo.routeOne(origin, nudged, 'drive').catch(() => null)
+  if (retry) return leg(retry.distance, retry.time)
+  degraded.push('ancres_macro.aeroport.drive routing sans itinéraire (après rattrapage)')
+  return null
 }
