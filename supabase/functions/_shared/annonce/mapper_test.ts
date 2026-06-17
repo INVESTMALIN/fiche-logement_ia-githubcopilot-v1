@@ -127,6 +127,17 @@ Deno.test('animaux_acceptes gère le radio texte "non"/"oui"', () => {
   assertEquals(mapFicheToContrat({ exigences_animaux_acceptes: 'oui' }).modele.regles_internes.animaux_acceptes, true)
 })
 
+Deno.test('SDB combinée douche/baignoire → douche ET baignoire présentes (jamais tout-false)', () => {
+  const c = mapFicheToContrat({
+    visite_nombre_salles_bains: '1',
+    salle_de_bains_salle_de_bain_1_equipements_douche_baignoire_com: true,
+    salle_de_bains_salle_de_bain_1_equipements_douche: false,
+    salle_de_bains_salle_de_bain_1_equipements_baignoire: false,
+  })
+  assertEquals(c.modele.equipements.salles_de_bains[0].douche, true)
+  assertEquals(c.modele.equipements.salles_de_bains[0].baignoire, true)
+})
+
 Deno.test('Complétude : type "Autre" → précision concrète conservée', () => {
   const c = mapFicheToContrat({ logement_type_propriete: 'Autre', logement_type_autre_precision: 'Chalet' })
   assertEquals(c.modele.identite.type_propriete, 'Autre')

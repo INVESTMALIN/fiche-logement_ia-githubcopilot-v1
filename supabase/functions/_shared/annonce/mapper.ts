@@ -161,11 +161,16 @@ function mapSallesDeBains(f: FicheRow): SalleDeBainContrat[] {
   const out: SalleDeBainContrat[] = []
   for (let i = 1; i <= n; i++) {
     const p = `salle_de_bains_salle_de_bain_${i}_`
+    // "Douche et baignoire combinées" (colonne tronquée `_com`) = baignoire avec
+    // douche → le voyageur a les DEUX. On l'ajoute aux deux pour qu'une SDB
+    // combinée ne ressorte jamais en tout-false (sinon on perd le seul
+    // équipement de bain de cette pièce).
+    const combine = isTrue(f, p + 'equipements_douche_baignoire_com')
     out.push({
       nom: txt(f, p + 'nom_description'),
       seche_cheveux: isTrue(f, p + 'equipements_seche_cheveux'),
-      baignoire: isTrue(f, p + 'equipements_baignoire'),
-      douche: isTrue(f, p + 'equipements_douche'),
+      baignoire: isTrue(f, p + 'equipements_baignoire') || combine,
+      douche: isTrue(f, p + 'equipements_douche') || combine,
     })
   }
   return out
