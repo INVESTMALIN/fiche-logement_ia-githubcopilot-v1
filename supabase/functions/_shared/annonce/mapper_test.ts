@@ -36,16 +36,22 @@ Deno.test('Atout piscine sans section piscine ne crée pas de piscine', () => {
   assert(c.modele.atouts.atouts_logement.includes('piscine')) // reste un signal d'emphase
 })
 
-Deno.test('Consommables : champ vide ne génère aucune absence', () => {
-  const fournis = mapFicheToContrat({
+Deno.test('Consommables : que du positif, jamais de négatif ni d\'absence', () => {
+  // Fourni explicitement → liste des produits réellement présents.
+  const fourni = mapFicheToContrat({
     consommables_fournis_par_prestataire: true,
     consommables_gel_douche: false,
     consommables_shampoing: true,
   })
-  assertEquals(fournis.modele.equipements.consommables.produits_toilette, ['shampoing'])
-  const nonFournis = mapFicheToContrat({ consommables_fournis_par_prestataire: false, consommables_gel_douche: true })
-  assertEquals(nonFournis.modele.equipements.consommables.produits_toilette, [])
-  assertEquals(nonFournis.modele.equipements.consommables.fournis, false)
+  assertEquals(fourni.modele.equipements.consommables.produits_toilette, ['shampoing'])
+  // Explicitement "non fourni" → aucune liste, aucun signal.
+  const nonFourni = mapFicheToContrat({ consommables_fournis_par_prestataire: false, consommables_gel_douche: true })
+  assertEquals(nonFourni.modele.equipements.consommables.produits_toilette, [])
+  // Section non répondue (null/absent) → MÊME résultat, aucune absence.
+  const inconnu = mapFicheToContrat({ consommables_gel_douche: true })
+  assertEquals(inconnu.modele.equipements.consommables.produits_toilette, [])
+  // Aucun booléen `fournis` exposé au modèle.
+  assert(!('fournis' in fourni.modele.equipements.consommables))
 })
 
 Deno.test('Self check-in déduit des 4 sources (sans la mécanique)', () => {

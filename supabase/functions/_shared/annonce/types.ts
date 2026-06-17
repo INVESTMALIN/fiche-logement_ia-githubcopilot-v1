@@ -81,9 +81,10 @@ export interface ModeleZone {
     }
     salles_de_bains: SalleDeBainContrat[]
     linge_fourni: boolean | null
-    // Absences conditionnelles : rempli SEULEMENT si le prestataire fournit.
-    // `produits_toilette` ne liste que les présents — jamais une absence.
-    consommables: { fournis: boolean; produits_toilette: string[] }
+    // Que du POSITIF : la liste des produits de toilette présents, uniquement si
+    // le prestataire fournit explicitement. Aucun booléen `fournis` exposé → ni
+    // un "non répondu" ni un "non fourni" ne peut devenir une absence côté modèle.
+    consommables: { produits_toilette: string[] }
     table_a_manger: { present: boolean; nombre_places: number | null }
     canape_lit: boolean
     exterieur: {

@@ -107,16 +107,19 @@ function mapChambres(f: FicheRow): ChambreContrat[] {
 }
 
 /**
- * Consommables : absence conditionnelle. On ne liste les produits de toilette
- * QUE si le prestataire fournit (`fournis === true`). Un champ vide = "non
- * documenté", jamais "absent" → aucune absence n'est produite ici.
+ * Consommables (zone modèle) : QUE du positif. On expose seulement les produits
+ * de toilette réellement présents, et uniquement si le prestataire fournit
+ * explicitement (`=== true`). Section non répondue (null/absent) OU
+ * explicitement "non fourni" → même résultat : aucune liste, aucun signal. Pas
+ * de booléen `fournis` côté modèle → le modèle ne reçoit jamais d'absence sur
+ * les consommables (on ne lui sert pas un négatif qu'il faudrait rattraper).
  */
-function mapConsommables(f: FicheRow): { fournis: boolean; produits_toilette: string[] } {
-  const fournis = isTrue(f, 'consommables_fournis_par_prestataire')
-  const produits = fournis
+function mapConsommables(f: FicheRow): { produits_toilette: string[] } {
+  const fourniExplicitement = isTrue(f, 'consommables_fournis_par_prestataire')
+  const produits = fourniExplicitement
     ? ['gel_douche', 'shampoing', 'apres_shampoing'].filter((k) => isTrue(f, `consommables_${k}`))
     : []
-  return { fournis, produits_toilette: produits }
+  return { produits_toilette: produits }
 }
 
 function mapSallesDeBains(f: FicheRow): SalleDeBainContrat[] {
