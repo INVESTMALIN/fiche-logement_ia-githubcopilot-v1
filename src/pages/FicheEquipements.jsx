@@ -170,7 +170,7 @@ export default function FicheEquipements() {
 
   // Types de parking pour GRATUIT SUR PLACE (4 options, checkboxes multiples)
   const typesParkingGratuitOptions = [
-    'Parking sous-terrain',
+    'Parking souterrain',
     'Abri voiture',
     'Stationnement dans une allée privée',
     'Garage individuel'
@@ -178,7 +178,7 @@ export default function FicheEquipements() {
 
   // Types de parking pour PAYANT (3 options, radio unique)
   const typesParkingPayantOptions = [
-    'Parking sous-terrain',
+    'Parking souterrain',
     'Abri voiture',
     'Stationnement dans une allée privée'
   ]

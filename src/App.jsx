@@ -12,6 +12,7 @@ import { AuthProvider } from './components/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import AdminConsole from './pages/AdminConsole'
+import AnnonceInspection from './pages/AnnonceInspection'
 import { setAuthNavigateCallback } from './lib/supabaseClient'
 import PrintPDF from './pages/PrintPDF'
 import PrintPDFMenage from './pages/PrintPDFMenage'
@@ -72,6 +73,16 @@ export default function App() {
             element={
               <AdminRoute>
                 <AdminConsole />
+              </AdminRoute>
+            }
+          />
+
+          {/* Inspection des annonces générées — outil interne, réservé super_admin */}
+          <Route
+            path="/annonce-inspection"
+            element={
+              <AdminRoute>
+                <AnnonceInspection />
               </AdminRoute>
             }
           />
