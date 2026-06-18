@@ -35,12 +35,46 @@ function SectionTitre({ children }) {
   )
 }
 
+// Lignes de cadrage par section — contenu STATIQUE de présentation (pas calculé,
+// ne dépend pas de l'annonce générée). Rappellent l'intention et les règles clés
+// de chaque section pour juger la qualité / repérer un écart du modèle. Extraites
+// fidèlement du prompt v1 (docs/agent-annonce/prompt-v1-agent-annonce-airbnb.md)
+// et du schéma de sortie (schema-sortie-airbnb-agent-annonce.md) ; distillées à
+// l'essentiel, jamais réinventées.
+const CADRAGE = {
+  titres:
+    "Généré par le modèle. 3 propositions de 28 à 45 caractères (cible 37-43), combinant typologie, signal d'ambiance et ancrage géographique (ville + quartier, ou ville + distance à un point d'intérêt). Ni emoji, ni majuscules intégrales, ni prix ou capacité.",
+  capacite: 'Recopié de la fiche (capacité maximale) — passthrough, pas généré par le modèle.',
+  description:
+    "Généré par le modèle. Résumé en prose de 380 à 470 caractères (cible 430-450) ; doit faire figurer la surface en m², la typologie, la capacité exacte et la ville.",
+  logement:
+    "Généré par le modèle. Prose fluide organisée par zone (séjour, cuisine, salle de bain, chambres, extérieur, équipements spéciaux), sans découpage rigide pièce par pièce ; n'invente jamais une pièce, un étage ou un niveau.",
+  acces:
+    "Généré par le modèle. Étage et mode d'accès (escalier ou ascenseur), arrivée autonome et stationnement ; jamais l'emplacement de la boîte à clés, jamais d'étage inventé.",
+  echanges:
+    'Texte constant posé par le système (template conciergerie), identique pour tous les biens — pas rédigé par le modèle.',
+  quartier:
+    "Généré par le modèle. Ambiance positive et points d'intérêt réels uniquement ; ne traite jamais la sécurité, les nuisances ni le caractère socio-économique (gérés par la note de quartier).",
+  deplacements:
+    "Généré par le modèle à partir des seuls faits de localisation (points d'intérêt et distances réels) ; n'invente jamais un lieu ni une distance. Vide si la localisation est indisponible.",
+  autres:
+    "Généré par le modèle. Règles internes habillées en phrases (animaux, fumeur, fêtes, horaires de tranquillité 22h-8h) et équipements de sécurité présents, caméras comprises.",
+  mentions:
+    'Assemblé par le système à partir de la fiche (numéro d\'enregistrement, classe DPE) — conformité légale, zéro reformulation par le modèle.',
+  note_etat:
+    "Posée de façon déterministe par le système : phrases approuvées de divulgation de l'état physique, uniquement dans les cas négatifs. Pas rédigée par le modèle.",
+  note_quartier:
+    'Posée de façon déterministe par le système : phrases approuvées sur le quartier (sécurité, nuisances, secteur), uniquement dans les cas négatifs. Pas rédigée par le modèle.',
+}
+
 // Bloc d'annonce : masqué si non visible (champ vide → pas de bloc disgracieux).
-function Bloc({ titre, visible = true, children }) {
+// `aide` = ligne de cadrage discrète sous le titre (gris atténué), facultative.
+function Bloc({ titre, aide, visible = true, children }) {
   if (!visible) return null
   return (
     <section className="mb-8">
       <SectionTitre>{titre}</SectionTitre>
+      {aide && <p className="text-xs italic text-text-muted leading-snug mb-3 max-w-2xl">{aide}</p>}
       {children}
     </section>
   )
@@ -67,7 +101,7 @@ function AnnonceResultat({ data }) {
 
   return (
     <article className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-10">
-      <Bloc titre="Propositions de titre" visible={titres.length > 0}>
+      <Bloc titre="Propositions de titre" aide={CADRAGE.titres} visible={titres.length > 0}>
         <ol className="space-y-2.5">
           {titres.map((t, i) => (
             <li key={i} className="flex gap-3 items-baseline">
@@ -78,49 +112,49 @@ function AnnonceResultat({ data }) {
         </ol>
       </Bloc>
 
-      <Bloc titre="Capacité" visible={typeof a.nombre_voyageurs === 'number'}>
+      <Bloc titre="Capacité" aide={CADRAGE.capacite} visible={typeof a.nombre_voyageurs === 'number'}>
         <Texte>{a.nombre_voyageurs} voyageurs</Texte>
       </Bloc>
 
-      <Bloc titre="Description" visible={hasText(a.description)}>
+      <Bloc titre="Description" aide={CADRAGE.description} visible={hasText(a.description)}>
         <Texte>{a.description}</Texte>
       </Bloc>
 
-      <Bloc titre="Le logement" visible={hasText(a.logement)}>
+      <Bloc titre="Le logement" aide={CADRAGE.logement} visible={hasText(a.logement)}>
         <Texte>{a.logement}</Texte>
       </Bloc>
 
-      <Bloc titre="Accès des voyageurs" visible={hasText(a.acces_voyageurs)}>
+      <Bloc titre="Accès des voyageurs" aide={CADRAGE.acces} visible={hasText(a.acces_voyageurs)}>
         <Texte>{a.acces_voyageurs}</Texte>
       </Bloc>
 
-      <Bloc titre="Échanges voyageurs" visible={hasText(a.echanges_voyageurs)}>
+      <Bloc titre="Échanges voyageurs" aide={CADRAGE.echanges} visible={hasText(a.echanges_voyageurs)}>
         <Texte>{a.echanges_voyageurs}</Texte>
       </Bloc>
 
-      <Bloc titre="Le quartier" visible={hasText(a.quartier)}>
+      <Bloc titre="Le quartier" aide={CADRAGE.quartier} visible={hasText(a.quartier)}>
         <Texte>{a.quartier}</Texte>
       </Bloc>
 
-      <Bloc titre="Comment se déplacer" visible={hasText(a.comment_se_deplacer)}>
+      <Bloc titre="Comment se déplacer" aide={CADRAGE.deplacements} visible={hasText(a.comment_se_deplacer)}>
         <Texte>{a.comment_se_deplacer}</Texte>
       </Bloc>
 
-      <Bloc titre="Autres remarques" visible={hasText(a.autres_remarques)}>
+      <Bloc titre="Autres remarques" aide={CADRAGE.autres} visible={hasText(a.autres_remarques)}>
         <Texte>{a.autres_remarques}</Texte>
       </Bloc>
 
-      <Bloc titre="Mentions réglementaires" visible={mentions.length > 0}>
+      <Bloc titre="Mentions réglementaires" aide={CADRAGE.mentions} visible={mentions.length > 0}>
         <ul className="space-y-1.5">
           {mentions.map((m, i) => <li key={i} className="text-text">{m}</li>)}
         </ul>
       </Bloc>
 
-      <Bloc titre="Note sur l'état" visible={hasText(a.note_etat)}>
+      <Bloc titre="Note sur l'état" aide={CADRAGE.note_etat} visible={hasText(a.note_etat)}>
         <Texte>{a.note_etat}</Texte>
       </Bloc>
 
-      <Bloc titre="Note sur le quartier" visible={hasText(a.note_quartier)}>
+      <Bloc titre="Note sur le quartier" aide={CADRAGE.note_quartier} visible={hasText(a.note_quartier)}>
         <Texte>{a.note_quartier}</Texte>
       </Bloc>
 
@@ -152,6 +186,14 @@ export default function AnnonceInspection() {
   const [genError, setGenError] = useState('')
   const [resultat, setResultat] = useState(null)
 
+  // Changer de fiche remet l'affichage à zéro : on ne lit jamais un résultat (ou
+  // une erreur) qui appartiendrait à une autre fiche que la fiche active.
+  const selectionnerFiche = (f) => {
+    setFicheSelectionnee(f)
+    setResultat(null)
+    setGenError('')
+  }
+
   const rechercher = async () => {
     if (!numero.trim() || searching) return
     setSearching(true)
@@ -167,7 +209,7 @@ export default function AnnonceInspection() {
       return
     }
     setResultatsRecherche(res.fiches)
-    if (res.fiches.length === 1) setFicheSelectionnee(res.fiches[0])
+    if (res.fiches.length === 1) selectionnerFiche(res.fiches[0])
   }
 
   const lancerGeneration = async () => {
@@ -241,7 +283,7 @@ export default function AnnonceInspection() {
                 return (
                   <button
                     key={f.id}
-                    onClick={() => setFicheSelectionnee(f)}
+                    onClick={() => selectionnerFiche(f)}
                     className={`w-full text-left rounded-lg border px-4 py-3 transition-colors ${
                       actif ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50'
                     }`}
