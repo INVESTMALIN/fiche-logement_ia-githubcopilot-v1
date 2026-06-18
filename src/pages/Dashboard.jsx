@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
 import { useFiches } from '../hooks/useFiches'
-import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List, UserPen, Share, X, Info, LogOut, FilePlus, Settings } from 'lucide-react'
+import { Edit, Archive, Trash2, RotateCcw, Grid3X3, List, UserPen, Share, X, Info, LogOut, FilePlus, Settings, Sparkles } from 'lucide-react'
 import DropdownMenu from '../components/DropdownMenu'
 import UserRoleBadge from '../components/UserRoleBadge'
 import ReassignModal from '../components/ReassignModal'
@@ -409,6 +409,17 @@ export default function Dashboard() {
                   title="Console Admin"
                 >
                   <Settings size={17} />
+                </button>
+              )}
+
+              {/* Inspection des annonces (outil interne en développement) */}
+              {isSuperAdmin && (
+                <button
+                  onClick={() => navigate('/annonce-inspection')}
+                  className="flex items-center justify-center w-10 h-10 rounded-xl border border-white border-opacity-20 text-white text-opacity-60 hover:bg-white hover:bg-opacity-10 hover:text-opacity-100 transition-all duration-200"
+                  title="Inspection des annonces (DEV)"
+                >
+                  <Sparkles size={17} />
                 </button>
               )}
 
