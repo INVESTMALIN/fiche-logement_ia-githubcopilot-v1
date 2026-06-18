@@ -47,42 +47,35 @@ export type ModelOutputResult =
   | { ok: false; reason: string; brut: unknown }
 
 /**
- * Récupère la valeur JSON de la sortie brute, tolérant aux fences markdown et à
- * la prose d'enrobage (on ne force pas response_format → agnostique du modèle).
+ * Récupère la valeur JSON de PREMIER NIVEAU de la sortie modèle, sans jamais
+ * aller pêcher du JSON niché dans une structure ni dans de la prose. On ne force
+ * pas response_format (agnostique du modèle), mais on ferme le parsing par
+ * construction plutôt que par heuristique.
  *
- * Règle générale : l'enrobage (prose/fences) peut être retiré, mais ne doit
- * JAMAIS changer la NATURE de la valeur de premier niveau. Après nettoyage, le
- * premier niveau doit être un objet, sinon c'est une erreur de forme.
- *  - parse direct d'abord : préserve la nature réelle (objet / tableau / scalaire) ;
- *    la validation de forme rejettera tout ce qui n'est pas un objet ;
- *  - à défaut (prose autour d'un JSON non-fencé), on ne tolère QUE « un objet
- *    entouré de texte ». Le 1er token structurel décide de la nature de premier
- *    niveau : si un `[` précède le 1er `{` (ou s'il n'y a pas de `{`), le premier
- *    niveau est un tableau / scalaire → rejet. On ne plonge jamais dans un
- *    tableau pour en extraire un objet intérieur.
+ * Contrat (volontairement étroit) — deux seuls enrobages acceptés :
+ *   1) un JSON nu, éventuellement entouré d'espaces / sauts de ligne ;
+ *   2) un JSON dans UNE fence markdown qui couvre TOUT le contenu (```json … ```).
+ * Dans les deux cas on parse la chaîne ENTIÈRE : la nature de premier niveau est
+ * exactement celle rendue par le modèle (la validation de forme rejette ensuite
+ * tout ce qui n'est pas un objet). Aucune découpe par accolades, aucune fence
+ * cherchée « quelque part » → impossible de transformer un tableau/scalaire
+ * enrobé en objet, ni d'extraire un objet niché.
+ *
+ * Compromis assumé : la prose libre collée à un JSON (« Voici la sortie : {…} »)
+ * est rejetée — sortie hors contrat (le prompt interdit tout texte autour), à
+ * régénérer. On garde seulement la fence-qui-couvre-tout, écart courant et sans
+ * ambiguïté.
  */
-function parseJsonLoose(content: string): { ok: true; value: unknown } | { ok: false; reason: string } {
+function parseTopLevelJson(content: string): { ok: true; value: unknown } | { ok: false; reason: string } {
   let t = (content || '').trim()
-  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  // Fence ANCRÉE début/fin : ne matche que si elle enveloppe l'intégralité du
+  // contenu. Une fence nichée (ex. à l'intérieur d'un tableau) ne matche pas.
+  const fence = t.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)
   if (fence) t = fence[1].trim()
   try {
     return { ok: true, value: JSON.parse(t) }
-  } catch {
-    // Enrobage (prose autour d'un JSON non-fencé) : tolérance limitée ci-dessous.
-  }
-  const firstBrace = t.indexOf('{')
-  const firstBracket = t.indexOf('[')
-  // Nature de premier niveau décidée par le 1er token structurel : pas de `{`,
-  // ou un `[` avant → ce n'est pas un objet enrobé → erreur de forme.
-  if (firstBrace === -1 || (firstBracket !== -1 && firstBracket < firstBrace)) {
-    return { ok: false, reason: 'valeur de premier niveau non-objet (tableau, scalaire ou prose sans objet)' }
-  }
-  const end = t.lastIndexOf('}')
-  if (end < firstBrace) return { ok: false, reason: 'objet JSON incomplet dans la sortie' }
-  try {
-    return { ok: true, value: JSON.parse(t.slice(firstBrace, end + 1)) }
   } catch (e) {
-    return { ok: false, reason: `JSON non parsable (${msg(e)})` }
+    return { ok: false, reason: `JSON de premier niveau non parsable (${msg(e)})` }
   }
 }
 
@@ -118,7 +111,7 @@ function raisonFormeInvalide(value: unknown): string | null {
  * pour inspection), jamais de normalisation silencieuse en champs vides.
  */
 export function parseModelOutput(content: string): ModelOutputResult {
-  const parsed = parseJsonLoose(content)
+  const parsed = parseTopLevelJson(content)
   if (!parsed.ok) return { ok: false, reason: `sortie modèle invalide: ${parsed.reason}`, brut: content }
   const raison = raisonFormeInvalide(parsed.value)
   if (raison) return { ok: false, reason: `forme invalide: ${raison}`, brut: parsed.value }

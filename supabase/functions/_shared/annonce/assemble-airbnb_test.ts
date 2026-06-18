@@ -97,7 +97,11 @@ function validOutput(): Record<string, any> {
   }
 }
 
-Deno.test('Forme valide → ok, les 7 champs récupérés', () => {
+// ───────────────────── Contrat de parsing — DOIT RÉUSSIR ─────────────────────
+// On accepte uniquement : un objet JSON nu, ou un objet dans UNE fence qui couvre
+// tout le contenu. La nature de premier niveau n'est jamais modifiée.
+
+Deno.test('Objet JSON pur → ok, les 7 champs récupérés', () => {
   const r = parseModelOutput(JSON.stringify(validOutput()))
   assert(r.ok)
   assertEquals(r.value.titres.length, 3)
@@ -105,27 +109,66 @@ Deno.test('Forme valide → ok, les 7 champs récupérés', () => {
   assertEquals(r.value.autres_remarques, 'Remarques.')
 })
 
-Deno.test('Forme valide tolère les fences markdown et la prose autour', () => {
-  const json = JSON.stringify(validOutput())
-  assert(parseModelOutput('```json\n' + json + '\n```').ok)
-  assert(parseModelOutput('Voici la sortie :\n' + json).ok)
+Deno.test('Objet entouré uniquement d\'espaces / sauts de ligne → ok', () => {
+  assert(parseModelOutput('\n\n  ' + JSON.stringify(validOutput()) + '  \n').ok)
 })
 
-Deno.test('Enveloppe {airbnb:{...}} → forme invalide (pas de faux succès)', () => {
+Deno.test('Objet dans une fence markdown qui couvre tout → ok', () => {
+  assert(parseModelOutput('```json\n' + JSON.stringify(validOutput()) + '\n```').ok)
+  // fence sans le tag de langage
+  assert(parseModelOutput('```\n' + JSON.stringify(validOutput()) + '\n```').ok)
+})
+
+// ───────────────────── Contrat de parsing — DOIT ÉCHOUER ─────────────────────
+// Tout ce qui n'est pas « objet nu » ou « fence couvrant tout » est rejeté en
+// erreur de forme, sortie brute conservée. Aucune plongée dans une structure,
+// aucune extraction de JSON niché.
+
+Deno.test('Tableau nu (même contenant un objet bien formé) → forme invalide', () => {
+  assert(!parseModelOutput(JSON.stringify(['a', 'b'])).ok)
+  assert(!parseModelOutput(JSON.stringify([validOutput()])).ok)
+})
+
+Deno.test('Tableau entouré de prose → forme invalide', () => {
+  assert(!parseModelOutput('Voici la sortie : ' + JSON.stringify([validOutput()])).ok)
+})
+
+Deno.test('Objet en fence NICHÉ dans un tableau → forme invalide (cas round 4)', () => {
+  const fenced = '```json\n' + JSON.stringify(validOutput()) + '\n```'
+  const enrobe = 'Voici la sortie : [' + fenced + ']'
+  const r = parseModelOutput(enrobe)
+  assert(!r.ok)
+  assertEquals(r.brut, enrobe) // sortie brute conservée pour inspection
+})
+
+Deno.test('Prose libre collée à un objet → forme invalide (hors contrat, à régénérer)', () => {
+  assert(!parseModelOutput('Voici la sortie : ' + JSON.stringify(validOutput())).ok)
+  assert(!parseModelOutput('Voici :\n' + JSON.stringify(validOutput()) + '\nMerci !').ok)
+})
+
+Deno.test('Scalaire / chaîne / nombre, enrobés ou non → forme invalide', () => {
+  assert(!parseModelOutput('42').ok)
+  assert(!parseModelOutput('"une chaîne"').ok)
+  assert(!parseModelOutput('La réponse est : 42').ok)
+})
+
+Deno.test('JSON invalide / texte non parsable → forme invalide, texte brut conservé', () => {
+  const r = parseModelOutput('je ne suis pas du JSON')
+  assert(!r.ok)
+  assertEquals(r.brut, 'je ne suis pas du JSON')
+})
+
+// ───────── Validation de forme (round 2, inchangée) : un objet est obtenu, puis
+// on exige les 7 champs, 3 titres non vides, champs texte non vides ─────────────
+
+Deno.test('Enveloppe {airbnb:{...}} → forme invalide (objet, mais pas la bonne forme)', () => {
   const r = parseModelOutput(JSON.stringify({ airbnb: validOutput() }))
   assert(!r.ok)
   assert(r.brut !== undefined) // sortie brute conservée pour inspection
 })
 
 Deno.test('Objet vide {} → forme invalide', () => {
-  const r = parseModelOutput('{}')
-  assert(!r.ok)
-})
-
-Deno.test('Tableau → forme invalide', () => {
-  assert(!parseModelOutput(JSON.stringify(['a', 'b'])).ok)
-  // tableau contenant un objet bien formé : reste invalide (le modèle a renvoyé un tableau)
-  assert(!parseModelOutput(JSON.stringify([validOutput()])).ok)
+  assert(!parseModelOutput('{}').ok)
 })
 
 Deno.test('Champ texte manquant → forme invalide', () => {
@@ -153,33 +196,4 @@ Deno.test('Titres en mauvais nombre → forme invalide', () => {
 
 Deno.test('Titre vide parmi les 3 → forme invalide', () => {
   assert(!parseModelOutput(JSON.stringify({ ...validOutput(), titres: ['A', '', 'C'] })).ok)
-})
-
-Deno.test('Sortie non JSON → forme invalide, texte brut conservé', () => {
-  const r = parseModelOutput('je ne suis pas du JSON')
-  assert(!r.ok)
-  assertEquals(r.brut, 'je ne suis pas du JSON')
-})
-
-// Round 3 : l'enrobage (prose/fences) ne doit JAMAIS changer la nature de la
-// valeur de premier niveau. Un tableau enrobé reste un tableau → rejet.
-
-Deno.test('Tableau bien formé ENTOURÉ DE PROSE → forme invalide (pas de plongée dans le tableau)', () => {
-  const r = parseModelOutput('Voici la sortie : ' + JSON.stringify([validOutput()]))
-  assert(!r.ok)
-})
-
-Deno.test('Objet bien formé entouré de prose (avant ET après) → reste valide', () => {
-  const r = parseModelOutput('Voici la sortie :\n' + JSON.stringify(validOutput()) + '\nMerci !')
-  assert(r.ok)
-  assertEquals(r.value.titres.length, 3)
-})
-
-Deno.test('Objet bien formé en bloc markdown → reste valide', () => {
-  const r = parseModelOutput('```json\n' + JSON.stringify(validOutput()) + '\n```')
-  assert(r.ok)
-})
-
-Deno.test('Scalaire entouré de prose → forme invalide (nature de premier niveau préservée)', () => {
-  assert(!parseModelOutput('La réponse est : 42').ok)
 })
