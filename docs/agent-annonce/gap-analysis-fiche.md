@@ -99,7 +99,7 @@ Corrections cumulées :
 | Compacteur de déchets | ✅ | `compacteur_dechets` | — |
 | Accessibilité PMR | ✅ | `accessible_mobilite_reduite` (+ `pmr_details`) | Atout positif. L'inverse (non accessible) alimente note_etat (§11). |
 | Wifi (présence) | ✅ | `wifi_statut` (non / en_cours / oui) | Présence seulement. Identifiants = opérationnel. |
-| Parking | ✅ | `parking_type` (+ `parking_sur_place_types[]`, `parking_payant_type`) | Rue gratuit / gratuit sur place (sous-terrain, abri, allée privée, garage individuel) / payant. Détail texte = opérationnel. |
+| Parking | ✅ | `parking_type` (+ `parking_sur_place_types[]`, `parking_payant_type`) | Rue gratuit / gratuit sur place (souterrain, abri, allée privée, garage individuel) / payant. Détail texte = opérationnel. |
 | Ascenseur | 🟡 | `ascenseur` | Double avec `section_logement.appartement.acces`, à réconcilier (cf. §1). |
 | Cinéma | 🟡 | `cinema` | **DOUBLON** avec `section_equip_spe_exterieur.dispose_salle_cinema`. À réconcilier en un seul signal côté mapper. |
 

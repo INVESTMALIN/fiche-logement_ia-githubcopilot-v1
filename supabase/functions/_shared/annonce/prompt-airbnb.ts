@@ -25,8 +25,9 @@ export const PROMPT_VERSION = 'airbnb-v1'
 // dégradé). Le champ « Le quartier » n'est PAS concerné (connaissance générale
 // de la ville autorisée), ni la description/les titres (ancrage sur la ville).
 const DEPLACEMENTS_AVEC_LOCALISATION = `### Comment se déplacer
+Section dédiée aux TRANSPORTS et aux DISTANCES : c'est ici — et nulle part ailleurs — qu'on donne les temps de trajet et les liaisons vers les points clés. Ne répète pas ce qui a été dit dans « Le quartier » (ambiance, commerces de proximité) : les deux sections sont complémentaires.
 Appuie-toi exclusivement sur le bloc localisation (points d'intérêt et distances réels). N'invente jamais un lieu ni une distance.
-Couvre uniquement les modes pertinents pour ce lieu : à pied (ce qu'on atteint facilement, avec distances/temps réels), à vélo (seulement si réaliste et agréable ici, jamais dans un centre pavé et piéton ou là où ça n'a pas de sens), transports en commun (ce qui dessert le quartier, sans inventer d'horaires). Termine par le stationnement : place privée sur place si elle existe, sinon stationnement public à proximité avec le conseil d'arriver tôt en haute saison. Adapte à chaque logement, jamais un paragraphe générique. Longueur indicative autour de 500 caractères.`
+Couvre uniquement les modes pertinents pour ce lieu : à pied (temps/distances réels vers les points clés et la gare), à vélo (seulement si réaliste et agréable ici, jamais dans un centre pavé et piéton ou là où ça n'a pas de sens), transports en commun (arrêt, métro, gare qui desservent le quartier, sans inventer d'horaires). Termine par le stationnement : place privée sur place si elle existe, sinon stationnement public à proximité avec le conseil d'arriver tôt en haute saison. Adapte à chaque logement, jamais un paragraphe générique. Longueur indicative autour de 500 caractères.`
 
 const DEPLACEMENTS_SANS_LOCALISATION = `### Comment se déplacer
 Aucune donnée de localisation fiable n'est disponible pour ce logement. Tu ne peux donc PAS rédiger cette section sans inventer : renvoie une chaîne vide ("") pour le champ comment_se_deplacer. N'indique aucune distance, aucun lieu, aucun arrêt ni aucun mode de transport, et ne propose pas de paragraphe générique. (Les autres champs restent à produire normalement.)`
@@ -57,7 +58,7 @@ Pour le contexte d'un lieu connu (caractère d'un quartier ou d'une ville), tu p
 
 ## Terminologie imposée
 
-- Cafetière devient machine à café. Ne donne jamais la marque de la machine.
+- Cafetière devient toujours « machine à café ». N'emploie jamais de variante embellie (« machine à expresso », « machine à espresso », « cafetière italienne », « percolateur »...) : c'est « machine à café », quelle que soit la machine. Ne donne jamais la marque.
 - Draps deviennent linge de lit.
 - Parking gratuit sur place devient stationnement gratuit sur place.
 
@@ -106,7 +107,7 @@ Indique le mode d'arrivée autonome selon ce qui est renseigné (boîte à clés
 Donne les informations de stationnement (public ou privé, gratuit ou payant, positionnement) puis les éventuelles instructions spécifiques. Longueur indicative autour de 500 caractères.
 
 ### Le quartier
-Décris le quartier de façon positive mais honnête, en t'appuyant sur le nom du quartier et les points d'intérêt proches (bloc localisation), le type de quartier comme signal d'ambiance, et la proximité réelle des commerces, transports et lieux à voir. Reste factuel. Tu ne traites jamais la sécurité, les nuisances ni le caractère socio-économique : ces sujets sont gérés séparément par le code. Tu restes sur le positif et le factuel. Longueur indicative autour de 500 caractères.
+Décris l'AMBIANCE du secteur et les COMMERCES et SERVICES de proximité (boulangerie, supermarché, restaurants, cafés, marché...). Appuie-toi sur le type de quartier comme signal d'ambiance (central, résidentiel, balnéaire, ancien, village...) et, pour situer le secteur et le rendre reconnaissable, sur quelques lieux ou points d'intérêt proches. Reste sur l'atmosphère et le quotidien à pied dans le quartier. NE traite PAS les transports ni les temps de trajet : ils sont réservés à « Comment se déplacer », pas de répétition entre les deux sections. Tu ne traites jamais la sécurité, les nuisances ni le caractère socio-économique : ces sujets sont gérés séparément par le code. Tu restes sur le positif et le factuel. Longueur indicative autour de 500 caractères.
 
 ${deplacements}
 
