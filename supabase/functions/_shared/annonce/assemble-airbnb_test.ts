@@ -160,3 +160,26 @@ Deno.test('Sortie non JSON → forme invalide, texte brut conservé', () => {
   assert(!r.ok)
   assertEquals(r.brut, 'je ne suis pas du JSON')
 })
+
+// Round 3 : l'enrobage (prose/fences) ne doit JAMAIS changer la nature de la
+// valeur de premier niveau. Un tableau enrobé reste un tableau → rejet.
+
+Deno.test('Tableau bien formé ENTOURÉ DE PROSE → forme invalide (pas de plongée dans le tableau)', () => {
+  const r = parseModelOutput('Voici la sortie : ' + JSON.stringify([validOutput()]))
+  assert(!r.ok)
+})
+
+Deno.test('Objet bien formé entouré de prose (avant ET après) → reste valide', () => {
+  const r = parseModelOutput('Voici la sortie :\n' + JSON.stringify(validOutput()) + '\nMerci !')
+  assert(r.ok)
+  assertEquals(r.value.titres.length, 3)
+})
+
+Deno.test('Objet bien formé en bloc markdown → reste valide', () => {
+  const r = parseModelOutput('```json\n' + JSON.stringify(validOutput()) + '\n```')
+  assert(r.ok)
+})
+
+Deno.test('Scalaire entouré de prose → forme invalide (nature de premier niveau préservée)', () => {
+  assert(!parseModelOutput('La réponse est : 42').ok)
+})

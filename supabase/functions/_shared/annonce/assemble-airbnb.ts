@@ -47,11 +47,19 @@ export type ModelOutputResult =
   | { ok: false; reason: string; brut: unknown }
 
 /**
- * Récupère la valeur JSON de la sortie brute, tolérant aux fences markdown et au
- * texte parasite (on ne force pas response_format → agnostique du modèle). Parse
- * direct d'abord, ce qui PRÉSERVE la forme réelle (objet, tableau ou enveloppe :
- * la validation tranchera) ; à défaut, extraction du 1er objet { ... } d'une
- * éventuelle prose autour.
+ * Récupère la valeur JSON de la sortie brute, tolérant aux fences markdown et à
+ * la prose d'enrobage (on ne force pas response_format → agnostique du modèle).
+ *
+ * Règle générale : l'enrobage (prose/fences) peut être retiré, mais ne doit
+ * JAMAIS changer la NATURE de la valeur de premier niveau. Après nettoyage, le
+ * premier niveau doit être un objet, sinon c'est une erreur de forme.
+ *  - parse direct d'abord : préserve la nature réelle (objet / tableau / scalaire) ;
+ *    la validation de forme rejettera tout ce qui n'est pas un objet ;
+ *  - à défaut (prose autour d'un JSON non-fencé), on ne tolère QUE « un objet
+ *    entouré de texte ». Le 1er token structurel décide de la nature de premier
+ *    niveau : si un `[` précède le 1er `{` (ou s'il n'y a pas de `{`), le premier
+ *    niveau est un tableau / scalaire → rejet. On ne plonge jamais dans un
+ *    tableau pour en extraire un objet intérieur.
  */
 function parseJsonLoose(content: string): { ok: true; value: unknown } | { ok: false; reason: string } {
   let t = (content || '').trim()
@@ -60,13 +68,19 @@ function parseJsonLoose(content: string): { ok: true; value: unknown } | { ok: f
   try {
     return { ok: true, value: JSON.parse(t) }
   } catch {
-    // fallback : prose autour d'un objet JSON
+    // Enrobage (prose autour d'un JSON non-fencé) : tolérance limitée ci-dessous.
   }
-  const start = t.indexOf('{')
+  const firstBrace = t.indexOf('{')
+  const firstBracket = t.indexOf('[')
+  // Nature de premier niveau décidée par le 1er token structurel : pas de `{`,
+  // ou un `[` avant → ce n'est pas un objet enrobé → erreur de forme.
+  if (firstBrace === -1 || (firstBracket !== -1 && firstBracket < firstBrace)) {
+    return { ok: false, reason: 'valeur de premier niveau non-objet (tableau, scalaire ou prose sans objet)' }
+  }
   const end = t.lastIndexOf('}')
-  if (start === -1 || end === -1 || end < start) return { ok: false, reason: 'aucun JSON exploitable' }
+  if (end < firstBrace) return { ok: false, reason: 'objet JSON incomplet dans la sortie' }
   try {
-    return { ok: true, value: JSON.parse(t.slice(start, end + 1)) }
+    return { ok: true, value: JSON.parse(t.slice(firstBrace, end + 1)) }
   } catch (e) {
     return { ok: false, reason: `JSON non parsable (${msg(e)})` }
   }
@@ -105,7 +119,7 @@ function raisonFormeInvalide(value: unknown): string | null {
  */
 export function parseModelOutput(content: string): ModelOutputResult {
   const parsed = parseJsonLoose(content)
-  if (!parsed.ok) return { ok: false, reason: `sortie modèle non JSON: ${parsed.reason}`, brut: content }
+  if (!parsed.ok) return { ok: false, reason: `sortie modèle invalide: ${parsed.reason}`, brut: content }
   const raison = raisonFormeInvalide(parsed.value)
   if (raison) return { ok: false, reason: `forme invalide: ${raison}`, brut: parsed.value }
   const o = parsed.value as Record<string, unknown>
