@@ -7,6 +7,7 @@ import {
   assembleAirbnbOutput,
   buildConformite,
   CAMERA_EXTERIEURE_DISCLOSURE,
+  parseModelOutput,
 } from './assemble-airbnb.ts'
 import type { CodeZone } from './types.ts'
 
@@ -79,4 +80,83 @@ Deno.test('Caméra intérieure → drapeau de conformité levé, ZÉRO texte dan
 
 Deno.test('Pas de caméra intérieure → drapeau de conformité à false', () => {
   assertEquals(buildConformite(makeCode()).camera_interieure_signalee, false)
+})
+
+// ───────────────────── Validation de forme de la sortie modèle ─────────────────────
+
+// deno-lint-ignore no-explicit-any
+function validOutput(): Record<string, any> {
+  return {
+    titres: ['Titre A', 'Titre B', 'Titre C'],
+    description: 'Une description.',
+    logement: 'Le logement.',
+    acces_voyageurs: 'Accès.',
+    quartier: 'Quartier.',
+    comment_se_deplacer: 'Déplacements.',
+    autres_remarques: 'Remarques.',
+  }
+}
+
+Deno.test('Forme valide → ok, les 7 champs récupérés', () => {
+  const r = parseModelOutput(JSON.stringify(validOutput()))
+  assert(r.ok)
+  assertEquals(r.value.titres.length, 3)
+  assertEquals(r.value.description, 'Une description.')
+  assertEquals(r.value.autres_remarques, 'Remarques.')
+})
+
+Deno.test('Forme valide tolère les fences markdown et la prose autour', () => {
+  const json = JSON.stringify(validOutput())
+  assert(parseModelOutput('```json\n' + json + '\n```').ok)
+  assert(parseModelOutput('Voici la sortie :\n' + json).ok)
+})
+
+Deno.test('Enveloppe {airbnb:{...}} → forme invalide (pas de faux succès)', () => {
+  const r = parseModelOutput(JSON.stringify({ airbnb: validOutput() }))
+  assert(!r.ok)
+  assert(r.brut !== undefined) // sortie brute conservée pour inspection
+})
+
+Deno.test('Objet vide {} → forme invalide', () => {
+  const r = parseModelOutput('{}')
+  assert(!r.ok)
+})
+
+Deno.test('Tableau → forme invalide', () => {
+  assert(!parseModelOutput(JSON.stringify(['a', 'b'])).ok)
+  // tableau contenant un objet bien formé : reste invalide (le modèle a renvoyé un tableau)
+  assert(!parseModelOutput(JSON.stringify([validOutput()])).ok)
+})
+
+Deno.test('Champ texte manquant → forme invalide', () => {
+  const o = validOutput()
+  delete o.quartier
+  assert(!parseModelOutput(JSON.stringify(o)).ok)
+})
+
+Deno.test('Champ texte vide → forme invalide', () => {
+  const o = validOutput()
+  o.description = '   '
+  assert(!parseModelOutput(JSON.stringify(o)).ok)
+})
+
+Deno.test('Titres absents → forme invalide', () => {
+  const o = validOutput()
+  delete o.titres
+  assert(!parseModelOutput(JSON.stringify(o)).ok)
+})
+
+Deno.test('Titres en mauvais nombre → forme invalide', () => {
+  assert(!parseModelOutput(JSON.stringify({ ...validOutput(), titres: ['A', 'B'] })).ok)
+  assert(!parseModelOutput(JSON.stringify({ ...validOutput(), titres: ['A', 'B', 'C', 'D'] })).ok)
+})
+
+Deno.test('Titre vide parmi les 3 → forme invalide', () => {
+  assert(!parseModelOutput(JSON.stringify({ ...validOutput(), titres: ['A', '', 'C'] })).ok)
+})
+
+Deno.test('Sortie non JSON → forme invalide, texte brut conservé', () => {
+  const r = parseModelOutput('je ne suis pas du JSON')
+  assert(!r.ok)
+  assertEquals(r.brut, 'je ne suis pas du JSON')
 })

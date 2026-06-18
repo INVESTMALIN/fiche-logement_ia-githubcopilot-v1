@@ -173,19 +173,15 @@ serve(async (req: Request) => {
   }
   const latenceMs = Date.now() - startedAt
 
-  // 5) Parse + assemblage (prose du modèle + blocs code).
-  let modelOut
-  try {
-    modelOut = parseModelOutput(mr.content)
-  } catch (e) {
-    const safe = redactSecret(msg(e), openrouterKey)
-    console.error(`[annonce-generate] sortie modèle invalide fiche=${ficheId}:`, safe)
-    return json({ success: false, error: 'MODEL_OUTPUT_INVALID', message: safe }, 502)
-  }
-  const outputAssemble = assembleAirbnbOutput(modelOut, contrat.code)
+  // 5) VALIDATION DE FORME de la sortie modèle (présence des 7 champs, bons
+  //    types, 3 titres non vides, champs texte non vides). Une forme invalide
+  //    n'est PAS une annonce : c'est une erreur de génération. On ne marque
+  //    jamais `genere` sur une forme invalide — sinon faux succès en champs vides.
+  const parsed = parseModelOutput(mr.content)
 
   const nowISO = new Date().toISOString()
-  const generationMeta = {
+  // deno-lint-ignore no-explicit-any
+  const generationMeta: any = {
     modele_demande: model,
     modele_servi: mr.model,
     prompt_version: PROMPT_VERSION,
@@ -206,28 +202,56 @@ serve(async (req: Request) => {
     generated_at: nowISO,
   }
 
-  // 6) Upsert dans agent_outputs (1 ligne par (fiche, plateforme), on écrase).
-  const row = {
-    fiche_id: ficheId,
-    plateforme,
-    output_assemble: outputAssemble,
-    output_modele_brut: modelOut,
-    contrat_entree: contrat,
-    modele: model,
-    prompt_version: PROMPT_VERSION,
-    generation_meta: generationMeta,
-    statut: 'genere',
-    // Sur régénération (upsert UPDATE), les DEFAULT now() ne se rejouent pas →
-    // on rafraîchit explicitement (pas d'historique en v1, on écrase).
-    generated_at: nowISO,
-    updated_at: nowISO,
+  const statut = parsed.ok ? 'genere' : 'erreur'
+  // Sortie brute TOUJOURS conservée (succès = objet validé, échec = brut parsé
+  // ou texte non-JSON) pour que l'inspection ne perde jamais ce que le modèle a
+  // rendu. Pas d'assemblage si la forme est invalide.
+  const outputModeleBrut = parsed.ok ? parsed.value : parsed.brut
+  const outputAssemble = parsed.ok ? assembleAirbnbOutput(parsed.value, contrat.code) : null
+  let messageErreur: string | null = null
+  if (!parsed.ok) {
+    messageErreur = redactSecret(parsed.reason, openrouterKey)
+    generationMeta.erreur = { type: 'MODEL_OUTPUT_INVALID', message: messageErreur }
+    console.error(`[annonce-generate] sortie modèle invalide fiche=${ficheId}: ${messageErreur}`)
   }
+
+  // 6) Upsert agent_outputs (1 ligne par (fiche, plateforme), on écrase). On
+  //    persiste TOUJOURS — succès (`genere`) comme échec de forme (`erreur`) —
+  //    pour garder la sortie brute inspectable et rendre la génération réessayable.
   const { error: upErr } = await service
     .from('agent_outputs')
-    .upsert(row, { onConflict: 'fiche_id,plateforme' })
+    .upsert({
+      fiche_id: ficheId,
+      plateforme,
+      output_assemble: outputAssemble,
+      output_modele_brut: outputModeleBrut,
+      contrat_entree: contrat,
+      modele: model,
+      prompt_version: PROMPT_VERSION,
+      generation_meta: generationMeta,
+      statut,
+      // Sur régénération (upsert UPDATE), les DEFAULT now() ne se rejouent pas →
+      // on rafraîchit explicitement (pas d'historique en v1, on écrase).
+      generated_at: nowISO,
+      updated_at: nowISO,
+    }, { onConflict: 'fiche_id,plateforme' })
   if (upErr) {
     console.error('[annonce-generate] upsert agent_outputs échoué:', upErr)
     return json({ success: false, error: 'DB_WRITE_ERROR', message: upErr.message }, 500)
+  }
+
+  // Forme invalide : erreur de génération identifiable et réessayable (la ligne
+  // est en statut `erreur`, la sortie brute est conservée pour inspection).
+  if (!parsed.ok) {
+    return json({
+      success: false,
+      error: 'MODEL_OUTPUT_INVALID',
+      message: messageErreur,
+      statut: 'erreur',
+      ficheId,
+      plateforme,
+      modele: model,
+    }, 502)
   }
 
   console.log(

@@ -25,47 +25,101 @@ export interface AirbnbModelOutput {
   autres_remarques: string
 }
 
-const asString = (v: unknown): string => (typeof v === 'string' ? v : '')
-const asStringArray = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
+const TITRES_ATTENDUS = 3
+const CHAMPS_TEXTE = [
+  'description',
+  'logement',
+  'acces_voyageurs',
+  'quartier',
+  'comment_se_deplacer',
+  'autres_remarques',
+] as const
 
 /**
- * Extrait l'objet JSON de la sortie brute du modèle, tolérant aux fences
- * markdown et au texte parasite autour (on ne force pas response_format pour
- * rester agnostique du modèle OpenRouter choisi).
+ * Résultat de la validation de forme : succès (7 champs propres) ou rejet, avec
+ * la raison ET la sortie brute préservée. On ne lève pas et on ne normalise
+ * JAMAIS en champs vides : une forme invalide est une erreur de génération que
+ * l'appelant persiste en statut `erreur` (réessayable, inspectable), pas un
+ * faux succès silencieux.
  */
-function extractJsonObject(text: string): string {
-  let t = (text || '').trim()
+export type ModelOutputResult =
+  | { ok: true; value: AirbnbModelOutput }
+  | { ok: false; reason: string; brut: unknown }
+
+/**
+ * Récupère la valeur JSON de la sortie brute, tolérant aux fences markdown et au
+ * texte parasite (on ne force pas response_format → agnostique du modèle). Parse
+ * direct d'abord, ce qui PRÉSERVE la forme réelle (objet, tableau ou enveloppe :
+ * la validation tranchera) ; à défaut, extraction du 1er objet { ... } d'une
+ * éventuelle prose autour.
+ */
+function parseJsonLoose(content: string): { ok: true; value: unknown } | { ok: false; reason: string } {
+  let t = (content || '').trim()
   const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i)
   if (fence) t = fence[1].trim()
+  try {
+    return { ok: true, value: JSON.parse(t) }
+  } catch {
+    // fallback : prose autour d'un objet JSON
+  }
   const start = t.indexOf('{')
   const end = t.lastIndexOf('}')
-  if (start === -1 || end === -1 || end < start) {
-    throw new Error('aucun objet JSON détecté dans la sortie du modèle')
+  if (start === -1 || end === -1 || end < start) return { ok: false, reason: 'aucun JSON exploitable' }
+  try {
+    return { ok: true, value: JSON.parse(t.slice(start, end + 1)) }
+  } catch (e) {
+    return { ok: false, reason: `JSON non parsable (${msg(e)})` }
   }
-  return t.slice(start, end + 1)
 }
 
 /**
- * Parse + normalise la sortie du modèle vers les 7 champs attendus. Champs
- * manquants tolérés (chaîne vide / tableau vide) ; lève si rien de parsable.
+ * Condition EXHAUSTIVE de validité de FORME (pas de qualité : ni longueurs cibles
+ * ni style, traités ailleurs). Renvoie la raison du rejet, ou null si valide.
+ * Forme valide = un objet (ni null ni tableau) ; `titres` = tableau d'exactement
+ * 3 chaînes non vides ; les 6 champs texte présents, de type chaîne, non vides.
+ * Ferme toute la classe des sorties mal formées (enveloppe, vide, tableau, champ
+ * manquant ou vide, mauvais type, mauvais nombre de titres) d'un seul tenant.
  */
-export function parseModelOutput(content: string): AirbnbModelOutput {
-  // deno-lint-ignore no-explicit-any
-  let obj: any
-  try {
-    obj = JSON.parse(extractJsonObject(content))
-  } catch (e) {
-    throw new Error(`sortie modèle non parsable en JSON: ${msg(e)}`)
+function raisonFormeInvalide(value: unknown): string | null {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return 'objet JSON attendu (ni null, ni tableau)'
   }
-  if (!obj || typeof obj !== 'object') throw new Error('sortie modèle: objet JSON attendu')
+  const o = value as Record<string, unknown>
+  if (!Array.isArray(o.titres)) return 'titres absent ou non-tableau'
+  if (o.titres.length !== TITRES_ATTENDUS) return `titres: ${TITRES_ATTENDUS} attendus, ${o.titres.length} reçu(s)`
+  if (!o.titres.every((t) => typeof t === 'string' && t.trim() !== '')) {
+    return 'titres: chaque titre doit être une chaîne non vide'
+  }
+  for (const champ of CHAMPS_TEXTE) {
+    const v = o[champ]
+    if (typeof v !== 'string') return `champ ${champ} absent ou non-chaîne`
+    if (v.trim() === '') return `champ ${champ} vide`
+  }
+  return null
+}
+
+/**
+ * Parse + valide la FORME de la sortie modèle (les 7 champs de prose attendus).
+ * Toute forme non conforme → { ok:false, reason, brut } (sortie brute conservée
+ * pour inspection), jamais de normalisation silencieuse en champs vides.
+ */
+export function parseModelOutput(content: string): ModelOutputResult {
+  const parsed = parseJsonLoose(content)
+  if (!parsed.ok) return { ok: false, reason: `sortie modèle non JSON: ${parsed.reason}`, brut: content }
+  const raison = raisonFormeInvalide(parsed.value)
+  if (raison) return { ok: false, reason: `forme invalide: ${raison}`, brut: parsed.value }
+  const o = parsed.value as Record<string, unknown>
   return {
-    titres: asStringArray(obj.titres),
-    description: asString(obj.description),
-    logement: asString(obj.logement),
-    acces_voyageurs: asString(obj.acces_voyageurs),
-    quartier: asString(obj.quartier),
-    comment_se_deplacer: asString(obj.comment_se_deplacer),
-    autres_remarques: asString(obj.autres_remarques),
+    ok: true,
+    value: {
+      titres: o.titres as string[],
+      description: o.description as string,
+      logement: o.logement as string,
+      acces_voyageurs: o.acces_voyageurs as string,
+      quartier: o.quartier as string,
+      comment_se_deplacer: o.comment_se_deplacer as string,
+      autres_remarques: o.autres_remarques as string,
+    },
   }
 }
 
