@@ -75,6 +75,14 @@ export function parseModelOutput(content: string): AirbnbModelOutput {
 export const ECHANGES_VOYAGEURS_AIRBNB =
   'Nous assurons des échanges fluides via la plateforme de réservation Airbnb. Nous restons disponibles avant, pendant et après votre venue pour tout besoin ou demande complémentaire.'
 
+// Caméra extérieure : disclosure OBLIGATOIRE (Airbnb impose la déclaration des
+// caméras extérieures). Le modèle ne voit jamais le signal caméra (filtré hors
+// zone modèle par le mapper), donc personne ne la mentionne sans cette injection
+// déterministe à l'assemblage. Wording validé par Julien (le doc des phrases
+// laissait cette mention en arbitrage, sans verbatim).
+export const CAMERA_EXTERIEURE_DISCLOSURE =
+  "Une caméra de surveillance est installée à l'extérieur du logement."
+
 // note_etat — état du logement (verdict de la grille). Positif = rien.
 const NOTE_ETAT_LOGEMENT: Record<string, string> = {
   etat_moyen:
@@ -162,6 +170,33 @@ export function buildNoteQuartier(code: CodeZone): string {
   return parts.join(' ')
 }
 
+/**
+ * Réinjecte la disclosure caméra extérieure en fin d'`autres_remarques` (le
+ * prompt v1 place le signalement des caméras dans ce bloc). Phrase verbatim,
+ * uniquement si la fiche signale une caméra extérieure ; sinon le texte du
+ * modèle est renvoyé inchangé.
+ */
+function withCameraDisclosure(autresRemarques: string, code: CodeZone): string {
+  if (!code.cameras.exterieures) return autresRemarques
+  const base = (autresRemarques || '').trim()
+  return base ? `${base} ${CAMERA_EXTERIEURE_DISCLOSURE}` : CAMERA_EXTERIEURE_DISCLOSURE
+}
+
+/**
+ * Drapeau de conformité (purement informatif, hors texte d'annonce) : une caméra
+ * intérieure signalée n'est JAMAIS mentionnée dans l'annonce (catégorie interdite
+ * par Airbnb depuis avril 2024), mais on en lève un signal pour traçabilité. Le
+ * champ est nommé largement : il couvre toute caméra intérieure signalée (le cas
+ * réel n'étant pas forcément un espace commun). Le statut de génération reste normal.
+ */
+export interface Conformite {
+  camera_interieure_signalee: boolean
+}
+
+export function buildConformite(code: CodeZone): Conformite {
+  return { camera_interieure_signalee: code.cameras.interieures_communs === true }
+}
+
 // ───────────────────── Assemblage final ─────────────────────
 
 export interface AirbnbAssembled {
@@ -197,7 +232,8 @@ export function assembleAirbnbOutput(model: AirbnbModelOutput, code: CodeZone): 
       echanges_voyageurs: ECHANGES_VOYAGEURS_AIRBNB,
       quartier: model.quartier,
       comment_se_deplacer: model.comment_se_deplacer,
-      autres_remarques: model.autres_remarques,
+      // Disclosure caméra extérieure réinjectée ici (le modèle ne la voit jamais).
+      autres_remarques: withCameraDisclosure(model.autres_remarques, code),
       mentions_reglementaires: buildMentionsReglementaires(code),
       note_etat: buildNoteEtat(code),
       note_quartier: buildNoteQuartier(code),

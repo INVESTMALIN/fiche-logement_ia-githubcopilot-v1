@@ -32,7 +32,7 @@ import { mapFicheToContrat } from '../_shared/annonce/mapper.ts'
 import { ensureLocalisationFaits } from '../_shared/localisation/orchestrator.ts'
 import { buildUserMessageAirbnb, PROMPT_VERSION, SYSTEM_PROMPT_AIRBNB } from '../_shared/annonce/prompt-airbnb.ts'
 import { callOpenRouter, OpenRouterError, redactSecret } from '../_shared/annonce/openrouter.ts'
-import { assembleAirbnbOutput, parseModelOutput } from '../_shared/annonce/assemble-airbnb.ts'
+import { assembleAirbnbOutput, buildConformite, parseModelOutput } from '../_shared/annonce/assemble-airbnb.ts'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -200,6 +200,9 @@ serve(async (req: Request) => {
     openrouter_generation_id: mr.generationId,
     finish_reason: mr.finishReason,
     localisation: localisationMeta,
+    // Conformité (informatif) : caméra intérieure signalée → jamais dans
+    // l'annonce, juste tracée. Caméra extérieure → disclosure dans autres_remarques.
+    conformite: buildConformite(contrat.code),
     generated_at: nowISO,
   }
 
