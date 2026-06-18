@@ -197,3 +197,37 @@ Deno.test('Titres en mauvais nombre → forme invalide', () => {
 Deno.test('Titre vide parmi les 3 → forme invalide', () => {
   assert(!parseModelOutput(JSON.stringify({ ...validOutput(), titres: ['A', '', 'C'] })).ok)
 })
+
+// ───── Point 1 : dégradation gracieuse quand la localisation est absente ─────
+// Sans localisation, le champ déplacements peut être vide (on n'invente pas) ;
+// avec localisation, il reste exigé non vide. La relaxation ne touche QUE ce champ.
+
+Deno.test('Localisation absente → comment_se_deplacer vide accepté (dégradation)', () => {
+  const o = { ...validOutput(), comment_se_deplacer: '' }
+  const r = parseModelOutput(JSON.stringify(o), { localisationDisponible: false })
+  assert(r.ok)
+  assertEquals(r.value.comment_se_deplacer, '')
+})
+
+Deno.test('Localisation présente → comment_se_deplacer vide rejeté (strict, défaut)', () => {
+  const o = { ...validOutput(), comment_se_deplacer: '' }
+  assert(!parseModelOutput(JSON.stringify(o), { localisationDisponible: true }).ok)
+  assert(!parseModelOutput(JSON.stringify(o)).ok) // défaut = strict
+})
+
+Deno.test('Localisation absente ne relaxe QUE déplacements (description vide → rejet)', () => {
+  const o = { ...validOutput(), description: '' }
+  assert(!parseModelOutput(JSON.stringify(o), { localisationDisponible: false }).ok)
+})
+
+// ───── Point 2 : ensemble EXACT de clés top-level (les 7, aucune autre) ─────
+
+Deno.test('Clé top-level en trop → forme invalide (dérive du modèle détectée)', () => {
+  assert(!parseModelOutput(JSON.stringify({ ...validOutput(), nombre_voyageurs: 4 })).ok)
+  assert(!parseModelOutput(JSON.stringify({ ...validOutput(), mentions_reglementaires: {} })).ok)
+})
+
+Deno.test('Exactement les 7 clés attendues → accepté', () => {
+  assertEquals(Object.keys(validOutput()).length, 7)
+  assert(parseModelOutput(JSON.stringify(validOutput())).ok)
+})

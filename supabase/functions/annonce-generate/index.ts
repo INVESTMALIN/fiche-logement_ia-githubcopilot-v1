@@ -30,7 +30,7 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { mapFicheToContrat } from '../_shared/annonce/mapper.ts'
 import { ensureLocalisationFaits } from '../_shared/localisation/orchestrator.ts'
-import { buildUserMessageAirbnb, PROMPT_VERSION, SYSTEM_PROMPT_AIRBNB } from '../_shared/annonce/prompt-airbnb.ts'
+import { buildSystemPromptAirbnb, buildUserMessageAirbnb, PROMPT_VERSION } from '../_shared/annonce/prompt-airbnb.ts'
 import { callOpenRouter, OpenRouterError, redactSecret } from '../_shared/annonce/openrouter.ts'
 import { assembleAirbnbOutput, buildConformite, parseModelOutput } from '../_shared/annonce/assemble-airbnb.ts'
 
@@ -142,6 +142,9 @@ serve(async (req: Request) => {
   //    localisation (le modèle reste sur la ville, sans inventer) et on le trace.
   const loc = await ensureLocalisationFaits({ service, ficheId, logTag: 'annonce-generate' })
   const faits = loc.ok ? loc.faits : null
+  // Pilote l'instruction prompt ET la validation : sans localisation, le champ
+  // « comment se déplacer » est laissé vide (pas d'invention de distances).
+  const localisationDisponible = faits !== null
   // deno-lint-ignore no-explicit-any
   const localisationMeta: any = loc.ok
     ? { statut: loc.reused ? 'reuse' : 'recompute', degraded: loc.faits.meta.degraded }
@@ -159,12 +162,13 @@ serve(async (req: Request) => {
   }
   // @ts-ignore — Deno global
   const model = modeleParam || Deno.env.get('OPENROUTER_DEFAULT_MODEL') || FALLBACK_MODEL
+  const systemPrompt = buildSystemPromptAirbnb({ localisationDisponible })
   const userMessage = buildUserMessageAirbnb(contrat.modele, faits)
 
   const startedAt = Date.now()
   let mr
   try {
-    mr = await callOpenRouter({ apiKey: openrouterKey, model, system: SYSTEM_PROMPT_AIRBNB, user: userMessage })
+    mr = await callOpenRouter({ apiKey: openrouterKey, model, system: systemPrompt, user: userMessage })
   } catch (e) {
     // Filet anti-fuite : OpenRouterError est déjà redacté, on re-scrub par sécurité.
     const safe = redactSecret(e instanceof OpenRouterError ? e.message : msg(e), openrouterKey)
@@ -177,7 +181,8 @@ serve(async (req: Request) => {
   //    types, 3 titres non vides, champs texte non vides). Une forme invalide
   //    n'est PAS une annonce : c'est une erreur de génération. On ne marque
   //    jamais `genere` sur une forme invalide — sinon faux succès en champs vides.
-  const parsed = parseModelOutput(mr.content)
+  //    Sans localisation, `comment_se_deplacer` vide est toléré (dégradation).
+  const parsed = parseModelOutput(mr.content, { localisationDisponible })
 
   const nowISO = new Date().toISOString()
   // deno-lint-ignore no-explicit-any

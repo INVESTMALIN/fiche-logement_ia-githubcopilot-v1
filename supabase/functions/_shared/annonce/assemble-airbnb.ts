@@ -26,14 +26,21 @@ export interface AirbnbModelOutput {
 }
 
 const TITRES_ATTENDUS = 3
+const CHAMP_DEPLACEMENTS = 'comment_se_deplacer'
 const CHAMPS_TEXTE = [
   'description',
   'logement',
   'acces_voyageurs',
   'quartier',
-  'comment_se_deplacer',
+  CHAMP_DEPLACEMENTS,
   'autres_remarques',
 ] as const
+
+// Ensemble EXACT des clés top-level autorisées (les 7 champs de prose, et aucune
+// autre). Toute clé en trop — surtout une clé déterministe/sensible que le modèle
+// ne doit jamais produire (nombre_voyageurs, mentions_reglementaires…) — est un
+// dérapage à détecter, pas à avaler en silence.
+const CLES_AUTORISEES: ReadonlySet<string> = new Set(['titres', ...CHAMPS_TEXTE])
 
 /**
  * Résultat de la validation de forme : succès (7 champs propres) ou rejet, avec
@@ -87,11 +94,16 @@ function parseTopLevelJson(content: string): { ok: true; value: unknown } | { ok
  * Ferme toute la classe des sorties mal formées (enveloppe, vide, tableau, champ
  * manquant ou vide, mauvais type, mauvais nombre de titres) d'un seul tenant.
  */
-function raisonFormeInvalide(value: unknown): string | null {
+function raisonFormeInvalide(value: unknown, opts: ParseOptions): string | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return 'objet JSON attendu (ni null, ni tableau)'
   }
   const o = value as Record<string, unknown>
+  // Ensemble EXACT de clés : aucune clé top-level inconnue (signal de dérive du
+  // modèle vers du déterministe/sensible). La présence des 7 requises est
+  // garantie par les contrôles ci-dessous.
+  const clesEnTrop = Object.keys(o).filter((k) => !CLES_AUTORISEES.has(k))
+  if (clesEnTrop.length) return `clé(s) top-level inconnue(s): ${clesEnTrop.join(', ')}`
   if (!Array.isArray(o.titres)) return 'titres absent ou non-tableau'
   if (o.titres.length !== TITRES_ATTENDUS) return `titres: ${TITRES_ATTENDUS} attendus, ${o.titres.length} reçu(s)`
   if (!o.titres.every((t) => typeof t === 'string' && t.trim() !== '')) {
@@ -100,20 +112,39 @@ function raisonFormeInvalide(value: unknown): string | null {
   for (const champ of CHAMPS_TEXTE) {
     const v = o[champ]
     if (typeof v !== 'string') return `champ ${champ} absent ou non-chaîne`
-    if (v.trim() === '') return `champ ${champ} vide`
+    // `comment_se_deplacer` peut être vide UNIQUEMENT en l'absence de localisation
+    // (dégradation gracieuse : pas de distances → on n'invente pas). Tous les
+    // autres champs texte restent exigés non vides, et déplacements aussi dès que
+    // la localisation est disponible.
+    const videTolere = champ === CHAMP_DEPLACEMENTS && !opts.localisationDisponible
+    if (!videTolere && v.trim() === '') return `champ ${champ} vide`
   }
   return null
 }
 
+/** Options de parsing/validation. */
+export interface ParseOptions {
+  /**
+   * Localisation enrichie disponible ? Si non, `comment_se_deplacer` peut être
+   * vide (dégradation gracieuse : pas de distances → on n'invente pas). Défaut :
+   * true (mode strict, le champ déplacements est exigé non vide).
+   */
+  localisationDisponible: boolean
+}
+
 /**
- * Parse + valide la FORME de la sortie modèle (les 7 champs de prose attendus).
- * Toute forme non conforme → { ok:false, reason, brut } (sortie brute conservée
- * pour inspection), jamais de normalisation silencieuse en champs vides.
+ * Parse + valide la FORME de la sortie modèle (les 7 champs de prose attendus,
+ * et AUCUNE clé en trop). Toute forme non conforme → { ok:false, reason, brut }
+ * (sortie brute conservée pour inspection), jamais de normalisation silencieuse.
+ * `comment_se_deplacer` n'est toléré vide que si la localisation est absente.
  */
-export function parseModelOutput(content: string): ModelOutputResult {
+export function parseModelOutput(
+  content: string,
+  opts: ParseOptions = { localisationDisponible: true },
+): ModelOutputResult {
   const parsed = parseTopLevelJson(content)
   if (!parsed.ok) return { ok: false, reason: `sortie modèle invalide: ${parsed.reason}`, brut: content }
-  const raison = raisonFormeInvalide(parsed.value)
+  const raison = raisonFormeInvalide(parsed.value, opts)
   if (raison) return { ok: false, reason: `forme invalide: ${raison}`, brut: parsed.value }
   const o = parsed.value as Record<string, unknown>
   return {
