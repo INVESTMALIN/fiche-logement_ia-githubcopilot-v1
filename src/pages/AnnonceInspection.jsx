@@ -5,7 +5,7 @@
 // appelle l'Edge Function annonce-generate, et on lit l'annonce assemblée dans
 // une mise en page soignée (charte gold/ink). Accès réservé super_admin (route).
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, ArrowLeft, Hammer, Loader2, Search, Sparkles } from 'lucide-react'
 import {
@@ -186,9 +186,17 @@ export default function AnnonceInspection() {
   const [genError, setGenError] = useState('')
   const [resultat, setResultat] = useState(null)
 
+  // Id de la fiche réellement active (miroir synchrone de la sélection). Sert à
+  // détecter une réponse de génération PÉRIMÉE : si la fiche active a changé
+  // pendant l'appel en vol, on jette la réponse au lieu de l'afficher sous la
+  // mauvaise fiche. Un ref (et pas l'état) car on doit lire la valeur courante
+  // au retour de l'await, pas celle capturée à l'envoi.
+  const ficheActiveRef = useRef(null)
+
   // Changer de fiche remet l'affichage à zéro : on ne lit jamais un résultat (ou
   // une erreur) qui appartiendrait à une autre fiche que la fiche active.
   const selectionnerFiche = (f) => {
+    ficheActiveRef.current = f?.id ?? null
     setFicheSelectionnee(f)
     setResultat(null)
     setGenError('')
@@ -199,6 +207,7 @@ export default function AnnonceInspection() {
     setSearching(true)
     setSearchError('')
     setResultatsRecherche(null)
+    ficheActiveRef.current = null
     setFicheSelectionnee(null)
     setResultat(null)
     setGenError('')
@@ -214,10 +223,17 @@ export default function AnnonceInspection() {
 
   const lancerGeneration = async () => {
     if (!ficheSelectionnee || generating || plateforme !== 'airbnb') return
+    const ficheIdLance = ficheSelectionnee.id
     setGenerating(true)
     setGenError('')
     setResultat(null)
-    const res = await generateAnnonce({ ficheId: ficheSelectionnee.id, plateforme, modele })
+    const res = await generateAnnonce({ ficheId: ficheIdLance, plateforme, modele })
+    // Réponse périmée : la fiche active a changé pendant l'appel → on la jette en
+    // silence (mais on libère bien l'état "en cours" pour ne pas figer le bouton).
+    if (ficheActiveRef.current !== ficheIdLance) {
+      setGenerating(false)
+      return
+    }
     setGenerating(false)
     if (!res.ok) {
       setGenError(res.message)

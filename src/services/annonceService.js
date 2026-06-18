@@ -6,11 +6,15 @@
 
 import { supabase } from '../lib/supabaseClient'
 
-/** Modèles proposés à la comparaison (identifiants OpenRouter valides). */
+// Modèles proposés à la comparaison (identifiants OpenRouter relevés sur
+// OpenRouter). Gemini est gardé VOLONTAIREMENT : comparer des providers
+// différents est tout l'intérêt d'OpenRouter. (La consigne « pas Gemini »
+// concernait l'outil de review — Codex, pas Gemini Code Assist — pas les
+// modèles de génération.)
 export const MODELES_ANNONCE = [
   { id: 'anthropic/claude-sonnet-4.6', label: 'Claude Sonnet 4.6' },
-  { id: 'openai/gpt-5.1', label: 'GPT-5.1' },
-  { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'openai/gpt-5.5', label: 'GPT-5.5' },
+  { id: 'google/gemini-3-flash-preview', label: 'Gemini 3 Flash' },
 ]
 
 export const MODELE_PAR_DEFAUT = 'anthropic/claude-sonnet-4.6'
