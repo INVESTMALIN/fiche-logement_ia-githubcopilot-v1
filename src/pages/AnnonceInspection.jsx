@@ -5,9 +5,10 @@
 // appelle l'Edge Function annonce-generate, et on lit l'annonce assemblée dans
 // une mise en page soignée (charte gold/ink). Accès réservé super_admin (route).
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, ArrowLeft, Hammer, Loader2, Search, Sparkles } from 'lucide-react'
+import { useLatestRef } from '../hooks/useLatestRef'
 import {
   generateAnnonce,
   MODELE_PAR_DEFAUT,
@@ -186,33 +187,36 @@ export default function AnnonceInspection() {
   const [genError, setGenError] = useState('')
   const [resultat, setResultat] = useState(null)
 
-  // Id de la fiche réellement active (miroir synchrone de la sélection). Sert à
-  // détecter une réponse de génération PÉRIMÉE : si la fiche active a changé
-  // pendant l'appel en vol, on jette la réponse au lieu de l'afficher sous la
-  // mauvaise fiche. Un ref (et pas l'état) car on doit lire la valeur courante
-  // au retour de l'await, pas celle capturée à l'envoi.
-  const ficheActiveRef = useRef(null)
+  // Miroirs synchrones du contexte courant (numéro saisi, fiche sélectionnée),
+  // lus au RETOUR des appels async pour détecter une réponse périmée : si le
+  // contexte a changé pendant l'appel en vol, on jette la réponse. On lit la
+  // valeur COURANTE (ref), pas celle capturée à l'envoi (closure périmée).
+  const numeroRef = useLatestRef(numero)
+  const ficheRef = useLatestRef(ficheSelectionnee)
 
   // Changer de fiche remet l'affichage à zéro : on ne lit jamais un résultat (ou
   // une erreur) qui appartiendrait à une autre fiche que la fiche active.
   const selectionnerFiche = (f) => {
-    ficheActiveRef.current = f?.id ?? null
     setFicheSelectionnee(f)
     setResultat(null)
     setGenError('')
   }
 
   const rechercher = async () => {
-    if (!numero.trim() || searching) return
+    const terme = numero.trim()
+    if (!terme || searching) return
     setSearching(true)
     setSearchError('')
     setResultatsRecherche(null)
-    ficheActiveRef.current = null
     setFicheSelectionnee(null)
     setResultat(null)
     setGenError('')
-    const res = await rechercherFichesParNumero(numero)
+    const res = await rechercherFichesParNumero(terme)
+    // Réponse périmée : le numéro saisi a changé pendant la recherche → on jette
+    // (on libère quand même l'état "en cours" pour ne pas figer le bouton).
+    const perimee = numeroRef.current.trim() !== terme
     setSearching(false)
+    if (perimee) return
     if (!res.ok) {
       setSearchError(res.message)
       return
@@ -228,13 +232,11 @@ export default function AnnonceInspection() {
     setGenError('')
     setResultat(null)
     const res = await generateAnnonce({ ficheId: ficheIdLance, plateforme, modele })
-    // Réponse périmée : la fiche active a changé pendant l'appel → on la jette en
-    // silence (mais on libère bien l'état "en cours" pour ne pas figer le bouton).
-    if (ficheActiveRef.current !== ficheIdLance) {
-      setGenerating(false)
-      return
-    }
+    // Réponse périmée : la fiche active a changé pendant l'appel → on jette (on
+    // libère quand même l'état "en cours" pour ne pas figer le bouton).
+    const perimee = ficheRef.current?.id !== ficheIdLance
     setGenerating(false)
+    if (perimee) return
     if (!res.ok) {
       setGenError(res.message)
       return
