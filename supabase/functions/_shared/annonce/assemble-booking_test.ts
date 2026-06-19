@@ -193,6 +193,22 @@ Deno.test('Assemblage : caméra intérieure → JAMAIS dans la sortie (drapeau d
   assert(!JSON.stringify(out).toLowerCase().includes('intérieure'))
 })
 
+Deno.test('Sans localisation : about_neighbourhood vidé (pas d\'invention persistée), fiche valide', () => {
+  const out = assembleBookingOutput(
+    { ...MODEL, about_neighbourhood: 'Quartier inventé, métro à 2 minutes, gare à 5 minutes' },
+    codeDe({}),
+    { localisationDisponible: false },
+  )
+  assertEquals(out.booking.about_neighbourhood, '') // contenu jeté, pas d'invention
+  // La fiche reste valide : on ne rejette pas pour autant (nom + about_property + about_host présents).
+  assertEquals(raisonBookingPostInvalide(out, { localisationDisponible: false }), null)
+  assert(out.booking.nom.trim().length >= 3 && out.booking.about_property.trim() !== '')
+  assertEquals(out.booking.about_host, ABOUT_HOST_BOOKING)
+  // Avec localisation, le contenu du quartier est conservé (scrubé), pas vidé.
+  const avec = assembleBookingOutput(MODEL, codeDe({}), { localisationDisponible: true })
+  assert(avec.booking.about_neighbourhood.trim() !== '')
+})
+
 Deno.test('Revalidation post-traitement : sortie exploitable → null', () => {
   assertEquals(raisonBookingPostInvalide(assembleBookingOutput(MODEL, codeDe({})), { localisationDisponible: true }), null)
 })

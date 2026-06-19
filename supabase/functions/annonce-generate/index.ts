@@ -229,7 +229,7 @@ serve(async (req: Request) => {
   let postErreur: string | null = null
   if (parsed.ok) {
     if (isBooking) {
-      const assemble = assembleBookingOutput(parsed.value as BookingModelOutput, contrat.code)
+      const assemble = assembleBookingOutput(parsed.value as BookingModelOutput, contrat.code, { localisationDisponible })
       const raison = raisonBookingPostInvalide(assemble, { localisationDisponible })
       if (raison) postErreur = raison
       else outputAssemble = assemble

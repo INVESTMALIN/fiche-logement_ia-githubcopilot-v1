@@ -267,17 +267,26 @@ export default function AnnonceInspection() {
   const [genError, setGenError] = useState('')
   const [resultat, setResultat] = useState(null)
 
-  // Miroirs synchrones du contexte courant (numéro saisi, fiche sélectionnée),
+  // Miroirs synchrones du contexte courant (numéro saisi, fiche, plateforme),
   // lus au RETOUR des appels async pour détecter une réponse périmée : si le
   // contexte a changé pendant l'appel en vol, on jette la réponse. On lit la
   // valeur COURANTE (ref), pas celle capturée à l'envoi (closure périmée).
   const numeroRef = useLatestRef(numero)
   const ficheRef = useLatestRef(ficheSelectionnee)
+  const plateformeRef = useLatestRef(plateforme)
 
   // Changer de fiche remet l'affichage à zéro : on ne lit jamais un résultat (ou
   // une erreur) qui appartiendrait à une autre fiche que la fiche active.
   const selectionnerFiche = (f) => {
     setFicheSelectionnee(f)
+    setResultat(null)
+    setGenError('')
+  }
+
+  // Changer de plateforme remet aussi l'affichage à zéro : c'est un comparateur,
+  // on ne montre jamais un résultat d'une plateforme sous l'onglet de l'autre.
+  const choisirPlateforme = (p) => {
+    setPlateforme(p)
     setResultat(null)
     setGenError('')
   }
@@ -308,13 +317,14 @@ export default function AnnonceInspection() {
   const lancerGeneration = async () => {
     if (!ficheSelectionnee || generating) return
     const ficheIdLance = ficheSelectionnee.id
+    const plateformeLancee = plateforme
     setGenerating(true)
     setGenError('')
     setResultat(null)
-    const res = await generateAnnonce({ ficheId: ficheIdLance, plateforme, modele })
-    // Réponse périmée : la fiche active a changé pendant l'appel → on jette (on
-    // libère quand même l'état "en cours" pour ne pas figer le bouton).
-    const perimee = ficheRef.current?.id !== ficheIdLance
+    const res = await generateAnnonce({ ficheId: ficheIdLance, plateforme: plateformeLancee, modele })
+    // Réponse périmée : la fiche OU la plateforme a changé pendant l'appel → on
+    // jette (on libère quand même l'état "en cours" pour ne pas figer le bouton).
+    const perimee = ficheRef.current?.id !== ficheIdLance || plateformeRef.current !== plateformeLancee
     setGenerating(false)
     if (perimee) return
     if (!res.ok) {
@@ -404,7 +414,7 @@ export default function AnnonceInspection() {
               <label className="block text-sm font-semibold mb-2">Plateforme</label>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setPlateforme('airbnb')}
+                  onClick={() => choisirPlateforme('airbnb')}
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
                     plateforme === 'airbnb' ? 'border-primary bg-primary/10 text-primary' : 'border-gray-300 text-text'
                   }`}
@@ -412,7 +422,7 @@ export default function AnnonceInspection() {
                   Airbnb
                 </button>
                 <button
-                  onClick={() => setPlateforme('booking')}
+                  onClick={() => choisirPlateforme('booking')}
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
                     plateforme === 'booking' ? 'border-primary bg-primary/10 text-primary' : 'border-gray-300 text-text'
                   }`}

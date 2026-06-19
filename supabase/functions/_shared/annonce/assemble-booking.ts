@@ -210,12 +210,20 @@ export interface BookingAssembled {
  * déterministes posés par le code. Le modèle ne fournit jamais les champs
  * assemblés ici (template, réglementation, disclosures).
  */
-export function assembleBookingOutput(model: BookingModelOutput, code: CodeZone): BookingAssembled {
+export function assembleBookingOutput(
+  model: BookingModelOutput,
+  code: CodeZone,
+  opts: ParseOptions = { localisationDisponible: true },
+): BookingAssembled {
   return {
     booking: {
       nom: sanitizeNom(model.nom),
       about_property: scrubInterdits(model.about_property),
-      about_neighbourhood: scrubInterdits(model.about_neighbourhood),
+      // Sans localisation : on VIDE le quartier (on jette le contenu, inventé ou
+      // non) plutôt que de faire échouer toute la fiche. Dégradation gracieuse :
+      // on n'invente pas, mais la fiche reste valide (nom + about_property +
+      // about_host + disclosures). Avec localisation : scrubé et exigé non vide.
+      about_neighbourhood: opts.localisationDisponible ? scrubInterdits(model.about_neighbourhood) : '',
       about_host: ABOUT_HOST_BOOKING,
       mentions_reglementaires: buildMentionsReglementaires(code),
       note_etat: buildNoteEtat(code),
