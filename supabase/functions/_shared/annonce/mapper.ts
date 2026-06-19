@@ -92,13 +92,18 @@ function reconcileSalleCinema(f: FicheRow): boolean {
 }
 
 /**
- * PMR (zone modèle) : cas POSITIF uniquement. accessible=true → exposé avec ses
- * détails ; false ou null → null. Le "non accessible PMR" (false) est un
- * déclencheur de phrase canon en zone code (note_etat_triggers.pmr_accessible),
- * jamais formulé librement par le modèle.
+ * PMR (zone modèle) : cas POSITIF uniquement, piloté par la case « accessible
+ * PMR » des Équipements. accessible=true → exposé avec ses détails ; false ou
+ * null → null (silence, comme tout équipement non coché). La case ne déclenche
+ * AUCUN négatif (le « non accessible PMR » vient de la grille Avis, zone code).
+ *
+ * Anti-contradiction : si la grille Avis déclare l'immeuble « inaccessible »
+ * (→ phrase canon « non accessible PMR » injectée en note_etat), on n'expose
+ * jamais le positif au modèle. Le négatif prime, on ne sur-promet pas.
  */
 function pmrPositif(f: FicheRow): { accessible: true | null; details: string | null } {
-  const accessible = bool(f, 'equipements_accessible_mobilite_reduite') === true
+  const immeubleInaccessible = txt(f, 'avis_immeuble_accessibilite') === 'inaccessible'
+  const accessible = !immeubleInaccessible && bool(f, 'equipements_accessible_mobilite_reduite') === true
   return {
     accessible: accessible ? true : null,
     details: accessible ? txt(f, 'equipements_pmr_details') : null,
@@ -248,6 +253,10 @@ function mapEquipements(f: FicheRow): ModeleZone['equipements'] {
         (num(f, 'cuisine_2_vaisselle_assiettes_plates') ?? 0) > 0 ||
         (num(f, 'cuisine_2_couverts_verres_eau') ?? 0) > 0,
       verres_a_vin: (num(f, 'cuisine_2_couverts_verres_vin') ?? 0) > 0,
+      // Équipement cuisine « autre » saisi en libre (ex. « Robot Kenwood ») :
+      // exposé seulement si la case est cochée ET le libellé renseigné. Le modèle
+      // peut le mentionner comme équipement à valeur ajoutée (reformulé).
+      autre: isTrue(f, 'cuisine_1_equipements_autre') ? txt(f, 'cuisine_1_equipements_autre_details') : null,
     },
     salles_de_bains: mapSallesDeBains(f),
     linge_fourni: bool(f, 'linge_dispose_de_linge'),
@@ -385,8 +394,6 @@ function mapCode(f: FicheRow): CodeZone {
       grille_notes: grilleNotes,
       securite_dangers: arr(f, 'avis_securite_dangers'),
       securite_danger_detecte: isTrue(f, 'avis_securite_danger_detecte') || arr(f, 'avis_securite_dangers').length > 0,
-      // Tri-état : false → phrase canon "non accessible PMR" ; true/null → rien.
-      pmr_accessible: bool(f, 'equipements_accessible_mobilite_reduite'),
     },
     note_quartier_triggers: {
       quartier_securite: txt(f, 'avis_quartier_securite'),

@@ -75,17 +75,62 @@ Deno.test('Doublon cinéma réconcilié en un seul signal', () => {
   assertEquals(mapFicheToContrat({}).modele.equipements.salle_cinema, false)
 })
 
-Deno.test('PMR : false = déclencheur code (phrase canon), jamais false côté modèle', () => {
-  const non = mapFicheToContrat({ equipements_accessible_mobilite_reduite: false })
-  assertEquals(non.code.note_etat_triggers.pmr_accessible, false) // déclenche la phrase canon
-  assertEquals(non.modele.equipements.pmr.accessible, null) // jamais false côté modèle
+Deno.test('PMR : la case Équipements ne sert qu\'au positif, jamais de négatif', () => {
+  // Cochée → positif exposé avec détails.
   const oui = mapFicheToContrat({ equipements_accessible_mobilite_reduite: true, equipements_pmr_details: 'Rampe + ascenseur' })
   assertEquals(oui.modele.equipements.pmr.accessible, true)
   assertEquals(oui.modele.equipements.pmr.details, 'Rampe + ascenseur')
-  assertEquals(oui.code.note_etat_triggers.pmr_accessible, true)
+  // Décochée / non renseignée → silence (jamais false côté modèle, aucun trigger).
+  const non = mapFicheToContrat({ equipements_accessible_mobilite_reduite: false })
+  assertEquals(non.modele.equipements.pmr.accessible, null)
   const inconnu = mapFicheToContrat({})
-  assertEquals(inconnu.code.note_etat_triggers.pmr_accessible, null)
   assertEquals(inconnu.modele.equipements.pmr.accessible, null)
+  // Le trigger mort pmr_accessible n'existe plus dans le contrat.
+  assert(!('pmr_accessible' in non.code.note_etat_triggers))
+})
+
+Deno.test('PMR anti-contradiction : immeuble inaccessible → positif jamais exposé au modèle', () => {
+  // Case cochée MAIS grille Avis "inaccessible" → le négatif prime, on ne sur-promet pas.
+  const c = mapFicheToContrat({
+    equipements_accessible_mobilite_reduite: true,
+    equipements_pmr_details: 'Rampe',
+    avis_immeuble_accessibilite: 'inaccessible',
+  })
+  assertEquals(c.modele.equipements.pmr.accessible, null)
+  assertEquals(c.modele.equipements.pmr.details, null)
+})
+
+Deno.test('Parking : le détail libre opérationnel n\'est jamais exposé en zone modèle', () => {
+  // parking_*_details = opérationnel (guide d'accès), exclu du contrat annonce.
+  const c = mapFicheToContrat({
+    equipements_parking_type: 'rue',
+    equipements_parking_rue_details: 'Places rue de la Gare, badge résident requis',
+  })
+  assert(!('details' in c.modele.equipements.parking))
+  assertEquals(c.modele.equipements.parking.type, 'rue')
+  // Le détail n'apparaît nulle part dans la zone modèle.
+  assert(!JSON.stringify(c.modele).includes('badge résident'))
+})
+
+Deno.test('Cuisine : équipement "autre" libre exposé seulement si coché ET renseigné, trimmé', () => {
+  assertEquals(
+    mapFicheToContrat({ cuisine_1_equipements_autre: true, cuisine_1_equipements_autre_details: 'Robot Kenwood' }).modele.equipements.cuisine.autre,
+    'Robot Kenwood',
+  )
+  // Coché mais libellé vide → null (rien à dire).
+  assertEquals(mapFicheToContrat({ cuisine_1_equipements_autre: true }).modele.equipements.cuisine.autre, null)
+  // Coché mais libellé fait uniquement d'espaces → null après trim (txt() nettoie).
+  assertEquals(mapFicheToContrat({ cuisine_1_equipements_autre: true, cuisine_1_equipements_autre_details: '   ' }).modele.equipements.cuisine.autre, null)
+  // Libellé entouré d'espaces → trimmé.
+  assertEquals(
+    mapFicheToContrat({ cuisine_1_equipements_autre: true, cuisine_1_equipements_autre_details: '  Robot Kenwood  ' }).modele.equipements.cuisine.autre,
+    'Robot Kenwood',
+  )
+  // Libellé présent mais case non cochée → null (pas de présence déduite du seul texte).
+  assertEquals(
+    mapFicheToContrat({ cuisine_1_equipements_autre_details: 'Robot Kenwood' }).modele.equipements.cuisine.autre,
+    null,
+  )
 })
 
 Deno.test('Fêtes/fumeurs : "non" par défaut, "oui" si explicite, exposés en code ET modèle', () => {
