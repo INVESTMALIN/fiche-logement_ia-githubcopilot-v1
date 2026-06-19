@@ -224,3 +224,21 @@ export function assembleBookingOutput(model: BookingModelOutput, code: CodeZone)
     },
   }
 }
+
+/**
+ * REVALIDATION post-traitement : sanitizeNom et scrubInterdits peuvent VIDER un
+ * champ requis qui avait pourtant passé parseBookingOutput (ex. nom « Airbnb »
+ * → scrubé → vide ; about_property = une URL seule → scrubée → vide). On ne
+ * persiste jamais un faux succès en champs vides — même principe qu'Airbnb.
+ * Renvoie la raison du rejet, ou null si la sortie assemblée est exploitable.
+ * `about_neighbourhood` vide reste toléré sans localisation (dégradation, miroir
+ * de comment_se_deplacer). about_host / réglementation / disclosures ne sont PAS
+ * concernés : posés par le code, ils peuvent être vides légitimement.
+ */
+export function raisonBookingPostInvalide(assembled: BookingAssembled, opts: ParseOptions): string | null {
+  const b = assembled.booking
+  if (b.nom.trim().length < NOM_MIN) return `nom vide ou trop court après sanitisation (< ${NOM_MIN} caractères)`
+  if (b.about_property.trim() === '') return 'about_property vide après scrub'
+  if (opts.localisationDisponible && b.about_neighbourhood.trim() === '') return 'about_neighbourhood vide après scrub'
+  return null
+}

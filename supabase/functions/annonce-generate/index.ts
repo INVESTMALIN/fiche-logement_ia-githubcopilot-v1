@@ -33,8 +33,8 @@ import { ensureLocalisationFaits } from '../_shared/localisation/orchestrator.ts
 import { buildSystemPromptAirbnb, buildUserMessageAirbnb, PROMPT_VERSION } from '../_shared/annonce/prompt-airbnb.ts'
 import { buildSystemPromptBooking, buildUserMessageBooking, PROMPT_VERSION_BOOKING } from '../_shared/annonce/prompt-booking.ts'
 import { callOpenRouter, OpenRouterError, redactSecret } from '../_shared/annonce/openrouter.ts'
-import { type AirbnbModelOutput, assembleAirbnbOutput, buildConformite, parseModelOutput } from '../_shared/annonce/assemble-airbnb.ts'
-import { assembleBookingOutput, type BookingModelOutput, parseBookingOutput } from '../_shared/annonce/assemble-booking.ts'
+import { type AirbnbAssembled, type AirbnbModelOutput, assembleAirbnbOutput, buildConformite, parseModelOutput } from '../_shared/annonce/assemble-airbnb.ts'
+import { assembleBookingOutput, type BookingAssembled, type BookingModelOutput, parseBookingOutput, raisonBookingPostInvalide } from '../_shared/annonce/assemble-booking.ts'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -219,21 +219,39 @@ serve(async (req: Request) => {
     generated_at: nowISO,
   }
 
-  const statut = parsed.ok ? 'genere' : 'erreur'
-  // Sortie brute TOUJOURS conservée (succès = objet validé, échec = brut parsé
-  // ou texte non-JSON) pour que l'inspection ne perde jamais ce que le modèle a
-  // rendu. Pas d'assemblage si la forme est invalide.
+  // Assemblage + (Booking) REVALIDATION post-traitement. sanitizeNom et
+  // scrubInterdits peuvent VIDER un champ requis qui avait pourtant passé
+  // parseBookingOutput (ex. nom « Airbnb » → scrubé → vide ; about_property = une
+  // URL seule → scrubée → vide). On ne persiste jamais un faux succès en champs
+  // vides — même principe qu'Airbnb. about_host / réglementation / disclosures
+  // ne sont pas concernés (posés par le code, vides légitimes).
+  let outputAssemble: AirbnbAssembled | BookingAssembled | null = null
+  let postErreur: string | null = null
+  if (parsed.ok) {
+    if (isBooking) {
+      const assemble = assembleBookingOutput(parsed.value as BookingModelOutput, contrat.code)
+      const raison = raisonBookingPostInvalide(assemble, { localisationDisponible })
+      if (raison) postErreur = raison
+      else outputAssemble = assemble
+    } else {
+      outputAssemble = assembleAirbnbOutput(parsed.value as AirbnbModelOutput, contrat.code)
+    }
+  }
+
+  // Échec = forme modèle invalide (parse) OU champ requis vidé par le
+  // post-traitement Booking. Dans les deux cas : statut `erreur`, réessayable.
+  const ok = parsed.ok && !postErreur
+  const erreurType = parsed.ok ? 'BOOKING_POSTPROCESS_EMPTY' : 'MODEL_OUTPUT_INVALID'
+  const statut = ok ? 'genere' : 'erreur'
+  // Sortie brute TOUJOURS conservée pour inspection : forme invalide → brut parsé
+  // ou texte non-JSON ; post-traitement vide → sortie modèle (valide en forme).
   const outputModeleBrut = parsed.ok ? parsed.value : parsed.brut
-  const outputAssemble = parsed.ok
-    ? (isBooking
-        ? assembleBookingOutput(parsed.value as BookingModelOutput, contrat.code)
-        : assembleAirbnbOutput(parsed.value as AirbnbModelOutput, contrat.code))
-    : null
   let messageErreur: string | null = null
-  if (!parsed.ok) {
-    messageErreur = redactSecret(parsed.reason, openrouterKey)
-    generationMeta.erreur = { type: 'MODEL_OUTPUT_INVALID', message: messageErreur }
-    console.error(`[annonce-generate] sortie modèle invalide fiche=${ficheId}: ${messageErreur}`)
+  if (!ok) {
+    const reason = parsed.ok ? `post-traitement Booking: ${postErreur}` : parsed.reason
+    messageErreur = redactSecret(reason, openrouterKey)
+    generationMeta.erreur = { type: erreurType, message: messageErreur }
+    console.error(`[annonce-generate] sortie invalide fiche=${ficheId} (${erreurType}): ${messageErreur}`)
   }
 
   // 6) Upsert agent_outputs (1 ligne par (fiche, plateforme), on écrase). On
@@ -261,12 +279,13 @@ serve(async (req: Request) => {
     return json({ success: false, error: 'DB_WRITE_ERROR', message: upErr.message }, 500)
   }
 
-  // Forme invalide : erreur de génération identifiable et réessayable (la ligne
-  // est en statut `erreur`, la sortie brute est conservée pour inspection).
-  if (!parsed.ok) {
+  // Erreur de génération identifiable et réessayable (forme modèle invalide OU
+  // champ requis vidé par le post-traitement) : la ligne est en statut `erreur`,
+  // la sortie brute est conservée pour inspection.
+  if (!ok) {
     return json({
       success: false,
-      error: 'MODEL_OUTPUT_INVALID',
+      error: erreurType,
       message: messageErreur,
       statut: 'erreur',
       ficheId,

@@ -11,6 +11,7 @@ import {
   assembleBookingOutput,
   type BookingModelOutput,
   parseBookingOutput,
+  raisonBookingPostInvalide,
   sanitizeNom,
   scrubInterdits,
 } from './assemble-booking.ts'
@@ -190,6 +191,26 @@ Deno.test('Assemblage : caméra intérieure → JAMAIS dans la sortie (drapeau d
   )
   assertEquals(out.booking.note_camera, '')
   assert(!JSON.stringify(out).toLowerCase().includes('intérieure'))
+})
+
+Deno.test('Revalidation post-traitement : sortie exploitable → null', () => {
+  assertEquals(raisonBookingPostInvalide(assembleBookingOutput(MODEL, codeDe({})), { localisationDisponible: true }), null)
+})
+
+Deno.test('Revalidation post-traitement : champ vidé par sanitize/scrub → erreur (pas de faux genere)', () => {
+  // nom = « Airbnb » seul → scrubé (plateforme concurrente) → vide → erreur.
+  const nomVide = assembleBookingOutput({ ...MODEL, nom: 'Airbnb' }, codeDe({}))
+  assert(raisonBookingPostInvalide(nomVide, { localisationDisponible: true }) !== null)
+  assert(nomVide.booking.nom.trim().length < 3) // effectivement vidé par le scrub
+  // about_property = une URL seule → scrubée → vide → erreur.
+  const propVide = assembleBookingOutput({ ...MODEL, about_property: 'https://mon-site.fr' }, codeDe({}))
+  assert(raisonBookingPostInvalide(propVide, { localisationDisponible: true }) !== null)
+  // about_neighbourhood = une URL seule → scrubée → vide. Erreur SI localisation
+  // dispo, toléré sinon (dégradation gracieuse).
+  const quartierVide = assembleBookingOutput({ ...MODEL, about_neighbourhood: 'www.exemple.fr' }, codeDe({}))
+  assertEquals(quartierVide.booking.about_neighbourhood.trim(), '') // effectivement vidé
+  assert(raisonBookingPostInvalide(quartierVide, { localisationDisponible: true }) !== null)
+  assertEquals(raisonBookingPostInvalide(quartierVide, { localisationDisponible: false }), null)
 })
 
 Deno.test('Assemblage : nom sanitisé et champs profil scrubés en passant par l\'assemblage', () => {
