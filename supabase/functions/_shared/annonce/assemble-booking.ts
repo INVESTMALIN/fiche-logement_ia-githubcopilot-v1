@@ -92,7 +92,7 @@ export function parseBookingOutput(
 // about_host : template conciergerie constant (jamais généré). Texte placeholder
 // fourni au brief, repris verbatim (reformulation Olga en 2e temps).
 export const ABOUT_HOST_BOOKING =
-  'Votre séjour est pris en charge par notre équipe de conciergerie locale. Nous préparons le logement avec soin avant votre arrivée, organisons une remise des clés en autonomie, et restons disponibles tout au long de votre séjour via la messagerie Booking. Pour toute question, avant comme pendant votre venue, nous mettons un point d\'honneur à vous répondre rapidement.'
+  'Votre séjour est pris en charge par notre équipe de conciergerie locale. Nous préparons le logement avec soin avant votre arrivée et restons disponibles tout au long de votre séjour via la messagerie Booking. Pour toute question, avant comme pendant votre venue, nous mettons un point d\'honneur à vous répondre rapidement.'
 
 // ───────────────────── Sanitisation du nom (règles dures Booking) ─────────────────────
 
