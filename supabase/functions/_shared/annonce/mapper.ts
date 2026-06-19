@@ -92,24 +92,6 @@ function reconcileSalleCinema(f: FicheRow): boolean {
 }
 
 /**
- * Note libre de stationnement : on choisit LA source selon le type de parking
- * (rue / sur place / payant), jamais les trois — même logique que le guide
- * d'accès. Type absent ou détail vide → null (on n'invente pas).
- */
-function parkingDetails(f: FicheRow): string | null {
-  switch (txt(f, 'equipements_parking_type')) {
-    case 'rue':
-      return txt(f, 'equipements_parking_rue_details')
-    case 'sur_place':
-      return txt(f, 'equipements_parking_sur_place_details')
-    case 'payant':
-      return txt(f, 'equipements_parking_payant_details')
-    default:
-      return null
-  }
-}
-
-/**
  * PMR (zone modèle) : cas POSITIF uniquement, piloté par la case « accessible
  * PMR » des Équipements. accessible=true → exposé avec ses détails ; false ou
  * null → null (silence, comme tout équipement non coché). La case ne déclenche
@@ -254,10 +236,6 @@ function mapEquipements(f: FicheRow): ModeleZone['equipements'] {
       type: txt(f, 'equipements_parking_type'),
       sur_place_types: arr(f, 'equipements_parking_sur_place_types'),
       payant_type: txt(f, 'equipements_parking_payant_type'),
-      // Note libre de stationnement : LA source dépend du type choisi (rue /
-      // sur place / payant), comme dans le guide d'accès. Info pratique pour le
-      // modèle (qui la reformule), jamais injectée verbatim.
-      details: parkingDetails(f),
     },
     cuisine: {
       four: isTrue(f, 'cuisine_1_equipements_four'),

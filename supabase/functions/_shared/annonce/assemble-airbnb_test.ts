@@ -125,6 +125,27 @@ Deno.test('note_quartier : élément perturbateur → fragment autonome après d
   assertEquals(out, 'Un point à signaler concernant l\'environnement du logement : une voie ferrée.')
 })
 
+Deno.test('note_quartier : détail finissant par un point → pas de double point final', () => {
+  const out = buildNoteQuartier(makeCode({
+    note_quartier_triggers: {
+      ...makeCode().note_quartier_triggers,
+      quartier_perturbations: 'perturbateur',
+      quartier_perturbations_details: 'une voie ferrée.',
+    },
+  }))
+  assertEquals(out, 'Un point à signaler concernant l\'environnement du logement : une voie ferrée.')
+  assert(!out.includes('..'))
+  // Points de suspension + espace résiduel : même nettoyage, un seul point.
+  const ellipse = buildNoteQuartier(makeCode({
+    note_quartier_triggers: {
+      ...makeCode().note_quartier_triggers,
+      quartier_perturbations: 'perturbateur',
+      quartier_perturbations_details: 'des travaux… ',
+    },
+  }))
+  assertEquals(ellipse, 'Un point à signaler concernant l\'environnement du logement : des travaux.')
+})
+
 Deno.test('note_quartier : perturbateur sans détail → rien (template vide de sens évité)', () => {
   assertEquals(
     buildNoteQuartier(makeCode({

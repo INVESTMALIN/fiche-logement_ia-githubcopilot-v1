@@ -259,7 +259,9 @@ export function buildNoteQuartier(code: CodeZone): string {
   if (q.quartier_defavorise) parts.push(NOTE_QUARTIER_DEFAVORISE)
   if (q.quartier_securite === 'modere' || q.quartier_securite === 'zone_risques') parts.push(NOTE_QUARTIER_SECURITE)
   if (q.quartier_perturbations === 'perturbateur') {
-    const detail = (q.quartier_perturbations_details || '').trim()
+    // On retire la ponctuation finale du texte du coordinateur (point, points de
+    // suspension, espaces) pour ne jamais doubler le point final du template.
+    const detail = (q.quartier_perturbations_details || '').trim().replace(/[\s.…]+$/u, '')
     // Template : on n'injecte que si l'élément précis est décrit (sinon vide de sens).
     // Le texte du coordinateur suit un deux-points → fragment autonome, sans
     // accord grammatical avec ce qui précède (évite « à proximité de une voie

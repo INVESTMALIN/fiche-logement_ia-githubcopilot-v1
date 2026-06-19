@@ -69,9 +69,11 @@ export interface ModeleZone {
     // un déclencheur de phrase canon en zone code, jamais exposé au modèle.
     pmr: { accessible: true | null; details: string | null }
     wifi_present: boolean // présence seulement (jamais identifiants)
-    // `details` : note libre de stationnement (LA source selon le type), pour
-    // que le modèle en tire une info pratique (reformulée, jamais verbatim).
-    parking: { type: string | null; sur_place_types: string[]; payant_type: string | null; details: string | null }
+    // Détail libre de stationnement (parking_*_details) VOLONTAIREMENT absent :
+    // c'est de l'opérationnel (noms de rues, restrictions, sécurité), exposé au
+    // guide d'accès via loomkyService, exclu du contrat annonce (publication
+    // publique). On n'expose que le type et ses sous-types.
+    parking: { type: string | null; sur_place_types: string[]; payant_type: string | null }
     cuisine: {
       four: boolean
       plaque_cuisson: boolean

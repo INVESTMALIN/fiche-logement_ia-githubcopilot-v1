@@ -100,35 +100,32 @@ Deno.test('PMR anti-contradiction : immeuble inaccessible → positif jamais exp
   assertEquals(c.modele.equipements.pmr.details, null)
 })
 
-Deno.test('Parking : note libre lue selon LA source du type choisi', () => {
-  assertEquals(
-    mapFicheToContrat({ equipements_parking_type: 'rue', equipements_parking_rue_details: 'Places côté pair' }).modele.equipements.parking.details,
-    'Places côté pair',
-  )
-  assertEquals(
-    mapFicheToContrat({ equipements_parking_type: 'sur_place', equipements_parking_sur_place_details: 'Garage box n°3' }).modele.equipements.parking.details,
-    'Garage box n°3',
-  )
-  assertEquals(
-    mapFicheToContrat({ equipements_parking_type: 'payant', equipements_parking_payant_details: 'Parking public à 200m' }).modele.equipements.parking.details,
-    'Parking public à 200m',
-  )
-  // Pas de croisement : un détail d'un autre type n'est jamais ramassé.
-  assertEquals(
-    mapFicheToContrat({ equipements_parking_type: 'rue', equipements_parking_payant_details: 'ignoré' }).modele.equipements.parking.details,
-    null,
-  )
-  // Type absent → null.
-  assertEquals(mapFicheToContrat({}).modele.equipements.parking.details, null)
+Deno.test('Parking : le détail libre opérationnel n\'est jamais exposé en zone modèle', () => {
+  // parking_*_details = opérationnel (guide d'accès), exclu du contrat annonce.
+  const c = mapFicheToContrat({
+    equipements_parking_type: 'rue',
+    equipements_parking_rue_details: 'Places rue de la Gare, badge résident requis',
+  })
+  assert(!('details' in c.modele.equipements.parking))
+  assertEquals(c.modele.equipements.parking.type, 'rue')
+  // Le détail n'apparaît nulle part dans la zone modèle.
+  assert(!JSON.stringify(c.modele).includes('badge résident'))
 })
 
-Deno.test('Cuisine : équipement "autre" libre exposé seulement si coché ET renseigné', () => {
+Deno.test('Cuisine : équipement "autre" libre exposé seulement si coché ET renseigné, trimmé', () => {
   assertEquals(
     mapFicheToContrat({ cuisine_1_equipements_autre: true, cuisine_1_equipements_autre_details: 'Robot Kenwood' }).modele.equipements.cuisine.autre,
     'Robot Kenwood',
   )
   // Coché mais libellé vide → null (rien à dire).
   assertEquals(mapFicheToContrat({ cuisine_1_equipements_autre: true }).modele.equipements.cuisine.autre, null)
+  // Coché mais libellé fait uniquement d'espaces → null après trim (txt() nettoie).
+  assertEquals(mapFicheToContrat({ cuisine_1_equipements_autre: true, cuisine_1_equipements_autre_details: '   ' }).modele.equipements.cuisine.autre, null)
+  // Libellé entouré d'espaces → trimmé.
+  assertEquals(
+    mapFicheToContrat({ cuisine_1_equipements_autre: true, cuisine_1_equipements_autre_details: '  Robot Kenwood  ' }).modele.equipements.cuisine.autre,
+    'Robot Kenwood',
+  )
   // Libellé présent mais case non cochée → null (pas de présence déduite du seul texte).
   assertEquals(
     mapFicheToContrat({ cuisine_1_equipements_autre_details: 'Robot Kenwood' }).modele.equipements.cuisine.autre,
