@@ -1,8 +1,8 @@
 // supabase/functions/annonce-generate/index.ts
 //
 // Brique 2 du chantier agent annonce : le MOTEUR. Prend une fiche, produit une
-// annonce Airbnb complète, et la stocke dans `agent_outputs`. Premier jet
-// bout-en-bout (flux complet qui tourne et écrit) ; on itérera sur le rendu.
+// sortie Airbnb OU Booking selon `plateforme`, et la stocke dans `agent_outputs`.
+// Premier jet bout-en-bout (flux complet qui tourne et écrit) ; on itère sur le rendu.
 //
 // Flux :
 //   1. mappe la fiche brute → contrat d'entrée propre (_shared/annonce/mapper).
@@ -20,8 +20,8 @@
 // Auth : calqué sur annonce-localisation. verify_jwt = true + check d'ownership
 // RLS-aware via le JWT appelant sur `fiches`. Écritures en service role.
 //
-// Périmètre strict : moteur seul. Pas de Monday, pas d'UI, pas de PDF. Airbnb
-// uniquement (la plateforme reste un paramètre dès le départ).
+// Périmètre strict : moteur seul. Pas de Monday, pas de PDF, pas de push prod.
+// Airbnb et Booking (routage par paramètre `plateforme`).
 
 // @ts-ignore — Deno runtime
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
@@ -31,8 +31,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { mapFicheToContrat } from '../_shared/annonce/mapper.ts'
 import { ensureLocalisationFaits } from '../_shared/localisation/orchestrator.ts'
 import { buildSystemPromptAirbnb, buildUserMessageAirbnb, PROMPT_VERSION } from '../_shared/annonce/prompt-airbnb.ts'
+import { buildSystemPromptBooking, buildUserMessageBooking, PROMPT_VERSION_BOOKING } from '../_shared/annonce/prompt-booking.ts'
 import { callOpenRouter, OpenRouterError, redactSecret } from '../_shared/annonce/openrouter.ts'
-import { assembleAirbnbOutput, buildConformite, parseModelOutput } from '../_shared/annonce/assemble-airbnb.ts'
+import { type AirbnbModelOutput, assembleAirbnbOutput, buildConformite, parseModelOutput } from '../_shared/annonce/assemble-airbnb.ts'
+import { assembleBookingOutput, type BookingModelOutput, parseBookingOutput } from '../_shared/annonce/assemble-booking.ts'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -94,9 +96,6 @@ serve(async (req: Request) => {
     : 'airbnb'
   if (!SUPPORTED_PLATEFORMES.has(plateforme)) {
     return json({ success: false, error: 'BAD_REQUEST', message: `Plateforme inconnue: ${plateforme}` }, 400)
-  }
-  if (plateforme !== 'airbnb') {
-    return json({ success: false, error: 'NOT_IMPLEMENTED', message: `Plateforme ${plateforme} pas encore supportée (Airbnb uniquement en v1)` }, 501)
   }
 
   const modeleParam = typeof body?.modele === 'string' && body.modele.trim() ? body.modele.trim() : null
@@ -162,8 +161,17 @@ serve(async (req: Request) => {
   }
   // @ts-ignore — Deno global
   const model = modeleParam || Deno.env.get('OPENROUTER_DEFAULT_MODEL') || FALLBACK_MODEL
-  const systemPrompt = buildSystemPromptAirbnb({ localisationDisponible })
-  const userMessage = buildUserMessageAirbnb(contrat.modele, faits)
+  // Routage par plateforme : seuls le prompt, sa version, le parsing et
+  // l'assemblage diffèrent. Tout le reste (mapping, localisation, appel modèle,
+  // meta, upsert) est partagé. Le contrat d'entrée est agnostique de plateforme.
+  const isBooking = plateforme === 'booking'
+  const promptVersion = isBooking ? PROMPT_VERSION_BOOKING : PROMPT_VERSION
+  const systemPrompt = isBooking
+    ? buildSystemPromptBooking({ localisationDisponible })
+    : buildSystemPromptAirbnb({ localisationDisponible })
+  const userMessage = isBooking
+    ? buildUserMessageBooking(contrat.modele, faits)
+    : buildUserMessageAirbnb(contrat.modele, faits)
 
   const startedAt = Date.now()
   let mr
@@ -177,19 +185,22 @@ serve(async (req: Request) => {
   }
   const latenceMs = Date.now() - startedAt
 
-  // 5) VALIDATION DE FORME de la sortie modèle (présence des 7 champs, bons
-  //    types, 3 titres non vides, champs texte non vides). Une forme invalide
-  //    n'est PAS une annonce : c'est une erreur de génération. On ne marque
-  //    jamais `genere` sur une forme invalide — sinon faux succès en champs vides.
-  //    Sans localisation, `comment_se_deplacer` vide est toléré (dégradation).
-  const parsed = parseModelOutput(mr.content, { localisationDisponible })
+  // 5) VALIDATION DE FORME de la sortie modèle (contrat fermé propre à la
+  //    plateforme : 7 champs Airbnb / 3 champs profil Booking, bons types, non
+  //    vides). Une forme invalide n'est PAS une sortie exploitable : c'est une
+  //    erreur de génération. On ne marque jamais `genere` sur une forme invalide
+  //    — sinon faux succès en champs vides. Sans localisation, le champ
+  //    déplacements (Airbnb) / about_neighbourhood (Booking) vide est toléré.
+  const parsed = isBooking
+    ? parseBookingOutput(mr.content, { localisationDisponible })
+    : parseModelOutput(mr.content, { localisationDisponible })
 
   const nowISO = new Date().toISOString()
   // deno-lint-ignore no-explicit-any
   const generationMeta: any = {
     modele_demande: model,
     modele_servi: mr.model,
-    prompt_version: PROMPT_VERSION,
+    prompt_version: promptVersion,
     tokens: {
       entree: mr.usage.prompt_tokens,
       sortie: mr.usage.completion_tokens,
@@ -201,8 +212,9 @@ serve(async (req: Request) => {
     openrouter_generation_id: mr.generationId,
     finish_reason: mr.finishReason,
     localisation: localisationMeta,
-    // Conformité (informatif) : caméra intérieure signalée → jamais dans
-    // l'annonce, juste tracée. Caméra extérieure → disclosure dans autres_remarques.
+    // Conformité (informatif) : caméra intérieure signalée → jamais dans la
+    // sortie, juste tracée. Caméra extérieure → disclosure assemblée par le code
+    // (autres_remarques côté Airbnb, champ note_camera côté Booking).
     conformite: buildConformite(contrat.code),
     generated_at: nowISO,
   }
@@ -212,7 +224,11 @@ serve(async (req: Request) => {
   // ou texte non-JSON) pour que l'inspection ne perde jamais ce que le modèle a
   // rendu. Pas d'assemblage si la forme est invalide.
   const outputModeleBrut = parsed.ok ? parsed.value : parsed.brut
-  const outputAssemble = parsed.ok ? assembleAirbnbOutput(parsed.value, contrat.code) : null
+  const outputAssemble = parsed.ok
+    ? (isBooking
+        ? assembleBookingOutput(parsed.value as BookingModelOutput, contrat.code)
+        : assembleAirbnbOutput(parsed.value as AirbnbModelOutput, contrat.code))
+    : null
   let messageErreur: string | null = null
   if (!parsed.ok) {
     messageErreur = redactSecret(parsed.reason, openrouterKey)
@@ -232,7 +248,7 @@ serve(async (req: Request) => {
       output_modele_brut: outputModeleBrut,
       contrat_entree: contrat,
       modele: model,
-      prompt_version: PROMPT_VERSION,
+      prompt_version: promptVersion,
       generation_meta: generationMeta,
       statut,
       // Sur régénération (upsert UPDATE), les DEFAULT now() ne se rejouent pas →

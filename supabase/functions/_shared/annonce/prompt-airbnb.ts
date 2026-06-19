@@ -138,7 +138,7 @@ Tu ne génères ni les échanges voyageurs, ni le nombre de voyageurs, ni les me
  * les faits par construction. Renvoie null si pas de faits (localisation
  * indisponible → le modèle reste sur la ville du contrat, sans inventer).
  */
-function localisationPourPrompt(faits: Faits | null) {
+export function localisationPourPrompt(faits: Faits | null) {
   if (!faits) return null
   return {
     ville: faits.ville,

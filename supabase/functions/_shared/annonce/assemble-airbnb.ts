@@ -73,7 +73,7 @@ export type ModelOutputResult =
  * régénérer. On garde seulement la fence-qui-couvre-tout, écart courant et sans
  * ambiguïté.
  */
-function parseTopLevelJson(content: string): { ok: true; value: unknown } | { ok: false; reason: string } {
+export function parseTopLevelJson(content: string): { ok: true; value: unknown } | { ok: false; reason: string } {
   let t = (content || '').trim()
   // Fence ANCRÉE début/fin : ne matche que si elle enveloppe l'intégralité du
   // contenu. Une fence nichée (ex. à l'intérieur d'un tableau) ne matche pas.
