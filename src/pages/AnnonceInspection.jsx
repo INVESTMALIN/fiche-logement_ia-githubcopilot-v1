@@ -1,9 +1,12 @@
 // src/pages/AnnonceInspection.jsx
 // Mini-UI d'inspection des annonces générées (brique 2, agent annonce). Outil
 // interne en développement : on choisit une fiche (par numéro de bien), une
-// plateforme (Airbnb actif, Booking à venir) et un modèle (comparaison), on
-// appelle l'Edge Function annonce-generate, et on lit l'annonce assemblée dans
-// une mise en page soignée (charte gold/ink). Accès réservé super_admin (route).
+// plateforme (Airbnb ou Booking) et un modèle (comparaison), on appelle l'Edge
+// Function annonce-generate, et on lit la sortie assemblée dans une mise en page
+// soignée (charte gold/ink). Accès réservé super_admin (route).
+//
+// Deux rendus distincts selon la plateforme : Airbnb (annonce complète) et
+// Booking (fiche : nom + 3 champs profil + blocs déterministes).
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -85,19 +88,52 @@ function Texte({ children }) {
   return <p className="text-text leading-relaxed whitespace-pre-line">{children}</p>
 }
 
-function AnnonceResultat({ data }) {
-  const a = data?.output_assemble?.airbnb
-  const meta = data?.generation_meta || {}
-  if (!a) return null
+// Lignes de cadrage propres aux champs Booking (cf. cadrage-annonce-booking-2026.md
+// et schema-sortie-booking-agent-annonce.md). Distillées à l'essentiel.
+const CADRAGE_BOOKING = {
+  nom:
+    "Généré par le modèle, puis validé et corrigé par le système. 3 à 255 caractères, combine type + capacité + atout + lieu ; uniquement les caractères tolérés par Booking (lettres, chiffres et ! # & ' \" - ,), jamais en majuscules intégrales, pas plus de 5 chiffres consécutifs.",
+  about_property:
+    "Généré par le modèle (~2000 caractères). Couvre les 7 dimensions d'avis (propreté, confort, emplacement, personnel, équipements, rapport qualité-prix, wifi) en faits concrets, ton hôtelier rassurant. Pas de storytelling façon Airbnb, pas d'adjectif vague non quantifié.",
+  about_neighbourhood:
+    "Généré par le modèle à partir des seuls faits de localisation (quartier, transports, points d'intérêt), ton positif. Vide si la localisation est indisponible.",
+  about_host:
+    'Texte constant posé par le système (template conciergerie), identique pour tous les biens — pas rédigé par le modèle. Reformulation à venir.',
+  note_camera:
+    "Posée par le système : déclaration légale d'une caméra extérieure si la fiche en signale une (obligation Booking comme Airbnb). Caméra intérieure jamais affichée.",
+}
 
-  const mr = a.mentions_reglementaires || {}
-  const mentions = [
+// Pied de page commun : infos de génération discrètes (modèle, coût, tokens…).
+function MetaFooter({ meta }) {
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap gap-x-6 gap-y-1 text-xs text-text-muted">
+      <span>Modèle servi : <span className="font-medium text-text">{meta.modele_servi || '—'}</span></span>
+      <span>Coût : <span className="font-medium text-text">{formatCout(meta.cout_usd)}</span></span>
+      <span>
+        Tokens : {formatTokens(meta.tokens?.entree)} entrée / {formatTokens(meta.tokens?.sortie)} sortie
+      </span>
+      <span>Latence : {typeof meta.latence_ms === 'number' ? `${meta.latence_ms} ms` : '—'}</span>
+      {meta.localisation?.statut && <span>Localisation : {meta.localisation.statut}</span>}
+    </div>
+  )
+}
+
+// Mentions réglementaires → liste de lignes affichables (partagé Airbnb/Booking).
+function mentionsLignes(mr = {}) {
+  return [
     hasText(mr.numero_enregistrement) && `Numéro d'enregistrement : ${mr.numero_enregistrement}`,
     hasText(mr.dpe_classe) && `Classe DPE : ${mr.dpe_classe}`,
     hasText(mr.mention_consommation_excessive) && mr.mention_consommation_excessive,
     hasText(mr.estimation_depenses_annuelles) && mr.estimation_depenses_annuelles,
   ].filter(Boolean)
+}
 
+function AnnonceResultat({ data }) {
+  const a = data?.output_assemble?.airbnb
+  const meta = data?.generation_meta || {}
+  if (!a) return null
+
+  const mentions = mentionsLignes(a.mentions_reglementaires)
   const titres = Array.isArray(a.titres) ? a.titres : []
 
   return (
@@ -159,16 +195,60 @@ function AnnonceResultat({ data }) {
         <Texte>{a.note_quartier}</Texte>
       </Bloc>
 
-      {/* Infos de génération — discrètes, c'est de l'inspection. */}
-      <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap gap-x-6 gap-y-1 text-xs text-text-muted">
-        <span>Modèle servi : <span className="font-medium text-text">{meta.modele_servi || '—'}</span></span>
-        <span>Coût : <span className="font-medium text-text">{formatCout(meta.cout_usd)}</span></span>
-        <span>
-          Tokens : {formatTokens(meta.tokens?.entree)} entrée / {formatTokens(meta.tokens?.sortie)} sortie
-        </span>
-        <span>Latence : {typeof meta.latence_ms === 'number' ? `${meta.latence_ms} ms` : '—'}</span>
-        {meta.localisation?.statut && <span>Localisation : {meta.localisation.statut}</span>}
-      </div>
+      <MetaFooter meta={meta} />
+    </article>
+  )
+}
+
+// Rendu Booking : on ne rédige pas une annonce, on remplit une fiche. Nom + 3
+// champs profil (dont about_host posé par le code) + blocs déterministes
+// (réglementation, note état/quartier, déclaration caméra).
+function BookingResultat({ data }) {
+  const b = data?.output_assemble?.booking
+  const meta = data?.generation_meta || {}
+  if (!b) return null
+
+  const mentions = mentionsLignes(b.mentions_reglementaires)
+
+  return (
+    <article className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-10">
+      <Bloc titre="Nom de l'hébergement" aide={CADRAGE_BOOKING.nom} visible={hasText(b.nom)}>
+        <Texte>{b.nom}</Texte>
+        <p className="text-xs text-text-muted mt-1">{b.nom.length} caractères (limite Booking : 3 à 255)</p>
+      </Bloc>
+
+      <Bloc titre="About the property" aide={CADRAGE_BOOKING.about_property} visible={hasText(b.about_property)}>
+        <Texte>{b.about_property}</Texte>
+        <p className="text-xs text-text-muted mt-1">{b.about_property.length} caractères (cible ~2000)</p>
+      </Bloc>
+
+      <Bloc titre="About the neighbourhood" aide={CADRAGE_BOOKING.about_neighbourhood} visible={hasText(b.about_neighbourhood)}>
+        <Texte>{b.about_neighbourhood}</Texte>
+      </Bloc>
+
+      <Bloc titre="About the host" aide={CADRAGE_BOOKING.about_host} visible={hasText(b.about_host)}>
+        <Texte>{b.about_host}</Texte>
+      </Bloc>
+
+      <Bloc titre="Mentions réglementaires" aide={CADRAGE.mentions} visible={mentions.length > 0}>
+        <ul className="space-y-1.5">
+          {mentions.map((m, i) => <li key={i} className="text-text">{m}</li>)}
+        </ul>
+      </Bloc>
+
+      <Bloc titre="Note sur l'état" aide={CADRAGE.note_etat} visible={hasText(b.note_etat)}>
+        <Texte>{b.note_etat}</Texte>
+      </Bloc>
+
+      <Bloc titre="Note sur le quartier" aide={CADRAGE.note_quartier} visible={hasText(b.note_quartier)}>
+        <Texte>{b.note_quartier}</Texte>
+      </Bloc>
+
+      <Bloc titre="Caméra (déclaration)" aide={CADRAGE_BOOKING.note_camera} visible={hasText(b.note_camera)}>
+        <Texte>{b.note_camera}</Texte>
+      </Bloc>
+
+      <MetaFooter meta={meta} />
     </article>
   )
 }
@@ -226,7 +306,7 @@ export default function AnnonceInspection() {
   }
 
   const lancerGeneration = async () => {
-    if (!ficheSelectionnee || generating || plateforme !== 'airbnb') return
+    if (!ficheSelectionnee || generating) return
     const ficheIdLance = ficheSelectionnee.id
     setGenerating(true)
     setGenError('')
@@ -332,11 +412,12 @@ export default function AnnonceInspection() {
                   Airbnb
                 </button>
                 <button
-                  disabled
-                  title="Booking n'est pas encore disponible"
-                  className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-400 cursor-not-allowed bg-gray-50"
+                  onClick={() => setPlateforme('booking')}
+                  className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                    plateforme === 'booking' ? 'border-primary bg-primary/10 text-primary' : 'border-gray-300 text-text'
+                  }`}
                 >
-                  Booking <span className="text-[10px] uppercase">· à venir</span>
+                  Booking
                 </button>
               </div>
             </div>
@@ -368,7 +449,8 @@ export default function AnnonceInspection() {
             </button>
             {ficheSelectionnee && !generating && (
               <span className="text-sm text-text-muted">
-                Fiche <span className="font-medium text-text">{ficheSelectionnee.nom || ficheSelectionnee.logement_numero_bien}</span> · Airbnb
+                Fiche <span className="font-medium text-text">{ficheSelectionnee.nom || ficheSelectionnee.logement_numero_bien}</span>
+                {' · '}{plateforme === 'booking' ? 'Booking' : 'Airbnb'}
               </span>
             )}
           </div>
@@ -389,8 +471,10 @@ export default function AnnonceInspection() {
           </div>
         )}
 
-        {/* Résultat */}
-        {resultat && <AnnonceResultat data={resultat} />}
+        {/* Résultat — rendu distinct selon la plateforme. */}
+        {resultat && (resultat.plateforme === 'booking'
+          ? <BookingResultat data={resultat} />
+          : <AnnonceResultat data={resultat} />)}
       </div>
     </div>
   )
