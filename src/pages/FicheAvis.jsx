@@ -436,12 +436,12 @@ export default function FicheAvis() {
               {formData.quartier_perturbations === 'perturbateur' && (
                 <div className="mt-4">
                   <label className="block text-sm font-medium mb-2">
-                    Décrire l'élément perturbateur (ex : bruit de discothèque, odeurs de cuisine d'un restaurant, circulation dense etc)
+                    L'élément perturbateur, en quelques mots (pas une phrase)
                   </label>
                   <textarea
                     className="w-full p-3 border rounded"
-                    rows="3"
-                    placeholder="Décrivez précisément l'élément perturbateur..."
+                    rows="2"
+                    placeholder="Ex : une voie ferrée, des travaux, un bar de nuit"
                     value={formData.quartier_perturbations_details || ''}
                     onChange={(e) => handleChange('section_avis.quartier_perturbations_details', e.target.value)}
                   />

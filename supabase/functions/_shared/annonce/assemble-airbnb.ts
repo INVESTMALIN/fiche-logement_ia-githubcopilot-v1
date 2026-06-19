@@ -180,7 +180,7 @@ const NOTE_ETAT_LOGEMENT: Record<string, string> = {
   etat_moyen:
     "Notre logement a traversé le temps, avec quelques petites marques d'usage, mais nous l'avons pensé pour vous offrir un cadre chaleureux et pratique.",
   etat_degrade:
-    "Notre logement n'est pas neuf, il a traversé les années, avec du mobilier et des installations marqués par le temps mais ce logement nous est cher et nous sommes convaincu qu'il saura vous plaire",
+    "Notre logement n'est pas neuf, il a traversé les années, avec du mobilier et des installations marqués par le temps mais ce logement nous est cher et nous sommes convaincus qu'il saura vous plaire.",
   tres_mauvais_etat:
     "Ce logement n'est pas tout neuf, mais il a une âme. C'est un vrai lieu de vie, avec quelques traces du temps ici ou là, rien de gênant, juste des marques d'authenticité. Si vous cherchez un endroit impeccable comme un hôtel, ce n'est peut-être pas ce qu'il vous faut. Mais si vous aimez les lieux chaleureux, simples et pleins de caractère, vous vous y sentirez bien.",
 }
@@ -189,8 +189,8 @@ const NOTE_ETAT_LOGEMENT: Record<string, string> = {
 const NOTE_ETAT_IMMEUBLE_MAUVAIS =
   "L'immeuble est ancien, avec son charme et ses petites imperfections. Vous pourriez croiser des murs marqués ou une peinture un peu passée. Ce n'est pas du neuf, mais c'est vivant, simple, et agréable à vivre. On préfère le dire avec honnêteté, pour que vous réserviez avec les bonnes attentes."
 const NOTE_ETAT_IMMEUBLE_SALE =
-  "Même si les espaces communs peuvent manquer de soin, l'appartement reste agréable et fonctionnel pour votre séjour."
-const NOTE_ETAT_NON_PMR = "Le logement n'est pas accessible aux personnes PMR"
+  'Même si les espaces communs peuvent manquer de soin, le logement reste agréable et fonctionnel pour votre séjour.'
+const NOTE_ETAT_NON_PMR = "Le logement n'est pas accessible aux personnes PMR."
 
 // note_quartier.
 // Quartier défavorisé : 3 variantes au choix du coordinateur — la fiche ne
@@ -242,8 +242,12 @@ export function buildNoteEtat(code: CodeZone): string {
   if (verdict && verdict in NOTE_ETAT_LOGEMENT) parts.push(NOTE_ETAT_LOGEMENT[verdict])
   if (t.immeuble_etat_general === 'mauvais_etat') parts.push(NOTE_ETAT_IMMEUBLE_MAUVAIS)
   if (t.immeuble_proprete === 'sale') parts.push(NOTE_ETAT_IMMEUBLE_SALE)
-  // Non-PMR : immeuble inaccessible OU accessibilité PMR explicitement à false.
-  if (t.immeuble_accessibilite === 'inaccessible' || t.pmr_accessible === false) parts.push(NOTE_ETAT_NON_PMR)
+  // Non-PMR : déclenché UNIQUEMENT par le choix délibéré « inaccessible » de la
+  // grille Avis (accessibilité de l'immeuble). La case « accessible PMR » des
+  // Équipements ne sert qu'au positif (zone modèle) et ne déclenche jamais ce
+  // négatif : décochée, elle reste à null en conditions réelles, et la faire
+  // dépendre du négatif ouvrait des incohérences.
+  if (t.immeuble_accessibilite === 'inaccessible') parts.push(NOTE_ETAT_NON_PMR)
   // Niveau sonore très bruyant : AUCUNE phrase canon → rien (décision du doc).
   return parts.join(' ')
 }
@@ -257,7 +261,10 @@ export function buildNoteQuartier(code: CodeZone): string {
   if (q.quartier_perturbations === 'perturbateur') {
     const detail = (q.quartier_perturbations_details || '').trim()
     // Template : on n'injecte que si l'élément précis est décrit (sinon vide de sens).
-    if (detail) parts.push(`Il est important de souligner que le logement se situe à proximité de ${detail}.`)
+    // Le texte du coordinateur suit un deux-points → fragment autonome, sans
+    // accord grammatical avec ce qui précède (évite « à proximité de une voie
+    // ferrée » et les redondances selon ce qu'écrit le coordinateur).
+    if (detail) parts.push(`Un point à signaler concernant l'environnement du logement : ${detail}.`)
   }
   return parts.join(' ')
 }

@@ -27,7 +27,7 @@ export const PROMPT_VERSION = 'airbnb-v1'
 const DEPLACEMENTS_AVEC_LOCALISATION = `### Comment se déplacer
 Section dédiée aux TRANSPORTS et aux DISTANCES : c'est ici — et nulle part ailleurs — qu'on donne les temps de trajet et les liaisons vers les points clés. Ne répète pas ce qui a été dit dans « Le quartier » (ambiance, commerces de proximité) : les deux sections sont complémentaires.
 Appuie-toi exclusivement sur le bloc localisation (points d'intérêt et distances réels). N'invente jamais un lieu ni une distance.
-Couvre uniquement les modes pertinents pour ce lieu : à pied (temps/distances réels vers les points clés et la gare), à vélo (seulement si réaliste et agréable ici, jamais dans un centre pavé et piéton ou là où ça n'a pas de sens), transports en commun (arrêt, métro, gare qui desservent le quartier, sans inventer d'horaires). Termine par le stationnement : place privée sur place si elle existe, sinon stationnement public à proximité avec le conseil d'arriver tôt en haute saison. Adapte à chaque logement, jamais un paragraphe générique. Longueur indicative autour de 500 caractères.`
+Couvre uniquement les modes pertinents pour ce lieu : à pied (temps/distances réels vers les points clés et la gare), à vélo (seulement si réaliste et agréable ici, jamais dans un centre pavé et piéton ou là où ça n'a pas de sens), transports en commun (arrêt, métro, gare qui desservent le quartier, sans inventer d'horaires). Filtre chaque mode selon son utilité réelle, par le bon moyen de transport : un bus ou un tram ne se mentionne que s'il est à portée de marche courte (environ 10 minutes), sinon omets-le ; pour le métro ou la gare, donne le temps à pied s'il est proche, sinon présente-le en voiture. Ne présente jamais un temps de marche au-delà de 25 à 30 minutes comme une option à pied. Termine par le stationnement : place privée sur place si elle existe, sinon stationnement public à proximité avec le conseil d'arriver tôt en haute saison. Adapte à chaque logement, jamais un paragraphe générique. Longueur indicative autour de 500 caractères.`
 
 const DEPLACEMENTS_SANS_LOCALISATION = `### Comment se déplacer
 Aucune donnée de localisation fiable n'est disponible pour ce logement. Tu ne peux donc PAS rédiger cette section sans inventer : renvoie une chaîne vide ("") pour le champ comment_se_deplacer. N'indique aucune distance, aucun lieu, aucun arrêt ni aucun mode de transport, et ne propose pas de paragraphe générique. (Les autres champs restent à produire normalement.)`
@@ -73,6 +73,7 @@ Pour le contexte d'un lieu connu (caractère d'un quartier ou d'une ville), tu p
 - Pas d'emojis.
 - Pas de clichés ni de formules creuses du type « plongez dans le charme » ou « vivez une expérience unique ». Des faits concrets à la place.
 - Pas de listes dans les descriptions, du texte rédigé.
+- N'utilise jamais de tiret cadratin (« — ») dans la prose : mets une virgule ou commence une nouvelle phrase à la place.
 
 ## Hors de ta responsabilité
 

@@ -69,7 +69,9 @@ export interface ModeleZone {
     // un déclencheur de phrase canon en zone code, jamais exposé au modèle.
     pmr: { accessible: true | null; details: string | null }
     wifi_present: boolean // présence seulement (jamais identifiants)
-    parking: { type: string | null; sur_place_types: string[]; payant_type: string | null }
+    // `details` : note libre de stationnement (LA source selon le type), pour
+    // que le modèle en tire une info pratique (reformulée, jamais verbatim).
+    parking: { type: string | null; sur_place_types: string[]; payant_type: string | null; details: string | null }
     cuisine: {
       four: boolean
       plaque_cuisson: boolean
@@ -84,6 +86,8 @@ export interface ModeleZone {
       grille_pain: boolean
       vaisselle_complete: boolean // ≥1 compteur vaisselle/couverts > 0
       verres_a_vin: boolean
+      // Équipement « autre » saisi en libre (ex. « Robot Kenwood »), sinon null.
+      autre: string | null
     }
     salles_de_bains: SalleDeBainContrat[]
     linge_fourni: boolean | null
@@ -163,9 +167,6 @@ export interface CodeZone {
     grille_notes: Record<string, number | null>
     securite_dangers: string[]
     securite_danger_detecte: boolean
-    // Accessibilité PMR en tri-état : false → phrase canon "non accessible PMR" ;
-    // true / null → rien. Le négatif est géré ici (code), pas vu par le modèle.
-    pmr_accessible: boolean | null
   }
   note_quartier_triggers: {
     quartier_securite: string | null

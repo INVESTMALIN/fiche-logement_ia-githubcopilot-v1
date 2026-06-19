@@ -6,6 +6,8 @@ import {
   type AirbnbModelOutput,
   assembleAirbnbOutput,
   buildConformite,
+  buildNoteEtat,
+  buildNoteQuartier,
   CAMERA_EXTERIEURE_DISCLOSURE,
   parseModelOutput,
 } from './assemble-airbnb.ts'
@@ -25,7 +27,6 @@ function makeCode(over: Partial<CodeZone> = {}): CodeZone {
       grille_notes: {},
       securite_dangers: [],
       securite_danger_detecte: false,
-      pmr_accessible: null,
     },
     note_quartier_triggers: {
       quartier_securite: null,
@@ -80,6 +81,57 @@ Deno.test('Caméra intérieure → drapeau de conformité levé, ZÉRO texte dan
 
 Deno.test('Pas de caméra intérieure → drapeau de conformité à false', () => {
   assertEquals(buildConformite(makeCode()).camera_interieure_signalee, false)
+})
+
+// ───────────────────── note_etat / note_quartier — disclosures ─────────────────────
+
+Deno.test('note_etat : cas positif (aucun trigger) → chaîne vide', () => {
+  assertEquals(buildNoteEtat(makeCode()), '')
+})
+
+Deno.test('note_etat : phrases canon corrigées (ponctuation, accord, généricité)', () => {
+  const degrade = buildNoteEtat(makeCode({
+    note_etat_triggers: { ...makeCode().note_etat_triggers, grille_verdict: 'etat_degrade' },
+  }))
+  assert(degrade.includes('nous sommes convaincus')) // accord corrigé (plus "convaincu")
+  assert(degrade.endsWith('vous plaire.')) // point final présent
+  // Propreté immeuble sale : générique "le logement" (plus "l'appartement").
+  const sale = buildNoteEtat(makeCode({
+    note_etat_triggers: { ...makeCode().note_etat_triggers, immeuble_proprete: 'sale' },
+  }))
+  assert(sale.includes('le logement reste agréable'))
+  assert(!sale.toLowerCase().includes('appartement'))
+})
+
+Deno.test('note_etat : "non accessible PMR" UNIQUEMENT via grille Avis inaccessible', () => {
+  const inaccessible = buildNoteEtat(makeCode({
+    note_etat_triggers: { ...makeCode().note_etat_triggers, immeuble_accessibilite: 'inaccessible' },
+  }))
+  assertEquals(inaccessible, 'Le logement n\'est pas accessible aux personnes PMR.') // point final
+  // La case Équipements n'existe plus comme trigger (pmr_accessible retiré du contrat) :
+  // hors "inaccessible", aucune phrase PMR n'est injectée.
+  assert(!buildNoteEtat(makeCode()).toLowerCase().includes('pmr'))
+})
+
+Deno.test('note_quartier : élément perturbateur → fragment autonome après deux-points', () => {
+  const out = buildNoteQuartier(makeCode({
+    note_quartier_triggers: {
+      ...makeCode().note_quartier_triggers,
+      quartier_perturbations: 'perturbateur',
+      quartier_perturbations_details: 'une voie ferrée',
+    },
+  }))
+  // Forme robuste : pas d'accord grammatical "de une", pas de redondance "à proximité".
+  assertEquals(out, 'Un point à signaler concernant l\'environnement du logement : une voie ferrée.')
+})
+
+Deno.test('note_quartier : perturbateur sans détail → rien (template vide de sens évité)', () => {
+  assertEquals(
+    buildNoteQuartier(makeCode({
+      note_quartier_triggers: { ...makeCode().note_quartier_triggers, quartier_perturbations: 'perturbateur' },
+    })),
+    '',
+  )
 })
 
 // ───────────────────── Validation de forme de la sortie modèle ─────────────────────
