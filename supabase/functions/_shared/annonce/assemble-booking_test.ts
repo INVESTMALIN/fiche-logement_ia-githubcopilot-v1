@@ -110,8 +110,10 @@ Deno.test('Nom : tout-majuscules corrigé en Title Case', () => {
   assertEquals(sanitizeNom('STUDIO PARIS CENTRE'), 'Studio Paris Centre')
 })
 
-Deno.test('Nom : pas plus de 5 chiffres consécutifs (série tronquée)', () => {
-  const out = sanitizeNom('Appart 123456789 Nice')
+Deno.test('Nom : pas plus de 5 chiffres consécutifs (série tronquée par la règle de format)', () => {
+  // 8 chiffres contigus : sous le seuil « coordonnée » (≥9), donc non scrubés
+  // mais tronqués à 5 par la règle de format Booking.
+  const out = sanitizeNom('Appart 12345678 Nice')
   assert(out.includes('12345'))
   assert(!/\d{6,}/.test(out))
 })
@@ -126,6 +128,24 @@ Deno.test('Nom : longueur plafonnée à 255', () => {
   const out = sanitizeNom(long)
   assert(out.length <= 255)
   assert(out.length >= 3)
+})
+
+Deno.test('Nom : coordonnées scrubées (téléphone espacé, email, URL), chiffres légitimes préservés', () => {
+  // Numéro espacé : aucun run de 6 chiffres consécutifs, mais blob de coordonnée → retiré.
+  const tel = sanitizeNom('Studio Nice 06 12 34 56 78')
+  assert(!tel.includes('06 12'))
+  assert(/Studio Nice/.test(tel))
+  // Email et domaine nu retirés du nom.
+  assert(!/@/.test(sanitizeNom('Studio contact@x.fr Nice')))
+  assert(!/luxe\.com/.test(sanitizeNom('Studio luxe.com Nice')))
+  // Chiffres UTILES préservés (capacité, surface) : ce ne sont pas des coordonnées.
+  assertEquals(sanitizeNom('Appartement 120 m2 - 4 pers - Nice'), 'Appartement 120 m2 - 4 pers - Nice')
+})
+
+Deno.test('Nom réduit à une coordonnée → vide après scrub → erreur post-traitement', () => {
+  const out = assembleBookingOutput({ ...MODEL, nom: '06 12 34 56 78' }, codeDe({}))
+  assertEquals(out.booking.nom.trim(), '')
+  assert(raisonBookingPostInvalide(out, { localisationDisponible: true }) !== null)
 })
 
 // ───────────────────── Scrub des interdits (champs profil) ─────────────────────

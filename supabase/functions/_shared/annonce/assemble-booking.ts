@@ -131,13 +131,22 @@ function corrigeMajusculesIntegrales(s: string): string {
 
 /**
  * Sanitise le nom selon les RÈGLES DURES de Booking. Ne laisse JAMAIS sortir un
- * nom hors-charset. Ordre : normalisation typographique → retrait concurrents +
- * superlatifs → strip hors-charset → correction tout-majuscules → plafond de 5
- * chiffres consécutifs → espaces normalisés → longueur 3-255.
+ * nom hors-charset ni une coordonnée. Ordre : normalisation typographique →
+ * scrub des interdits (téléphone même espacé, email, URL, plateformes
+ * concurrentes — mutualisé avec les champs profil) → retrait superlatifs → strip
+ * hors-charset → correction tout-majuscules → plafond de 5 chiffres consécutifs
+ * → espaces normalisés → longueur 3-255. Si le nom devient vide/trop court, la
+ * revalidation post-traitement (raisonBookingPostInvalide) le rejette en erreur.
  */
 export function sanitizeNom(nom: string): string {
   let s = normaliseTypographie(nom || '')
-  s = s.replace(PLATEFORMES_CONCURRENTES, ' ').replace(SUPERLATIFS_FLAGRANTS, ' ')
+  // Mêmes interdits que les champs profil (un champ libre de la fiche peut être
+  // recopié dans le nom par le modèle) : scrub AVANT le strip hors-charset pour
+  // reconnaître emails/URL/numéros espacés (« 06 12 34 56 78 ») comme motifs,
+  // pas comme suite de chiffres légitimes. Les chiffres utiles (« 4 pers »,
+  // « 120 m² ») ne forment pas un blob de coordonnée et sont préservés.
+  s = scrubInterdits(s)
+  s = s.replace(SUPERLATIFS_FLAGRANTS, ' ')
   s = s.replace(HORS_CHARSET, ' ')
   s = corrigeMajusculesIntegrales(s)
   // Pas plus de 5 chiffres consécutifs (détection numéro de téléphone) : on
