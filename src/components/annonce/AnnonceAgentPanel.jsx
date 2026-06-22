@@ -101,8 +101,11 @@ export default function AnnonceAgentPanel({ ficheId }) {
     }
     // Succès : la réponse a la même forme qu'une ligne table (output_assemble +
     // generation_meta) → on la stocke et on déroule le volet (clic explicite,
-    // l'utilisateur veut voir ce qu'il vient de générer).
-    setOutputs((o) => ({ ...o, [plateforme]: res }))
+    // l'utilisateur veut voir ce qu'il vient de générer). NB : la réponse Edge
+    // porte `generated_at` dans generation_meta (pas en colonne top-level comme
+    // la ligne table relue) ; on le normalise pour que l'en-tête « Généré le… »
+    // s'affiche à l'identique au frais et après rechargement.
+    setOutputs((o) => ({ ...o, [plateforme]: { ...res, generated_at: res.generation_meta?.generated_at } }))
     setVoletOpen((v) => ({ ...v, [plateforme]: true }))
   }
 
