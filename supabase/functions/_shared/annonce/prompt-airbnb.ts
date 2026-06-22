@@ -15,8 +15,8 @@ import { REFERENTIEL_AIRBNB } from './referentiel-airbnb.ts'
 import type { ModeleZone } from './types.ts'
 import type { Faits } from '../localisation/types.ts'
 
-/** Version du prompt — persistée dans agent_outputs.prompt_version. */
-export const PROMPT_VERSION = 'airbnb-v1'
+/** Version du prompt — persistée dans agent_outputs.prompt_version et generation_meta.prompt_version. */
+export const PROMPT_VERSION = 'airbnb-v2'
 
 // Instruction « Comment se déplacer » — dépend de la disponibilité de la
 // localisation. Avec localisation : section rédigée à partir des faits réels.

@@ -2,6 +2,8 @@
 
 Prompt système de génération d'annonces Airbnb. Versionné en Git, appelé par l'Edge Function `annonce-generate`. Le modèle ne produit que les champs de prose ; les blocs déterministes (échanges, réglementation, état) et les passthrough (nombre de voyageurs) sont assemblés par l'Edge Function.
 
+> **Version d'exécution** : la constante `PROMPT_VERSION` (persistée dans `generation_meta.prompt_version` et `agent_outputs.prompt_version`) vaut **`airbnb-v2`**. v2 = champ « logement » segmenté en blocs par zone ; v1 = pavé d'un seul tenant. Le « v1 » du titre et du nom de fichier désigne la génération du spec de prompt (slug stable, référencé dans le code), distincte de cette étiquette d'exécution.
+
 ---
 
 ## Rôle
