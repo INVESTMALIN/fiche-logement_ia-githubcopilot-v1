@@ -254,35 +254,65 @@ serve(async (req: Request) => {
     console.error(`[annonce-generate] sortie invalide fiche=${ficheId} (${erreurType}): ${messageErreur}`)
   }
 
-  // 6) Upsert agent_outputs (1 ligne par (fiche, plateforme), on écrase). On
-  //    persiste TOUJOURS — succès (`genere`) comme échec de forme (`erreur`) —
-  //    pour garder la sortie brute inspectable et rendre la génération réessayable.
-  const { error: upErr } = await service
-    .from('agent_outputs')
-    .upsert({
-      fiche_id: ficheId,
-      plateforme,
-      output_assemble: outputAssemble,
-      output_modele_brut: outputModeleBrut,
-      contrat_entree: contrat,
-      modele: model,
-      prompt_version: promptVersion,
-      generation_meta: generationMeta,
-      statut,
-      // Sur régénération (upsert UPDATE), les DEFAULT now() ne se rejouent pas →
-      // on rafraîchit explicitement (pas d'historique en v1, on écrase).
-      generated_at: nowISO,
-      updated_at: nowISO,
-    }, { onConflict: 'fiche_id,plateforme' })
-  if (upErr) {
-    console.error('[annonce-generate] upsert agent_outputs échoué:', upErr)
-    return json({ success: false, error: 'DB_WRITE_ERROR', message: upErr.message }, 500)
+  // 6) Persistance agent_outputs (1 ligne par (fiche, plateforme), upsert).
+  //    Sur SUCCÈS : on écrit toujours. Sur ÉCHEC : on ne persiste la trace
+  //    d'erreur QUE s'il n'existe pas déjà une annonce valide pour ce couple. Un
+  //    échec ne doit JAMAIS écraser une annonce valide (sinon perte de données
+  //    réelle : un coordinateur régénère, l'appel modèle plante, et son annonce
+  //    valide serait remplacée par une ligne d'erreur sans contenu). Première
+  //    génération — ou trace d'erreur déjà en place — : rien à protéger, on garde
+  //    la trace d'échec comme avant (brut inspectable, génération réessayable).
+  let persiste = true
+  if (!ok) {
+    const { data: existant, error: readErr } = await service
+      .from('agent_outputs')
+      .select('statut, output_assemble')
+      .eq('fiche_id', ficheId)
+      .eq('plateforme', plateforme)
+      .maybeSingle()
+    if (readErr) {
+      console.error('[annonce-generate] lecture agent_outputs (garde anti-écrasement) échouée:', readErr)
+      return json({ success: false, error: 'DB_READ_ERROR', message: readErr.message }, 500)
+    }
+    // Annonce valide existante = statut non-`erreur` ET sortie assemblée présente.
+    const annonceValideExistante = !!existant && existant.statut !== 'erreur' && existant.output_assemble != null
+    persiste = !annonceValideExistante
+  }
+
+  if (persiste) {
+    const { error: upErr } = await service
+      .from('agent_outputs')
+      .upsert({
+        fiche_id: ficheId,
+        plateforme,
+        output_assemble: outputAssemble,
+        output_modele_brut: outputModeleBrut,
+        contrat_entree: contrat,
+        modele: model,
+        prompt_version: promptVersion,
+        generation_meta: generationMeta,
+        statut,
+        // Sur régénération (upsert UPDATE), les DEFAULT now() ne se rejouent pas →
+        // on rafraîchit explicitement (pas d'historique en v1, on écrase).
+        generated_at: nowISO,
+        updated_at: nowISO,
+      }, { onConflict: 'fiche_id,plateforme' })
+    if (upErr) {
+      console.error('[annonce-generate] upsert agent_outputs échoué:', upErr)
+      return json({ success: false, error: 'DB_WRITE_ERROR', message: upErr.message }, 500)
+    }
   }
 
   // Erreur de génération identifiable et réessayable (forme modèle invalide OU
-  // champ requis vidé par le post-traitement) : la ligne est en statut `erreur`,
-  // la sortie brute est conservée pour inspection.
+  // champ requis vidé par le post-traitement). Si une annonce valide existait,
+  // elle a été PRÉSERVÉE (aucune écriture) ; sinon la trace d'erreur est en base.
   if (!ok) {
+    if (!persiste) {
+      console.warn(
+        `[annonce-generate] échec fiche=${ficheId} plateforme=${plateforme} (${erreurType}) : ` +
+        'annonce valide existante préservée, aucun écrasement',
+      )
+    }
     return json({
       success: false,
       error: erreurType,
