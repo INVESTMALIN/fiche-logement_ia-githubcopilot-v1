@@ -528,7 +528,7 @@ export default function FicheAvis() {
             </div>
 
             {/* Niveau sonore de l'immeuble */}
-            <div className="mb-4">
+            <div className="mb-6">
               <label className="block font-semibold mb-3">Niveau sonore de l'immeuble</label>
 
               <div className="flex flex-col gap-3">
@@ -550,6 +550,21 @@ export default function FicheAvis() {
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* 📸 Photos de la façade — photos seules, réutilisables pour l'annonce */}
+            <div>
+              <label className="block font-semibold mb-1">Photos de la façade</label>
+              <p className="text-sm text-text-muted mb-3">
+                📸 Ces photos pourront être utilisées pour l'annonce.
+              </p>
+              <PhotoUpload
+                fieldPath="section_avis.immeuble_facade_photos"
+                label=""
+                multiple={true}
+                maxFiles={5}
+                acceptVideo={false}
+              />
             </div>
           </div>
 

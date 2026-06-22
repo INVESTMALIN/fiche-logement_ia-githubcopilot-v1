@@ -172,6 +172,7 @@ export const mapFormDataToSupabase = (formData) => {
     avis_immeuble_proprete: formData.section_avis?.immeuble_proprete || null,
     avis_immeuble_accessibilite: formData.section_avis?.immeuble_accessibilite || null,
     avis_immeuble_niveau_sonore: formData.section_avis?.immeuble_niveau_sonore || null,
+    avis_immeuble_facade_photos: formData.section_avis?.immeuble_facade_photos || [],
 
     // 🏠 Évaluation logement
     // Legacy : dérivé de la grille (verdict global pour l'état, critère 1 pour la propreté)
@@ -1411,6 +1412,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       immeuble_proprete: supabaseData.avis_immeuble_proprete || null,
       immeuble_accessibilite: supabaseData.avis_immeuble_accessibilite || null,
       immeuble_niveau_sonore: supabaseData.avis_immeuble_niveau_sonore || null,
+      immeuble_facade_photos: supabaseData.avis_immeuble_facade_photos || [],
 
       // 🏠 Évaluation logement (legacy, dérivé de la grille à l'écriture)
       logement_etat_general: supabaseData.avis_logement_etat_general || null,

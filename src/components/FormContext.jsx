@@ -195,6 +195,7 @@ const initialFormData = {
     immeuble_proprete: null,                     // Radio: "Propre"/"Sale"/null
     immeuble_accessibilite: null,                // Radio: "Très accessible"/"Modérément accessible"/"Inaccessible"/null
     immeuble_niveau_sonore: null,                // Radio: "Très calme"/"Relativement calme"/"Très bruyant"/null
+    immeuble_facade_photos: [],                  // Array photos de la façade (immeuble/maison) — réutilisables pour l'annonce
 
     // 🏠 4. ÉVALUATION LOGEMENT
     // Legacy : conservés pour compatibilité (alimentés automatiquement depuis la grille au save)
