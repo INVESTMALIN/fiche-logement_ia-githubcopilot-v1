@@ -285,12 +285,12 @@ export function BookingResultat({ data, showCadrage = true, showMeta = true }) {
     <article className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-10">
       <Bloc titre="Nom de l'hébergement" aide={showCadrage && CADRAGE_BOOKING.nom} visible={hasText(b.nom)}>
         <Texte>{b.nom}</Texte>
-        {showCadrage && <p className="text-xs text-text-muted mt-1">{b.nom.length} caractères (limite Booking : 3 à 255)</p>}
+        {showCadrage && <p className="text-xs text-text-muted mt-1">{b.nom?.length} caractères (limite Booking : 3 à 255)</p>}
       </Bloc>
 
       <Bloc titre="About the property" aide={showCadrage && CADRAGE_BOOKING.about_property} visible={hasText(b.about_property)}>
         <Texte>{b.about_property}</Texte>
-        {showCadrage && <p className="text-xs text-text-muted mt-1">{b.about_property.length} caractères (cible ~2000)</p>}
+        {showCadrage && <p className="text-xs text-text-muted mt-1">{b.about_property?.length} caractères (cible ~2000)</p>}
       </Bloc>
 
       <Bloc titre="About the neighbourhood" aide={showCadrage && CADRAGE_BOOKING.about_neighbourhood} visible={hasText(b.about_neighbourhood)}>
