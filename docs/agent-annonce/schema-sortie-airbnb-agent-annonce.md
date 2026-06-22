@@ -37,7 +37,7 @@ Distinction fondamentale : certains champs sont **générés par le modèle** (l
 | `titres` | Généré (modèle) | 3 propositions. 28 à 45 caractères, cible 37 à 43. Ancrage géographique obligatoire. |
 | `nombre_voyageurs` | Passthrough fiche | Recopié depuis la capacité, pas généré. |
 | `description` | Généré (modèle) | Résumé principal. Cible 430 à 450, plafond 500. |
-| `logement` | Généré (modèle) | « L'espace ». Prose par zone, sans titres rigides. |
+| `logement` | Généré (modèle) | « L'espace ». Prose en blocs par zone : chaque bloc = un intitulé court (Séjour, Cuisine, Chambres, Salle de bain, Extérieur, puis équipements spéciaux) seul sur sa ligne, suivi de prose, une ligne vide entre les blocs. Les intitulés font partie du texte (sans emoji). Reste une chaîne de caractères. |
 | `acces_voyageurs` | Généré (modèle) | « Accès des voyageurs ». |
 | `echanges_voyageurs` | Template conciergerie (code) | Texte constant, identique pour tous les biens. Pas généré. |
 | `quartier` | Généré (modèle) | « Le quartier » : ambiance positive et POI uniquement. Ne touche jamais aux négatifs (sécurité, nuisances, socio-économique), gérés par `note_quartier`. |

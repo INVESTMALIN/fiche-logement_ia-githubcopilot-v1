@@ -15,8 +15,8 @@ import { REFERENTIEL_AIRBNB } from './referentiel-airbnb.ts'
 import type { ModeleZone } from './types.ts'
 import type { Faits } from '../localisation/types.ts'
 
-/** Version du prompt — persistée dans agent_outputs.prompt_version. */
-export const PROMPT_VERSION = 'airbnb-v1'
+/** Version du prompt — persistée dans agent_outputs.prompt_version et generation_meta.prompt_version. */
+export const PROMPT_VERSION = 'airbnb-v2'
 
 // Instruction « Comment se déplacer » — dépend de la disponibilité de la
 // localisation. Avec localisation : section rédigée à partir des faits réels.
@@ -99,8 +99,15 @@ Contenu obligatoire : la surface en m², la typologie, la capacité exacte et la
 Structure conseillée : une accroche située, les éléments spatiaux et le couchage, une distance ou un temps de trajet vers un point d'intérêt, un différenciateur fort (vue, terrasse, climatisation, rénovation récente...). Privilégie les équipements différenciateurs forts (niveau 1 du référentiel) plutôt que le wifi ou la cuisine, mais ne cite que ceux réellement présents.
 
 ### Logement (champ « L'espace »)
-Décris les espaces du logement en texte rédigé et fluide, organisé par zone, sans titre rigide. Adapte-toi aux espaces réellement présents, n'invente jamais une pièce, un étage ou un niveau.
-Couvre, dans cet ordre et seulement si l'information existe : séjour et salle à manger (capacité de la table, type de TV et services de streaming, canapé-lit, cheminée) ; cuisine (électroménager présent) ; salle de bain (douche/baignoire, type, privée ou partagée, sèche-cheveux, sèche-serviettes) ; chambres (nombre de lits et dimensions, localisation de la chambre seulement si connue et cohérente avec l'accès) ; extérieur (type, privé ou commun, équipements) ; équipements spéciaux si présents (piscine privée ou partagée avec horaires/disponibilité si partagée, jacuzzi, sauna). Mélange factuel et sensoriel, sans pavé. Longueur indicative autour de 1000 caractères.
+Décris les espaces du logement en blocs par zone, pour que la lecture respire et reste scannable. Chaque bloc commence par un intitulé de zone, seul sur sa ligne, suivi à la ligne d'une vraie prose rédigée ; sépare deux blocs par une ligne vide. Adapte-toi aux espaces réellement présents, n'invente jamais une pièce, un étage ou un niveau.
+Reprends ces intitulés tels quels, sans variante (ni pluriel, ni synonyme, ni reformulation), uniquement si l'information existe, et dans cet ordre : Séjour, puis Cuisine, puis Chambres, puis Salle de bain, puis Extérieur, puis les éventuels équipements spéciaux (un bloc chacun, sous l'intitulé Piscine, Jacuzzi ou Sauna). Dans ta sortie, l'intitulé est seul sur sa ligne, sans emoji, sans deux-points, sans tiret ni guillemets : juste le mot. Le deux-points dans la liste ci-dessous ne sert qu'à indiquer ce que chaque bloc doit couvrir.
+- Séjour : capacité de la table, type de TV et services de streaming, canapé-lit, cheminée.
+- Cuisine : l'électroménager présent.
+- Chambres : nombre de lits et dimensions, localisation d'une chambre seulement si connue et cohérente avec l'accès.
+- Salle de bain : douche ou baignoire et leur type, privée ou partagée, sèche-cheveux, sèche-serviettes.
+- Extérieur : type, privé ou commun, équipements.
+- Piscine, Jacuzzi, Sauna : pour une piscine, précise privée ou partagée, et pour une partagée ses horaires et sa disponibilité dans l'année.
+La prose de chaque bloc est fluide et rédigée, jamais une énumération télégraphique. À proscrire absolument : « Douche, sèche-cheveux et sèche-serviettes. » À écrire plutôt : « La salle de bain privative vous offre une belle douche, avec sèche-cheveux et sèche-serviettes pour votre confort. » Garde une touche sensorielle (lumière, ambiance, usage du lieu) sans tomber dans le cliché creux. Longueur indicative autour de 1000 à 1200 caractères, intitulés compris.
 
 ### Accès des voyageurs
 Indique l'étage et le mode d'accès (escalier ou ascenseur uniquement), en respectant l'accès réel : en rez-de-chaussée pas d'ascenseur ; s'il y en a un et que le logement est en étage, mentionne-le. N'invente jamais d'étage.

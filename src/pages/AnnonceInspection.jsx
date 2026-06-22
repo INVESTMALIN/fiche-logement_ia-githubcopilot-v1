@@ -52,7 +52,7 @@ const CADRAGE = {
   description:
     "Généré par le modèle. Résumé en prose de 380 à 470 caractères (cible 430-450) ; doit faire figurer la surface en m², la typologie, la capacité exacte et la ville.",
   logement:
-    "Généré par le modèle. Prose fluide organisée par zone (séjour, cuisine, salle de bain, chambres, extérieur, équipements spéciaux), sans découpage rigide pièce par pièce ; n'invente jamais une pièce, un étage ou un niveau.",
+    "Généré par le modèle. Prose en blocs par zone : chaque bloc commence par un intitulé court (Séjour, Cuisine, Chambres, Salle de bain, Extérieur, puis équipements spéciaux) suivi d'une vraie prose rédigée, jamais télégraphique, avec une ligne vide entre les blocs. Les intitulés font partie du texte Airbnb (sans emoji) ; n'invente jamais une pièce, un étage ou un niveau.",
   acces:
     "Généré par le modèle. Étage et mode d'accès (escalier ou ascenseur), arrivée autonome et stationnement ; jamais l'emplacement de la boîte à clés, jamais d'étage inventé.",
   echanges:
@@ -86,6 +86,84 @@ function Bloc({ titre, aide, visible = true, children }) {
 
 function Texte({ children }) {
   return <p className="text-text leading-relaxed whitespace-pre-line">{children}</p>
+}
+
+// ── Champ « logement » : segmentation en blocs par zone ──────────────────────
+// Le modèle rend « logement » en blocs (intitulé de zone seul sur sa ligne +
+// prose, ligne vide entre blocs) — cf. instruction « Logement » du prompt
+// (supabase/functions/_shared/annonce/prompt-airbnb.ts) et son doc miroir
+// (docs/agent-annonce/prompt-v1-agent-annonce-airbnb.md). Les intitulés font
+// partie du texte Airbnb (sans emoji) ; le front les reconnaît seulement pour
+// les styliser en sous-niveau. Liste FERMÉE, à garder synchro avec le prompt.
+const INTITULES_ZONE_LOGEMENT = ['Séjour', 'Cuisine', 'Chambres', 'Salle de bain', 'Extérieur', 'Piscine', 'Jacuzzi', 'Sauna']
+
+// Normalisation tolérante pour la reconnaissance : strict sur le fond (égalité
+// avec un intitulé connu), souple sur la forme (casse, puce/tiret en tête,
+// ponctuation décorative en fin, espaces). On ne déforme jamais le texte affiché.
+const normaliserIntitule = (s) =>
+  s.trim().toLowerCase().replace(/^[-•*\s]+/, '').replace(/[\s.:]+$/u, '').replace(/\s+/g, ' ')
+
+// Variantes acceptées en plus des canoniques (pluriel/singulier courants), filet
+// de sécurité si le modèle dévie légèrement malgré la consigne d'intitulés exacts.
+const INTITULES_ZONE_RECONNUS = new Set([
+  ...INTITULES_ZONE_LOGEMENT.map(normaliserIntitule),
+  'salle de bains',
+  'chambre',
+])
+
+// Une ligne est un intitulé de zone si, normalisée, elle EST exactement l'un des
+// intitulés connus (garde-fou de longueur contre un faux positif sur de la prose).
+// Renvoie le libellé original (trimmé), pour un affichage fidèle au texte réel.
+function intituleZone(ligne) {
+  const t = ligne.trim()
+  if (!t || t.length > 40) return null
+  return INTITULES_ZONE_RECONNUS.has(normaliserIntitule(t)) ? t : null
+}
+
+// Découpe « logement » en blocs { titre, texte }. Parcours ligne à ligne : une
+// ligne reconnue comme intitulé ouvre un bloc, les suivantes forment sa prose.
+// Tout texte avant le premier intitulé — ou la totalité si AUCUN intitulé n'est
+// reconnu — devient un bloc sans titre, rendu en prose simple (comportement
+// historique préservé : on ne casse jamais l'affichage, même si le modèle dévie).
+function decouperLogement(texte) {
+  const blocs = []
+  let courant = null
+  for (const ligne of (texte || '').split('\n')) {
+    const titre = intituleZone(ligne)
+    if (titre) {
+      if (courant) blocs.push(courant)
+      courant = { titre, lignes: [] }
+    } else {
+      if (!courant) courant = { titre: null, lignes: [] }
+      courant.lignes.push(ligne)
+    }
+  }
+  if (courant) blocs.push(courant)
+  return blocs
+    .map((b) => ({ titre: b.titre, texte: b.lignes.join('\n').trim() }))
+    .filter((b) => b.titre || b.texte)
+}
+
+// Rendu du champ « logement » en blocs par zone. L'intitulé de zone est un
+// SOUS-NIVEAU sous le titre de section doré : encre semibold, casse normale,
+// filet doré à gauche — hiérarchie nette sans concurrencer le doré uppercase des
+// sections. Sans intitulé reconnu, on retombe sur un simple paragraphe (legacy).
+function LogementBlocs({ texte }) {
+  const blocs = decouperLogement(texte)
+  return (
+    <div className="space-y-5">
+      {blocs.map((b, i) =>
+        b.titre ? (
+          <div key={i} className="border-l-2 border-primary/60 pl-3">
+            <h4 className="text-sm font-semibold text-text mb-1.5">{b.titre}</h4>
+            {b.texte && <p className="text-text leading-relaxed whitespace-pre-line">{b.texte}</p>}
+          </div>
+        ) : (
+          <p key={i} className="text-text leading-relaxed whitespace-pre-line">{b.texte}</p>
+        ),
+      )}
+    </div>
+  )
 }
 
 // Lignes de cadrage propres aux champs Booking (cf. cadrage-annonce-booking-2026.md
@@ -158,7 +236,7 @@ function AnnonceResultat({ data }) {
       </Bloc>
 
       <Bloc titre="Le logement" aide={CADRAGE.logement} visible={hasText(a.logement)}>
-        <Texte>{a.logement}</Texte>
+        <LogementBlocs texte={a.logement} />
       </Bloc>
 
       <Bloc titre="Accès des voyageurs" aide={CADRAGE.acces} visible={hasText(a.acces_voyageurs)}>
