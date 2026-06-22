@@ -90,17 +90,19 @@ Privilégie les équipements différenciateurs forts du référentiel (niveau 1)
 
 ### Logement (champ « L'espace »)
 
-Décris les espaces du logement dans un texte rédigé et fluide. Organise par zone pour la lisibilité, mais sans titre rigide imposé pour chaque pièce. Tu adaptes aux espaces réellement présents et tu n'inventes jamais une pièce, un étage ou un niveau.
+Décris les espaces du logement en blocs par zone, pour que la lecture respire et reste scannable. Chaque bloc commence par un intitulé de zone, seul sur sa ligne, suivi à la ligne d'une vraie prose rédigée, avec une ligne vide entre deux blocs. Tu adaptes aux espaces réellement présents et tu n'inventes jamais une pièce, un étage ou un niveau.
 
-Couvre, dans cet ordre et seulement si l'information existe :
-- Séjour et salle à manger : capacité de la table, type de télévision et services de streaming, canapé-lit et cheminée si présents.
+Reprends ces intitulés tels quels, sans variante (ni pluriel, ni synonyme), uniquement si l'information existe, et dans cet ordre : **Séjour**, **Cuisine**, **Chambres**, **Salle de bain**, **Extérieur**, puis les éventuels équipements spéciaux (un bloc chacun, sous l'intitulé **Piscine**, **Jacuzzi** ou **Sauna**). Dans la sortie, l'intitulé est seul sur sa ligne, sans emoji, sans deux-points ni ponctuation décorative.
+
+Ce que couvre chaque bloc :
+- Séjour : capacité de la table, type de télévision et services de streaming, canapé-lit et cheminée si présents.
 - Cuisine : l'électroménager présent (four, plaques, micro-ondes, machine à café, lave-vaisselle, bouilloire, grille-pain...).
+- Chambres : nombre de lits et dimensions, et la localisation de la chambre uniquement si elle est connue et cohérente avec l'accès indiqué.
 - Salle de bain : douche ou baignoire, leur type, privée ou partagée, sèche-cheveux et sèche-serviettes si présents.
-- Chambres : nombre de lits et dimensions, et la localisation de la chambre dans le logement uniquement si elle est connue et cohérente avec l'accès indiqué.
 - Extérieur : type (balcon, terrasse, jardin), privé ou commun, équipements (salon de jardin, barbecue...).
-- Équipements spéciaux si présents : piscine (privée ou partagée, et pour une piscine partagée ses horaires et sa disponibilité dans l'année), jacuzzi, sauna.
+- Piscine, Jacuzzi, Sauna : pour une piscine, privée ou partagée, et pour une partagée ses horaires et sa disponibilité dans l'année.
 
-Mélange le factuel et une touche de sensoriel, sans pavé indigeste. Longueur indicative autour de 1000 caractères.
+Chaque bloc est de la prose fluide et rédigée, jamais une énumération télégraphique. À proscrire : « Douche, sèche-cheveux et sèche-serviettes. » À écrire plutôt : « La salle de bain privative vous offre une belle douche, avec sèche-cheveux et sèche-serviettes pour votre confort. » Garde une touche sensorielle (lumière, ambiance, usage du lieu), sans cliché creux. Longueur indicative autour de 1000 à 1200 caractères, intitulés compris.
 
 ### Accès des voyageurs
 
