@@ -360,15 +360,6 @@ export default function FicheFinalisation() {
             ============================================ */}
             <div className="bg-white rounded-xl shadow-sm border-2 border-purple-300 p-6 mb-6">
 
-              {/* Warning DEV */}
-              <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg flex items-start gap-3">
-                <Construction className="w-6 h-6 text-yellow-900 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-yellow-900">FONCTIONNALITÉ EN DÉVELOPPEMENT</p>
-                  <p className="text-xs text-yellow-800 mt-1">Ne pas utiliser en production pour le moment.</p>
-                </div>
-              </div>
-
               <div className="flex items-start gap-4 mb-4">
                 <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                   <RefreshCw className="w-5 h-5 text-white" />
