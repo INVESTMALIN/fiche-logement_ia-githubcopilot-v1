@@ -19,6 +19,27 @@ export const MODELES_ANNONCE = [
 
 export const MODELE_PAR_DEFAUT = 'anthropic/claude-sonnet-4.6'
 
+// Modèles proposés au COORDINATEUR dans FicheFinalisation (panneau agent annonce,
+// « Dev en cours »). Liste curée, distincte de MODELES_ANNONCE : l'outil
+// d'inspection super_admin garde GPT pour comparer les providers, mais le
+// coordinateur n'a que Gemini (défaut) et Sonnet. `note` = recommandation figée
+// affichée sous le sélecteur pour le guider.
+export const MODELES_ANNONCE_COORDINATEUR = [
+  {
+    id: 'google/gemini-3-flash-preview',
+    label: 'Gemini Flash 3',
+    defaut: true,
+    note: 'rapide et efficace, le meilleur rapport qualité-prix',
+  },
+  {
+    id: 'anthropic/claude-sonnet-4.6',
+    label: 'Sonnet',
+    note: 'rédaction plus fine et nuancée, mais plus lent et plus cher',
+  },
+]
+
+export const MODELE_COORDINATEUR_DEFAUT = 'google/gemini-3-flash-preview'
+
 /**
  * Recherche les fiches par numéro de bien (logement_numero_bien). Sous RLS :
  * ne remonte que les fiches visibles par l'utilisateur connecté. Renvoie une
@@ -71,4 +92,26 @@ export async function generateAnnonce({ ficheId, plateforme, modele }) {
   }
 
   return { ok: true, ...data }
+}
+
+/**
+ * Lit l'état des annonces déjà générées pour une fiche, SANS appeler le modèle.
+ * Lecture directe de la table `agent_outputs` (RLS : le propriétaire de la fiche
+ * voit ses lignes). Renvoie un dictionnaire indexé par plateforme — au plus une
+ * ligne par plateforme (PK = (fiche_id, plateforme)). Chaque ligne expose la
+ * même forme que la réponse de generateAnnonce (`output_assemble`,
+ * `generation_meta`), donc directement consommable par le rendu partagé.
+ */
+export async function getAnnonceOutputs(ficheId) {
+  if (!ficheId) return { ok: true, outputs: {} }
+  const { data, error } = await supabase
+    .from('agent_outputs')
+    .select('plateforme, statut, output_assemble, generation_meta, modele, generated_at')
+    .eq('fiche_id', ficheId)
+  if (error) {
+    return { ok: false, message: error.message || 'Erreur lors de la lecture des annonces générées.' }
+  }
+  const outputs = {}
+  for (const row of data || []) outputs[row.plateforme] = row
+  return { ok: true, outputs }
 }

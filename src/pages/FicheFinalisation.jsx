@@ -7,6 +7,7 @@ import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import PDFUpload from '../components/PDFUpload'
 import MiniDashboard from '../components/MiniDashboard'
+import AnnonceAgentPanel from '../components/annonce/AnnonceAgentPanel'
 import { prepareForN8nWebhook } from '../lib/PdfFormatter'
 import { CheckCircle, PenTool, Send, RefreshCw, Copy, AlertCircle, Sparkles, Loader2, Check, FileText, FileEdit, Ban, Construction, AlertTriangle, ExternalLink, CheckCircle2, Pause, XCircle } from 'lucide-react'
 import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
@@ -663,6 +664,15 @@ export default function FicheFinalisation() {
               )}
             </div>
 
+
+
+            {/* ============================================
+                AGENT ANNONCE (NOUVEAU) - 🚧 DEV EN COURS
+                S'ajoute SOUS l'assistant n8n ci-dessus, qui reste le flux
+                officiel. Affichage + génération seulement (PR 1) : pas d'édition,
+                pas de validation, pas de PDF, pas de Monday.
+            ============================================ */}
+            <AnnonceAgentPanel ficheId={formData.id} />
 
 
             {/* SECTION PRÉ-FINALISATION (statuts et champs obligatoires) */}
