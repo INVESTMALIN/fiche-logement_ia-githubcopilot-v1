@@ -20,7 +20,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Construction,
-  Eye, EyeOff, Info, Loader2, PenTool, RefreshCw, Sparkles, Undo2, Wand2,
+  Eye, EyeOff, Info, Loader2, PenTool, RefreshCw, Sparkles, Undo2, UploadCloud, Wand2,
 } from 'lucide-react'
 import { AnnonceResultat, BookingResultat } from './AnnonceRendu'
 import {
@@ -30,7 +30,9 @@ import {
   MODELES_ANNONCE_COORDINATEUR,
   MODELE_COORDINATEUR_DEFAUT,
   restoreAnnonce,
+  validateAnnonce,
 } from '../../services/annonceService'
+import { buildAnnonceStructuredPdfBase64 } from '../../lib/generateAssistantPDF'
 
 const PLATEFORMES = [
   { id: 'airbnb', label: 'Airbnb' },
@@ -67,7 +69,15 @@ function estEditee(row) {
   return !!row?.generation_meta?.edition
 }
 
-export default function AnnonceAgentPanel({ ficheId }) {
+// Une annonce est « validée » (= poussée sur Monday et à jour) quand son statut
+// vaut `valide`. Toute mutation (consigne, régénération, retour origine) réécrit
+// `genere` côté serveur → ce flag retombe seul, et « Synchronisé sur Monday »
+// disparaît : « validé » veut toujours dire « ce qui est sur Monday = l'annonce actuelle ».
+function estValidee(row) {
+  return row?.statut === 'valide'
+}
+
+export default function AnnonceAgentPanel({ ficheId, pdfMetadata }) {
   const [panelOpen, setPanelOpen] = useState(true)
   const [modele, setModele] = useState(MODELE_COORDINATEUR_DEFAUT)
 
@@ -83,14 +93,18 @@ export default function AnnonceAgentPanel({ ficheId }) {
   const [consigne, setConsigne] = useState({}) // { [plateforme]: string }
   const [editError, setEditError] = useState({}) // { [plateforme]: string }
 
+  // Validation (push Monday) par plateforme.
+  const [confirmRevalidate, setConfirmRevalidate] = useState({}) // { [plateforme]: bool }
+  const [validateError, setValidateError] = useState({}) // { [plateforme]: string }
+
   // UNE SEULE action mutante à la fois par plateforme. Générer, régénérer,
-  // appliquer une consigne et revenir à l'origine écrivent toutes la MÊME ligne
-  // agent_outputs : les laisser partir en parallèle ferait courir deux upsert
-  // qui se télescopent (le dernier écrit écrase l'état de l'autre). `action`
-  // pilote le rendu (libellés + désactivation centralisée via `occupe`) ;
-  // `enVolRef` est le verrou SYNCHRONE qui empêche un second départ même avant
-  // le prochain re-render (double-clic, action croisée pendant un appel en vol).
-  const [action, setAction] = useState({}) // { [plateforme]: 'generation'|'edition'|'retour' }
+  // appliquer une consigne, revenir à l'origine et VALIDER (push Monday) touchent
+  // tous la MÊME ligne agent_outputs : les laisser partir en parallèle ferait
+  // courir deux écritures qui se télescopent. `action` pilote le rendu (libellés +
+  // désactivation centralisée via `occupe`) ; `enVolRef` est le verrou SYNCHRONE
+  // qui empêche un second départ même avant le prochain re-render (double-clic,
+  // action croisée pendant un appel en vol).
+  const [action, setAction] = useState({}) // { [plateforme]: 'generation'|'edition'|'retour'|'validation' }
   const enVolRef = useRef({}) // { [plateforme]: bool }
 
   // Lecture de l'état à l'ouverture : SELECT seul, jamais d'appel modèle. Le flag
@@ -127,12 +141,13 @@ export default function AnnonceAgentPanel({ ficheId }) {
 
   // Verrou : démarre une action mutante seulement si AUCUNE n'est déjà en vol sur
   // cette plateforme (test + pose du verrou synchrones, donc atomiques côté UI).
-  // Une action mutante supplante aussi une confirmation de régénération pendante.
+  // Une action mutante supplante aussi une confirmation (régénération / revalidation) pendante.
   const lancerAction = (plateforme, type) => {
     if (enVolRef.current[plateforme]) return false
     enVolRef.current[plateforme] = true
     setAction((a) => ({ ...a, [plateforme]: type }))
     setConfirmRegen((c) => ({ ...c, [plateforme]: false }))
+    setConfirmRevalidate((c) => ({ ...c, [plateforme]: false }))
     return true
   }
   const cloreAction = (plateforme) => {
@@ -185,6 +200,40 @@ export default function AnnonceAgentPanel({ ficheId }) {
       return
     }
     appliquerResultat(plateforme, res)
+  }
+
+  // Validation = fabrication du PDF (front) + push Monday (Edge Function). Première
+  // validation : direct. Revalidation (statut déjà `valide`) : passe par une
+  // confirmation inline d'abord (on remplace le doc déjà sur Monday).
+  const demanderRevalidation = (plateforme) =>
+    setConfirmRevalidate((c) => ({ ...c, [plateforme]: true }))
+  const annulerRevalidation = (plateforme) =>
+    setConfirmRevalidate((c) => ({ ...c, [plateforme]: false }))
+
+  const handleValider = async (plateforme) => {
+    if (!lancerAction(plateforme, 'validation')) return
+    setValidateError((e) => ({ ...e, [plateforme]: '' }))
+    try {
+      const row = outputs[plateforme]
+      // PDF fabriqué côté front (jsPDF, header Letahost) puis transmis en base64.
+      // Étape synchrone qui peut lever → try/finally pour toujours relâcher le verrou.
+      const pdfBase64 = buildAnnonceStructuredPdfBase64({
+        outputAssemble: row?.output_assemble,
+        plateforme,
+        metadata: { ...(pdfMetadata || {}), generated_at: row?.generated_at },
+      })
+      const res = await validateAnnonce({ ficheId, plateforme, pdfBase64 })
+      if (!res.ok) {
+        setValidateError((e) => ({ ...e, [plateforme]: res.message }))
+        return
+      }
+      // Push Monday OK → statut `valide` (on ne retouche que le statut, pas le contenu).
+      setOutputs((o) => ({ ...o, [plateforme]: { ...o[plateforme], statut: 'valide' } }))
+    } catch (err) {
+      setValidateError((e) => ({ ...e, [plateforme]: `Fabrication du PDF impossible : ${err?.message || err}` }))
+    } finally {
+      cloreAction(plateforme)
+    }
   }
 
   const toggleVolet = (plateforme) =>
@@ -271,22 +320,33 @@ export default function AnnonceAgentPanel({ ficheId }) {
                 const row = outputs[id]
                 const existe = aUneAnnonce(row)
                 const editee = existe && estEditee(row)
+                const valide = existe && estValidee(row)
                 const typeAction = action[id] || null
                 const enCours = typeAction === 'generation'
                 const enEdition = typeAction === 'edition'
                 const enRetour = typeAction === 'retour'
+                const enValidation = typeAction === 'validation'
                 // `occupe` = une action mutante est en vol sur cette plateforme →
                 // désactive TOUTES les actions mutantes (anti-concurrence centralisée).
                 const occupe = !!typeAction
                 const ouvert = !!voletOpen[id]
                 const confirmation = !!confirmRegen[id]
+                const confirmationRevalidation = !!confirmRevalidate[id]
                 return (
                   <div key={id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <span className="font-semibold text-gray-900">{label}</span>
                       {existe && (
-                        <span className="px-3 py-1.5 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4" /> Annonce créée
+                        <span className="flex items-center gap-2 flex-wrap">
+                          {/* Vert = l'annonce existe ; Bleu = elle est partie sur Monday. Deux états distincts. */}
+                          <span className="px-3 py-1.5 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-1.5">
+                            <CheckCircle2 className="w-4 h-4" /> Annonce créée
+                          </span>
+                          {valide && (
+                            <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-1.5">
+                              <UploadCloud className="w-4 h-4" /> Synchronisé sur Monday
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
@@ -324,6 +384,19 @@ export default function AnnonceAgentPanel({ ficheId }) {
                           >
                             {enCours ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                             {enCours ? 'Régénération…' : 'Régénérer'}
+                          </button>
+                          {/* Valider = PDF + push Monday. Bleu (identité « synchro Monday »).
+                              Déjà validé → « Revalider » en secondaire, avec confirmation (écrase le doc Monday). */}
+                          <button
+                            type="button"
+                            onClick={() => (valide ? demanderRevalidation(id) : handleValider(id))}
+                            disabled={occupe}
+                            className={valide
+                              ? 'inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-blue-700 border border-blue-300 hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                              : 'inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'}
+                          >
+                            {enValidation ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
+                            {enValidation ? 'Validation…' : (valide ? 'Revalider' : 'Valider')}
                           </button>
                         </>
                       ) : (
@@ -366,6 +439,46 @@ export default function AnnonceAgentPanel({ ficheId }) {
                           </button>
                         </div>
                       </div>
+                    )}
+
+                    {/* Confirmation de revalidation (un doc est déjà sur Monday, on l'écrase) */}
+                    {confirmationRevalidation && (
+                      <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-sm text-amber-800 flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                          <span>
+                            Un document est déjà synchronisé sur Monday pour cette plateforme. Revalider va le remplacer par l'annonce actuelle.
+                          </span>
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          <button
+                            type="button"
+                            onClick={() => handleValider(id)}
+                            disabled={occupe}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-amber-600 hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <UploadCloud className="w-4 h-4" /> Revalider quand même
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => annulerRevalidation(id)}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 transition-colors"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {validateError[id] && (
+                      <p className="mt-3 flex items-start gap-2 text-sm text-red-700">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>{validateError[id]} <span className="text-red-500/80">(l'annonce reste non synchronisée)</span></span>
+                      </p>
+                    )}
+
+                    {enValidation && (
+                      <p className="mt-2 text-xs text-gray-500">Fabrication du PDF et envoi sur Monday…</p>
                     )}
 
                     {enCours && (

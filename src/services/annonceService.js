@@ -128,6 +128,19 @@ export async function restoreAnnonce({ ficheId, plateforme }) {
 }
 
 /**
+ * Valide une annonce : pousse son PDF (fabriqué côté front, transmis en base64)
+ * sur la colonne fichier Monday de la plateforme, en REMPLAÇANT le précédent
+ * (zéro doublon), puis passe le statut à `valide`. Si le push Monday échoue, le
+ * statut reste `genere` (préservation) et l'erreur est remontée.
+ */
+export async function validateAnnonce({ ficheId, plateforme, pdfBase64 }) {
+  const { data, error } = await supabase.functions.invoke('annonce-validate', {
+    body: { ficheId, plateforme, pdfBase64 },
+  })
+  return normaliserReponseAnnonce(data, error, 'Erreur lors de la validation (push Monday).')
+}
+
+/**
  * Lit l'état des annonces déjà générées pour une fiche, SANS appeler le modèle.
  * Lecture directe de la table `agent_outputs` (RLS : le propriétaire de la fiche
  * voit ses lignes). Renvoie un dictionnaire indexé par plateforme — au plus une
