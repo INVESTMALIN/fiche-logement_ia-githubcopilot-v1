@@ -17,7 +17,7 @@
 // À l'ouverture on LIT l'état (SELECT, RLS owner), on n'appelle JAMAIS le modèle
 // automatiquement : pas de coût à chaque ouverture. Génération/édition sur clic.
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Construction,
   Eye, EyeOff, Info, Loader2, PenTool, RefreshCw, Sparkles, Undo2, Wand2,
@@ -75,16 +75,23 @@ export default function AnnonceAgentPanel({ ficheId }) {
   const [loadError, setLoadError] = useState('')
   const [outputs, setOutputs] = useState({}) // { airbnb?: row, booking?: row }
 
-  const [generating, setGenerating] = useState({}) // { [plateforme]: bool }
   const [genError, setGenError] = useState({}) // { [plateforme]: string }
   const [voletOpen, setVoletOpen] = useState({}) // { [plateforme]: bool }
   const [confirmRegen, setConfirmRegen] = useState({}) // { [plateforme]: bool }
 
   // Édition par consigne (par plateforme).
   const [consigne, setConsigne] = useState({}) // { [plateforme]: string }
-  const [applying, setApplying] = useState({}) // { [plateforme]: bool }
-  const [reverting, setReverting] = useState({}) // { [plateforme]: bool }
   const [editError, setEditError] = useState({}) // { [plateforme]: string }
+
+  // UNE SEULE action mutante à la fois par plateforme. Générer, régénérer,
+  // appliquer une consigne et revenir à l'origine écrivent toutes la MÊME ligne
+  // agent_outputs : les laisser partir en parallèle ferait courir deux upsert
+  // qui se télescopent (le dernier écrit écrase l'état de l'autre). `action`
+  // pilote le rendu (libellés + désactivation centralisée via `occupe`) ;
+  // `enVolRef` est le verrou SYNCHRONE qui empêche un second départ même avant
+  // le prochain re-render (double-clic, action croisée pendant un appel en vol).
+  const [action, setAction] = useState({}) // { [plateforme]: 'generation'|'edition'|'retour' }
+  const enVolRef = useRef({}) // { [plateforme]: bool }
 
   // Lecture de l'état à l'ouverture : SELECT seul, jamais d'appel modèle. Le flag
   // `actif` jette une réponse arrivée après démontage / changement de fiche.
@@ -118,13 +125,26 @@ export default function AnnonceAgentPanel({ ficheId }) {
     setVoletOpen((v) => ({ ...v, [plateforme]: true }))
   }
 
-  const handleGenerer = async (plateforme) => {
-    if (generating[plateforme]) return
+  // Verrou : démarre une action mutante seulement si AUCUNE n'est déjà en vol sur
+  // cette plateforme (test + pose du verrou synchrones, donc atomiques côté UI).
+  // Une action mutante supplante aussi une confirmation de régénération pendante.
+  const lancerAction = (plateforme, type) => {
+    if (enVolRef.current[plateforme]) return false
+    enVolRef.current[plateforme] = true
+    setAction((a) => ({ ...a, [plateforme]: type }))
     setConfirmRegen((c) => ({ ...c, [plateforme]: false }))
-    setGenerating((g) => ({ ...g, [plateforme]: true }))
+    return true
+  }
+  const cloreAction = (plateforme) => {
+    enVolRef.current[plateforme] = false
+    setAction((a) => ({ ...a, [plateforme]: null }))
+  }
+
+  const handleGenerer = async (plateforme) => {
+    if (!lancerAction(plateforme, 'generation')) return
     setGenError((e) => ({ ...e, [plateforme]: '' }))
     const res = await generateAnnonce({ ficheId, plateforme, modele })
-    setGenerating((g) => ({ ...g, [plateforme]: false }))
+    cloreAction(plateforme)
     if (!res.ok) {
       setGenError((e) => ({ ...e, [plateforme]: res.message }))
       return
@@ -142,11 +162,11 @@ export default function AnnonceAgentPanel({ ficheId }) {
 
   const handleAppliquerConsigne = async (plateforme) => {
     const texte = (consigne[plateforme] || '').trim()
-    if (!texte || applying[plateforme]) return
-    setApplying((a) => ({ ...a, [plateforme]: true }))
+    if (!texte) return
+    if (!lancerAction(plateforme, 'edition')) return
     setEditError((e) => ({ ...e, [plateforme]: '' }))
     const res = await editAnnonce({ ficheId, plateforme, modele, consigne: texte })
-    setApplying((a) => ({ ...a, [plateforme]: false }))
+    cloreAction(plateforme)
     if (!res.ok) {
       setEditError((e) => ({ ...e, [plateforme]: res.message }))
       return
@@ -156,11 +176,10 @@ export default function AnnonceAgentPanel({ ficheId }) {
   }
 
   const handleRevenirOrigine = async (plateforme) => {
-    if (reverting[plateforme]) return
-    setReverting((r) => ({ ...r, [plateforme]: true }))
+    if (!lancerAction(plateforme, 'retour')) return
     setEditError((e) => ({ ...e, [plateforme]: '' }))
     const res = await restoreAnnonce({ ficheId, plateforme })
-    setReverting((r) => ({ ...r, [plateforme]: false }))
+    cloreAction(plateforme)
     if (!res.ok) {
       setEditError((e) => ({ ...e, [plateforme]: res.message }))
       return
@@ -252,10 +271,13 @@ export default function AnnonceAgentPanel({ ficheId }) {
                 const row = outputs[id]
                 const existe = aUneAnnonce(row)
                 const editee = existe && estEditee(row)
-                const enCours = !!generating[id]
-                const enEdition = !!applying[id]
-                const enRetour = !!reverting[id]
-                const busy = enCours || enEdition || enRetour
+                const typeAction = action[id] || null
+                const enCours = typeAction === 'generation'
+                const enEdition = typeAction === 'edition'
+                const enRetour = typeAction === 'retour'
+                // `occupe` = une action mutante est en vol sur cette plateforme →
+                // désactive TOUTES les actions mutantes (anti-concurrence centralisée).
+                const occupe = !!typeAction
                 const ouvert = !!voletOpen[id]
                 const confirmation = !!confirmRegen[id]
                 return (
@@ -297,7 +319,7 @@ export default function AnnonceAgentPanel({ ficheId }) {
                           <button
                             type="button"
                             onClick={() => demanderRegeneration(id)}
-                            disabled={busy}
+                            disabled={occupe}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {enCours ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
@@ -308,7 +330,7 @@ export default function AnnonceAgentPanel({ ficheId }) {
                         <button
                           type="button"
                           onClick={() => handleGenerer(id)}
-                          disabled={enCours}
+                          disabled={occupe}
                           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {enCours ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
@@ -330,7 +352,8 @@ export default function AnnonceAgentPanel({ ficheId }) {
                           <button
                             type="button"
                             onClick={() => handleGenerer(id)}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-amber-600 hover:bg-amber-700 transition-colors"
+                            disabled={occupe}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-amber-600 hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <RefreshCw className="w-4 h-4" /> Régénérer quand même
                           </button>
@@ -362,7 +385,7 @@ export default function AnnonceAgentPanel({ ficheId }) {
                             value={consigne[id] || ''}
                             onChange={(e) => setConsigne((c) => ({ ...c, [id]: e.target.value }))}
                             rows={3}
-                            disabled={busy}
+                            disabled={occupe}
                             placeholder="Ex. : supprime la mention des verres à vin. Ou : insiste un peu plus sur la terrasse."
                             className="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-60"
                           />
@@ -384,7 +407,7 @@ export default function AnnonceAgentPanel({ ficheId }) {
                             <button
                               type="button"
                               onClick={() => handleAppliquerConsigne(id)}
-                              disabled={busy || !(consigne[id] || '').trim()}
+                              disabled={occupe || !(consigne[id] || '').trim()}
                               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {enEdition ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
@@ -395,7 +418,7 @@ export default function AnnonceAgentPanel({ ficheId }) {
                               <button
                                 type="button"
                                 onClick={() => handleRevenirOrigine(id)}
-                                disabled={busy}
+                                disabled={occupe}
                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {enRetour ? <Loader2 className="w-4 h-4 animate-spin" /> : <Undo2 className="w-4 h-4" />}
