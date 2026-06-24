@@ -225,6 +225,12 @@ export default function AnnonceAgentPanel({ ficheId, pdfMetadata }) {
       const res = await validateAnnonce({ ficheId, plateforme, pdfBase64 })
       if (!res.ok) {
         setValidateError((e) => ({ ...e, [plateforme]: res.message }))
+        // Le serveur peut avoir RÉTROGRADÉ la ligne en `genere` (revalidation ratée :
+        // colonne Monday vidée). On reflète le statut qu'il renvoie pour ne pas
+        // afficher « Synchronisé sur Monday » alors que Monday n'a pas le PDF courant.
+        if (res.statut === 'genere' || res.statut === 'valide') {
+          setOutputs((o) => ({ ...o, [plateforme]: { ...o[plateforme], statut: res.statut } }))
+        }
         return
       }
       // Push Monday OK → statut `valide` (on ne retouche que le statut, pas le contenu).

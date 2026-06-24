@@ -247,19 +247,52 @@ serve(async (req: Request) => {
     return json({ success: false, error: 'ITEM_NOT_FOUND', message: `Aucun item Monday avec num_ro=${numero} sur le board ${BOARD_ID}` }, 404)
   }
 
-  // 3) Push = REMPLACEMENT (clear_all puis add). Tant que ces deux appels ne sont
-  //    pas passés, le statut N'EST PAS marqué `valide`.
+  // 3) Push = REMPLACEMENT sans doublon (clear_all puis add_file_to_column).
+  //    FAILURE-ATOMICITÉ DU STATUT : une ligne ne peut valoir `valide` que si le
+  //    NOUVEAU PDF est confirmé présent sur la colonne Monday. add_file_to_column
+  //    APPEND (la colonne fichier Monday accepte plusieurs fichiers) et il n'existe
+  //    pas de suppression CIBLÉE fiable (seul clear_all existe) → impossible
+  //    d'« ajouter le nouveau puis retirer l'ancien » sans risque de doublon. Donc
+  //    sur une REVALIDATION, si clear réussit puis add échoue, la colonne se
+  //    retrouve vide : le statut ne doit JAMAIS rester `valide`, on RÉTROGRADE la
+  //    ligne en `genere` (le statut ne ment jamais ; le coordinateur revalide). La
+  //    1re validation (déjà `genere`) n'a rien à rétrograder.
+  const service = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+  const etaitValide = row.statut === 'valide'
   const fileName = `annonce_${plateforme}_${numero}.pdf`
   try {
     await clearFileColumn(mondayToken, itemId, columnId)
     await addFileToColumn(mondayToken, itemId, columnId, bytes, fileName)
   } catch (e) {
     console.error(`[annonce-validate] push Monday KO fiche=${ficheId} item=${itemId} col=${columnId}:`, msg(e))
-    return json({ success: false, error: 'MONDAY_API_ERROR', message: `Push PDF Monday échoué: ${msg(e)}` }, 502)
+    let statutApresEchec = 'genere'
+    if (etaitValide) {
+      // deno-lint-ignore no-explicit-any
+      const metaDemote: any = (row.generation_meta && typeof row.generation_meta === 'object') ? { ...row.generation_meta } : {}
+      delete metaDemote.validation
+      const { error: demoteErr } = await service
+        .from('agent_outputs')
+        .update({ statut: 'genere', generation_meta: metaDemote, updated_at: new Date().toISOString() })
+        .eq('fiche_id', ficheId)
+        .eq('plateforme', plateforme)
+      if (demoteErr) {
+        // Double échec (push + rétrogradation) : on n'affirme PAS `genere` au client,
+        // la ligne est restée `valide` en base (rare ; revalidation/reload corrige).
+        console.error('[annonce-validate] rétrogradation valide→genere KO après échec push:', demoteErr)
+        statutApresEchec = 'valide'
+      } else {
+        console.warn(`[annonce-validate] revalidation échouée → ligne rétrogradée genere fiche=${ficheId} plateforme=${plateforme}`)
+      }
+    }
+    return json({ success: false, error: 'MONDAY_API_ERROR', message: `Push PDF Monday échoué: ${msg(e)}`, statut: statutApresEchec }, 502)
   }
 
-  // 4) Statut → `valide` (service role) APRÈS un push réussi.
-  const service = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+  // 4) Statut → `valide` (service role) APRÈS un push confirmé.
+  //    Note V1 (assumé) : pas de garde de fraîcheur (compare-and-swap) ici. Une
+  //    mutation concurrente (autre onglet/utilisateur édite/régénère pendant
+  //    l'upload) est un TOCTOU serveur de la même classe que celui déjà accepté
+  //    sur monday-contacts-sync / annonce-generate / annonce-edit : proba quasi
+  //    nulle, récupérable par revalidation. Follow-up RPC atomique si observé en prod.
   const nowISO = new Date().toISOString()
   // deno-lint-ignore no-explicit-any
   const meta: any = (row.generation_meta && typeof row.generation_meta === 'object') ? row.generation_meta : {}
@@ -272,7 +305,8 @@ serve(async (req: Request) => {
     .eq('plateforme', plateforme)
   if (upErr) {
     // Le PDF est sur Monday mais le statut n'a pas pu être écrit. On remonte
-    // l'erreur ; une revalidation re-pousse (remplace) et réécrit le statut.
+    // l'erreur (statut inchangé : conservateur, jamais un faux `valide`) ; une
+    // revalidation re-pousse (remplace) et réécrit le statut.
     console.error('[annonce-validate] update statut=valide échoué (PDF déjà poussé):', upErr)
     return json({ success: false, error: 'DB_WRITE_ERROR', message: upErr.message }, 500)
   }

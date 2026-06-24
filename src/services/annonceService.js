@@ -77,6 +77,10 @@ async function normaliserReponseAnnonce(data, error, messageDefaut) {
       ok: false,
       error: payload?.error || 'EDGE_ERROR',
       message: payload?.message || error.message || messageDefaut,
+      // Statut renvoyé par le serveur même en échec (ex. validation : une
+      // revalidation ratée RÉTROGRADE la ligne en `genere`). Le caller s'en sert
+      // pour garder l'UI alignée sur la base. Absent → l'UI ne touche pas au statut.
+      statut: payload?.statut,
     }
   }
 
@@ -85,6 +89,7 @@ async function normaliserReponseAnnonce(data, error, messageDefaut) {
       ok: false,
       error: data?.error || 'UNKNOWN',
       message: data?.message || messageDefaut,
+      statut: data?.statut,
     }
   }
 
