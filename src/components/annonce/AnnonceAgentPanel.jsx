@@ -3,28 +3,33 @@
 // FicheFinalisation sous l'assistant annonce n8n EXISTANT (qui reste le flux
 // officiel). Zone de test en conditions réelles, marquée « Dev en cours ».
 //
-// Périmètre (PR 1) : AFFICHAGE + GÉNÉRATION seulement. Pas d'édition, pas de
-// validation, pas de PDF, pas de Monday (PRs suivantes).
+// Périmètre (PR2) : AFFICHAGE + GÉNÉRATION + ÉDITION PAR CONSIGNE. Pas de
+// validation, pas de PDF, pas de Monday (PR3).
 //
 // Cycle indépendant par plateforme (Airbnb / Booking), piloté par l'état déjà
 // présent dans agent_outputs :
 //   - aucune ligne exploitable → bouton « Générer » ;
 //   - une annonce existe → « Annonce créée » + « Voir l'annonce » (volet
-//     repliable, fermé par défaut) + « Régénérer ».
+//     repliable, fermé par défaut) + « Régénérer » (avec confirmation, car une
+//     régénération complète écrase l'annonce et les consignes appliquées).
+//   - dans le volet ouvert : zone de consigne pour AJUSTER l'annonce en langage
+//     naturel + « Revenir à la version d'origine » (si l'annonce a été éditée).
 // À l'ouverture on LIT l'état (SELECT, RLS owner), on n'appelle JAMAIS le modèle
-// automatiquement : pas de coût à chaque ouverture. Génération sur clic explicite.
+// automatiquement : pas de coût à chaque ouverture. Génération/édition sur clic.
 
 import { useState, useEffect } from 'react'
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Construction,
-  Eye, EyeOff, Loader2, PenTool, RefreshCw, Sparkles,
+  Eye, EyeOff, Info, Loader2, PenTool, RefreshCw, Sparkles, Undo2, Wand2,
 } from 'lucide-react'
 import { AnnonceResultat, BookingResultat } from './AnnonceRendu'
 import {
+  editAnnonce,
   generateAnnonce,
   getAnnonceOutputs,
   MODELES_ANNONCE_COORDINATEUR,
   MODELE_COORDINATEUR_DEFAUT,
+  restoreAnnonce,
 } from '../../services/annonceService'
 
 const PLATEFORMES = [
@@ -55,6 +60,13 @@ function aUneAnnonce(row) {
   return !!row && row.statut !== 'erreur' && !!row.output_assemble
 }
 
+// Une annonce est « éditée » si sa dernière opération est une consigne (marqueur
+// generation_meta.edition, posé par annonce-edit, retiré par un retour à
+// l'origine). Pilote le libellé « Modifié le » et le bouton « Revenir à l'origine ».
+function estEditee(row) {
+  return !!row?.generation_meta?.edition
+}
+
 export default function AnnonceAgentPanel({ ficheId }) {
   const [panelOpen, setPanelOpen] = useState(true)
   const [modele, setModele] = useState(MODELE_COORDINATEUR_DEFAUT)
@@ -66,6 +78,13 @@ export default function AnnonceAgentPanel({ ficheId }) {
   const [generating, setGenerating] = useState({}) // { [plateforme]: bool }
   const [genError, setGenError] = useState({}) // { [plateforme]: string }
   const [voletOpen, setVoletOpen] = useState({}) // { [plateforme]: bool }
+  const [confirmRegen, setConfirmRegen] = useState({}) // { [plateforme]: bool }
+
+  // Édition par consigne (par plateforme).
+  const [consigne, setConsigne] = useState({}) // { [plateforme]: string }
+  const [applying, setApplying] = useState({}) // { [plateforme]: bool }
+  const [reverting, setReverting] = useState({}) // { [plateforme]: bool }
+  const [editError, setEditError] = useState({}) // { [plateforme]: string }
 
   // Lecture de l'état à l'ouverture : SELECT seul, jamais d'appel modèle. Le flag
   // `actif` jette une réponse arrivée après démontage / changement de fiche.
@@ -89,8 +108,19 @@ export default function AnnonceAgentPanel({ ficheId }) {
     return () => { actif = false }
   }, [ficheId])
 
+  // Succès génération/édition/retour : la réponse a la même forme qu'une ligne
+  // table (output_assemble + generation_meta) → on la stocke et on déroule le
+  // volet. La réponse Edge porte `generated_at` dans generation_meta (pas en
+  // colonne top-level comme la ligne relue) ; on le normalise pour que l'en-tête
+  // « Généré/Modifié le… » s'affiche à l'identique au frais et après rechargement.
+  const appliquerResultat = (plateforme, res) => {
+    setOutputs((o) => ({ ...o, [plateforme]: { ...res, generated_at: res.generation_meta?.generated_at } }))
+    setVoletOpen((v) => ({ ...v, [plateforme]: true }))
+  }
+
   const handleGenerer = async (plateforme) => {
     if (generating[plateforme]) return
+    setConfirmRegen((c) => ({ ...c, [plateforme]: false }))
     setGenerating((g) => ({ ...g, [plateforme]: true }))
     setGenError((e) => ({ ...e, [plateforme]: '' }))
     const res = await generateAnnonce({ ficheId, plateforme, modele })
@@ -99,14 +129,43 @@ export default function AnnonceAgentPanel({ ficheId }) {
       setGenError((e) => ({ ...e, [plateforme]: res.message }))
       return
     }
-    // Succès : la réponse a la même forme qu'une ligne table (output_assemble +
-    // generation_meta) → on la stocke et on déroule le volet (clic explicite,
-    // l'utilisateur veut voir ce qu'il vient de générer). NB : la réponse Edge
-    // porte `generated_at` dans generation_meta (pas en colonne top-level comme
-    // la ligne table relue) ; on le normalise pour que l'en-tête « Généré le… »
-    // s'affiche à l'identique au frais et après rechargement.
-    setOutputs((o) => ({ ...o, [plateforme]: { ...res, generated_at: res.generation_meta?.generated_at } }))
-    setVoletOpen((v) => ({ ...v, [plateforme]: true }))
+    appliquerResultat(plateforme, res)
+  }
+
+  // Régénération : confirmation en deux temps. Une régénération complète repart
+  // de la fiche et écrase l'annonce actuelle (et les consignes déjà appliquées) ;
+  // distincte de « Revenir à l'origine » (restaure la 1re version, sans modèle).
+  const demanderRegeneration = (plateforme) =>
+    setConfirmRegen((c) => ({ ...c, [plateforme]: true }))
+  const annulerRegeneration = (plateforme) =>
+    setConfirmRegen((c) => ({ ...c, [plateforme]: false }))
+
+  const handleAppliquerConsigne = async (plateforme) => {
+    const texte = (consigne[plateforme] || '').trim()
+    if (!texte || applying[plateforme]) return
+    setApplying((a) => ({ ...a, [plateforme]: true }))
+    setEditError((e) => ({ ...e, [plateforme]: '' }))
+    const res = await editAnnonce({ ficheId, plateforme, modele, consigne: texte })
+    setApplying((a) => ({ ...a, [plateforme]: false }))
+    if (!res.ok) {
+      setEditError((e) => ({ ...e, [plateforme]: res.message }))
+      return
+    }
+    appliquerResultat(plateforme, res)
+    setConsigne((c) => ({ ...c, [plateforme]: '' })) // consigne appliquée → champ vidé
+  }
+
+  const handleRevenirOrigine = async (plateforme) => {
+    if (reverting[plateforme]) return
+    setReverting((r) => ({ ...r, [plateforme]: true }))
+    setEditError((e) => ({ ...e, [plateforme]: '' }))
+    const res = await restoreAnnonce({ ficheId, plateforme })
+    setReverting((r) => ({ ...r, [plateforme]: false }))
+    if (!res.ok) {
+      setEditError((e) => ({ ...e, [plateforme]: res.message }))
+      return
+    }
+    appliquerResultat(plateforme, res)
   }
 
   const toggleVolet = (plateforme) =>
@@ -126,7 +185,7 @@ export default function AnnonceAgentPanel({ ficheId }) {
           </span>
           <span className="block">
             <span className="block text-lg font-semibold text-gray-900">Agent annonce (nouveau)</span>
-            <span className="block text-sm text-gray-600">Génération Airbnb et Booking via le nouvel agent IA.</span>
+            <span className="block text-sm text-gray-600">Génération et ajustement Airbnb et Booking via le nouvel agent IA.</span>
           </span>
         </span>
         {panelOpen
@@ -142,7 +201,7 @@ export default function AnnonceAgentPanel({ ficheId }) {
             <div>
               <p className="text-sm font-semibold text-yellow-900">DEV EN COURS</p>
               <p className="text-xs text-yellow-800 mt-1">
-                Phase de test : vous pouvez générer et relire le résultat, mais le flux officiel reste l'assistant annonce ci-dessus.
+                Phase de test : vous pouvez générer, ajuster et relire le résultat, mais le flux officiel reste l'assistant annonce ci-dessus.
               </p>
             </div>
           </div>
@@ -192,8 +251,13 @@ export default function AnnonceAgentPanel({ ficheId }) {
               {PLATEFORMES.map(({ id, label }) => {
                 const row = outputs[id]
                 const existe = aUneAnnonce(row)
+                const editee = existe && estEditee(row)
                 const enCours = !!generating[id]
+                const enEdition = !!applying[id]
+                const enRetour = !!reverting[id]
+                const busy = enCours || enEdition || enRetour
                 const ouvert = !!voletOpen[id]
+                const confirmation = !!confirmRegen[id]
                 return (
                   <div key={id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -207,7 +271,7 @@ export default function AnnonceAgentPanel({ ficheId }) {
 
                     {existe && (
                       <p className="text-xs text-gray-500 mt-1">
-                        {formatDateHeure(row.generated_at) ? `Généré le ${formatDateHeure(row.generated_at)} · ` : ''}
+                        {formatDateHeure(row.generated_at) ? `${editee ? 'Modifié le' : 'Généré le'} ${formatDateHeure(row.generated_at)} · ` : ''}
                         modèle {libelleModele(row.modele)}
                       </p>
                     )}
@@ -232,8 +296,8 @@ export default function AnnonceAgentPanel({ ficheId }) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleGenerer(id)}
-                            disabled={enCours}
+                            onClick={() => demanderRegeneration(id)}
+                            disabled={busy}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {enCours ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
@@ -253,16 +317,104 @@ export default function AnnonceAgentPanel({ ficheId }) {
                       )}
                     </div>
 
+                    {/* Confirmation de régénération (écrase l'annonce + les consignes) */}
+                    {confirmation && (
+                      <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p className="text-sm text-amber-800 flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                          <span>
+                            La régénération repart de la fiche et remplace l'annonce actuelle{editee ? ', y compris les consignes que vous avez appliquées' : ''}. Le point de retour sera réinitialisé sur cette nouvelle version.
+                          </span>
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          <button
+                            type="button"
+                            onClick={() => handleGenerer(id)}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-amber-600 hover:bg-amber-700 transition-colors"
+                          >
+                            <RefreshCw className="w-4 h-4" /> Régénérer quand même
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => annulerRegeneration(id)}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 transition-colors"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {enCours && (
                       <p className="mt-2 text-xs text-gray-500">L'appel modèle prend une quinzaine de secondes…</p>
                     )}
 
-                    {/* Volet repliable : l'annonce n'est jamais affichée par défaut */}
+                    {/* Volet repliable : édition par consigne + rendu de l'annonce */}
                     {existe && ouvert && (
-                      <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-100">
-                        {id === 'booking'
-                          ? <BookingResultat data={row} showCadrage={false} showMeta={false} />
-                          : <AnnonceResultat data={row} showCadrage={false} showMeta={false} />}
+                      <div className="mt-4 space-y-4">
+                        {/* Zone de consigne — édition en langage naturel */}
+                        <div className="bg-purple-50/60 rounded-lg p-4 border border-purple-200">
+                          <label htmlFor={`consigne-${id}`} className="block text-sm font-semibold text-gray-900 mb-1.5">
+                            Modifier l'annonce avec une consigne
+                          </label>
+                          <textarea
+                            id={`consigne-${id}`}
+                            value={consigne[id] || ''}
+                            onChange={(e) => setConsigne((c) => ({ ...c, [id]: e.target.value }))}
+                            rows={3}
+                            disabled={busy}
+                            placeholder="Ex. : supprime la mention des verres à vin. Ou : insiste un peu plus sur la terrasse."
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-60"
+                          />
+                          <p className="mt-1.5 text-xs text-gray-500 flex items-start gap-1.5">
+                            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                            <span>
+                              La consigne ajuste l'annonce à partir de sa version actuelle : le point visé change, mais d'autres formulations peuvent légèrement évoluer. Les mentions légales et de conformité (réglementation, caméra, notes d'état et de quartier) ne sont pas modifiables par une consigne.
+                            </span>
+                          </p>
+
+                          {editError[id] && (
+                            <p className="mt-2 flex items-start gap-2 text-sm text-red-700">
+                              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                              <span>{editError[id]} <span className="text-red-500/80">(l'annonce actuelle est conservée)</span></span>
+                            </p>
+                          )}
+
+                          <div className="flex flex-wrap items-center gap-3 mt-3">
+                            <button
+                              type="button"
+                              onClick={() => handleAppliquerConsigne(id)}
+                              disabled={busy || !(consigne[id] || '').trim()}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {enEdition ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                              {enEdition ? 'Application…' : 'Appliquer la consigne'}
+                            </button>
+
+                            {editee && (
+                              <button
+                                type="button"
+                                onClick={() => handleRevenirOrigine(id)}
+                                disabled={busy}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {enRetour ? <Loader2 className="w-4 h-4 animate-spin" /> : <Undo2 className="w-4 h-4" />}
+                                {enRetour ? 'Restauration…' : 'Revenir à la version d\'origine'}
+                              </button>
+                            )}
+                          </div>
+
+                          {enEdition && (
+                            <p className="mt-2 text-xs text-gray-500">L'appel modèle prend une quinzaine de secondes…</p>
+                          )}
+                        </div>
+
+                        {/* Rendu de l'annonce (lecture seule, sans cadrage ni méta) */}
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                          {id === 'booking'
+                            ? <BookingResultat data={row} showCadrage={false} showMeta={false} />
+                            : <AnnonceResultat data={row} showCadrage={false} showMeta={false} />}
+                        </div>
                       </div>
                     )}
                   </div>

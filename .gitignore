@@ -5,3 +5,5 @@ dist/
 *.log
 node_modules/
 .claude/
+# Lockfile généré par les runs Deno locaux (deno test/check des Edge Functions)
+deno.lock
