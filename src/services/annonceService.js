@@ -60,15 +60,12 @@ export async function rechercherFichesParNumero(numero) {
 }
 
 /**
- * Lance la génération d'annonce. Normalise la réponse : un échec HTTP non-2xx
- * (ex. MODEL_OUTPUT_INVALID, statut `erreur`) arrive dans error.context, on en
- * extrait le JSON { success:false, error, message }.
+ * Normalise la réponse d'une Edge Function annonce. Un échec HTTP non-2xx (ex.
+ * MODEL_OUTPUT_INVALID / EDIT_OUTPUT_INVALID, statut `erreur`) arrive dans
+ * error.context : on en extrait le JSON { success:false, error, message }. Sur
+ * succès, on renvoie le payload tel quel ({ output_assemble, generation_meta… }).
  */
-export async function generateAnnonce({ ficheId, plateforme, modele }) {
-  const { data, error } = await supabase.functions.invoke('annonce-generate', {
-    body: { ficheId, plateforme, modele },
-  })
-
+async function normaliserReponseAnnonce(data, error, messageDefaut) {
   if (error) {
     let payload = null
     try {
@@ -79,7 +76,7 @@ export async function generateAnnonce({ ficheId, plateforme, modele }) {
     return {
       ok: false,
       error: payload?.error || 'EDGE_ERROR',
-      message: payload?.message || error.message || 'Erreur lors de la génération.',
+      message: payload?.message || error.message || messageDefaut,
     }
   }
 
@@ -87,11 +84,47 @@ export async function generateAnnonce({ ficheId, plateforme, modele }) {
     return {
       ok: false,
       error: data?.error || 'UNKNOWN',
-      message: data?.message || 'Réponse inattendue de la génération.',
+      message: data?.message || messageDefaut,
     }
   }
 
   return { ok: true, ...data }
+}
+
+/**
+ * Lance la génération complète d'une annonce (repart de la fiche). (Ré)initialise
+ * le point de retour de l'édition côté serveur.
+ */
+export async function generateAnnonce({ ficheId, plateforme, modele }) {
+  const { data, error } = await supabase.functions.invoke('annonce-generate', {
+    body: { ficheId, plateforme, modele },
+  })
+  return normaliserReponseAnnonce(data, error, 'Réponse inattendue de la génération.')
+}
+
+/**
+ * Applique une consigne d'édition en langage naturel à une annonce déjà générée.
+ * L'édition repart de la PROSE courante (pas de la fiche) : drift minimal, seul
+ * le point visé change. Les blocs légaux/déterministes sont réinjectés à
+ * l'identique par le serveur (hors de portée de la consigne). En cas d'échec,
+ * l'annonce valide existante est préservée (rien n'est écrasé).
+ */
+export async function editAnnonce({ ficheId, plateforme, modele, consigne }) {
+  const { data, error } = await supabase.functions.invoke('annonce-edit', {
+    body: { ficheId, plateforme, modele, consigne, action: 'edit' },
+  })
+  return normaliserReponseAnnonce(data, error, 'Erreur lors de l\'application de la consigne.')
+}
+
+/**
+ * Restaure la toute première version générée de l'annonce (point de retour).
+ * Aucun appel modèle : le serveur ré-assemble la prose d'origine et persiste.
+ */
+export async function restoreAnnonce({ ficheId, plateforme }) {
+  const { data, error } = await supabase.functions.invoke('annonce-edit', {
+    body: { ficheId, plateforme, action: 'restore' },
+  })
+  return normaliserReponseAnnonce(data, error, 'Erreur lors du retour à la version d\'origine.')
 }
 
 /**
