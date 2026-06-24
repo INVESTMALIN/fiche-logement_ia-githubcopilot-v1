@@ -372,10 +372,17 @@ export default function AnnonceAgentPanel({ ficheId }) {
                       <p className="mt-2 text-xs text-gray-500">L'appel modèle prend une quinzaine de secondes…</p>
                     )}
 
-                    {/* Volet repliable : édition par consigne + rendu de l'annonce */}
+                    {/* Volet repliable : rendu de l'annonce, puis édition par consigne en bas */}
                     {existe && ouvert && (
                       <div className="mt-4 space-y-4">
-                        {/* Zone de consigne — édition en langage naturel */}
+                        {/* Rendu de l'annonce (lecture seule, sans cadrage ni méta) */}
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                          {id === 'booking'
+                            ? <BookingResultat data={row} showCadrage={false} showMeta={false} />
+                            : <AnnonceResultat data={row} showCadrage={false} showMeta={false} />}
+                        </div>
+
+                        {/* Zone de consigne — édition en langage naturel (en bas : on lit l'annonce, puis on l'ajuste) */}
                         <div className="bg-purple-50/60 rounded-lg p-4 border border-purple-200">
                           <label htmlFor={`consigne-${id}`} className="block text-sm font-semibold text-gray-900 mb-1.5">
                             Modifier l'annonce avec une consigne
@@ -430,13 +437,6 @@ export default function AnnonceAgentPanel({ ficheId }) {
                           {enEdition && (
                             <p className="mt-2 text-xs text-gray-500">L'appel modèle prend une quinzaine de secondes…</p>
                           )}
-                        </div>
-
-                        {/* Rendu de l'annonce (lecture seule, sans cadrage ni méta) */}
-                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                          {id === 'booking'
-                            ? <BookingResultat data={row} showCadrage={false} showMeta={false} />
-                            : <AnnonceResultat data={row} showCadrage={false} showMeta={false} />}
                         </div>
                       </div>
                     )}
