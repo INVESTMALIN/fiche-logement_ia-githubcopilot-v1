@@ -77,6 +77,10 @@ async function normaliserReponseAnnonce(data, error, messageDefaut) {
       ok: false,
       error: payload?.error || 'EDGE_ERROR',
       message: payload?.message || error.message || messageDefaut,
+      // Statut renvoyé par le serveur même en échec (ex. validation : une
+      // revalidation ratée RÉTROGRADE la ligne en `genere`). Le caller s'en sert
+      // pour garder l'UI alignée sur la base. Absent → l'UI ne touche pas au statut.
+      statut: payload?.statut,
     }
   }
 
@@ -85,6 +89,7 @@ async function normaliserReponseAnnonce(data, error, messageDefaut) {
       ok: false,
       error: data?.error || 'UNKNOWN',
       message: data?.message || messageDefaut,
+      statut: data?.statut,
     }
   }
 
@@ -125,6 +130,19 @@ export async function restoreAnnonce({ ficheId, plateforme }) {
     body: { ficheId, plateforme, action: 'restore' },
   })
   return normaliserReponseAnnonce(data, error, 'Erreur lors du retour à la version d\'origine.')
+}
+
+/**
+ * Valide une annonce : pousse son PDF (fabriqué côté front, transmis en base64)
+ * sur la colonne fichier Monday de la plateforme, en REMPLAÇANT le précédent
+ * (zéro doublon), puis passe le statut à `valide`. Si le push Monday échoue, le
+ * statut reste `genere` (préservation) et l'erreur est remontée.
+ */
+export async function validateAnnonce({ ficheId, plateforme, pdfBase64 }) {
+  const { data, error } = await supabase.functions.invoke('annonce-validate', {
+    body: { ficheId, plateforme, pdfBase64 },
+  })
+  return normaliserReponseAnnonce(data, error, 'Erreur lors de la validation (push Monday).')
 }
 
 /**

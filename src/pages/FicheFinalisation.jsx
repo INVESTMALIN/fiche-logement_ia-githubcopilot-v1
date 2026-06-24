@@ -660,10 +660,23 @@ export default function FicheFinalisation() {
             {/* ============================================
                 AGENT ANNONCE (NOUVEAU) - 🚧 DEV EN COURS
                 S'ajoute SOUS l'assistant n8n ci-dessus, qui reste le flux
-                officiel. Affichage + génération seulement (PR 1) : pas d'édition,
-                pas de validation, pas de PDF, pas de Monday.
+                officiel. Génération + édition par consigne + validation (PDF +
+                push Monday). `pdfMetadata` alimente le header du PDF (mêmes champs
+                que l'ancien flux annonce) ; numéro/adresse viennent de la fiche.
             ============================================ */}
-            <AnnonceAgentPanel ficheId={formData.id} />
+            <AnnonceAgentPanel
+              ficheId={formData.id}
+              pdfMetadata={{
+                numero_bien: formData.section_logement?.numero_bien || 'N/A',
+                type_propriete: formData.section_logement?.type_propriete || 'Non spécifié',
+                adresse: {
+                  rue: formData.section_proprietaire?.adresse?.rue || '',
+                  complement: formData.section_proprietaire?.adresse?.complement || '',
+                  code_postal: formData.section_proprietaire?.adresse?.codePostal || '',
+                  ville: formData.section_proprietaire?.adresse?.ville || ''
+                }
+              }}
+            />
 
 
             {/* SECTION PRÉ-FINALISATION (statuts et champs obligatoires) */}
