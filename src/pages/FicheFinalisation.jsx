@@ -480,10 +480,31 @@ export default function FicheFinalisation() {
 
 
 
-            {/* ASSISTANT ANNONCE - Toujours visible */}
+            {/* ============================================
+                AGENT ANNONCE (nouveau flux) — BLOC PRINCIPAL, au-dessus de
+                l'ancien assistant n8n. Génération + édition par consigne +
+                validation (PDF + push Monday). `pdfMetadata` alimente le header
+                du PDF (mêmes champs que l'ancien flux) ; numéro/adresse fiche.
+            ============================================ */}
+            <AnnonceAgentPanel
+              ficheId={formData.id}
+              pdfMetadata={{
+                numero_bien: formData.section_logement?.numero_bien || 'N/A',
+                type_propriete: formData.section_logement?.type_propriete || 'Non spécifié',
+                adresse: {
+                  rue: formData.section_proprietaire?.adresse?.rue || '',
+                  complement: formData.section_proprietaire?.adresse?.complement || '',
+                  code_postal: formData.section_proprietaire?.adresse?.codePostal || '',
+                  ville: formData.section_proprietaire?.adresse?.ville || ''
+                }
+              }}
+            />
+
+            {/* ANCIEN ASSISTANT ANNONCE (n8n) — en cours de remplacement, conservé
+                comme filet le temps de la transition. Logique inchangée. */}
             <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-gray-400 rounded-lg flex items-center justify-center">
                   <PenTool className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -504,18 +525,12 @@ export default function FicheFinalisation() {
                 </button>
               )}
 
-              <div className="mt-4 mb-6 p-4 bg-blue-50 border-l-4 border-blue-400">
-                <div className="text-sm text-blue-700 leading-relaxed space-y-2">
-                  <p>
-                    Utilisez l'assistant IA pour <span className="font-semibold">générer le contenu de votre annonce</span> automatiquement.
-                  </p>
-                  <ul className="ml-4 space-y-1">
-                    <li>• Décrivez vos attentes ou affinez le contenu généré</li>
-                    <li>• Cliquez sur <strong>"Valider cette annonce"</strong> une fois satisfait</li>
-                  </ul>
-                  <p className="mt-2">
-                    L'annonce validée remonte automatiquement dans <strong>Monday</strong>, colonne <em>"Contenu pour création d'annonce"</em>.
-                    <span className="inline-block ml-1">♻️ Vous pouvez régénérer et valider autant de fois que nécessaire.</span>
+              <div className="mt-4 mb-6 p-4 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-amber-800 leading-relaxed">
+                  <p className="font-semibold">Assistant en cours de remplacement</p>
+                  <p className="mt-1">
+                    Cet assistant est progressivement remplacé par le nouvel <strong>Agent annonce</strong> ci-dessus. Il reste fonctionnel le temps de la transition, mais privilégiez désormais le nouvel agent.
                   </p>
                 </div>
               </div>
@@ -655,28 +670,6 @@ export default function FicheFinalisation() {
               )}
             </div>
 
-
-
-            {/* ============================================
-                AGENT ANNONCE (NOUVEAU) - 🚧 DEV EN COURS
-                S'ajoute SOUS l'assistant n8n ci-dessus, qui reste le flux
-                officiel. Génération + édition par consigne + validation (PDF +
-                push Monday). `pdfMetadata` alimente le header du PDF (mêmes champs
-                que l'ancien flux annonce) ; numéro/adresse viennent de la fiche.
-            ============================================ */}
-            <AnnonceAgentPanel
-              ficheId={formData.id}
-              pdfMetadata={{
-                numero_bien: formData.section_logement?.numero_bien || 'N/A',
-                type_propriete: formData.section_logement?.type_propriete || 'Non spécifié',
-                adresse: {
-                  rue: formData.section_proprietaire?.adresse?.rue || '',
-                  complement: formData.section_proprietaire?.adresse?.complement || '',
-                  code_postal: formData.section_proprietaire?.adresse?.codePostal || '',
-                  ville: formData.section_proprietaire?.adresse?.ville || ''
-                }
-              }}
-            />
 
 
             {/* SECTION PRÉ-FINALISATION (statuts et champs obligatoires) */}

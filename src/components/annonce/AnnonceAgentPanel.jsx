@@ -19,8 +19,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Construction,
-  Eye, EyeOff, Info, Loader2, PenTool, RefreshCw, Sparkles, Undo2, UploadCloud, Wand2,
+  AlertTriangle, CheckCircle2, Eye, EyeOff, Info, Loader2,
+  PenTool, RefreshCw, Sparkles, Undo2, UploadCloud, Wand2,
 } from 'lucide-react'
 import { AnnonceResultat, BookingResultat } from './AnnonceRendu'
 import {
@@ -78,7 +78,6 @@ function estValidee(row) {
 }
 
 export default function AnnonceAgentPanel({ ficheId, pdfMetadata }) {
-  const [panelOpen, setPanelOpen] = useState(true)
   const [modele, setModele] = useState(MODELE_COORDINATEUR_DEFAUT)
 
   const [loading, setLoading] = useState(true)
@@ -247,39 +246,21 @@ export default function AnnonceAgentPanel({ ficheId, pdfMetadata }) {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border-2 border-purple-300 p-6 mb-6">
-      {/* En-tête repliable (button = phrasing content uniquement → spans, pas h3) */}
-      <button
-        type="button"
-        onClick={() => setPanelOpen((o) => !o)}
-        className="w-full flex items-center justify-between gap-3 text-left"
-      >
-        <span className="flex items-center gap-3">
-          <span className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <PenTool className="w-5 h-5 text-white" />
-          </span>
-          <span className="block">
-            <span className="block text-lg font-semibold text-gray-900">Agent annonce (nouveau)</span>
-            <span className="block text-sm text-gray-600">Génération et ajustement Airbnb et Booking via le nouvel agent IA.</span>
-          </span>
+      {/* En-tête (panneau non repliable : bloc principal, toujours déployé) */}
+      <div className="flex items-center gap-3">
+        <span className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <PenTool className="w-5 h-5 text-white" />
         </span>
-        {panelOpen
-          ? <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
-          : <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />}
-      </button>
+        <div>
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+            Agent annonce
+            <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold uppercase tracking-wide">New</span>
+          </h3>
+          <p className="text-sm text-gray-600">Génération et ajustement Airbnb et Booking via le nouvel agent IA.</p>
+        </div>
+      </div>
 
-      {panelOpen && (
-        <div className="mt-5 space-y-5">
-          {/* Bandeau DEV — même idiome que le bloc Loomky */}
-          <div className="p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg flex items-start gap-3">
-            <Construction className="w-6 h-6 text-yellow-900 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-yellow-900">DEV EN COURS</p>
-              <p className="text-xs text-yellow-800 mt-1">
-                Phase de test : vous pouvez générer, ajuster et relire le résultat, mais le flux officiel reste l'assistant annonce ci-dessus.
-              </p>
-            </div>
-          </div>
-
+      <div className="mt-5 space-y-5">
           {/* Sélecteur de modèle partagé + recommandations figées */}
           <div>
             <label htmlFor="annonce-modele" className="block text-sm font-semibold text-gray-900 mb-2">Modèle</label>
@@ -565,7 +546,6 @@ export default function AnnonceAgentPanel({ ficheId, pdfMetadata }) {
             </div>
           )}
         </div>
-      )}
     </div>
   )
 }
