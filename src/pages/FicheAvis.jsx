@@ -554,9 +554,9 @@ export default function FicheAvis() {
 
             {/* 📸 Photos de la façade — photos seules, réutilisables pour l'annonce */}
             <div>
-              <label className="block font-semibold mb-1">Photos de la façade</label>
+              <label className="block font-semibold mb-1">Photos de la façade <span className="text-red-500">*</span></label>
               <p className="text-sm text-text-muted mb-3">
-                📸 Ces photos pourront être utilisées pour l'annonce.
+                📸 Les photos de la façade sont désormais obligatoires pour l'annonce.
               </p>
               <PhotoUpload
                 fieldPath="section_avis.immeuble_facade_photos"
@@ -833,8 +833,8 @@ export default function FicheAvis() {
                       type="button"
                       onClick={() => setTypePassage('menage', active ? null : opt)}
                       className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors ${active
-                          ? 'bg-primary text-accent border-primary'
-                          : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-primary/5 hover:text-primary'
+                        ? 'bg-primary text-accent border-primary'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-primary/5 hover:text-primary'
                         }`}
                     >
                       {opt}
@@ -855,8 +855,8 @@ export default function FicheAvis() {
                       type="button"
                       onClick={() => setTypePassage('maintenance', active ? null : opt)}
                       className={`px-4 py-2 text-sm font-medium rounded-full border transition-colors ${active
-                          ? 'bg-primary text-accent border-primary'
-                          : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-primary/5 hover:text-primary'
+                        ? 'bg-primary text-accent border-primary'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-primary/5 hover:text-primary'
                         }`}
                     >
                       {opt}

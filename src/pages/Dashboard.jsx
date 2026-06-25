@@ -38,8 +38,7 @@ export default function Dashboard() {
 
   // 📢 BANDEAU D'ANNONCE
   const [showAnnouncement, setShowAnnouncement] = useState(false)
-  const ANNOUNCEMENT_KEY = 'announcement_dismissed_2026_02_11' // Changer cette clé pour réafficher l'annonce
-
+  const ANNOUNCEMENT_KEY = 'announcement_dismissed_2026_06_25' // Changer cette clé pour réafficher l'annonce
   // 🆕 AJOUTS RÉAFFECTATION
   const [reassignModal, setReassignModal] = useState({
     isOpen: false,
@@ -443,13 +442,10 @@ export default function Dashboard() {
           <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
             <Info className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
             <div className="flex-1">
-              <h4 className="font-semibold text-blue-900 mb-2">Nouvelles améliorations disponibles !</h4>
+              <h4 className="font-semibold text-blue-900 mb-2">Nouveau : l'Agent Annonce est disponible !</h4>
               <div className="space-y-2 text-sm text-blue-800">
                 <p>
-                  <strong>📧 Nouvelle section E-mail Outlook :</strong> Vous pouvez maintenant enregistrer les identifiants du compte e-mail Outlook du propriétaire directement dans la fiche.
-                </p>
-                <p>
-                  <strong>👁️ Affichage des mots de passe :</strong> Un bouton a été ajouté à côté des champs de mot de passe pour afficher ou masquer le texte saisi, facilitant ainsi la vérification de vos saisies.
+                  <strong>✨ Nouvel Agent Annonce :</strong> Sur la page de finalisation d'une fiche, vous pouvez désormais générer automatiquement l'annonce du logement avec le nouvel Agent Annonce. Plus rapide et plus fiable que l'ancien assistant.
                 </p>
               </div>
             </div>
@@ -490,57 +486,57 @@ export default function Dashboard() {
 
           {/* Ligne 2 : Recherche + Tri + Toggle vues */}
           <div className="flex gap-3 items-center justify-end">
-              {/* Barre de recherche */}
-              <div className="sm:w-56">
-                <input
-                  type="text"
-                  placeholder="Rechercher..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:border-transparent text-sm transition-all duration-200"
-                  style={{ '--tw-ring-color': '#dbae61' }}
-                  onFocus={(e) => e.target.style.boxShadow = `0 0 0 2px #dbae61`}
-                  onBlur={(e) => e.target.style.boxShadow = 'none'}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              {/* Sélecteur de tri */}
-              <select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                className="w-36 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 focus:outline-none cursor-pointer"
+            {/* Barre de recherche */}
+            <div className="sm:w-56">
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:border-transparent text-sm transition-all duration-200"
+                style={{ '--tw-ring-color': '#dbae61' }}
                 onFocus={(e) => e.target.style.boxShadow = `0 0 0 2px #dbae61`}
                 onBlur={(e) => e.target.style.boxShadow = 'none'}
-              >
-                <option value="recent">Plus récent</option>
-                <option value="oldest">Plus ancien</option>
-                <option value="az">A → Z</option>
-                <option value="za">Z → A</option>
-              </select>
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-              {/* Toggle Grid/List */}
-              <div className="flex bg-white rounded-lg border border-gray-300 p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors ${viewMode === 'grid'
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  title="Vue grille"
-                >
-                  <Grid3X3 size={18} />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors ${viewMode === 'list'
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  title="Vue liste"
-                >
-                  <List size={18} />
-                </button>
-              </div>
+            {/* Sélecteur de tri */}
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              className="w-36 px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 focus:outline-none cursor-pointer"
+              onFocus={(e) => e.target.style.boxShadow = `0 0 0 2px #dbae61`}
+              onBlur={(e) => e.target.style.boxShadow = 'none'}
+            >
+              <option value="recent">Plus récent</option>
+              <option value="oldest">Plus ancien</option>
+              <option value="az">A → Z</option>
+              <option value="za">Z → A</option>
+            </select>
+
+            {/* Toggle Grid/List */}
+            <div className="flex bg-white rounded-lg border border-gray-300 p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded transition-colors ${viewMode === 'grid'
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                title="Vue grille"
+              >
+                <Grid3X3 size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded transition-colors ${viewMode === 'list'
+                  ? 'bg-gray-100 text-gray-900'
+                  : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                title="Vue liste"
+              >
+                <List size={18} />
+              </button>
+            </div>
           </div>
         </div>
 
