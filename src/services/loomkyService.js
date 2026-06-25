@@ -526,7 +526,7 @@ export function buildResolvedChecklists(fiche) {
         ],
         isRequired: true,
         beforePhotosRequired: false,
-        afterPhotosRequired: true
+        afterPhotosRequired: fasle
     })
 
 
@@ -583,7 +583,7 @@ export function buildResolvedChecklists(fiche) {
         tasks: salonTasks,
         isRequired: true,
         beforePhotosRequired: false,
-        afterPhotosRequired: true
+        afterPhotosRequired: false
     })
 
 
@@ -617,7 +617,7 @@ export function buildResolvedChecklists(fiche) {
         tasks: salleAMangerTasks,
         isRequired: true,
         beforePhotosRequired: false,
-        afterPhotosRequired: true
+        afterPhotosRequired: false
     })
 
     // Cuisine
@@ -782,7 +782,7 @@ export function buildResolvedChecklists(fiche) {
         tasks: cuisineTasks,
         isRequired: true,
         beforePhotosRequired: false,
-        afterPhotosRequired: true
+        afterPhotosRequired: false
     })
 
     // === CHAMBRES / ESPACE NUIT ===
@@ -801,7 +801,7 @@ export function buildResolvedChecklists(fiche) {
             required: true,
             isRequired: true,
             beforePhotosRequired: false,
-            afterPhotosRequired: true
+            afterPhotosRequired: false
         })
     } else {
         // Chambres classiques (1 à 6)
@@ -848,7 +848,7 @@ export function buildResolvedChecklists(fiche) {
                 required: true,
                 isRequired: true,
                 beforePhotosRequired: false,
-                afterPhotosRequired: true
+                afterPhotosRequired: false
             })
         }
     }
@@ -967,7 +967,7 @@ export function buildResolvedChecklists(fiche) {
             required: true,
             isRequired: true,
             beforePhotosRequired: false,
-            afterPhotosRequired: true
+            afterPhotosRequired: false
         })
     }
 
@@ -998,7 +998,7 @@ export function buildResolvedChecklists(fiche) {
         tasks: wcTasks,
         isRequired: true,
         beforePhotosRequired: false,
-        afterPhotosRequired: true
+        afterPhotosRequired: false
     })
 
 
@@ -1040,7 +1040,7 @@ export function buildResolvedChecklists(fiche) {
             tasks: buanderieTasks,
             isRequired: true,
             beforePhotosRequired: false,
-            afterPhotosRequired: true
+            afterPhotosRequired: false
         })
     }
 
@@ -1133,7 +1133,7 @@ export function buildResolvedChecklists(fiche) {
             tasks: autresPiecesTasks,
             isRequired: true,
             beforePhotosRequired: false,
-            afterPhotosRequired: true
+            afterPhotosRequired: false
         })
     }
 
@@ -1212,7 +1212,7 @@ export function buildResolvedChecklists(fiche) {
             tasks: exterieurTasks,
             isRequired: true,
             beforePhotosRequired: false,
-            afterPhotosRequired: true
+            afterPhotosRequired: false
         })
     }
 
@@ -1225,7 +1225,7 @@ export function buildResolvedChecklists(fiche) {
             ],
             isRequired: true,
             beforePhotosRequired: false,
-            afterPhotosRequired: true
+            afterPhotosRequired: false
         })
     }
 
