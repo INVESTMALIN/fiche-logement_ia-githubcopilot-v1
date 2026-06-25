@@ -13,7 +13,8 @@ import { CheckCircle, PenTool, Send, RefreshCw, Copy, AlertCircle, Sparkles, Loa
 import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
 import { supabase } from '../lib/supabaseClient'
 import { validateRequiredFields } from '../lib/validationConfig'
-import { createChecklistsOnLoomky, normalizeFormDataToFiche, enrichPropertyOnLoomky, logLoomkyEvent } from '../services/loomkyService'
+import { normalizePhotoField } from '../lib/photoHelpers'
+import { createChecklistsOnLoomky, normalizeFormDataToFiche, enrichPropertyOnLoomky, logLoomkyEvent, addChecklistPhotoModels } from '../services/loomkyService'
 
 
 export default function FicheFinalisation() {
@@ -276,6 +277,44 @@ export default function FicheFinalisation() {
       if (result.checklistIds) updateField('loomky_checklist_ids', result.checklistIds)
       updateField('loomky_sync_status', 'synced')
       updateField('loomky_synced_at', updatePayload.loomky_synced_at)
+
+      // 3️⃣ Photo de la boîte à clés → checklist "Entrée" (non bloquant)
+      // Pousse la/les photo(s) de l'emplacement de la boîte à clés en photo de référence
+      // sur la checklist "Entrée" uniquement, pour que le prestataire de ménage la voie
+      // dès la première checklist qu'il ouvre en arrivant.
+      // Ne doit JAMAIS casser la création des checklists (même philosophie que logLoomkyEvent) :
+      // try/catch dédié, on log et on continue, le statut "synced" est conservé.
+      try {
+        // Normalise emplacementPhoto : peut être un vrai tableau, une chaîne JSON
+        // sérialisée ('["..."]'), une URL unique en string, ou null/undefined.
+        // normalizePhotoField (partagé avec PhotoUpload) renvoie toujours un tableau.
+        const photoUrls = normalizePhotoField(formData.section_clefs?.emplacementPhoto)
+
+        if (photoUrls.length === 0) {
+          console.log('ℹ️ Pas de photo boîte à clés (section_clefs.emplacementPhoto vide), skip photo-models')
+        } else if (!result.checklistIds) {
+          console.warn('⚠️ checklistIds absent, impossible de cibler la checklist "Entrée", skip photo-models')
+        } else {
+          const entreeChecklist = result.checklistIds.find(c => c.name === 'Entrée')
+          if (!entreeChecklist) {
+            console.warn('⚠️ Checklist "Entrée" introuvable dans checklistIds, skip photo-models')
+          } else {
+            const photoResult = await addChecklistPhotoModels(
+              formData.loomky_property_id,
+              entreeChecklist.id,
+              photoUrls,
+              loomkyToken
+            )
+            if (photoResult.success) {
+              console.log(`✅ ${photoResult.uploadedCount} photo(s) boîte à clés ajoutée(s) à la checklist "Entrée"`)
+            } else {
+              console.warn('⚠️ Échec ajout photo boîte à clés (non bloquant):', photoResult.error)
+            }
+          }
+        }
+      } catch (photoErr) {
+        console.warn('⚠️ Erreur upload photo boîte à clés (non bloquant):', photoErr)
+      }
 
       logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_checklists_created', formData.user_id)
       setLoomkyStatus({ syncing: false, error: null })

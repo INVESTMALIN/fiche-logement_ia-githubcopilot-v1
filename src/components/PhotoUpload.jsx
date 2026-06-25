@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { useForm } from './FormContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import { normalizePhotoField } from '../lib/photoHelpers'
 import imageCompression from 'browser-image-compression'
 
 const sanitizeFileName = (fileName) => {
@@ -53,22 +54,8 @@ const PhotoUpload = ({
   const [backendCompressing, setBackendCompressing] = useState(false)
   const [error, setError] = useState(null)
 
-  // Récupérer les photos actuelles
-  const fieldValue = getField(fieldPath)
-  let rawPhotos = fieldValue || []
-
-  // Parse les strings JSON malformées
-  if (typeof rawPhotos === 'string') {
-    if (rawPhotos === '[]' || rawPhotos === '') {
-      rawPhotos = []
-    } else if (rawPhotos.startsWith('[')) {
-      try { rawPhotos = JSON.parse(rawPhotos) } catch { rawPhotos = [] }
-    } else {
-      rawPhotos = [rawPhotos] // Single URL
-    }
-  }
-
-  const currentPhotos = Array.isArray(rawPhotos) ? rawPhotos : []
+  // Récupérer les photos actuelles (normalise les cas string JSON / URL unique)
+  const currentPhotos = normalizePhotoField(getField(fieldPath))
   // Génération du path pour Supabase Storage
   const generateStoragePath = (fileName) => {
     const timestamp = Date.now()
