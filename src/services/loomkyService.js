@@ -517,6 +517,22 @@ export function buildResolvedChecklists(fiche) {
 
     // === SECTIONS STANDARD (toujours présentes) ===
 
+    // Boîte à clé
+    // Catégorie dédiée à l'emplacement de la boîte à clés (souvent dehors, ni dans
+    // l'Entrée ni dans une pièce — cf. retour Victoria). Créée systématiquement pour
+    // tous les logements et obligatoire. C'est cette checklist qui porte la photo
+    // d'emplacement de la boîte à clés (push photo-models depuis FicheFinalisation),
+    // et non plus "Entrée".
+    checklists.push({
+        name: "Boîte à clé",
+        tasks: [
+            { name: "Trousseau de clés voyageur dans boîte à clé", description: "Vérifier que le trousseau de clés voyageur est bien présent dans la boîte à clé" }
+        ],
+        isRequired: true,
+        beforePhotosRequired: false,
+        afterPhotosRequired: false
+    })
+
     // Entrée
     checklists.push({
         name: "Entrée",

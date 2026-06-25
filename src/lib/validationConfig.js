@@ -4,6 +4,7 @@
  */
 
 import { isPhoneE164Normalizable } from './phoneHelpers'
+import { normalizePhotoField } from './photoHelpers'
 
 // ========================================
 // CHAMPS OBLIGATOIRES SIMPLES (toujours requis)
@@ -825,6 +826,29 @@ export const SPECIAL_VALIDATIONS = {
         return errors
     },
 
+    // Validation façade : au moins UNE photo de la façade (section "Évaluation de
+    // l'immeuble et de la façade" dans FicheAvis). Le champ est un tableau d'URLs
+    // (`[]` par défaut), donc la vérification simple "non vide" de REQUIRED_FIELDS ne
+    // suffit pas (un `[]` y passerait). On normalise via normalizePhotoField (mêmes
+    // règles que PhotoUpload : tableau, chaîne JSON, URL unique…) puis on filtre les
+    // entrées vides pour rester aligné sur ce qui est réellement poussé.
+    validateFacadePhotos: (formData) => {
+        const errors = []
+
+        const photos = normalizePhotoField(formData.section_avis?.immeuble_facade_photos)
+            .filter(url => typeof url === 'string' && url.trim() !== '')
+
+        if (photos.length === 0) {
+            errors.push({
+                section: 'avis',
+                field: 'section_avis.immeuble_facade_photos',
+                message: 'Évaluation de l\'immeuble et de la façade : au moins une photo de la façade est obligatoire'
+            })
+        }
+
+        return errors
+    },
+
     // Validation salon : au moins UN équipement coché
     validateSalon: (formData) => {
         const errors = []
@@ -944,8 +968,9 @@ export const validateRequiredFields = (formData) => {
     const cuisineErrors = SPECIAL_VALIDATIONS.validateCuisine(formData)
     const salonErrors = SPECIAL_VALIDATIONS.validateSalon(formData)
     const contactsMaintenanceErrors = SPECIAL_VALIDATIONS.validateContactsMaintenance(formData)
+    const facadePhotosErrors = SPECIAL_VALIDATIONS.validateFacadePhotos(formData)
         // Fusionner les erreurs spéciales
-        ;[...lingeErrors, ...visiteErrors, ...chambreErrors, ...salleErrors, ...cuisineErrors, ...salonErrors, ...contactsMaintenanceErrors].forEach(error => {
+        ;[...lingeErrors, ...visiteErrors, ...chambreErrors, ...salleErrors, ...cuisineErrors, ...salonErrors, ...contactsMaintenanceErrors, ...facadePhotosErrors].forEach(error => {
             if (!errors[error.section]) errors[error.section] = []
             errors[error.section].push({
                 field: error.field,
