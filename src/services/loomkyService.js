@@ -526,7 +526,7 @@ export function buildResolvedChecklists(fiche) {
         ],
         isRequired: true,
         beforePhotosRequired: false,
-        afterPhotosRequired: fasle
+        afterPhotosRequired: false
     })
 
 
@@ -1822,6 +1822,115 @@ export async function assignPropertyToOwnerOnLoomky(ownerId, propertyId, token) 
 export async function createChecklistsOnLoomky(propertyId, fiche, token) {
     const payload = buildResolvedChecklists(fiche)
     return await createChecklists(propertyId, payload, token)
+}
+
+/**
+ * Récupère une image depuis une URL (Supabase Storage public) et la convertit en File.
+ *
+ * Nos photos sont stockées en URL alors que l'endpoint photo-models attend de vrais
+ * fichiers : on fetch donc l'URL → blob → File. Le bucket `fiche-photos` étant public,
+ * le fetch côté navigateur passe (CORS permissif sur les objets publics Supabase).
+ *
+ * @param {string} url - URL publique de l'image
+ * @param {number} index - rang de la photo (fallback pour le nom de fichier)
+ * @returns {Promise<File|null>} - null si le fetch échoue (non bloquant, on skip l'image)
+ */
+async function fetchImageAsFile(url, index) {
+    try {
+        const response = await fetch(url)
+        if (!response.ok) {
+            console.warn(`addChecklistPhotoModels: fetch image échoué (${response.status}) pour ${url}`)
+            return null
+        }
+
+        const blob = await response.blob()
+
+        // Nom de fichier déduit du chemin de l'URL (sans query string), fallback sur l'index.
+        // Type déduit du Content-Type renvoyé par Supabase, fallback image/jpeg.
+        const cleanUrl = url.split('?')[0]
+        const fileName = decodeURIComponent(cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1)) || `photo-${index + 1}.jpg`
+        const type = blob.type || 'image/jpeg'
+
+        return new File([blob], fileName, { type })
+    } catch (err) {
+        console.warn(`addChecklistPhotoModels: erreur fetch/blob pour ${url}:`, err)
+        return null
+    }
+}
+
+/**
+ * Ajoute des photos de référence ("photo models") à une checklist de ménage Loomky.
+ *
+ * Endpoint : PATCH /v1/properties/{propertyId}/cleaning-checklists/{checklistId}/photo-models
+ * Attend un multipart/form-data avec un champ `photos` = liste de fichiers (File[]).
+ * Comme nos photos sont des URLs (Supabase Storage), on les convertit en File via
+ * fetchImageAsFile() avant l'envoi.
+ *
+ * Ne throw jamais : retourne toujours { success, ... } pour rester non bloquant côté
+ * appelant (la création des checklists ne doit pas être cassée par un échec photo).
+ *
+ * @param {string} propertyId - ID Loomky de la property
+ * @param {string} checklistId - ID de la checklist cible
+ * @param {string[]} photoUrls - URLs des photos à pousser (Supabase Storage)
+ * @param {string} token - Token JWT Loomky (saisi par le coordinateur)
+ * @returns {Promise<Object>} - { success, uploadedCount, data } ou { success: false, error }
+ */
+export async function addChecklistPhotoModels(propertyId, checklistId, photoUrls, token) {
+    if (!token) return { success: false, error: 'Token requis' }
+    if (!propertyId) return { success: false, error: 'PropertyId requis' }
+    if (!checklistId) return { success: false, error: 'ChecklistId requis' }
+
+    // Normaliser l'entrée en tableau d'URLs (strings) non vides
+    const urls = (Array.isArray(photoUrls) ? photoUrls : [photoUrls])
+        .filter(u => typeof u === 'string' && u.trim() !== '')
+
+    if (urls.length === 0) {
+        return { success: false, error: 'Aucune URL de photo fournie' }
+    }
+
+    try {
+        // URLs → File[] en parallèle ; on ignore les fetch échoués (non bloquant)
+        const files = (await Promise.all(urls.map((url, i) => fetchImageAsFile(url, i)))).filter(Boolean)
+
+        if (files.length === 0) {
+            return { success: false, error: 'Aucune image n\'a pu être récupérée depuis les URLs' }
+        }
+
+        const formData = new FormData()
+        files.forEach(file => formData.append('photos', file, file.name))
+
+        // ⚠️ Pas de header 'Content-Type' : le navigateur le définit lui-même
+        // (multipart/form-data + boundary) à partir du FormData.
+        const response = await fetch(
+            `${BASE_URL}/v1/properties/${propertyId}/cleaning-checklists/${checklistId}/photo-models`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            }
+        )
+
+        if (!response.ok) {
+            const text = await response.text()
+            let errorData = {}
+            try { errorData = text ? JSON.parse(text) : {} } catch (e) { /* noop */ }
+            const errorMsg = errorData?.message || response.statusText || 'Erreur inconnue'
+            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+        }
+
+        // Réponse attendue : la checklist avec son tableau photoModels mis à jour.
+        // Parsing tolérant : une réponse OK non-JSON ne doit pas faire échouer l'upload.
+        const text = await response.text()
+        let data = {}
+        try { data = text ? JSON.parse(text) : {} } catch (e) { /* réponse OK non-JSON, ignorée */ }
+
+        return { success: true, uploadedCount: files.length, data }
+
+    } catch (error) {
+        return { success: false, error: error.message }
+    }
 }
 
 /**
