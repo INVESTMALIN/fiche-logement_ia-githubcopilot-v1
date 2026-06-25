@@ -13,6 +13,7 @@ import { CheckCircle, PenTool, Send, RefreshCw, Copy, AlertCircle, Sparkles, Loa
 import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
 import { supabase } from '../lib/supabaseClient'
 import { validateRequiredFields } from '../lib/validationConfig'
+import { normalizePhotoField } from '../lib/photoHelpers'
 import { createChecklistsOnLoomky, normalizeFormDataToFiche, enrichPropertyOnLoomky, logLoomkyEvent, addChecklistPhotoModels } from '../services/loomkyService'
 
 
@@ -284,8 +285,10 @@ export default function FicheFinalisation() {
       // Ne doit JAMAIS casser la création des checklists (même philosophie que logLoomkyEvent) :
       // try/catch dédié, on log et on continue, le statut "synced" est conservé.
       try {
-        const emplacementPhotos = formData.section_clefs?.emplacementPhoto || []
-        const photoUrls = Array.isArray(emplacementPhotos) ? emplacementPhotos : [emplacementPhotos]
+        // Normalise emplacementPhoto : peut être un vrai tableau, une chaîne JSON
+        // sérialisée ('["..."]'), une URL unique en string, ou null/undefined.
+        // normalizePhotoField (partagé avec PhotoUpload) renvoie toujours un tableau.
+        const photoUrls = normalizePhotoField(formData.section_clefs?.emplacementPhoto)
 
         if (photoUrls.length === 0) {
           console.log('ℹ️ Pas de photo boîte à clés (section_clefs.emplacementPhoto vide), skip photo-models')
