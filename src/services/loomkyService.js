@@ -1710,21 +1710,21 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
         },
         ownerPermissions: {
             viewStats: {
-                occupancy: true,  // Taux d'occupation
-                totalNights: true,   // Nb total de nuits
+                occupancy: false,  // Taux d'occupation
+                totalNights: false,   // Nb total de nuits
                 grossRevenueExclFees: false,
                 grossRevenueInclFees: false,
                 grossRevenuePerPlatformInclFees: false,
                 grossRevenuePerPlatformExclFees: false,
-                nightsPerPlatform: true,  // Nb de nuits par plateforme
+                nightsPerPlatform: false,  // Nb de nuits par plateforme
                 customFees: false,
                 commission: false,
                 cityTax: false,
-                netRevenue: true   // Revenu net
+                netRevenue: false   // Revenu net
             },
             viewCalendar: true,  // Calendrier
             updateAvailability: false,
-            viewBookingDetails: true  // Réservations
+            viewBookingDetails: false  // Réservations
         },
         sendCredentials: true,
         type: 'individual'
