@@ -451,7 +451,7 @@ export default function FicheAvis() {
           </div>
 
           <div className="bg-white rounded-xl p-6 shadow mb-6">
-            <h2 className="text-base font-semibold mb-4">Évaluation de l'immeuble</h2>
+            <h2 className="text-base font-semibold mb-4">Évaluation de l'immeuble et de la façade</h2>
 
             {/* État général de l'immeuble */}
             <div className="mb-6">

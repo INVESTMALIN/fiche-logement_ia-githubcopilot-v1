@@ -278,10 +278,10 @@ export default function FicheFinalisation() {
       updateField('loomky_sync_status', 'synced')
       updateField('loomky_synced_at', updatePayload.loomky_synced_at)
 
-      // 3️⃣ Photo de la boîte à clés → checklist "Entrée" (non bloquant)
+      // 3️⃣ Photo de la boîte à clés → checklist "Boîte à clé" (non bloquant)
       // Pousse la/les photo(s) de l'emplacement de la boîte à clés en photo de référence
-      // sur la checklist "Entrée" uniquement, pour que le prestataire de ménage la voie
-      // dès la première checklist qu'il ouvre en arrivant.
+      // sur la checklist dédiée "Boîte à clé" (la boîte est souvent dehors, ni dans
+      // l'Entrée ni dans une pièce — cf. retour Victoria).
       // Ne doit JAMAIS casser la création des checklists (même philosophie que logLoomkyEvent) :
       // try/catch dédié, on log et on continue, le statut "synced" est conservé.
       try {
@@ -293,20 +293,20 @@ export default function FicheFinalisation() {
         if (photoUrls.length === 0) {
           console.log('ℹ️ Pas de photo boîte à clés (section_clefs.emplacementPhoto vide), skip photo-models')
         } else if (!result.checklistIds) {
-          console.warn('⚠️ checklistIds absent, impossible de cibler la checklist "Entrée", skip photo-models')
+          console.warn('⚠️ checklistIds absent, impossible de cibler la checklist "Boîte à clé", skip photo-models')
         } else {
-          const entreeChecklist = result.checklistIds.find(c => c.name === 'Entrée')
-          if (!entreeChecklist) {
-            console.warn('⚠️ Checklist "Entrée" introuvable dans checklistIds, skip photo-models')
+          const boiteClesChecklist = result.checklistIds.find(c => c.name === 'Boîte à clé')
+          if (!boiteClesChecklist) {
+            console.warn('⚠️ Checklist "Boîte à clé" introuvable dans checklistIds, skip photo-models')
           } else {
             const photoResult = await addChecklistPhotoModels(
               formData.loomky_property_id,
-              entreeChecklist.id,
+              boiteClesChecklist.id,
               photoUrls,
               loomkyToken
             )
             if (photoResult.success) {
-              console.log(`✅ ${photoResult.uploadedCount} photo(s) boîte à clés ajoutée(s) à la checklist "Entrée"`)
+              console.log(`✅ ${photoResult.uploadedCount} photo(s) boîte à clés ajoutée(s) à la checklist "Boîte à clé"`)
             } else {
               console.warn('⚠️ Échec ajout photo boîte à clés (non bloquant):', photoResult.error)
             }
