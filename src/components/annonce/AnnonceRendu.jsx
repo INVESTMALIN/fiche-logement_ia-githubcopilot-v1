@@ -115,21 +115,26 @@ const INTITULES_ZONE_RECONNUS = new Set([
 // Une ligne est un intitulé de zone si :
 //   - fast-path : normalisée, elle EST exactement un intitulé canonique connu ; OU
 //   - heuristique structurelle : elle a la FORME d'un intitulé — courte, sans
-//     ponctuation de fin de phrase/fragment, ET suivie d'une prose qui DÉMARRE UNE
-//     NOUVELLE PHRASE (majuscule). Couvre les intitulés déviants hors whitelist
-//     (« Salle de jeu », « Salle de sport »…). La reconnaissance porte sur la FORME
-//     de la ligne, pas sur un séparateur : elle tient même si le modèle oublie la
-//     ligne vide entre deux blocs (déviation constatée en régénération/édition).
-// Le signal « prose suivante en majuscule » distingue un vrai intitulé d'une ligne
-// de prose courte « wrappée » dont la suite enchaîne en minuscule (cf. review Codex :
-// « Appartement familial lumineux \n avec un salon… » ne doit PAS devenir un titre).
-// Garde-fous longueur + ponctuation + majuscule-suivante contre les faux positifs.
+//     ponctuation de fin de phrase/fragment, ET immédiatement suivie (ligne juste
+//     en dessous) d'une prose qui DÉMARRE UNE NOUVELLE PHRASE (majuscule). Couvre
+//     les intitulés déviants hors whitelist (« Salle de jeu », « Salle de sport »…).
+//     La reconnaissance porte sur la FORME de la ligne, pas sur un séparateur : elle
+//     tient même si le modèle oublie la ligne vide entre deux blocs.
+// Deux signaux, tous deux sur la ligne IMMÉDIATEMENT suivante (`proseImmediate`),
+// jamais au-delà d'une ligne vide (structure du prompt : intitulé + prose collés,
+// ligne vide seulement ENTRE blocs) :
+//   - majuscule initiale → distingue un intitulé d'une prose courte « wrappée » dont
+//     la suite enchaîne en minuscule (« Appartement familial lumineux \n avec un salon… ») ;
+//   - ligne suivante NON vide → un intitulé colle sa prose ; une ligne d'intro suivie
+//     d'une ligne vide puis d'un vrai bloc reste de la prose de fallback
+//     (« Appartement familial lumineux \n\n Séjour \n … »). (cf. reviews Codex P2)
+// Garde-fous longueur + ponctuation + majuscule + prose-collée contre les faux positifs.
 // Renvoie le libellé original (trimmé), fidèle au texte réel, ou null.
-function estIntituleZone(ligne, proseSuivante) {
+function estIntituleZone(ligne, proseImmediate) {
   const t = (ligne || '').trim()
   if (!t || t.length > 40) return null
   if (INTITULES_ZONE_RECONNUS.has(normaliserIntitule(t))) return t
-  const prose = (proseSuivante || '').trim()
+  const prose = (proseImmediate || '').trim()
   if (!prose) return null
   if (/[.!?…:,;]$/u.test(t)) return null
   if (!/^[\p{Lu}\p{Lt}]/u.test(prose)) return null
@@ -137,19 +142,18 @@ function estIntituleZone(ligne, proseSuivante) {
 }
 
 // Découpe « logement » en blocs { titre, texte }. Parcours LIGNE À LIGNE (pas de
-// dépendance à la ligne vide entre blocs, que le modèle omet parfois — cf. review
+// dépendance à la ligne vide entre blocs, que le modèle omet parfois — cf. reviews
 // Codex P2) : une ligne reconnue comme intitulé (cf. estIntituleZone, en regardant
-// la prochaine ligne non vide comme prose candidate) ouvre un bloc, les suivantes
-// forment sa prose. Tout texte avant le premier intitulé — ou la totalité si AUCUN
-// intitulé n'est reconnu — devient un bloc sans titre, rendu en prose simple
-// (on ne casse jamais l'affichage, même si le modèle dévie).
+// la ligne IMMÉDIATEMENT suivante comme prose candidate — sans franchir une ligne
+// vide) ouvre un bloc, les suivantes forment sa prose. Tout texte avant le premier
+// intitulé — ou la totalité si AUCUN intitulé n'est reconnu — devient un bloc sans
+// titre, rendu en prose simple (on ne casse jamais l'affichage, même si le modèle dévie).
 function decouperLogement(texte) {
   const lignes = (texte || '').split('\n')
   const blocs = []
   let courant = null
   for (let i = 0; i < lignes.length; i++) {
-    const proseSuivante = lignes.slice(i + 1).find((l) => l.trim() !== '') || ''
-    const titre = estIntituleZone(lignes[i], proseSuivante)
+    const titre = estIntituleZone(lignes[i], lignes[i + 1])
     if (titre) {
       if (courant) blocs.push(courant)
       courant = { titre, lignes: [] }
