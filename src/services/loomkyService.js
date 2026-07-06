@@ -1699,6 +1699,30 @@ export async function createPropertyOnLoomky(fiche, token) {
     return await createProperty(payload, token)
 }
 
+// Permissions minimales d'un owner Loomky : tout coupé sauf le calendrier.
+// Objet CONSTANT (ne dépend pas de la fiche) réutilisé tel quel par le POST
+// create-owner ET par le PATCH permissions (surcouche disableAllStatsPermissions,
+// cf. updatePropertyOwnerPermissions). Les 11 stats à false sont gardées en défense
+// en profondeur même si l'API POST les ignore.
+const MINIMAL_OWNER_PERMISSIONS = {
+    viewStats: {
+        occupancy: false,  // Taux d'occupation
+        totalNights: false,   // Nb total de nuits
+        grossRevenueExclFees: false,
+        grossRevenueInclFees: false,
+        grossRevenuePerPlatformInclFees: false,
+        grossRevenuePerPlatformExclFees: false,
+        nightsPerPlatform: false,  // Nb de nuits par plateforme
+        customFees: false,
+        commission: false,
+        cityTax: false,
+        netRevenue: false   // Revenu net
+    },
+    viewCalendar: true,  // Calendrier
+    updateAvailability: false,
+    viewBookingDetails: false  // Réservations
+}
+
 /**
  * Crée un propriétaire (property owner) dans Loomky depuis une fiche normalisée
  * @param {Object} fiche - Fiche normalisée (via normalizeFormDataToFiche)
@@ -1719,7 +1743,18 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
             .maybeSingle()
 
         if (existing?.loomky_owner_id) {
-            return { success: true, ownerId: existing.loomky_owner_id, existing: true }
+            // Owner déjà connu → on ne recrée pas. Mais on (re)durcit ses permissions
+            // à chaque passage : le PATCH est idempotent, et c'est le seul moyen de
+            // rattraper un durcissement qui aurait échoué (timeout/réseau) lors d'une
+            // création précédente — sinon l'owner garderait les stats larges par
+            // défaut de Loomky à vie (cf. review Codex). Non bloquant.
+            const permsResult = await updatePropertyOwnerPermissions(existing.loomky_owner_id, MINIMAL_OWNER_PERMISSIONS, token)
+            if (permsResult.success) {
+                console.log(`✅ Loomky owner ${existing.loomky_owner_id} (dédup) : permissions (re)minimisées`)
+            } else {
+                console.warn(`⚠️ Loomky PATCH permissions échoué pour owner dédupé ${existing.loomky_owner_id} (non-bloquant):`, permsResult.error)
+            }
+            return { success: true, ownerId: existing.loomky_owner_id, existing: true, permissionsUpdated: permsResult.success }
         }
     }
 
@@ -1738,24 +1773,7 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
             country: 'FR',
             postalCode: fiche.proprietaire_adresse_code_postal || ''
         },
-        ownerPermissions: {
-            viewStats: {
-                occupancy: false,  // Taux d'occupation
-                totalNights: false,   // Nb total de nuits
-                grossRevenueExclFees: false,
-                grossRevenueInclFees: false,
-                grossRevenuePerPlatformInclFees: false,
-                grossRevenuePerPlatformExclFees: false,
-                nightsPerPlatform: false,  // Nb de nuits par plateforme
-                customFees: false,
-                commission: false,
-                cityTax: false,
-                netRevenue: false   // Revenu net
-            },
-            viewCalendar: true,  // Calendrier
-            updateAvailability: false,
-            viewBookingDetails: false  // Réservations
-        },
+        ownerPermissions: MINIMAL_OWNER_PERMISSIONS,
         sendCredentials: true,
         type: 'individual'
     }
@@ -1795,7 +1813,72 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
                 .insert({ email, loomky_owner_id: ownerId })
         }
 
-        return { success: true, ownerId, existing: false }
+        // Permissions minimales : le POST create-owner ignore silencieusement les
+        // sous-permissions de stats non documentées (elles arrivent ACTIVÉES). On
+        // repasse donc par un PATCH permissions avec disableAllStatsPermissions:true
+        // pour tout couper d'un coup et ne laisser que le Calendrier actif.
+        // Non bloquant : un échec ici ne compromet pas l'owner déjà créé (pas de rollback).
+        const permsResult = await updatePropertyOwnerPermissions(ownerId, MINIMAL_OWNER_PERMISSIONS, token)
+        if (permsResult.success) {
+            console.log(`✅ Loomky owner ${ownerId} : permissions minimisées (stats coupées via disableAllStatsPermissions, calendrier seul actif)`)
+        } else {
+            console.warn(`⚠️ Loomky PATCH permissions échoué pour owner ${ownerId} (non-bloquant, owner conservé):`, permsResult.error)
+        }
+
+        return { success: true, ownerId, existing: false, permissionsUpdated: permsResult.success }
+
+    } catch (error) {
+        return { success: false, error: error.message }
+    }
+}
+
+/**
+ * Coupe TOUTES les permissions de statistiques d'un owner Loomky et (re)pose les
+ * 3 permissions globales, via PATCH /v1/property-owners/{ownerId}/permissions.
+ *
+ * Pourquoi ce PATCH en surcouche du POST create-owner : la doc du POST est
+ * incomplète. L'UI Loomky expose bien plus de sous-permissions de stats que les
+ * 11 documentées (versement hôte, détails commission conciergerie, détails des
+ * nuits, total frais ménage & linge, tarif moyen journalier, panier moyen…), et
+ * toutes celles non listées arrivent ACTIVÉES par défaut à la création. Le flag
+ * `disableAllStatsPermissions: true` les coupe toutes d'un coup, sans dépendre
+ * d'une liste exhaustive de champs. On renvoie aussi le bloc ownerPermissions
+ * (11 stats false + 3 globales) pour reposer les toggles globaux dans le même body.
+ *
+ * @param {string} ownerId - ID Loomky de l'owner
+ * @param {Object} ownerPermissions - Bloc ownerPermissions (réutilisé du POST : 11 stats false + viewCalendar/updateAvailability/viewBookingDetails)
+ * @param {string} token - Token JWT Loomky
+ * @returns {Promise<Object>} - { success } ou { success: false, error } ; ne throw jamais
+ */
+export async function updatePropertyOwnerPermissions(ownerId, ownerPermissions, token) {
+    if (!token) return { success: false, error: 'Token requis' }
+    if (!ownerId) return { success: false, error: 'OwnerId requis' }
+
+    const body = {
+        ownerPermissions,
+        disableAllStatsPermissions: true
+    }
+
+    try {
+        const response = await fetch(`${BASE_URL}/v1/property-owners/${ownerId}/permissions`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(body)
+        })
+
+        const text = await response.text()
+        let data = {}
+        try { data = text ? JSON.parse(text) : {} } catch (e) { /* réponse non-JSON, ignorée */ }
+
+        if (!response.ok) {
+            const errorMsg = data?.message || response.statusText || 'Erreur inconnue'
+            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+        }
+
+        return { success: true, data }
 
     } catch (error) {
         return { success: false, error: error.message }
