@@ -198,8 +198,12 @@ export const REQUIRED_FIELDS = {
 
     consommables: [
         {
+            field: 'section_consommables.premier_panier_par_prestataire',
+            message: 'Vous devez indiquer qui fournit le 1er panier de consommables (à l\'ouverture)'
+        },
+        {
             field: 'section_consommables.fournis_par_prestataire',
-            message: 'Vous devez indiquer si les consommables sont fournis par un prestataire'
+            message: 'Vous devez indiquer qui fournit les consommables au quotidien (renouvellement)'
         }
     ],
 

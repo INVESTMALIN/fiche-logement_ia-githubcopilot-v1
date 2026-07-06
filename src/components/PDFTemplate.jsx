@@ -616,6 +616,19 @@ const PDFTemplate = ({ formData }) => {
       // Extraire les champs non-photos
       const fields = []
       Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+        // 🧴 CONSOMMABLES : rendu explicite "qui fournit" (Prestataire / Propriétaire) au lieu de Oui/Non
+        if (config.key === 'section_consommables' && (fieldKey === 'premier_panier_par_prestataire' || fieldKey === 'fournis_par_prestataire')) {
+          if (fieldValue === true || fieldValue === false) {
+            fields.push({
+              key: fieldKey,
+              label: fieldKey === 'premier_panier_par_prestataire'
+                ? '1er panier de consommables (à l\'ouverture)'
+                : 'Consommables au quotidien (renouvellement)',
+              value: fieldValue === true ? 'Prestataire de ménage' : 'Propriétaire'
+            })
+          }
+          return
+        }
         // 🛏️ INJECTION SPÉCIALE : Détail des lits dans section Logement
         if (config.key === 'section_logement' && fieldKey === 'nombre_lits' && bedsText) {
           const formattedValue = formatValue(fieldValue, fieldKey)
