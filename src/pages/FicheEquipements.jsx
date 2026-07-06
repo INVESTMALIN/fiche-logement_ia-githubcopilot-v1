@@ -176,8 +176,11 @@ export default function FicheEquipements() {
     'Garage individuel'
   ]
 
-  // Types de parking pour PAYANT (3 options, radio unique)
+  // Types de parking pour PAYANT (4 options, radio unique)
+  // "Stationnement dans la rue" en 1ère position (demande Julie : payant type parkmètre / zone bleue).
+  // Valeur stockée = le libellé lui-même dans equipements_parking_payant_type (colonne texte libre existante).
   const typesParkingPayantOptions = [
+    'Stationnement dans la rue',
     'Parking souterrain',
     'Abri voiture',
     'Stationnement dans une allée privée'
