@@ -313,6 +313,7 @@ export default function FicheChambre() {
     { key: 'equipements_stores_manuels', label: 'Stores manuels' },
     { key: 'equipements_volets', label: 'Volets' },
     { key: 'equipements_stores_electriques', label: 'Stores électriques' },
+    { key: 'equipements_rideaux_occultants', label: 'Rideau occultant' },
     { key: 'equipements_television', label: 'Télévision' },
     { key: 'equipements_oreillers_couvertures_sup', label: 'Oreillers et couvertures supplémentaires' },
     { key: 'equipements_chauffage', label: 'Chauffage' },
