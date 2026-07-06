@@ -1245,6 +1245,19 @@ export function buildResolvedChecklists(fiche) {
         })
     }
 
+    // === isTaskMediaRequired: true sur TOUTES les tasks ===
+    // Loomky force l'upload d'une photo/vidéo pour valider une task uniquement si le param
+    // est présent DANS chaque objet task (au niveau checklist il est ignoré silencieusement —
+    // testé en live sur la 7755). On l'applique ici en une passe pour couvrir sans exception
+    // toutes les tasks statiques, conditionnelles et générées en boucle (Chambres / SDB).
+    // Booléen simple à true, sans logique conditionnelle. N'affecte pas isRequired /
+    // beforePhotosRequired / afterPhotosRequired.
+    for (const checklist of checklists) {
+        for (const task of checklist.tasks) {
+            task.isTaskMediaRequired = true
+        }
+    }
+
     return { checklists }
 }
 
