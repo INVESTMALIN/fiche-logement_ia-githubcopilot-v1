@@ -490,6 +490,7 @@ export const mapFormDataToSupabase = (formData) => {
     equipements_menage_autres_elements_photos: formData.section_equipements?.menage_autres_elements_photos || [],
 
     // Section Consommables
+    consommables_premier_panier_par_prestataire: formData.section_consommables?.premier_panier_par_prestataire ?? null,
     consommables_fournis_par_prestataire: formData.section_consommables?.fournis_par_prestataire ?? null,
     consommables_gel_douche: formData.section_consommables?.gel_douche ?? null,
     consommables_shampoing: formData.section_consommables?.shampoing ?? null,
@@ -1748,7 +1749,8 @@ export const mapSupabaseToFormData = (supabaseData) => {
     },
 
     section_consommables: {
-      // Question principale
+      // Fourniture des consommables (1er panier à l'ouverture + quotidien renouvellement)
+      premier_panier_par_prestataire: supabaseData.consommables_premier_panier_par_prestataire ?? null,
       fournis_par_prestataire: supabaseData.consommables_fournis_par_prestataire ?? null,
 
       // Consommables optionnels "sur demande"

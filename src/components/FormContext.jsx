@@ -500,7 +500,10 @@ const initialFormData = {
     menage_autres_elements_photos: []
   },
   section_consommables: {
-    // Question principale
+    // Fourniture des consommables : qui fournit quoi, à quel moment (retour terrain Melissa)
+    // 1er panier = livraison à l'ouverture du logement / quotidien = renouvellement récurrent.
+    // Booléens true = prestataire de ménage, false = propriétaire.
+    premier_panier_par_prestataire: null,
     fournis_par_prestataire: null,
 
     gel_douche: null,

@@ -104,6 +104,7 @@ export function normalizeFormDataToFiche(formData) {
         equipements_etendoir: formData.section_equipements?.etendoir ?? null,
 
         // Consommables — pilote les tasks "produits ménagers obligatoires" et "sur demande" dans buildResolvedChecklists
+        consommables_premier_panier_par_prestataire: formData.section_consommables?.premier_panier_par_prestataire ?? null,
         consommables_fournis_par_prestataire: formData.section_consommables?.fournis_par_prestataire ?? null,
         consommables_gel_douche: formData.section_consommables?.gel_douche ?? null,
         consommables_shampoing: formData.section_consommables?.shampoing ?? null,

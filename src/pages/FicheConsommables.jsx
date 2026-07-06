@@ -9,6 +9,7 @@ export default function FicheConsommables() {
 
   // PATTERN IMPORTANT : Récupérer formData pour les booléens
   const formData = getField('section_consommables')
+  const premierPanierParPrestataire = formData.premier_panier_par_prestataire
   const fournisParPrestataire = formData.fournis_par_prestataire
 
   const handleInputChange = (field, value) => {
@@ -33,12 +34,43 @@ export default function FicheConsommables() {
           
           <div className="bg-white p-6 rounded-lg shadow space-y-6">
             
-            {/* Question principale */}
+            {/* 1er panier de consommables (à l'ouverture du logement) */}
             <div>
               <label className="block font-semibold mb-3">
-                 Les consommables sont-ils fournis par le prestataire de ménage ? <span className="text-red-500">*</span>
+                1er panier de consommables (à l'ouverture du logement) <span className="text-red-500">*</span>
               </label>
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="premier_panier_par_prestataire"
+                    value="true"
+                    checked={premierPanierParPrestataire === true}
+                    onChange={(e) => handleRadioChange('section_consommables.premier_panier_par_prestataire', e.target.value)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span>Fourni par le prestataire de ménage</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="premier_panier_par_prestataire"
+                    value="false"
+                    checked={premierPanierParPrestataire === false}
+                    onChange={(e) => handleRadioChange('section_consommables.premier_panier_par_prestataire', e.target.value)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span>Fourni par le propriétaire</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Consommables au quotidien (renouvellement) */}
+            <div>
+              <label className="block font-semibold mb-3">
+                Consommables au quotidien (renouvellement) <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
@@ -48,7 +80,7 @@ export default function FicheConsommables() {
                     onChange={(e) => handleRadioChange('section_consommables.fournis_par_prestataire', e.target.value)}
                     className="w-4 h-4 cursor-pointer"
                   />
-                  <span>Oui</span>
+                  <span>Fourni par le prestataire de ménage</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -59,12 +91,12 @@ export default function FicheConsommables() {
                     onChange={(e) => handleRadioChange('section_consommables.fournis_par_prestataire', e.target.value)}
                     className="w-4 h-4 cursor-pointer"
                   />
-                  <span>Non</span>
+                  <span>Fourni par le propriétaire</span>
                 </label>
               </div>
             </div>
 
-            {/* Si OUI : Liste rouge des consommables obligatoires */}
+            {/* Si quotidien = prestataire : Liste rouge des consommables obligatoires */}
             {fournisParPrestataire === true && (
               <div className="bg-red-50 border-l-4 border-red-400 p-4">
                 <h3 className="font-semibold text-red-800 mb-3">
@@ -87,7 +119,7 @@ export default function FicheConsommables() {
               </div>
             )}
 
-            {/* Si OUI : Consommables "Sur demande" */}
+            {/* Si quotidien = prestataire : Consommables "Sur demande" */}
             {fournisParPrestataire === true && (
               <div>
                 <label className="block font-semibold mb-3">
