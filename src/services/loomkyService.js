@@ -1795,7 +1795,72 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
                 .insert({ email, loomky_owner_id: ownerId })
         }
 
-        return { success: true, ownerId, existing: false }
+        // Permissions minimales : le POST create-owner ignore silencieusement les
+        // sous-permissions de stats non documentées (elles arrivent ACTIVÉES). On
+        // repasse donc par un PATCH permissions avec disableAllStatsPermissions:true
+        // pour tout couper d'un coup et ne laisser que le Calendrier actif.
+        // Non bloquant : un échec ici ne compromet pas l'owner déjà créé (pas de rollback).
+        const permsResult = await updatePropertyOwnerPermissions(ownerId, payload.ownerPermissions, token)
+        if (permsResult.success) {
+            console.log(`✅ Loomky owner ${ownerId} : permissions minimisées (stats coupées via disableAllStatsPermissions, calendrier seul actif)`)
+        } else {
+            console.warn(`⚠️ Loomky PATCH permissions échoué pour owner ${ownerId} (non-bloquant, owner conservé):`, permsResult.error)
+        }
+
+        return { success: true, ownerId, existing: false, permissionsUpdated: permsResult.success }
+
+    } catch (error) {
+        return { success: false, error: error.message }
+    }
+}
+
+/**
+ * Coupe TOUTES les permissions de statistiques d'un owner Loomky et (re)pose les
+ * 3 permissions globales, via PATCH /v1/property-owners/{ownerId}/permissions.
+ *
+ * Pourquoi ce PATCH en surcouche du POST create-owner : la doc du POST est
+ * incomplète. L'UI Loomky expose bien plus de sous-permissions de stats que les
+ * 11 documentées (versement hôte, détails commission conciergerie, détails des
+ * nuits, total frais ménage & linge, tarif moyen journalier, panier moyen…), et
+ * toutes celles non listées arrivent ACTIVÉES par défaut à la création. Le flag
+ * `disableAllStatsPermissions: true` les coupe toutes d'un coup, sans dépendre
+ * d'une liste exhaustive de champs. On renvoie aussi le bloc ownerPermissions
+ * (11 stats false + 3 globales) pour reposer les toggles globaux dans le même body.
+ *
+ * @param {string} ownerId - ID Loomky de l'owner
+ * @param {Object} ownerPermissions - Bloc ownerPermissions (réutilisé du POST : 11 stats false + viewCalendar/updateAvailability/viewBookingDetails)
+ * @param {string} token - Token JWT Loomky
+ * @returns {Promise<Object>} - { success } ou { success: false, error } ; ne throw jamais
+ */
+export async function updatePropertyOwnerPermissions(ownerId, ownerPermissions, token) {
+    if (!token) return { success: false, error: 'Token requis' }
+    if (!ownerId) return { success: false, error: 'OwnerId requis' }
+
+    const body = {
+        ownerPermissions,
+        disableAllStatsPermissions: true
+    }
+
+    try {
+        const response = await fetch(`${BASE_URL}/v1/property-owners/${ownerId}/permissions`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(body)
+        })
+
+        const text = await response.text()
+        let data = {}
+        try { data = text ? JSON.parse(text) : {} } catch (e) { /* réponse non-JSON, ignorée */ }
+
+        if (!response.ok) {
+            const errorMsg = data?.message || response.statusText || 'Erreur inconnue'
+            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+        }
+
+        return { success: true, data }
 
     } catch (error) {
         return { success: false, error: error.message }
