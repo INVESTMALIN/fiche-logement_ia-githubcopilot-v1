@@ -114,21 +114,25 @@ const INTITULES_ZONE_RECONNUS = new Set([
 
 // Une ligne est un intitulé de zone si :
 //   - fast-path : normalisée, elle EST exactement un intitulé canonique connu ; OU
-//   - heuristique structurelle : elle a la FORME d'un intitulé — courte, elle
-//     introduit de la prose (ligne suivante non vide) et n'est pas une phrase
-//     (pas de ponctuation de fin de phrase/fragment en bout). Couvre les intitulés
-//     déviants que le modèle produit hors whitelist (« Salle de jeu », « Salle de
-//     sport »…). La reconnaissance porte sur la FORME de la ligne, pas sur un
-//     séparateur : elle tient donc même si le modèle oublie la ligne vide entre
-//     deux blocs (déviation constatée en régénération/édition).
-// Garde-fous longueur + ponctuation + prose-suivante contre un faux positif sur
-// de la prose. Renvoie le libellé original (trimmé), fidèle au texte réel, ou null.
+//   - heuristique structurelle : elle a la FORME d'un intitulé — courte, sans
+//     ponctuation de fin de phrase/fragment, ET suivie d'une prose qui DÉMARRE UNE
+//     NOUVELLE PHRASE (majuscule). Couvre les intitulés déviants hors whitelist
+//     (« Salle de jeu », « Salle de sport »…). La reconnaissance porte sur la FORME
+//     de la ligne, pas sur un séparateur : elle tient même si le modèle oublie la
+//     ligne vide entre deux blocs (déviation constatée en régénération/édition).
+// Le signal « prose suivante en majuscule » distingue un vrai intitulé d'une ligne
+// de prose courte « wrappée » dont la suite enchaîne en minuscule (cf. review Codex :
+// « Appartement familial lumineux \n avec un salon… » ne doit PAS devenir un titre).
+// Garde-fous longueur + ponctuation + majuscule-suivante contre les faux positifs.
+// Renvoie le libellé original (trimmé), fidèle au texte réel, ou null.
 function estIntituleZone(ligne, proseSuivante) {
   const t = (ligne || '').trim()
   if (!t || t.length > 40) return null
   if (INTITULES_ZONE_RECONNUS.has(normaliserIntitule(t))) return t
-  if (!proseSuivante.trim()) return null
+  const prose = (proseSuivante || '').trim()
+  if (!prose) return null
   if (/[.!?…:,;]$/u.test(t)) return null
+  if (!/^[\p{Lu}\p{Lt}]/u.test(prose)) return null
   return t
 }
 
