@@ -1699,6 +1699,30 @@ export async function createPropertyOnLoomky(fiche, token) {
     return await createProperty(payload, token)
 }
 
+// Permissions minimales d'un owner Loomky : tout coupé sauf le calendrier.
+// Objet CONSTANT (ne dépend pas de la fiche) réutilisé tel quel par le POST
+// create-owner ET par le PATCH permissions (surcouche disableAllStatsPermissions,
+// cf. updatePropertyOwnerPermissions). Les 11 stats à false sont gardées en défense
+// en profondeur même si l'API POST les ignore.
+const MINIMAL_OWNER_PERMISSIONS = {
+    viewStats: {
+        occupancy: false,  // Taux d'occupation
+        totalNights: false,   // Nb total de nuits
+        grossRevenueExclFees: false,
+        grossRevenueInclFees: false,
+        grossRevenuePerPlatformInclFees: false,
+        grossRevenuePerPlatformExclFees: false,
+        nightsPerPlatform: false,  // Nb de nuits par plateforme
+        customFees: false,
+        commission: false,
+        cityTax: false,
+        netRevenue: false   // Revenu net
+    },
+    viewCalendar: true,  // Calendrier
+    updateAvailability: false,
+    viewBookingDetails: false  // Réservations
+}
+
 /**
  * Crée un propriétaire (property owner) dans Loomky depuis une fiche normalisée
  * @param {Object} fiche - Fiche normalisée (via normalizeFormDataToFiche)
@@ -1719,7 +1743,18 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
             .maybeSingle()
 
         if (existing?.loomky_owner_id) {
-            return { success: true, ownerId: existing.loomky_owner_id, existing: true }
+            // Owner déjà connu → on ne recrée pas. Mais on (re)durcit ses permissions
+            // à chaque passage : le PATCH est idempotent, et c'est le seul moyen de
+            // rattraper un durcissement qui aurait échoué (timeout/réseau) lors d'une
+            // création précédente — sinon l'owner garderait les stats larges par
+            // défaut de Loomky à vie (cf. review Codex). Non bloquant.
+            const permsResult = await updatePropertyOwnerPermissions(existing.loomky_owner_id, MINIMAL_OWNER_PERMISSIONS, token)
+            if (permsResult.success) {
+                console.log(`✅ Loomky owner ${existing.loomky_owner_id} (dédup) : permissions (re)minimisées`)
+            } else {
+                console.warn(`⚠️ Loomky PATCH permissions échoué pour owner dédupé ${existing.loomky_owner_id} (non-bloquant):`, permsResult.error)
+            }
+            return { success: true, ownerId: existing.loomky_owner_id, existing: true, permissionsUpdated: permsResult.success }
         }
     }
 
@@ -1738,24 +1773,7 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
             country: 'FR',
             postalCode: fiche.proprietaire_adresse_code_postal || ''
         },
-        ownerPermissions: {
-            viewStats: {
-                occupancy: false,  // Taux d'occupation
-                totalNights: false,   // Nb total de nuits
-                grossRevenueExclFees: false,
-                grossRevenueInclFees: false,
-                grossRevenuePerPlatformInclFees: false,
-                grossRevenuePerPlatformExclFees: false,
-                nightsPerPlatform: false,  // Nb de nuits par plateforme
-                customFees: false,
-                commission: false,
-                cityTax: false,
-                netRevenue: false   // Revenu net
-            },
-            viewCalendar: true,  // Calendrier
-            updateAvailability: false,
-            viewBookingDetails: false  // Réservations
-        },
+        ownerPermissions: MINIMAL_OWNER_PERMISSIONS,
         sendCredentials: true,
         type: 'individual'
     }
@@ -1800,7 +1818,7 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
         // repasse donc par un PATCH permissions avec disableAllStatsPermissions:true
         // pour tout couper d'un coup et ne laisser que le Calendrier actif.
         // Non bloquant : un échec ici ne compromet pas l'owner déjà créé (pas de rollback).
-        const permsResult = await updatePropertyOwnerPermissions(ownerId, payload.ownerPermissions, token)
+        const permsResult = await updatePropertyOwnerPermissions(ownerId, MINIMAL_OWNER_PERMISSIONS, token)
         if (permsResult.success) {
             console.log(`✅ Loomky owner ${ownerId} : permissions minimisées (stats coupées via disableAllStatsPermissions, calendrier seul actif)`)
         } else {
