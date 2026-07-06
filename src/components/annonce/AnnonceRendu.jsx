@@ -83,11 +83,19 @@ function Texte({ children }) {
 
 // ── Champ « logement » : segmentation en blocs par zone ──────────────────────
 // Le modèle rend « logement » en blocs (intitulé de zone seul sur sa ligne +
-// prose, ligne vide entre blocs) — cf. instruction « Logement » du prompt
-// (supabase/functions/_shared/annonce/prompt-airbnb.ts) et son doc miroir
+// prose à la ligne, ligne vide entre blocs) — cf. instruction « Logement » du
+// prompt (supabase/functions/_shared/annonce/prompt-airbnb.ts) et son doc miroir
 // (docs/agent-annonce/prompt-v1-agent-annonce-airbnb.md). Les intitulés font
 // partie du texte Airbnb (sans emoji) ; le front les reconnaît seulement pour
-// les styliser en sous-niveau. Liste FERMÉE, à garder synchro avec le prompt.
+// les styliser en sous-niveau.
+//
+// Le prompt n'autorise que ces intitulés canoniques, mais le modèle DÉVIE de
+// façon data-driven : sur une fiche avec équipements spéciaux (salle de jeux,
+// salle de sport, cinéma, hammam, local vélo…), il crée un bloc par équipement
+// avec un intitulé de son choix (« Salle de jeu », etc.) hors de cette liste.
+// On ne peut donc pas fermer la reconnaissance sur une whitelist : la liste
+// ci-dessous ne sert plus que de FAST-PATH (garantie zéro régression sur les
+// zones canoniques) ; la reconnaissance réelle est structurelle (cf. estIntituleZone).
 const INTITULES_ZONE_LOGEMENT = ['Séjour', 'Cuisine', 'Chambres', 'Salle de bain', 'Extérieur', 'Piscine', 'Jacuzzi', 'Sauna']
 
 // Normalisation tolérante pour la reconnaissance : strict sur le fond (égalité
@@ -104,31 +112,54 @@ const INTITULES_ZONE_RECONNUS = new Set([
   'chambre',
 ])
 
-// Une ligne est un intitulé de zone si, normalisée, elle EST exactement l'un des
-// intitulés connus (garde-fou de longueur contre un faux positif sur de la prose).
-// Renvoie le libellé original (trimmé), pour un affichage fidèle au texte réel.
-function intituleZone(ligne) {
-  const t = ligne.trim()
+// Une ligne est un intitulé de zone si :
+//   - fast-path : normalisée, elle EST exactement un intitulé canonique connu ; OU
+//   - heuristique structurelle : elle a la FORME d'un intitulé — courte, sans
+//     ponctuation de fin de phrase/fragment, ET immédiatement suivie (ligne juste
+//     en dessous) d'une prose qui DÉMARRE UNE NOUVELLE PHRASE (majuscule). Couvre
+//     les intitulés déviants hors whitelist (« Salle de jeu », « Salle de sport »…).
+//     La reconnaissance porte sur la FORME de la ligne, pas sur un séparateur : elle
+//     tient même si le modèle oublie la ligne vide entre deux blocs.
+// Deux signaux, tous deux sur la ligne IMMÉDIATEMENT suivante (`proseImmediate`),
+// jamais au-delà d'une ligne vide (structure du prompt : intitulé + prose collés,
+// ligne vide seulement ENTRE blocs) :
+//   - majuscule initiale → distingue un intitulé d'une prose courte « wrappée » dont
+//     la suite enchaîne en minuscule (« Appartement familial lumineux \n avec un salon… ») ;
+//   - ligne suivante NON vide → un intitulé colle sa prose ; une ligne d'intro suivie
+//     d'une ligne vide puis d'un vrai bloc reste de la prose de fallback
+//     (« Appartement familial lumineux \n\n Séjour \n … »). (cf. reviews Codex P2)
+// Garde-fous longueur + ponctuation + majuscule + prose-collée contre les faux positifs.
+// Renvoie le libellé original (trimmé), fidèle au texte réel, ou null.
+function estIntituleZone(ligne, proseImmediate) {
+  const t = (ligne || '').trim()
   if (!t || t.length > 40) return null
-  return INTITULES_ZONE_RECONNUS.has(normaliserIntitule(t)) ? t : null
+  if (INTITULES_ZONE_RECONNUS.has(normaliserIntitule(t))) return t
+  const prose = (proseImmediate || '').trim()
+  if (!prose) return null
+  if (/[.!?…:,;]$/u.test(t)) return null
+  if (!/^[\p{Lu}\p{Lt}]/u.test(prose)) return null
+  return t
 }
 
-// Découpe « logement » en blocs { titre, texte }. Parcours ligne à ligne : une
-// ligne reconnue comme intitulé ouvre un bloc, les suivantes forment sa prose.
-// Tout texte avant le premier intitulé — ou la totalité si AUCUN intitulé n'est
-// reconnu — devient un bloc sans titre, rendu en prose simple (comportement
-// historique préservé : on ne casse jamais l'affichage, même si le modèle dévie).
+// Découpe « logement » en blocs { titre, texte }. Parcours LIGNE À LIGNE (pas de
+// dépendance à la ligne vide entre blocs, que le modèle omet parfois — cf. reviews
+// Codex P2) : une ligne reconnue comme intitulé (cf. estIntituleZone, en regardant
+// la ligne IMMÉDIATEMENT suivante comme prose candidate — sans franchir une ligne
+// vide) ouvre un bloc, les suivantes forment sa prose. Tout texte avant le premier
+// intitulé — ou la totalité si AUCUN intitulé n'est reconnu — devient un bloc sans
+// titre, rendu en prose simple (on ne casse jamais l'affichage, même si le modèle dévie).
 function decouperLogement(texte) {
+  const lignes = (texte || '').split('\n')
   const blocs = []
   let courant = null
-  for (const ligne of (texte || '').split('\n')) {
-    const titre = intituleZone(ligne)
+  for (let i = 0; i < lignes.length; i++) {
+    const titre = estIntituleZone(lignes[i], lignes[i + 1])
     if (titre) {
       if (courant) blocs.push(courant)
       courant = { titre, lignes: [] }
     } else {
       if (!courant) courant = { titre: null, lignes: [] }
-      courant.lignes.push(ligne)
+      courant.lignes.push(lignes[i])
     }
   }
   if (courant) blocs.push(courant)
