@@ -539,8 +539,16 @@ export default function FicheFinalisation() {
               }}
             />
 
-            {/* ANCIEN ASSISTANT ANNONCE (n8n) — en cours de remplacement, conservé
-                comme filet le temps de la transition. Logique inchangée. */}
+            {/* ANCIEN ASSISTANT ANNONCE (n8n) — DÉSACTIVÉ DU FRONT (transition terminée).
+                Remplacé par AnnonceAgentPanel ci-dessus. On conserve le bloc en code,
+                neutralisé via `false &&`, le temps de valider le nouveau flux ; suppression
+                définitive prévue dans un second temps. Ne rend plus rien à l'écran.
+                NB : `false &&` plutôt qu'un commentaire JSX car le bloc contient déjà des
+                commentaires JSX imbriqués, et l'imbrication de commentaires JSX est interdite.
+                Les state/handlers associés (chatMessages, sendMessage, handleValidateAnnonce,
+                handleGenererAnnonce, handleCopyMessage...) restent référencés ici, donc pas de
+                warning "unused" ; ils seront retirés lors de la suppression définitive. */}
+            {false && (
             <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-gray-400 rounded-lg flex items-center justify-center">
@@ -708,6 +716,7 @@ export default function FicheFinalisation() {
                 </div>
               )}
             </div>
+            )}
 
 
 
