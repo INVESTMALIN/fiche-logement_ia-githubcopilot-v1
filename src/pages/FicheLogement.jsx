@@ -163,6 +163,7 @@ export default function FicheLogement() {
                 >
                   <option value="">Veuillez sélectionner</option>
                   <option value="Studio">Studio</option>
+                  <option value="T1Bis">T1Bis</option>
                   <option value="T2">T2</option>
                   <option value="T3">T3</option>
                   <option value="T4">T4</option>

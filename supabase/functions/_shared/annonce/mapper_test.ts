@@ -185,6 +185,17 @@ Deno.test('Studio : couchage de l\'espace nuit lu même si nombre_chambres=0', (
   assertEquals(t2.modele.identite.chambres.length, 0)
 })
 
+Deno.test('T1Bis : typologie et couchage de l\'espace nuit conservés avec nombre_chambres=0', () => {
+  const t1Bis = mapFicheToContrat({
+    logement_typologie: 'T1Bis',
+    visite_nombre_chambres: '0',
+    chambres_chambre_1_lit_double_140_190: 1,
+  })
+  assertEquals(t1Bis.modele.identite.typologie, 'T1Bis')
+  assertEquals(t1Bis.modele.identite.chambres.length, 1)
+  assertEquals(t1Bis.modele.identite.chambres[0].lits, [{ type: 'Lit double 140×190', nombre: 1 }])
+})
+
 Deno.test('SDB combinée douche/baignoire → douche ET baignoire présentes (jamais tout-false)', () => {
   const c = mapFicheToContrat({
     visite_nombre_salles_bains: '1',

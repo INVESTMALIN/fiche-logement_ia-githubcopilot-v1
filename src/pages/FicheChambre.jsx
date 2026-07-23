@@ -249,10 +249,10 @@ export default function FicheChambre() {
   const formDataLogement = getField('section_logement')
   const typologie = formDataLogement.typologie
 
-  // 🔥 LOGIQUE STUDIO : Si Studio, forcer l'affichage d'1 "espace nuit"
-  const isStudio = typologie === "Studio"
-  const chambresAffichees = isStudio && nombreChambres === 0 ? 1 : nombreChambres
-  const labelChambre = isStudio && nombreChambres === 0 ? "Espace nuit" : "Chambre"
+  // Studio et T1Bis utilisent un espace nuit même avec 0 chambre fermée
+  const utiliseEspaceNuit = typologie === "Studio" || typologie === "T1Bis"
+  const chambresAffichees = utiliseEspaceNuit && nombreChambres === 0 ? 1 : nombreChambres
+  const labelChambre = utiliseEspaceNuit && nombreChambres === 0 ? "Espace nuit" : "Chambre"
 
   // Récupérer les données chambres
   const formDataChambres = getField('section_chambres')
@@ -334,7 +334,7 @@ export default function FicheChambre() {
 
         <div className="flex-1 p-6 bg-gray-100">
           <h1 className="text-2xl font-bold mb-6">
-            {isStudio && nombreChambres === 0 ? "Espace nuit" : "Chambres"}
+            {utiliseEspaceNuit && nombreChambres === 0 ? "Espace nuit" : "Chambres"}
           </h1>
 
           <div className="bg-white p-6 rounded-lg shadow">
@@ -363,10 +363,10 @@ export default function FicheChambre() {
             ) : (
               <div>
                 <div className="mb-6">
-                  {isStudio && nombreChambres === 0 ? (
+                  {utiliseEspaceNuit && nombreChambres === 0 ? (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                       <p className="text-blue-800">
-                        <strong>💡 Studio :</strong> Configuration de l'espace nuit unique du studio.
+                        <strong>💡 {typologie} :</strong> Configuration de l'espace nuit unique du logement.
                       </p>
                     </div>
                   ) : (
@@ -380,7 +380,7 @@ export default function FicheChambre() {
                 {Array.from({ length: chambresAffichees }, (_, index) => {
                   const chambreKey = `chambre_${index + 1}`
                   const numeroAffiche = index + 1
-                  const labelAccordeon = isStudio && nombreChambres === 0 ? "Espace nuit" : numeroAffiche
+                  const labelAccordeon = utiliseEspaceNuit && nombreChambres === 0 ? "Espace nuit" : numeroAffiche
 
                   return (
                     <AccordeonChambre
