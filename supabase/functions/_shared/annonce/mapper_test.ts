@@ -36,6 +36,14 @@ Deno.test('Atout piscine sans section piscine ne crée pas de piscine', () => {
   assert(c.modele.atouts.atouts_logement.includes('piscine')) // reste un signal d'emphase
 })
 
+Deno.test('Borne de recharge : seul true remonte via le préfixe avis_atouts_', () => {
+  const oui = mapFicheToContrat({ avis_atouts_station_recharge_electrique: true })
+  assert(oui.modele.atouts.atouts_logement.includes('station_recharge_electrique'))
+
+  const non = mapFicheToContrat({ avis_atouts_station_recharge_electrique: false })
+  assert(!non.modele.atouts.atouts_logement.includes('station_recharge_electrique'))
+})
+
 Deno.test('Consommables : positif élargi (toilette + ménage), café exclu, jamais de négatif', () => {
   // Fourni explicitement → produits réellement présents (toilette + ménage).
   const fourni = mapFicheToContrat({

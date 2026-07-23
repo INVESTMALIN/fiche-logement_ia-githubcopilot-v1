@@ -14,6 +14,9 @@ const PDFTemplate = ({ formData }) => {
     )
   }
 
+  const stationRechargeElectrique = formData.section_avis?.atouts_logement?.station_recharge_electrique
+  const stationRechargeRenseignee = typeof stationRechargeElectrique === 'boolean'
+
   // 📋 CONFIGURATION : Toutes les 23 sections avec labels et emojis
   const sectionsConfig = [
     { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
@@ -686,7 +689,17 @@ const PDFTemplate = ({ formData }) => {
             if (excludedFields.includes(fieldKey)) return
           }
 
-          const formattedValue = formatValue(fieldValue, fieldKey)
+          const valueToFormat = config.key === 'section_avis'
+            && fieldKey === 'atouts_logement'
+            && fieldValue
+            && typeof fieldValue === 'object'
+            ? Object.fromEntries(
+              Object.entries(fieldValue)
+                .filter(([key]) => key !== 'station_recharge_electrique')
+            )
+            : fieldValue
+
+          const formattedValue = formatValue(valueToFormat, fieldKey)
           if (formattedValue !== null) {
             fields.push({
               key: fieldKey,
@@ -702,8 +715,11 @@ const PDFTemplate = ({ formData }) => {
       const hasAvisGrille = config.key === 'section_avis'
         && computeGrilleStats(sectionData).filled > 0
 
-      // Ajouter la section seulement si elle a du contenu (champs OU photos OU grille avis)
-      if (fields.length > 0 || photos.length > 0 || hasAvisGrille) {
+      const hasStationRecharge = config.key === 'section_equipements'
+        && stationRechargeRenseignee
+
+      // Ajouter la section seulement si elle a du contenu (champs, photos ou bloc custom)
+      if (fields.length > 0 || photos.length > 0 || hasAvisGrille || hasStationRecharge) {
         sections.push({
           ...config,
           fields,
@@ -846,10 +862,11 @@ const PDFTemplate = ({ formData }) => {
 
   // 🅿️ FONCTION SPÉCIALE : Rendu groupé pour Parking
   const renderParkingGrouped = (sectionData) => {
-    if (!sectionData.parking_type) return null
+    if (!sectionData.parking_type && !stationRechargeRenseignee) return null
 
     const parkingData = {
       type: sectionData.parking_type,
+      stationRechargeElectrique: stationRechargeRenseignee ? stationRechargeElectrique : null,
       details: {},
       photos: []
     }
@@ -1271,7 +1288,10 @@ const PDFTemplate = ({ formData }) => {
             })()}
 
             {/* Champs de la section */}
-            {section.fields.length > 0 && (
+            {(section.fields.length > 0 || (
+              section.key === 'section_equipements'
+              && stationRechargeRenseignee
+            )) && (
               <div style={{
                 backgroundColor: '#ffffff',
                 border: '1px solid #e2e8f0',
@@ -1651,14 +1671,27 @@ const PDFTemplate = ({ formData }) => {
                               borderRadius: '6px',
                               pageBreakInside: 'avoid'
                             }}>
-                              <div style={{ marginBottom: '8px' }}>
-                                <span style={{ fontWeight: '600', fontSize: '9pt', color: '#4a5568' }}>Type : </span>
-                                <span style={{ fontSize: '9pt', color: '#2d3748', fontWeight: '600' }}>
-                                  {parkingData.type === 'rue' ? 'Parking gratuit dans la rue' :
-                                    parkingData.type === 'sur_place' ? 'Parking gratuit sur place' :
-                                      'Stationnement payant à l\'extérieur'}
-                                </span>
-                              </div>
+                              {parkingData.type && (
+                                <div style={{ marginBottom: '8px' }}>
+                                  <span style={{ fontWeight: '600', fontSize: '9pt', color: '#4a5568' }}>Type : </span>
+                                  <span style={{ fontSize: '9pt', color: '#2d3748', fontWeight: '600' }}>
+                                    {parkingData.type === 'rue' ? 'Parking gratuit dans la rue' :
+                                      parkingData.type === 'sur_place' ? 'Parking gratuit sur place' :
+                                        'Stationnement payant à l\'extérieur'}
+                                  </span>
+                                </div>
+                              )}
+
+                              {typeof parkingData.stationRechargeElectrique === 'boolean' && (
+                                <div style={{ marginBottom: '8px' }}>
+                                  <span style={{ fontWeight: '600', fontSize: '9pt', color: '#4a5568' }}>
+                                    Borne de recharge pour véhicules électriques :{' '}
+                                  </span>
+                                  <span style={{ fontSize: '9pt', color: '#2d3748', fontWeight: '600' }}>
+                                    {parkingData.stationRechargeElectrique ? 'Oui' : 'Non'}
+                                  </span>
+                                </div>
+                              )}
 
                               {Object.keys(parkingData.details).length > 0 && (
                                 <div style={{ marginTop: '12px' }}>

@@ -228,7 +228,6 @@ export default function FicheAvis() {
     { key: 'proche_commerces', label: 'Proche des commerces' },
     { key: 'sauna_spa', label: 'Sauna / Spa' },
     { key: 'video_projecteur', label: 'Vidéo Projecteur' },
-    { key: 'station_recharge_electrique', label: 'Station de recharge pour véhicules électriques' },
     { key: 'romantique', label: 'Romantique' },
     { key: 'paisible', label: 'Paisible' },
     { key: 'chic', label: 'Chic' },
