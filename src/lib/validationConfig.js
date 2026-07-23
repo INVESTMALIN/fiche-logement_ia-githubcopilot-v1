@@ -599,8 +599,9 @@ export const SPECIAL_VALIDATIONS = {
         if (!visite || !chambres) return errors
 
         const nombreChambres = parseInt(visite.nombre_chambres) || 0
-        const isStudio = formData.section_logement?.typologie === 'Studio' ||
-            formData.section_logement?.typologie === 'T1'
+        const utiliseEspaceNuit = formData.section_logement?.typologie === 'Studio' ||
+            formData.section_logement?.typologie === 'T1' ||
+            formData.section_logement?.typologie === 'T1Bis'
 
         // Types de lits à vérifier
         const typesLits = [
@@ -614,8 +615,8 @@ export const SPECIAL_VALIDATIONS = {
             'lit_gigogne'
         ]
 
-        // Pour un Studio/T1, vérifier l'espace nuit (chambre_1)
-        if (isStudio && nombreChambres === 0) {
+        // Pour une typologie sans chambre fermée, vérifier l'espace nuit (chambre_1)
+        if (utiliseEspaceNuit && nombreChambres === 0) {
             const espaceNuit = chambres.chambre_1
             if (espaceNuit) {
                 // Si "autre_type_lit" est rempli, skip la validation des compteurs

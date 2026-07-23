@@ -114,10 +114,11 @@ function pmrPositif(f: FicheRow): { accessible: true | null; details: string | n
 
 function mapChambres(f: FicheRow): ChambreContrat[] {
   const count = Math.min(6, Math.max(0, num(f, 'visite_nombre_chambres') ?? 0))
-  // Studio : le formulaire (FicheChambre) force 1 "Espace nuit" (chambre_1) même
-  // quand nombre_chambres = 0 → on lit chambre_1 pour ne pas perdre le couchage.
-  const isStudio = txt(f, 'logement_typologie') === 'Studio'
-  const n = isStudio && count === 0 ? 1 : count
+  // Studio/T1Bis : le formulaire (FicheChambre) force 1 "Espace nuit"
+  // (chambre_1) même quand nombre_chambres = 0 → on lit chambre_1 pour ne pas
+  // perdre le couchage.
+  const utiliseEspaceNuit = ['Studio', 'T1Bis'].includes(txt(f, 'logement_typologie') ?? '')
+  const n = utiliseEspaceNuit && count === 0 ? 1 : count
   const out: ChambreContrat[] = []
   for (let i = 1; i <= n; i++) {
     const p = `chambres_chambre_${i}_`

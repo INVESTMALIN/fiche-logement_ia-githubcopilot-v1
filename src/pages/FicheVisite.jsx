@@ -34,6 +34,7 @@ export default function FicheVisite() {
   const getExpectedChambres = (typologie) => {
     switch (typologie) {
       case 'Studio': return 0
+      case 'T1Bis': return 0
       case 'T2': return 1
       case 'T3': return 2
       case 'T4': return 3
@@ -132,9 +133,9 @@ export default function FicheVisite() {
                   <option value="6">6</option>
                 </select>
 
-                {/* Note explicative Studio */}
+                {/* Note explicative pour les typologies sans chambre fermée */}
                 <p className="mt-4 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  💡 <strong>Note pour Studio :</strong> Si vous avez sélectionné "Studio" dans la typologie, 
+                  💡 <strong>Note pour Studio / T1Bis :</strong> Pour ces typologies,
                   choisissez 0 chambres (l'espace nuit sera configuré séparément dans la section Chambres).
                 </p>
                 

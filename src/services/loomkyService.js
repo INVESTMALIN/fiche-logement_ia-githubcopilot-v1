@@ -803,11 +803,13 @@ export function buildResolvedChecklists(fiche) {
     })
 
     // === CHAMBRES / ESPACE NUIT ===
-    const isStudio = fiche.logement_type_propriete === "Studio"
+    const utiliseEspaceNuit = fiche.logement_type_propriete === "Studio" ||
+        fiche.logement_typologie === "Studio" ||
+        fiche.logement_typologie === "T1Bis"
     const nombreChambres = fiche.visite_nombre_chambres ? parseInt(fiche.visite_nombre_chambres) : 0
 
-    if (isStudio) {
-        // Studio → Espace nuit avec tasks adaptées
+    if (utiliseEspaceNuit) {
+        // Studio/T1Bis → Espace nuit avec tasks adaptées
         checklists.push({
             name: "Espace nuit",
             tasks: [
