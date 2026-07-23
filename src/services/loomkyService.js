@@ -808,7 +808,7 @@ export function buildResolvedChecklists(fiche) {
         fiche.logement_typologie === "T1Bis"
     const nombreChambres = fiche.visite_nombre_chambres ? parseInt(fiche.visite_nombre_chambres) : 0
 
-    if (utiliseEspaceNuit) {
+    if (utiliseEspaceNuit && nombreChambres === 0) {
         // Studio/T1Bis → Espace nuit avec tasks adaptées
         checklists.push({
             name: "Espace nuit",
