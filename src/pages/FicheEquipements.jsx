@@ -63,6 +63,9 @@ export default function FicheEquipements() {
 
   // Récupération des données de la section
   const formData = getField('section_equipements')
+  // Chemin historique volontairement conservé : il alimente la colonne
+  // avis_atouts_station_recharge_electrique consommée par l'agent annonce.
+  const stationRechargeElectrique = getField('section_avis.atouts_logement.station_recharge_electrique')
 
   // Handler pour champs simples avec nettoyage des branches
   const handleInputChange = (field, value) => {
@@ -1300,6 +1303,21 @@ export default function FicheEquipements() {
                       <span className="text-sm">Stationnement payant à l'extérieur de la propriété</span>
                     </label>
                   </div>
+                </div>
+
+                <div className="mb-4 max-w-lg">
+                  <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={stationRechargeElectrique === true}
+                      onChange={(e) => updateField(
+                        'section_avis.atouts_logement.station_recharge_electrique',
+                        e.target.checked
+                      )}
+                      className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">Borne de recharge pour véhicules électriques</span>
+                  </label>
                 </div>
 
                 {/* Champs conditionnels parking (EXISTANT - NE PAS TOUCHER) */}
