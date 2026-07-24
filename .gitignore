@@ -1,5 +1,9 @@
 dist/
 .env
+.env.*
+!.env.example
+.auth/
+.agent-auth/
 .DS_Store
 .vscode/
 *.log
