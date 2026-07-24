@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabaseClient'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
+import { validateMondayConstrainedFields } from '../lib/mondayFieldConstraints'
 
 const FormContext = createContext()
 
@@ -1925,6 +1926,28 @@ export function FormProvider({ children }) {
       return { success: false, error: 'Numéro de bien obligatoire' }
     }
 
+    // 🚧 GARDE-FOU CRÉATION — refuse de créer une ligne avec des valeurs (souvent
+    // issues de Monday) qui violeraient une contrainte de colonne. Sans ce
+    // garde-fou, l'INSERT échoue côté Postgres, formData.id reste null, et CHAQUE
+    // page suivante retente une création qui réchoue : c'est exactement le
+    // symptôme "erreur sur chaque page" de l'incident 2084 BARBELLION du 13/07.
+    // On ne bloque qu'à la CRÉATION (pas les UPDATE d'une fiche déjà en base) et
+    // on ne nettoie rien : le coordinateur corrige lui-même le champ (le détail
+    // par champ est affiché dans le bandeau MondayParamsAlert). Il n'est jamais
+    // coincé — dès que la valeur est valide, la création passe.
+    if (!formData.id) {
+      const invalidFields = validateMondayConstrainedFields(formData)
+      if (invalidFields.length > 0) {
+        const champs = invalidFields.map(f => `« ${f.fieldLabel} »`).join(', ')
+        setSaveStatus({
+          saving: false,
+          saved: false,
+          error: `La fiche n'a pas été créée : ${invalidFields.length > 1 ? 'plusieurs valeurs sont invalides' : 'une valeur est invalide'} (${champs}). Corrigez le(s) champ(s) signalé(s) en haut de page, puis la colonne correspondante dans Monday.`
+        })
+        return { success: false, error: 'Valeurs Monday invalides', invalidFields }
+      }
+    }
+
     setSaveStatus({ saving: true, saved: false, error: null });
 
     try {
@@ -1968,8 +1991,17 @@ export function FormProvider({ children }) {
 
         return { success: true, data: result.data };
       } else {
-        setSaveStatus({ saving: false, saved: false, error: result.message });
-        return { success: false, error: result.message };
+        // Filet pour un échec non anticipé : on remonte la RAISON RÉELLE (message
+        // Postgres porté par result.error, cf. saveFiche/safeSupabaseQuery) plutôt
+        // qu'un libellé générique. Et on parle de "création" quand il s'agit d'un
+        // INSERT (formData.id encore null) : le problème est à la création, pas à
+        // la sauvegarde.
+        const realReason = result.error || result.message
+        const errorMessage = !formData.id
+          ? `La fiche n'a pas pu être créée. Raison : ${realReason}. Si la fiche provient de Monday, vérifiez les colonnes source (numéro de bien, code postal, nombre de voyageurs…) puis rouvrez le lien.`
+          : `Erreur lors de la sauvegarde. Raison : ${realReason}.`
+        setSaveStatus({ saving: false, saved: false, error: errorMessage });
+        return { success: false, error: realReason };
       }
     } catch (error) {
       const errorMessage = error.message || 'Erreur de connexion';
