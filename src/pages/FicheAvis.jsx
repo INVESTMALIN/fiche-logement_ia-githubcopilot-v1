@@ -214,6 +214,7 @@ export default function FicheAvis() {
     { key: 'design_moderne', label: 'Design moderne' },
     { key: 'terrasse_balcon', label: 'Terrasse / Balcon' },
     { key: 'proche_transports', label: 'Proche des transports en commun' },
+    { key: 'pied_des_pistes', label: 'Au pied des pistes (skis aux pieds)' },
     { key: 'piscine', label: 'Piscine' },
     { key: 'jacuzzi', label: 'Jacuzzi' },
     { key: 'cheminee', label: 'Cheminée' },
@@ -358,6 +359,7 @@ export default function FicheAvis() {
                   { key: 'quartier_rural', label: 'Zone rurale (campagne isolée, éloignée des commodités et transports)' },
                   { key: 'quartier_village', label: 'Village (centre-bourg avec commerces de proximité, ambiance locale)' },
                   { key: 'quartier_balneaire', label: 'Bord de mer / Station Balnéaire (proche plage, côte, activités saisonnières ou touristiques)' },
+                  { key: 'quartier_station_ski', label: 'Station de ski' },
                 ].map(({ key, label }) => (
                   <label
                     key={key}

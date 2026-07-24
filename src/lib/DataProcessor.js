@@ -122,6 +122,7 @@ const formatAtoutName = (atout) => {
   const mapping = {
     'lumineux': 'Très lumineux',
     'proche_transports': 'Proche transports',
+    'pied_des_pistes': 'Au pied des pistes',
     'piscine': 'Piscine',
     'jacuzzi': 'Jacuzzi',
     'parking_prive': 'Parking privé',

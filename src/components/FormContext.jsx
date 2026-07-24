@@ -255,6 +255,7 @@ const initialFormData = {
       convivial: null,
       douillet: null,
       proche_transports: null,
+      pied_des_pistes: null,
       jacuzzi: null,
       cheminee: null,
       charmant: null,
