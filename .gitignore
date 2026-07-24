@@ -4,6 +4,7 @@ dist/
 !.env.example
 .auth/
 .agent-auth/
+.shots/
 .DS_Store
 .vscode/
 *.log
