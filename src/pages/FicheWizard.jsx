@@ -8,6 +8,7 @@ import FicheEmailOutlook from './FicheEmailOutlook'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+import MondayParamsAlert from '../components/MondayParamsAlert'
 import FicheReglementation from './FicheReglementation'
 import FicheExigences from './FicheExigences'
 import FicheAvis from './FicheAvis'
@@ -118,5 +119,13 @@ export default function FicheWizard() {
     )
   }
 
-  return steps[currentStep]
+  // Le bandeau d'alerte est monté ici (au-dessus de la section courante) pour
+  // rester visible quelle que soit l'étape : le champ fautif peut être sur une
+  // autre page que celle affichée à l'ouverture du lien.
+  return (
+    <>
+      <MondayParamsAlert />
+      {steps[currentStep]}
+    </>
+  )
 }
