@@ -63,6 +63,7 @@ const PDFTemplate = ({ formData }) => {
       'quartier_rural': 'Zone rurale (campagne isolée, éloignée des commodités et transports)',
       'quartier_village': 'Village (centre-bourg avec commerces de proximité, ambiance locale)',
       'quartier_balneaire': 'Bord de mer / Station Balnéaire (proche plage, côte, activités saisonnières ou touristiques)',
+      'quartier_station_ski': 'Station de ski',
 
       // 🏘️ ÉVALUATION QUARTIER - Sécurité
       'securise': 'Sécurisé (quartier calme)',
@@ -295,6 +296,12 @@ const PDFTemplate = ({ formData }) => {
 
   // 🔍 Helper pour formater les noms de champs
   const formatFieldName = (fieldName) => {
+    const fieldTranslations = {
+      pied_des_pistes: 'Au pied des pistes'
+    }
+
+    if (fieldTranslations[fieldName]) return fieldTranslations[fieldName]
+
     return fieldName
       .replace(/([A-Z])/g, ' $1')
       .replace(/_/g, ' ')

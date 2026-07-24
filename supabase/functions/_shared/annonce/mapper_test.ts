@@ -44,6 +44,14 @@ Deno.test('Borne de recharge : seul true remonte via le préfixe avis_atouts_', 
   assert(!non.modele.atouts.atouts_logement.includes('station_recharge_electrique'))
 })
 
+Deno.test('Pied des pistes : seul true remonte via le préfixe avis_atouts_', () => {
+  const oui = mapFicheToContrat({ avis_atouts_pied_des_pistes: true })
+  assert(oui.modele.atouts.atouts_logement.includes('pied_des_pistes'))
+
+  const non = mapFicheToContrat({ avis_atouts_pied_des_pistes: false })
+  assert(!non.modele.atouts.atouts_logement.includes('pied_des_pistes'))
+})
+
 Deno.test('Consommables : positif élargi (toilette + ménage), café exclu, jamais de négatif', () => {
   // Fourni explicitement → produits réellement présents (toilette + ménage).
   const fourni = mapFicheToContrat({
@@ -162,10 +170,13 @@ Deno.test('Caméras : détectées en zone code, exclues de securite_rassurante',
   assert(c.modele.regles_internes.securite_rassurante.includes('Détecteur de fumée'))
 })
 
-Deno.test('Quartier défavorisé : exclu des positifs (modèle), trigger en zone code', () => {
-  const c = mapFicheToContrat({ avis_quartier_types: ['quartier_central', 'quartier_defavorise'] })
+Deno.test('Types de quartier : les positifs passent tels quels, le défavorisé reste en zone code', () => {
+  const c = mapFicheToContrat({
+    avis_quartier_types: ['quartier_central', 'quartier_station_ski', 'quartier_defavorise'],
+  })
   assert(!c.modele.localisation.quartier_types.includes('quartier_defavorise'))
   assert(c.modele.localisation.quartier_types.includes('quartier_central'))
+  assert(c.modele.localisation.quartier_types.includes('quartier_station_ski'))
   assertEquals(c.code.note_quartier_triggers.quartier_defavorise, true)
 })
 
