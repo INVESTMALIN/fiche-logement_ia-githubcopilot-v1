@@ -186,38 +186,56 @@ const initialFormData = {
 Architecture "flat table" avec 750+ colonnes pour performance et simplicité :
 
 ```sql
+-- ⚠️ Types vérifiés contre le schéma LIVE le 24/07/2026.
+-- Ce bloc annonçait TEXT partout jusqu'à cette date, alors que la base
+-- utilise des VARCHAR contraints. Cet écart a masqué pendant deux semaines
+-- la cause de l'échec de création de la fiche 2084 (cf. PR #68) : une valeur
+-- Monday trop longue faisait échouer l'INSERT sans message explicite.
+-- Toute contrainte de longueur ci-dessous est réelle et bloquante.
+--
+-- Pour régénérer cette liste :
+--   select column_name, data_type, character_maximum_length
+--   from information_schema.columns
+--   where table_schema='public' and table_name='fiches'
+--   order by column_name;
+
 -- Métadonnées
 id UUID PRIMARY KEY DEFAULT gen_random_uuid()
 user_id UUID REFERENCES auth.users(id)
-nom TEXT DEFAULT 'Nouvelle fiche'
-statut TEXT DEFAULT 'Brouillon' -- Brouillon/Complété/Archivé
+nom VARCHAR(255) DEFAULT 'Nouvelle fiche'
+statut VARCHAR(50) DEFAULT 'Brouillon' -- Brouillon/Complété/Archivé
 created_at TIMESTAMP DEFAULT now()
 updated_at TIMESTAMP DEFAULT now()
 
 -- Pattern de nommage : {section}_{champ}
 -- Section Propriétaire
-proprietaire_prenom TEXT
-proprietaire_nom TEXT  
-proprietaire_email TEXT
+proprietaire_prenom VARCHAR(100)
+proprietaire_nom VARCHAR(100)
+proprietaire_email VARCHAR(255)
+proprietaire_telephone TEXT
 proprietaire_adresse_rue TEXT
 proprietaire_adresse_complement TEXT
-proprietaire_adresse_ville TEXT
-proprietaire_adresse_code_postal TEXT
+proprietaire_adresse_ville VARCHAR(100)
+proprietaire_adresse_code_postal VARCHAR(10)   -- ⚠️ alimenté par l'URL Monday
 
 -- Section Logement (champs Monday prioritaires)
-logement_type_propriete TEXT
-logement_surface INTEGER
-logement_numero_bien TEXT
-logement_typologie TEXT
-logement_nombre_personnes_max TEXT
+logement_type_propriete VARCHAR(50)
+logement_type_autre_precision VARCHAR(100)
+logement_surface INTEGER                        -- ⚠️ alimenté par l'URL Monday (parseInt)
+logement_numero_bien VARCHAR(50)                -- ⚠️ alimenté par l'URL Monday
+logement_typologie VARCHAR(10)
+logement_nombre_personnes_max VARCHAR(20)       -- ⚠️ alimenté par l'URL Monday
 logement_nombre_lits TEXT
+logement_nombre_etages TEXT
+logement_classement TEXT
+logement_type_niveau TEXT
 
 -- Section Appartement (conditionnel)
-logement_appartement_nom_residence TEXT
-logement_appartement_batiment TEXT
-logement_appartement_acces TEXT
-logement_appartement_etage TEXT
-logement_appartement_numero_porte TEXT
+logement_appartement_nom_residence VARCHAR(100)
+logement_appartement_batiment VARCHAR(50)
+logement_appartement_acces VARCHAR(20)
+logement_appartement_etage VARCHAR(10)
+logement_appartement_numero_porte VARCHAR(20)
 
 -- Sections avec photos (pattern TEXT[])
 clefs_emplacement_photo TEXT[]
