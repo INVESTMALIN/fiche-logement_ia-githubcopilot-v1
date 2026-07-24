@@ -63,7 +63,7 @@ const PDFTemplate = ({ formData }) => {
       'quartier_rural': 'Zone rurale (campagne isolée, éloignée des commodités et transports)',
       'quartier_village': 'Village (centre-bourg avec commerces de proximité, ambiance locale)',
       'quartier_balneaire': 'Bord de mer / Station Balnéaire (proche plage, côte, activités saisonnières ou touristiques)',
-      'quartier_station_ski': 'Station de ski',
+      'quartier_station_ski': 'Station de ski (proche des pistes, des remontées mécaniques et des activités de montagne)',
 
       // 🏘️ ÉVALUATION QUARTIER - Sécurité
       'securise': 'Sécurisé (quartier calme)',

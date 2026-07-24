@@ -19,7 +19,11 @@ import { homedir } from 'node:os'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 const section = process.argv[2] || null
-const baseUrl = process.argv[3] || 'http://localhost:5173'
+const arg3 = process.argv[3] || null
+const arg4 = process.argv[4] || null
+// 3e argument : soit une URL, soit un texte a cadrer et verifier dans la page.
+const cibleTexte = arg3 && !arg3.startsWith('http') ? arg3 : null
+const baseUrl = [arg3, arg4].find(a => a && a.startsWith('http')) || 'http://localhost:5173'
 const statePath = join(homedir(), '.agent-auth', 'fiche-logement.json')
 
 function readEnv() {
@@ -74,15 +78,40 @@ try {
     await page.waitForTimeout(1200)
   }
 
+  let texteTrouve = null
+  if (cibleTexte) {
+    const loc = page.getByText(cibleTexte, { exact: false }).first()
+    texteTrouve = await loc.count() > 0
+    if (texteTrouve) {
+      await loc.scrollIntoViewIfNeeded()
+      await page.waitForTimeout(400)
+    }
+  }
+
   const shotDir = join(repoRoot, '.shots')
   mkdirSync(shotDir, { recursive: true })
   const shotPath = join(shotDir, `fl-shot-${Date.now()}.jpg`)
-  await page.screenshot({ path: shotPath, fullPage: true, type: 'jpeg', quality: 55 })
+
+  // Les sections longues (Avis, Equipements) depassent la taille d'image
+  // que les outils fichiers des agents savent relire. Au dela d'une certaine
+  // hauteur on cadre sur la fenetre au lieu de capturer toute la page.
+  const hauteur = await page.evaluate(() => document.body.scrollHeight)
+  const pleinePage = hauteur <= 5000
+
+  await page.screenshot({
+    path: shotPath,
+    fullPage: pleinePage,
+    type: 'jpeg',
+    quality: 55
+  })
 
   console.log(JSON.stringify({
     ok: true,
     url: page.url(),
     section: section || '(aucune)',
+    texteCherche: cibleTexte || '(aucun)',
+    texteTrouve,
+    capturePleinePage: pleinePage,
     sessionReconnectee: reconnecte,
     capture: shotPath,
     pageVide: (await page.evaluate(() => document.body.innerText.trim().length)) === 0,
