@@ -347,10 +347,16 @@ totalement vierge d'être traité en un seul passage.
 2. Ajouter le champ dans `PhotoUpload` côté application
 3. `INSERT` dans `media_manifest` : `colonne_db`, `cle`, `dossier`, `prefixe`, `type`, `ordre`
 4. Vérifier que `media_manifest_ecarts` est vide
-5. Ajouter la clé au bloc `media` de `notify_fiche_completed()` **tant que le trigger
-   n'est pas générique**, voir section 13
 
-Aucune intervention dans le scénario Make.
+Aucune intervention dans le scénario Make, aucune dans le trigger.
+
+Le trigger continue d'envoyer un bloc `media` de 106 clés que plus personne ne lit. C'est
+du poids mort sans conséquence, le V2 ne consomme que `fiche_id`. **Ne pas y ajouter les
+nouveaux champs**, ça ne sert à rien.
+
+Validé en conditions réelles le 29/07 : une photo de façade ajoutée dans le front est
+partie au bon endroit sur le Drive, avec le bon nom, sans qu'aucun automatisme ne soit
+touché.
 
 ## 6.9 Tests validés le 29/07/2026
 
@@ -378,6 +384,18 @@ Dossier Drive vidé avant le run.
 - Mélange de médias vivants et morts dans le même run, c'est le cas le plus dur et il
   passe
 
+**Troisième test, mise en production, fiche 7756 finalisée depuis le front**
+
+Premier passage réel déclenché par le trigger, sans intervention manuelle.
+
+- 36 médias, un de plus que le matin : une photo de façade ajoutée avant finalisation,
+  absorbée par le manifeste sans toucher ni au trigger ni au scénario
+- 137 opérations Make, soit exactement 10 pour le tronc commun, 5 créations de niveau 1,
+  8 pour la route de niveau 2, 6 pour la remise à niveau des tables, et 3 par fichier
+- Le compte tombe à l'unité près, donc les 36 fichiers ont bien été téléchargés **et**
+  montés, aucun sauté, aucun en échec
+- Durée : environ 2 minutes
+
 ## 6.10 Limites connues et arbitrages
 
 - **Pas d'idempotence sur l'upload. Limite acceptée.** Le flux nominal ne rejoue pas, le
@@ -388,9 +406,14 @@ Dossier Drive vidé avant le run.
   les noms du V2 sont déterministes, un doublon se repère au premier coup d'œil et permet
   même de distinguer un premier jeu d'un second. **Arbitrage du 29/07 : on accepte.**
 - **Un média sauté ne laisse aucune trace.** Le Skip error handler évite le plantage mais
-  ne signale rien. Un média expiré disparaît en silence. Voir chantier 2.
+  ne signale rien. Un média expiré disparaît en silence. Seul point resté ouvert,
+  voir section 13.
 - **Clé secret Supabase en clair** dans trois modules du blueprint. Accès limité à trois
   personnes de l'équipe, **risque accepté**.
+
+**Points fermés le 29/07**, conservés pour mémoire : plafonds de recherche portés de 10
+et 20 à 100 partout, Skip error handler posé sur `Download` et validé sur la fiche 7755,
+trigger rebranché sur le webhook V2, scénario V2 activé, scénario V1 désactivé.
 
 ---
 
@@ -405,11 +428,17 @@ Dossier Drive vidé avant le run.
 
 L'ancienne documentation annonçait 94 champs, valeur périmée.
 
-**Trigger de finalisation** :
+**Trigger de finalisation**, état au 29/07/2026 après bascule :
 - Fonction : `notify_fiche_completed()`, SECURITY INVOKER
 - Trigger : `fiche_any_update_webhook`, AFTER UPDATE sur `public.fiches`
 - Condition : passage du statut à `Complété`
-- Construit le bloc `media` en cinq `jsonb_build_object` fusionnés, puis `net.http_post`
+- Envoie une clé `fiche_id` et poste vers le **webhook du scénario V2**
+- Construit toujours le bloc `media` de 106 clés, ainsi que `proprietaire`, `logement` et
+  `pdfs`. Plus personne ne les lit, le V2 ne consomme que `fiche_id`. C'est du poids mort
+  qu'on aurait pu nettoyer, on ne l'a pas fait pour garder la bascule à deux lignes et le
+  repli à un copier-coller
+- Rollback vers le V1 : `docs/migrations/2026-07-29_rollback_notify_fiche_completed_v1.sql`,
+  à jouer dans le SQL Editor, plus la réactivation du scénario 6089150
 
 ---
 
@@ -487,39 +516,44 @@ photo et vidéo, suppression au survol, compteur, et avertissement de rétention
 - Fonction `build_media_folders(uuid)`
 
 **Scénarios Make**
-- V2, actuel : `LH - Fiche logement - Stockage Photos sur Drive V2`, id 9584334
-- V1, historique : `LH - Fiche logement - Stockage Photos sur Drive`, id 6089150
+- V2, actuel et **actif** : `LH - Fiche logement - Stockage Photos sur Drive V2`, id 9584334
+- V1, historique et **désactivé depuis le 29/07** : `LH - Fiche logement - Stockage Photos sur Drive`, id 6089150
+
+**Rollback**
+- `docs/migrations/2026-07-29_rollback_notify_fiche_completed_v1.sql`
 
 ---
 
 ## 🚧 13. CHANTIERS RESTANTS
 
-Par ordre de priorité, état au 29/07/2026.
+Le système est en production depuis le 29/07/2026. Il ne reste qu'un point ouvert.
 
-1. **Rendre le trigger générique.** Remplacer les 106 paires écrites à la main par une
-   construction dynamique lisant `media_manifest` :
-   ```sql
-   SELECT jsonb_object_agg(m.cle, to_jsonb(NEW) -> m.colonne_db)
-   FROM media_manifest m WHERE m.actif
-   ```
-   Le trigger n'aurait alors plus jamais besoin d'être modifié
-2. **Tracer les médias sautés.** Brancher un module de signalement sur la route d'erreur
-   du `Download`, pour qu'un média expiré ne disparaisse pas en silence
-3. **Réduire le payload du trigger** à `fiche_id` seul, le V2 n'a besoin de rien d'autre
-4. **Bascule.** Pointer le trigger sur le webhook V2, activer le V2, désactiver le V1
-5. **Rattrapage.** 92 fichiers sur 27 fiches n'ont jamais été montés par le V1,
-   voir section 14
-6. **Nettoyage des doublons de dossiers** créés par le V1 sur les biens retraités
+**Parqué, sans échéance**
+
+**Tracer les médias sautés.** Le Skip error handler sur le `Download` évite le plantage
+mais ne signale rien. Brancher un module de signalement sur sa route d'erreur donnerait
+la visibilité qui manque. À faire si le besoin se manifeste, pas avant.
+
+**Écartés volontairement le 29/07**
+
+- **Rattrapage des 92 fichiers** sur 27 fiches jamais montés par le V1, voir section 14.
+  Personne ne s'en est jamais aperçu, l'effort ne se justifie pas.
+- **Nettoyage des doublons de dossiers** créés par le V1 sur les biens retraités.
+  Cosmétique, sans impact sur le V2 qui sait choisir.
+- **Rendre le trigger générique.** Devenu inutile : le V2 ne lit plus le bloc `media`,
+  donc il n'y a plus rien à maintenir de ce côté.
+- **Réduire le payload du trigger.** Même raison, du poids mort sans conséquence.
 
 **Fait le 29/07** : garde-fous d'idempotence sur les créations de dossiers, Skip error
-handler sur le `Download`, plafonds de recherche portés à 100.
+handler sur le `Download`, plafonds de recherche portés à 100, bascule du trigger vers le
+V2, activation du V2 et désactivation du V1.
 
 ---
 ---
 
 # 🗃️ 14. ANNEXE : NOTE HISTORIQUE, ANCIEN SYSTÈME (V1)
 
-> **Statut** : conservé vivant pendant la transition, comme plan de repli.
+> **Statut** : **désactivé le 29/07/2026**, conservé comme plan de repli.
 > Ne pas supprimer sans décision explicite. Cette note est volontairement synthétique,
 > elle sert à comprendre et à réactiver, pas à maintenir.
 
@@ -587,8 +621,10 @@ Deux clés non média étaient également poussées dans le bloc `media` sans ef
 
 ## 14.5 Réactiver le V1 en cas de besoin
 
-1. Réactiver le scénario 6089150 dans Make
-2. Repointer `notify_fiche_completed()` sur le webhook du V1
+1. Jouer `docs/migrations/2026-07-29_rollback_notify_fiche_completed_v1.sql` dans le
+   SQL Editor, il remet `notify_fiche_completed()` dans son état d'avant bascule et
+   repointe le webhook vers le V1
+2. Réactiver le scénario 6089150 dans Make
 3. Désactiver le scénario V2 (9584334)
 
 Le V1 reste fonctionnel tel quel, il a tourné plus d'un an sans incident d'exécution.
@@ -600,5 +636,5 @@ depuis la bascule devra être recâblé à la main dans ses 103 branches.
 ---
 
 *Document technique de référence*
-*Architecture V2 validée en test le 29/07/2026, pas encore en production*
+*Architecture V2 en production depuis le 29/07/2026, validée sur un parcours réel*
 *Dernière mise à jour : 29 juillet 2026*
