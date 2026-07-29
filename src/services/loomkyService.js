@@ -528,10 +528,7 @@ export function buildResolvedChecklists(fiche) {
         name: "Boîte à clé",
         tasks: [
             { name: "Trousseau de clés voyageur dans boîte à clé", description: "Vérifier que le trousseau de clés voyageur est bien présent dans la boîte à clé" }
-        ],
-        isRequired: true,
-        beforePhotosRequired: false,
-        afterPhotosRequired: false
+        ]
     })
 
     // Entrée
@@ -540,10 +537,7 @@ export function buildResolvedChecklists(fiche) {
         tasks: [
             { name: "Vue d'ensemble de l'entrée (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" },
             { name: "Porte d'entrée", description: "Porte propre, poignée et interrupteurs désinfectés" }
-        ],
-        isRequired: true,
-        beforePhotosRequired: false,
-        afterPhotosRequired: false
+        ]
     })
 
 
@@ -597,10 +591,7 @@ export function buildResolvedChecklists(fiche) {
 
     checklists.push({
         name: "Salon",
-        tasks: salonTasks,
-        isRequired: true,
-        beforePhotosRequired: false,
-        afterPhotosRequired: false
+        tasks: salonTasks
     })
 
 
@@ -631,10 +622,7 @@ export function buildResolvedChecklists(fiche) {
 
     checklists.push({
         name: "Salle à manger",
-        tasks: salleAMangerTasks,
-        isRequired: true,
-        beforePhotosRequired: false,
-        afterPhotosRequired: false
+        tasks: salleAMangerTasks
     })
 
     // Cuisine
@@ -796,10 +784,7 @@ export function buildResolvedChecklists(fiche) {
 
     checklists.push({
         name: "Cuisine",
-        tasks: cuisineTasks,
-        isRequired: true,
-        beforePhotosRequired: false,
-        afterPhotosRequired: false
+        tasks: cuisineTasks
     })
 
     // === CHAMBRES / ESPACE NUIT ===
@@ -816,11 +801,7 @@ export function buildResolvedChecklists(fiche) {
                 { name: "Vue d'ensemble (murs et sols)", description: "Sol aspiré et serpillé, surfaces dépoussiérées et propres, tâches retirées et éléments rangés" },
                 { name: "Couchage", description: "Propre et rangé" },
                 { name: "Dessous du couchage", description: "Dépoussiérés et nettoyés. Sans éléments oubliés" }
-            ],
-            required: true,
-            isRequired: true,
-            beforePhotosRequired: false,
-            afterPhotosRequired: false
+            ]
         })
     } else {
         // Chambres classiques (1 à 6)
@@ -863,11 +844,7 @@ export function buildResolvedChecklists(fiche) {
 
             checklists.push({
                 name: `Chambre ${i}`,
-                tasks: chambreTasks,
-                required: true,
-                isRequired: true,
-                beforePhotosRequired: false,
-                afterPhotosRequired: false
+                tasks: chambreTasks
             })
         }
     }
@@ -982,11 +959,7 @@ export function buildResolvedChecklists(fiche) {
 
         checklists.push({
             name: `Salle de bain ${i}`,
-            tasks: sdbTasks,
-            required: true,
-            isRequired: true,
-            beforePhotosRequired: false,
-            afterPhotosRequired: false
+            tasks: sdbTasks
         })
     }
 
@@ -1014,10 +987,7 @@ export function buildResolvedChecklists(fiche) {
 
     checklists.push({
         name: "WC",
-        tasks: wcTasks,
-        isRequired: true,
-        beforePhotosRequired: false,
-        afterPhotosRequired: false
+        tasks: wcTasks
     })
 
 
@@ -1056,10 +1026,7 @@ export function buildResolvedChecklists(fiche) {
 
         checklists.push({
             name: "Buanderie / Stockage",
-            tasks: buanderieTasks,
-            isRequired: true,
-            beforePhotosRequired: false,
-            afterPhotosRequired: false
+            tasks: buanderieTasks
         })
     }
 
@@ -1149,10 +1116,7 @@ export function buildResolvedChecklists(fiche) {
     if (autresPiecesTasks.length > 0) {
         checklists.push({
             name: "Autres pièces ou matériel",
-            tasks: autresPiecesTasks,
-            isRequired: true,
-            beforePhotosRequired: false,
-            afterPhotosRequired: false
+            tasks: autresPiecesTasks
         })
     }
 
@@ -1228,10 +1192,7 @@ export function buildResolvedChecklists(fiche) {
 
         checklists.push({
             name: "Extérieurs",
-            tasks: exterieurTasks,
-            isRequired: true,
-            beforePhotosRequired: false,
-            afterPhotosRequired: false
+            tasks: exterieurTasks
         })
     }
 
@@ -1241,23 +1202,20 @@ export function buildResolvedChecklists(fiche) {
             name: "Piscine",
             tasks: [
                 { name: "Vue d'ensemble de la piscine", description: "Intérieur propre (parois et rebords), eau claire (non trouble ou verte) avec PH adapté, pastilles/produits ajoutés (ou changement d'eau effectué). Pas de feuilles ou débris à la surface. Piscine fonctionnelle. Matériel au complet" }
-            ],
-            isRequired: true,
-            beforePhotosRequired: false,
-            afterPhotosRequired: false
+            ]
         })
     }
 
-    // === isTaskMediaRequired: true sur TOUTES les tasks ===
-    // Loomky force l'upload d'une photo/vidéo pour valider une task uniquement si le param
-    // est présent DANS chaque objet task (au niveau checklist il est ignoré silencieusement —
-    // testé en live sur la 7755). On l'applique ici en une passe pour couvrir sans exception
-    // toutes les tasks statiques, conditionnelles et générées en boucle (Chambres / SDB).
-    // Booléen simple à true, sans logique conditionnelle. N'affecte pas isRequired /
-    // beforePhotosRequired / afterPhotosRequired.
+    // === Réglages communs à TOUTES les checklists et tasks ===
+    // Une seule passe couvre les checklists statiques, conditionnelles et générées en boucle
+    // (Chambres / SDB), ainsi que toute future checklist ajoutée à ce builder.
     for (const checklist of checklists) {
+        checklist.isRequired = false
+        checklist.beforePhotosRequired = false
+        checklist.afterPhotosRequired = true
+
         for (const task of checklist.tasks) {
-            task.isTaskMediaRequired = true
+            task.isTaskMediaRequired = false
         }
     }
 
