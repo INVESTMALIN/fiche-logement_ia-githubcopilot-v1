@@ -281,6 +281,16 @@ des JWT et ne peuvent pas être envoyées en Bearer.
 La réponse webhook est volontairement placée avant tout travail sur le Drive :
 l'appelant reçoit son 200 immédiatement, la suite tourne derrière.
 
+**Filtre anti-appel fantôme**, posé le 30/07/2026 sur le lien entre le webhook (2) et
+`Fiche Context` (6) : `{{2.fiche_id}}` doit exister. Ne pas le retirer.
+
+Le webhook reçoit occasionnellement des appels sans corps exploitable, sans qu'aucune
+fiche n'ait été finalisée. Le phénomène existait déjà sur le V1. Sans filtre, ces appels
+traversent le webhook, atteignent `Fiche Context` avec un identifiant vide et font tomber
+l'exécution en erreur. Le vrai coût n'est pas l'opération consommée, c'est qu'un faux
+rouge dans l'historique devient indiscernable d'un échec réel. Avec le filtre, l'appel
+s'arrête proprement en une opération et l'exécution est comptée comme un succès.
+
 ### Routeur 18, trois routes
 
 **L'ordre des routes est critique.** Make fait passer chaque bundle dans les routes
@@ -414,6 +424,12 @@ Premier passage réel déclenché par le trigger, sans intervention manuelle.
 **Points fermés le 29/07**, conservés pour mémoire : plafonds de recherche portés de 10
 et 20 à 100 partout, Skip error handler posé sur `Download` et validé sur la fiche 7755,
 trigger rebranché sur le webhook V2, scénario V2 activé, scénario V1 désactivé.
+
+**Point fermé le 30/07** : filtre anti-appel fantôme sur le lien webhook vers
+`Fiche Context`, voir section 6.7. Un appel sans corps avait fait tomber une exécution en
+erreur le 29/07 au soir, sans qu'aucune fiche n'ait été finalisée. Vérifié après pose du
+filtre en rejouant un POST sans corps : exécution en succès, une seule opération,
+246 millisecondes.
 
 ---
 
@@ -637,4 +653,4 @@ depuis la bascule devra être recâblé à la main dans ses 103 branches.
 
 *Document technique de référence*
 *Architecture V2 en production depuis le 29/07/2026, validée sur un parcours réel*
-*Dernière mise à jour : 29 juillet 2026*
+*Dernière mise à jour : 30 juillet 2026*
