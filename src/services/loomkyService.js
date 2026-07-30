@@ -1210,13 +1210,19 @@ export function buildResolvedChecklists(fiche) {
     // Une seule passe couvre les checklists statiques, conditionnelles et générées en boucle
     // (Chambres / SDB), ainsi que toute future checklist ajoutée à ce builder.
     for (const checklist of checklists) {
-        checklist.isRequired = false
+        checklist.isRequired = true
         checklist.beforePhotosRequired = false
-        checklist.afterPhotosRequired = true
+        checklist.afterPhotosRequired = false
 
         for (const task of checklist.tasks) {
             task.isTaskMediaRequired = false
         }
+
+        checklist.tasks.unshift({
+            name: `Mettre les photos des éléments ci-dessous pour ${checklist.name}`,
+            description: '',
+            isTaskMediaRequired: true
+        })
     }
 
     return { checklists }
