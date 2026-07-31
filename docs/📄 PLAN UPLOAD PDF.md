@@ -135,7 +135,7 @@ const PrintPDF = () => {
 
 #### **Templates HTML**
 
-**PDFTemplate.jsx** - Fiche complète (23 sections)
+**PDFTemplate.jsx** - Fiche complète (23 sections rendues sur 24 collectées)
 ```javascript
 const sectionsConfig = [
   { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
@@ -144,6 +144,7 @@ const sectionsConfig = [
   { key: 'section_clefs', label: '🔑 Clefs', emoji: '🔑' },
   { key: 'section_airbnb', label: '🏠 Airbnb', emoji: '🏠' },
   { key: 'section_booking', label: '📅 Booking', emoji: '📅' },
+  { key: 'section_email_outlook', label: '📧 E-mail Outlook', emoji: '📧' },
   { key: 'section_reglementation', label: '📋 Réglementation', emoji: '📋' },
   { key: 'section_exigences', label: '⚠️ Exigences', emoji: '⚠️' },
   { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
@@ -166,10 +167,41 @@ const sectionsConfig = [
 **Fonctionnalités** :
 - ✅ Logo Letahost depuis Supabase Storage
 - ✅ Extraction intelligente des photos (max 4 par section)
+- ✅ Vidéos rendues en liens cliquables (`<a href>` préservé par Puppeteer)
 - ✅ Traduction valeurs techniques → humaines
 - ✅ Agrégation automatique des lits
 - ✅ Rendu groupé pour équipements (TV, Climatisation, etc.)
-- ✅ Sections WiFi et Parking dédiées
+- ✅ Sections WiFi, Parking, Informations techniques et Équipement ménage dédiées
+- ✅ Grille d'évaluation Avis : score, verdict, notes **et observations par critère**
+
+---
+
+#### **⚠️ Règle de complétude du PDF logement**
+
+Le template **n'est pas** une liste de champs écrite à la main : il boucle sur
+`sectionsConfig`, puis sur `Object.entries(sectionData)` de chaque section. Un champ
+ajouté au formulaire apparaît donc automatiquement dans le PDF — **sauf** s'il tombe
+dans un des cas ci-dessous. Ce sont les seuls endroits à vérifier quand un champ
+« n'arrive pas » dans le PDF.
+
+| Mécanisme | Effet | Où regarder |
+|---|---|---|
+| Section absente de `sectionsConfig` | **La section entière disparaît**, sans erreur | `sectionsConfig` |
+| `formatValue` : clé contenant `photo`/`video` | Champ écarté du rendu texte (traité comme média) | `formatValue` |
+| `isEmpty` : `0` et `"0"` comptent comme vide | Une réponse « 0 » ne s'affiche pas | `isEmpty` |
+| Listes d'exclusion `avisExcluded` / `excludedFields` | Champ retiré du rendu générique car rendu dans un bloc dédié | `generateSections` |
+| Sections à **rendu groupé** (`section_equipements`, `section_cuisine_1`) | Le rendu générique est **remplacé** : tout champ absent de la liste d'équipements du bloc est invisible | `renderEquipementsGrouped`, `renderCuisine1Grouped` |
+| `isImageUrl` / `isVideoUrl` | Une URL média sans extension reconnue n'est ni affichée ni liée | helpers média |
+
+**Conséquence pratique** : ajouter un équipement à `section_equipements` ou
+`section_cuisine_1` impose d'ajouter une entrée dans la liste du renderer groupé
+correspondant, sinon le champ est collecté, stocké… et jamais restitué.
+
+**Exclusions volontaires** (à ne pas « corriger ») :
+- `section_guide_acces` : hors PDF logement (décision produit, juillet 2026)
+- `avis.logement_etat_general` / `avis.logement_proprete` : dérivés de la grille, remplacés par le verdict global
+- `avis.a_contacts_maintenance` / `avis.contacts_maintenance` : destination Monday
+- Photos au-delà de la 4ᵉ par bloc : remplacées par « +N autres photos disponibles »
 
 **PDFMenageTemplate.jsx** - Fiche filtrée (14 sections)
 ```javascript
@@ -196,6 +228,14 @@ const menageSectionsConfig = [
 - ✅ Masquage codes confidentiels (masterpinConciergerie, codeProprietaire, codeVoyageur)
 - ✅ Liste rouge des consommables obligatoires
 - ✅ Filtrage équipements (poubelle, parking uniquement)
+
+> ⚠️ `PDFMenageTemplate.jsx` est une **copie** de `PDFTemplate.jsx` avec une liste de
+> sections réduite : les deux fichiers évoluent séparément. Une correction de rendu
+> apportée au PDF logement n'est **pas** répercutée côté ménage.
+> État au 31 juillet 2026 : le ménage n'a reçu ni les liens vidéo, ni les correctifs
+> de rendu groupé (hotte de cuisine, équipement coché sans détail, ventilateur,
+> sèche-serviettes, animaux, PMR, équipement ménage). Vue volontairement filtrée,
+> non complétée dans le chantier de complétude du PDF logement.
 
 ---
 

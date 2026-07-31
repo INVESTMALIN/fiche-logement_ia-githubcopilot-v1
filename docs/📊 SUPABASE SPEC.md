@@ -11,7 +11,7 @@ Application React + Supabase pour remplacer les formulaires Jotform. 24 sections
 - Frontend : React + Vite + Tailwind
 - Backend : Supabase (PostgreSQL + Auth + Storage + Edge Functions)
 - Automatisation : Make.com (4 webhooks séparés) + Supabase Edge Functions (sync Monday)
-- PDF : html2pdf.js + jsPDF
+- PDF : Puppeteer via service Railway (fiches logement/ménage) + jsPDF (assistants IA)
 
 ---
 

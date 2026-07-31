@@ -14,7 +14,7 @@ Application web "mobile-first" développée pour Letahost, remplaçant les proce
 - **Routage** : React Router DOM  
 - **Backend** : Supabase (PostgreSQL + Auth + Storage + Functions)
 - **Automatisation** : Make.com (webhook + Google Drive)
-- **Génération PDF** : html2pdf.js (pagination intelligente)
+- **Génération PDF** : Puppeteer via service Railway (fiches) + jsPDF (assistants IA)
 - **Upload multimédia** : Supabase Storage (temporaire) → Google Drive (définitif)
 - **Déploiement** : Vercel
 
@@ -340,26 +340,32 @@ graph TD
 ```javascript
 // PDFUpload.jsx - Génération simultanée
 const generateAndUploadPDF = async () => {
-  // 1. PDF Logement via iframe /print-pdf?fiche={id}
-  const logementBlob = await generatePDFBlob(`/print-pdf?fiche=${formData.id}`)
-  
-  // 2. PDF Ménage via iframe /print-pdf-menage?fiche={id}  
-  const menageBlob = await generatePDFBlob(`/print-pdf-menage?fiche=${formData.id}`)
-  
-  // 3. Upload simultané vers bucket fiche-pdfs
-  await uploadToSupabase('fiche-logement-{numero_bien}.pdf', logementBlob)
-  await uploadToSupabase('fiche-menage-{numero_bien}.pdf', menageBlob)
-  
-  // 4. Seul le PDF logement est téléchargeable depuis le front
-  setPdfUrl(logementUrl)
+  // 1. Extraction du HTML rendu, via iframe sur les routes de rendu
+  const htmlLogement = await extractHTMLFromIframe(`/print-pdf?fiche=${formData.id}`)
+  const htmlMenage = await extractHTMLFromIframe(`/print-pdf-menage?fiche=${formData.id}`)
+
+  // 2. Le HTML part au service Railway (Puppeteer) qui rend le PDF,
+  //    l'upload dans le bucket fiche-pdfs et renvoie son URL
+  const resultLogement = await fetch(`${RAILWAY_URL}/generate-pdf`, { /* htmlContent, fileName */ })
+  const resultMenage = await fetch(`${RAILWAY_URL}/generate-pdf`, { /* htmlContent, fileName */ })
+
+  // 3. Webhook Make (Drive + Monday), puis seul le PDF logement est
+  //    téléchargeable depuis le front
+  await triggerPdfWebhook(resultLogement.pdfUrl, resultMenage.pdfUrl)
+  setPdfUrl(resultLogement.pdfUrl)
 }
 ```
 
 **Architecture PDF :**
-- ✅ **html2pdf.js** avec pagination intelligente
-- ✅ **2 templates** : PDFTemplate (complet) + PDFMenageTemplate (filtré)
+- ✅ **Puppeteer côté Railway** (`page.pdf`) — les liens `<a href>` restent cliquables dans le PDF
+- ✅ **2 templates** : PDFTemplate (complet) + PDFMenageTemplate (filtré, copie séparée)
 - ✅ **Upload automatique** vers bucket `fiche-pdfs` PUBLIC
 - ✅ **Pattern nommage** : `fiche-{type}-{numero_bien}.pdf`
+- ⚠️ `html2pdf.js` n'est plus utilisé que par `PDFUploadBackup.jsx` (ancienne implémentation conservée)
+
+> Règles de complétude du PDF logement (quels champs sortent, lesquels sont
+> volontairement exclus, et les pièges du rendu groupé) : voir
+> `docs/📄 PLAN UPLOAD PDF.md`, section « Règle de complétude du PDF logement ».
 
 ### **Nettoyage Storage Automatique**
 
