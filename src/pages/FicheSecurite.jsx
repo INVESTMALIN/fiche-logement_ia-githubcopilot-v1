@@ -26,7 +26,8 @@ export default function FicheSecurite() {
   // sans ce nettoyage, le texte saisi reste en mémoire, part en base au save et
   // ressort dans le PDF alors que l'option n'est plus cochée.
   const BRANCH_SCHEMAS = {
-    'Autre (veuillez préciser)': ['equipements_autre_details']
+    'Autre (veuillez préciser)': ['equipements_autre_details'],
+    'Système d\'alarme': ['alarme_desarmement']
   }
 
   const handleArrayCheckboxChange = (field, option, checked) => {
