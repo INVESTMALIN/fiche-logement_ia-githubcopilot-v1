@@ -25,7 +25,7 @@ npm run preview
 - **Frontend**: React 18 + Vite + Tailwind CSS
 - **Backend**: Supabase (PostgreSQL + Auth + Storage)
 - **Routing**: React Router DOM
-- **PDF Generation**: html2pdf.js
+- **PDF Generation**: HTML rendu côté app → service Railway (Puppeteer)
 - **Media Upload**: Supabase Storage → Google Drive (via Make.com)
 - **Deployment**: Vercel
 
@@ -164,7 +164,11 @@ Two PDF types are generated simultaneously:
 - **Logement PDF**: Complete property form (`/print-pdf`)
 - **Ménage PDF**: Cleaning-specific form (`/print-pdf-menage`)
 
-Both use `html2pdf.js` with intelligent pagination and upload to `fiche-pdfs` bucket.
+Both are produced the same way: `PDFUpload.jsx` extracts the rendered HTML of the print route via an iframe, posts it to the Railway service (`/generate-pdf`, Puppeteer `page.pdf`), which uploads to the `fiche-pdfs` bucket and returns the URL. `<a href>` links stay clickable in the output — that's how photo and video links work. `html2pdf.js` survives only in the legacy `PDFUploadBackup.jsx`.
+
+`PDFTemplate.jsx` is **generic, not hand-written**: it loops over `sectionsConfig`, then over every key of each section. A new form field shows up automatically — unless it hits one of the documented traps (section missing from `sectionsConfig`, a `photo`/`video` substring in the key, the grouped renderers of `section_equipements` / `section_cuisine_1` that replace generic rendering). Read `docs/📄 PLAN UPLOAD PDF.md` § "Règle de complétude du PDF logement" before adding a field or debugging a missing one.
+
+`PDFMenageTemplate.jsx` is a separate copy with a reduced section list — fixes to the logement template do not propagate to it.
 
 ### Authentication & Permissions
 

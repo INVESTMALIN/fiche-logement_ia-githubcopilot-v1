@@ -25,6 +25,7 @@ const PDFTemplate = ({ formData }) => {
     { key: 'section_clefs', label: '🔑 Clefs', emoji: '🔑' },
     { key: 'section_airbnb', label: '🏠 Airbnb', emoji: '🏠' },
     { key: 'section_booking', label: '📅 Booking', emoji: '📅' },
+    { key: 'section_email_outlook', label: '📧 E-mail Outlook', emoji: '📧' },
     { key: 'section_reglementation', label: '📋 Réglementation', emoji: '📋' },
     { key: 'section_exigences', label: '⚠️ Exigences', emoji: '⚠️' },
     { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
@@ -143,6 +144,15 @@ const PDFTemplate = ({ formData }) => {
     return isImage && !isVideo
   }
 
+  // Helper pour vérifier si c'est une URL de vidéo valide
+  const isVideoUrl = (url) => {
+    if (typeof url !== 'string' || url.trim() === '') return false
+
+    const urlWithoutParams = url.split('?')[0]
+
+    return /\.(mp4|webm|ogg|mov|avi|m4v|mkv|qt)$/i.test(urlWithoutParams)
+  }
+
   // 🧹 Helper pour nettoyer les URLs malformées
   const cleanUrl = (url) => {
     if (typeof url !== 'string') return url
@@ -185,6 +195,63 @@ const PDFTemplate = ({ formData }) => {
     }
 
     return []
+  }
+
+  // 🎥 Helper pour parser les champs vidéo (même logique que parsePhotoValue)
+  const parseVideoValue = (value) => {
+    if (Array.isArray(value)) {
+      return value.map(url => cleanUrl(url)).filter(url => isVideoUrl(url))
+    }
+
+    if (typeof value === 'string') {
+      const cleaned = cleanUrl(value)
+      if (isVideoUrl(cleaned)) return [cleaned]
+
+      if (value.startsWith('[') || value.startsWith('"[')) {
+        try {
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            return parsed.map(url => cleanUrl(url)).filter(url => isVideoUrl(url))
+          }
+        } catch (e) {
+          console.warn('🎥 Erreur parsing JSON vidéo:', value, e)
+          return []
+        }
+      }
+    }
+
+    return []
+  }
+
+  // 🎥 Détection de TOUTES les vidéos d'une section (mêmes patterns que extractAllPhotos)
+  const extractAllVideos = (sectionData) => {
+    const videos = []
+
+    if (!sectionData || typeof sectionData !== 'object') {
+      return videos
+    }
+
+    const collect = (value, label) => {
+      const urls = parseVideoValue(value)
+      urls.forEach((url, index) => {
+        videos.push({ url, label: urls.length > 1 ? `${label} ${index + 1}` : label })
+      })
+    }
+
+    Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+      // PATTERN 2 : objets imbriqués (ex: chambre_1.video_visite)
+      if (typeof fieldValue === 'object' && fieldValue !== null && !Array.isArray(fieldValue)) {
+        Object.entries(fieldValue).forEach(([subKey, subValue]) => {
+          collect(subValue, `${formatFieldName(fieldKey)} - ${formatFieldName(subKey)}`)
+        })
+        return
+      }
+
+      // PATTERN 1 : arrays directs + strings JSON
+      collect(fieldValue, formatFieldName(fieldKey))
+    })
+
+    return videos
   }
 
   // 🛏️ Helper pour agréger tous les types de lits du logement
@@ -297,7 +364,10 @@ const PDFTemplate = ({ formData }) => {
   // 🔍 Helper pour formater les noms de champs
   const formatFieldName = (fieldName) => {
     const fieldTranslations = {
-      pied_des_pistes: 'Au pied des pistes'
+      pied_des_pistes: 'Au pied des pistes',
+      // Champs conditionnels rattachés à un équipement dont ils ne portent pas le préfixe
+      pmr_details: 'Détails accessibilité',
+      animaux_commentaire: 'Commentaire'
     }
 
     if (fieldTranslations[fieldName]) return fieldTranslations[fieldName]
@@ -309,6 +379,10 @@ const PDFTemplate = ({ formData }) => {
       .replace(/\b\w/g, l => l.toUpperCase())
       .trim()
   }
+
+  // 📊 Helper : au moins une observation saisie sur la grille d'évaluation
+  const hasGrilleObservations = (avisData) =>
+    GRILLE_CRITERES.some(critere => !isEmpty(avisData[`grille_${critere.key}_obs`]))
 
   // 🔍 Helper pour vérifier si une valeur est vide
   const isEmpty = (value) => {
@@ -525,6 +599,49 @@ const PDFTemplate = ({ formData }) => {
     )
   }
 
+  // 🎥 COMPOSANT: Rendu des vidéos (liens cliquables, pas de miniature)
+  const VideosDisplay = ({ videos, sectionTitle }) => {
+    if (!videos || videos.length === 0) return null
+
+    return (
+      <div style={{
+        marginTop: '16px',
+        padding: '16px',
+        backgroundColor: '#f8fafc',
+        border: '1px solid #e2e8f0',
+        borderRadius: '8px',
+        pageBreakInside: 'avoid'
+      }}>
+        <h4 style={{
+          margin: '0 0 12px 0',
+          fontSize: '11pt',
+          fontWeight: '600',
+          color: '#4a5568',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          🎥 Vidéos {sectionTitle} ({videos.length})
+        </h4>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {videos.map((video, index) => (
+            <div key={index} style={{ fontSize: '9pt', color: '#4a5568' }}>
+              <span style={{ fontWeight: '600' }}>{video.label}</span>{' — '}
+              <a
+                href={video.url}
+                target="_blank"
+                style={{ color: '#2563eb', textDecoration: 'underline' }}
+              >
+                voir la vidéo
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   // 🎯 Fonction pour générer le nom du dossier photos
   const generatePhotosFolder = () => {
     const numeroBien = formData.section_logement?.numero_bien || 'XXX'
@@ -561,7 +678,8 @@ const PDFTemplate = ({ formData }) => {
       { key: 'blender', label: 'Blender', emoji: '🥤' },
       { key: 'cuiseur_riz', label: 'Cuiseur à riz', emoji: '🍚' },
       { key: 'machine_pain', label: 'Machine à pain', emoji: '🥖' },
-      { key: 'lave_linge', label: 'Lave-linge', emoji: '🧺' }
+      { key: 'lave_linge', label: 'Lave-linge', emoji: '🧺' },
+      { key: 'hotte', label: 'Hotte', emoji: '💨' }
     ]
 
     const groupedEquipements = []
@@ -591,16 +709,39 @@ const PDFTemplate = ({ formData }) => {
           }
         })
 
-        // Ajouter l'équipement groupé seulement s'il a des détails ou photos
-        if (Object.keys(details).length > 0 || photos.length > 0) {
-          groupedEquipements.push({
-            ...equip,
-            details,
-            photos: photos.filter(p => p.isValid)
-          })
-        }
+        // L'équipement est coché : on l'affiche même sans détail ni photo,
+        // sinon un équipement présent mais non documenté disparaît du PDF
+        groupedEquipements.push({
+          ...equip,
+          details,
+          photos: photos.filter(p => p.isValid)
+        })
       }
     })
+
+    // "Autre équipement" : pas de préfixe commun, traité à part
+    if (sectionData.equipements_autre === true) {
+      groupedEquipements.push({
+        key: 'equipements_autre',
+        label: 'Autre équipement',
+        emoji: '➕',
+        details: !isEmpty(sectionData.equipements_autre_details)
+          ? { equipements_autre_details: sectionData.equipements_autre_details }
+          : {},
+        photos: []
+      })
+    }
+
+    // Éléments abîmés : la réponse elle-même (les photos remontent dans le bloc photos de section)
+    if (typeof sectionData.elements_abimes === 'boolean') {
+      groupedEquipements.push({
+        key: 'elements_abimes',
+        label: `Éléments abîmés : ${sectionData.elements_abimes ? 'Oui' : 'Non'}`,
+        emoji: '🛠️',
+        details: {},
+        photos: []
+      })
+    }
 
     return groupedEquipements
   }
@@ -623,6 +764,9 @@ const PDFTemplate = ({ formData }) => {
       // Extraire les photos de cette section
       const photos = extractAllPhotos(sectionData, config.key)
 
+      // Extraire les vidéos de cette section (rendues en liens, pas en miniatures)
+      const videos = extractAllVideos(sectionData)
+
       // Extraire les champs non-photos
       const fields = []
       Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
@@ -635,6 +779,18 @@ const PDFTemplate = ({ formData }) => {
                 ? '1er panier de consommables (à l\'ouverture)'
                 : 'Consommables au quotidien (renouvellement)',
               value: fieldValue === true ? 'Prestataire de ménage' : 'Propriétaire'
+            })
+          }
+          return
+        }
+        // 🎬 AVIS : "vidéo globale validée" est une réponse oui/non, pas un média.
+        // Sans ce cas explicite, le filtre "photo/vidéo" de formatValue l'écarte.
+        if (config.key === 'section_avis' && fieldKey === 'video_globale_validation') {
+          if (fieldValue === true || fieldValue === false) {
+            fields.push({
+              key: fieldKey,
+              label: 'Vidéo globale du logement validée',
+              value: fieldValue ? 'Oui' : 'Non'
             })
           }
           return
@@ -720,17 +876,29 @@ const PDFTemplate = ({ formData }) => {
       // 📊 Avis : on garde la section dès qu'au moins un critère de grille est rempli
       // (sinon le bloc verdict custom ne s'afficherait jamais sur les fiches sans champs libres)
       const hasAvisGrille = config.key === 'section_avis'
-        && computeGrilleStats(sectionData).filled > 0
+        && (computeGrilleStats(sectionData).filled > 0 || hasGrilleObservations(sectionData))
 
       const hasStationRecharge = config.key === 'section_equipements'
         && stationRechargeRenseignee
 
-      // Ajouter la section seulement si elle a du contenu (champs, photos ou bloc custom)
-      if (fields.length > 0 || photos.length > 0 || hasAvisGrille || hasStationRecharge) {
+      // Les champs WiFi / parking / techniques / ménage sont retirés de la liste générique
+      // car rendus dans des blocs dédiés : sans ce test, une fiche qui ne renseigne QUE
+      // ces champs verrait toute la section Équipements disparaître.
+      const hasEquipementsBlocs = config.key === 'section_equipements'
+        && (renderEquipementsGrouped(sectionData).length > 0
+          || !!renderWifiGrouped(sectionData)
+          || !!renderParkingGrouped(sectionData)
+          || !!renderTechnicalInfoGrouped(sectionData)
+          || !!renderMenageEquipementGrouped(sectionData))
+
+      // Ajouter la section seulement si elle a du contenu (champs, médias ou bloc custom)
+      if (fields.length > 0 || photos.length > 0 || videos.length > 0 || hasAvisGrille || hasStationRecharge || hasEquipementsBlocs) {
         sections.push({
           ...config,
           fields,
-          photos
+          photos,
+          videos,
+          hasEquipementsBlocs
         })
       }
     })
@@ -747,8 +915,11 @@ const PDFTemplate = ({ formData }) => {
       { key: 'chauffage', label: 'Chauffage', emoji: '🔥', hasConditionals: true },
       { key: 'lave_linge', label: 'Lave-linge', emoji: '🧺', hasConditionals: true },
       { key: 'seche_linge', label: 'Sèche-linge', emoji: '🌀', hasConditionals: true },
+      { key: 'ventilateur', label: 'Ventilateur', emoji: '🌬️', hasConditionals: true },
+      { key: 'seche_serviettes', label: 'Sèche-serviettes', emoji: '🧻', hasConditionals: true },
       { key: 'piano', label: 'Piano', emoji: '🎹', hasConditionals: true },
-      { key: 'accessible_mobilite_reduite', label: 'Accessible aux personnes à mobilité réduite', emoji: '♿', hasConditionals: true },
+      { key: 'accessible_mobilite_reduite', label: 'Accessible aux personnes à mobilité réduite', emoji: '♿', hasConditionals: true, extraFields: ['pmr_details'] },
+      { key: 'animaux_acceptes', label: 'Animaux acceptés', emoji: '🐾', hasConditionals: true, extraFields: ['animaux_commentaire'] },
 
       // Équipements simples (checkbox only)
       { key: 'fer_repasser', label: 'Fer à repasser', emoji: '🧹', hasConditionals: false },
@@ -795,6 +966,14 @@ const PDFTemplate = ({ formData }) => {
                 // Ajouter les détails texte
                 details[fieldKey] = fieldValue
               }
+            }
+          })
+
+          // Champs conditionnels qui ne partagent pas le préfixe de l'équipement
+          // (ex: pmr_details rattaché à accessible_mobilite_reduite)
+          ;(equip.extraFields || []).forEach(fieldKey => {
+            if (!isEmpty(sectionData[fieldKey])) {
+              details[fieldKey] = sectionData[fieldKey]
             }
           })
         }
@@ -869,10 +1048,11 @@ const PDFTemplate = ({ formData }) => {
 
   // 🅿️ FONCTION SPÉCIALE : Rendu groupé pour Parking
   const renderParkingGrouped = (sectionData) => {
-    if (!sectionData.parking_type && !stationRechargeRenseignee) return null
+    if (!sectionData.parking_type && !stationRechargeRenseignee && sectionData.parking_equipement !== true) return null
 
     const parkingData = {
       type: sectionData.parking_type,
+      equipement: sectionData.parking_equipement === true,
       stationRechargeElectrique: stationRechargeRenseignee ? stationRechargeElectrique : null,
       details: {},
       photos: []
@@ -912,6 +1092,23 @@ const PDFTemplate = ({ formData }) => {
     }
 
     return parkingData
+  }
+
+  // 🧹 FONCTION SPÉCIALE : Rendu groupé pour l'équipement ménage
+  // (les photos correspondantes remontent déjà dans le bloc photos de la section)
+  const renderMenageEquipementGrouped = (sectionData) => {
+    const champs = [
+      { key: 'menage_aspirateur_types', label: 'Aspirateur' },
+      { key: 'menage_serpillere_types', label: 'Serpillère' },
+      { key: 'menage_autres_elements', label: 'Autres éléments' }
+    ]
+
+    const fields = champs
+      .filter(champ => !isEmpty(sectionData[champ.key]))
+      .map(champ => ({ ...champ, value: formatValue(sectionData[champ.key], champ.key) }))
+      .filter(champ => champ.value !== null)
+
+    return fields.length > 0 ? fields : null
   }
 
   // 🔧 FONCTION SPÉCIALE : Rendu groupé pour Informations Techniques
@@ -1165,7 +1362,8 @@ const PDFTemplate = ({ formData }) => {
             {section.key === 'section_avis' && (() => {
               const avisData = formData.section_avis || {}
               const stats = computeGrilleStats(avisData)
-              if (stats.filled === 0 && (avisData.securite_dangers || []).length === 0
+              const hasObservations = hasGrilleObservations(avisData)
+              if (stats.filled === 0 && !hasObservations && (avisData.securite_dangers || []).length === 0
                 && !avisData.type_premier_menage && !avisData.type_premiere_maintenance) {
                 return null
               }
@@ -1217,7 +1415,7 @@ const PDFTemplate = ({ formData }) => {
                   </div>
 
                   {/* Tableau récap 9 critères */}
-                  {stats.filled > 0 && (
+                  {(stats.filled > 0 || hasObservations) && (
                     <table style={{
                       width: '100%',
                       borderCollapse: 'collapse',
@@ -1234,9 +1432,17 @@ const PDFTemplate = ({ formData }) => {
                         {GRILLE_CRITERES.map((critere) => {
                           const note = avisData[`grille_${critere.key}_note`]
                           const niveau = critere.niveaux.find(n => n.val === note)
+                          const observation = avisData[`grille_${critere.key}_obs`]
                           return (
                             <tr key={critere.key} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                              <td style={{ padding: '6px 12px', color: '#2d3748' }}>{critere.label}</td>
+                              <td style={{ padding: '6px 12px', color: '#2d3748' }}>
+                                {critere.label}
+                                {!isEmpty(observation) && (
+                                  <div style={{ marginTop: '3px', fontSize: '8pt', color: '#6b7280', fontStyle: 'italic' }}>
+                                    {observation}
+                                  </div>
+                                )}
+                              </td>
                               <td style={{ padding: '6px 12px', color: niveau ? '#2d3748' : '#9ca3af', fontStyle: niveau ? 'normal' : 'italic' }}>
                                 {niveau ? niveau.name : 'Non évalué'}
                               </td>
@@ -1295,10 +1501,7 @@ const PDFTemplate = ({ formData }) => {
             })()}
 
             {/* Champs de la section */}
-            {(section.fields.length > 0 || (
-              section.key === 'section_equipements'
-              && stationRechargeRenseignee
-            )) && (
+            {(section.fields.length > 0 || section.hasEquipementsBlocs) && (
               <div style={{
                 backgroundColor: '#ffffff',
                 border: '1px solid #e2e8f0',
@@ -1442,6 +1645,7 @@ const PDFTemplate = ({ formData }) => {
                     const wifiData = renderWifiGrouped(formData.section_equipements || {})
                     const parkingData = renderParkingGrouped(formData.section_equipements || {})
                     const technicalData = renderTechnicalInfoGrouped(formData.section_equipements || {})
+                    const menageData = renderMenageEquipementGrouped(formData.section_equipements || {})
 
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -1678,6 +1882,13 @@ const PDFTemplate = ({ formData }) => {
                               borderRadius: '6px',
                               pageBreakInside: 'avoid'
                             }}>
+                              {parkingData.equipement && (
+                                <div style={{ marginBottom: '8px' }}>
+                                  <span style={{ fontWeight: '600', fontSize: '9pt', color: '#4a5568' }}>Parking disponible : </span>
+                                  <span style={{ fontSize: '9pt', color: '#2d3748', fontWeight: '600' }}>Oui</span>
+                                </div>
+                              )}
+
                               {parkingData.type && (
                                 <div style={{ marginBottom: '8px' }}>
                                   <span style={{ fontWeight: '600', fontSize: '9pt', color: '#4a5568' }}>Type : </span>
@@ -1732,8 +1943,42 @@ const PDFTemplate = ({ formData }) => {
                           </div>
                         )}
 
+                        {/* PARTIE 4 : ÉQUIPEMENT MÉNAGE */}
+                        {menageData && (
+                          <div>
+                            <h4 style={{
+                              margin: '0 0 12px 0',
+                              fontSize: '11pt',
+                              fontWeight: '700',
+                              color: '#1e40af',
+                              borderBottom: '2px solid #dbeafe',
+                              paddingBottom: '6px'
+                            }}>
+                              🧹 Équipement ménage
+                            </h4>
+                            <div style={{
+                              padding: '12px',
+                              backgroundColor: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '6px',
+                              pageBreakInside: 'avoid'
+                            }}>
+                              {menageData.map((champ, idx) => (
+                                <div key={idx} style={{
+                                  marginBottom: idx < menageData.length - 1 ? '6px' : '0',
+                                  fontSize: '9pt',
+                                  color: '#4a5568'
+                                }}>
+                                  <span style={{ fontWeight: '600' }}>{champ.label}:</span>{' '}
+                                  <span style={{ color: '#2d3748' }}>{champ.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Message si aucune donnée */}
-                        {equipementsData.length === 0 && !wifiData && !parkingData && (
+                        {equipementsData.length === 0 && !wifiData && !parkingData && !menageData && (
                           <div style={{ fontSize: '9pt', color: '#6b7280', fontStyle: 'italic' }}>
                             Aucun équipement configuré
                           </div>
@@ -1795,6 +2040,11 @@ const PDFTemplate = ({ formData }) => {
             {/* Photos de la section */}
             {section.photos.length > 0 && (
               <PhotosDisplay photos={section.photos} sectionTitle={section.label} />
+            )}
+
+            {/* Vidéos de la section */}
+            {section.videos.length > 0 && (
+              <VideosDisplay videos={section.videos} sectionTitle={section.label} />
             )}
           </div>
         ))
