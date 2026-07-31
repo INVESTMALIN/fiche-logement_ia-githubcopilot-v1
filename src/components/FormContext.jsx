@@ -1291,6 +1291,7 @@ const initialFormData = {
   section_securite: {
     equipements: [],
     alarme_desarmement: "",
+    equipements_autre_details: "",
     photos_equipements_securite: []
   }
 }

@@ -1232,6 +1232,7 @@ export const mapFormDataToSupabase = (formData) => {
     // Section Sécurité
     securite_equipements: formData.section_securite?.equipements || [],
     securite_alarme_desarmement: formData.section_securite?.alarme_desarmement || null,
+    securite_equipements_autre_details: formData.section_securite?.equipements_autre_details || null,
     securite_photos_equipements_securite: formData.section_securite?.photos_equipements_securite || [],
     // PDF URLs
     pdf_logement_url: formData.pdf_logement_url || null,
@@ -2520,6 +2521,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
     section_securite: {
       equipements: supabaseData.securite_equipements || [],
       alarme_desarmement: supabaseData.securite_alarme_desarmement || "",
+      equipements_autre_details: supabaseData.securite_equipements_autre_details || "",
       photos_equipements_securite: supabaseData.securite_photos_equipements_securite || []
     },
 

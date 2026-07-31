@@ -21,14 +21,33 @@ export default function FicheSecurite() {
   // PATTERN IMPORTANT : Récupérer formData pour les arrays
   const sectionData = getField('section_securite')
 
+  // 🧹 Champs conditionnels à vider quand l'option parente est décochée.
+  // Pattern BRANCH_SCHEMAS de BUG #007 (cf. FicheEquipements / FicheEquipExterieur) :
+  // sans ce nettoyage, le texte saisi reste en mémoire, part en base au save et
+  // ressort dans le PDF alors que l'option n'est plus cochée.
+  const BRANCH_SCHEMAS = {
+    'Autre (veuillez préciser)': ['equipements_autre_details']
+  }
+
   const handleArrayCheckboxChange = (field, option, checked) => {
-    const currentArray = sectionData[field.split('.').pop()] || []
-    let newArray
-    if (checked) {
-      newArray = [...currentArray, option]
-    } else {
-      newArray = currentArray.filter(item => item !== option)
+    const key = field.split('.').pop()
+    const currentArray = sectionData[key] || []
+    const newArray = checked
+      ? [...currentArray, option]
+      : currentArray.filter(item => item !== option)
+
+    const champsANettoyer = checked ? [] : (BRANCH_SCHEMAS[option] || [])
+
+    if (champsANettoyer.length > 0) {
+      // Une seule mise à jour atomique : tableau + champs conditionnels vidés
+      updateField('section_securite', {
+        ...sectionData,
+        [key]: newArray,
+        ...Object.fromEntries(champsANettoyer.map(champ => [champ, '']))
+      })
+      return
     }
+
     updateField(field, newArray)
   }
 
