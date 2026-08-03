@@ -2707,6 +2707,31 @@ export const getAllFiches = async (includeArchived = false) => {
 }
 
 
+// 🔍 Le dossier storage des photos est identifié par (utilisateur, numéro de bien)
+// — `user-{user_id}/fiche-{numero_bien}` — et non par l'id de la fiche. Plusieurs
+// fiches d'un même bien écrivent donc leurs photos au même endroit, et supprimer
+// l'une d'elles emporterait les photos des autres (incident du 02/08/2026).
+// On compare sur le seul numéro de bien : l'upload construit le chemin avec l'id
+// de l'utilisateur *connecté* (voir PhotoUpload.generateStoragePath), pas avec
+// celui du propriétaire de la fiche, donc une fiche d'un autre utilisateur peut
+// avoir déposé ses photos dans ce dossier.
+// Fail-safe : si la vérification échoue, on répond `true` pour ne rien détruire.
+const isStorageFolderShared = async (ficheId, numeroBien) => {
+  const { data, error } = await supabase
+    .from('fiches')
+    .select('id')
+    .eq('logement_numero_bien', numeroBien)
+    .neq('id', ficheId)
+    .limit(1)
+
+  if (error) {
+    console.warn('⚠️ Vérification des fiches partageant le dossier photos impossible, storage conservé:', error)
+    return true
+  }
+
+  return (data || []).length > 0
+}
+
 // 🗑️ Supprimer une fiche + cleanup storage (VERSION RÉCURSIVE)
 export const deleteFiche = async (ficheId) => {
   try {
@@ -2722,7 +2747,20 @@ export const deleteFiche = async (ficheId) => {
     }
 
     // 2. Supprimer le dossier photos complet du storage (RÉCURSIF)
-    if (ficheData.user_id && ficheData.logement_numero_bien) {
+    //    …sauf si une autre fiche vivante partage ce dossier : ses photos ne
+    //    nous appartiennent pas et le storage n'a pas de corbeille.
+    const dossierPhotos = Boolean(ficheData.user_id && ficheData.logement_numero_bien)
+    const storagePartage = dossierPhotos
+      ? await isStorageFolderShared(ficheId, ficheData.logement_numero_bien)
+      : false
+
+    if (storagePartage) {
+      console.log(
+        `🛡️ Dossier photos partagé avec une autre fiche du bien ${ficheData.logement_numero_bien} : storage conservé`
+      )
+    }
+
+    if (dossierPhotos && !storagePartage) {
       const basePath = `user-${ficheData.user_id}/fiche-${ficheData.logement_numero_bien}`
 
       console.log(`🗑️ Suppression récursive dossier: ${basePath}`)
@@ -2787,7 +2825,9 @@ export const deleteFiche = async (ficheId) => {
 
     return {
       success: true,
-      message: 'Fiche et photos supprimées avec succès'
+      message: storagePartage
+        ? 'Fiche supprimée (photos conservées : une autre fiche utilise le même dossier)'
+        : 'Fiche et photos supprimées avec succès'
     }
   } catch (error) {
     console.error('Erreur lors de la suppression:', error)
