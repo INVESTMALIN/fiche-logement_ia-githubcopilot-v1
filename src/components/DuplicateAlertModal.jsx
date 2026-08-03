@@ -17,7 +17,10 @@ export default function DuplicateAlertModal() {
   // Deux situations très différentes pour le coordinateur :
   // sa propre fiche (il la rouvre et continue) ou celle d'un collègue
   // (il ne peut pas l'ouvrir, il doit se rapprocher de cette personne).
-  const estAutreCoordinateur = existingFiche.est_proprietaire === false
+  // Le branchement part de « c'est ma fiche », seul cas où l'ouverture est
+  // toujours pertinente : toute autre valeur (fiche d'un tiers, fiche sans
+  // propriétaire) tombe dans la variante avertissement.
+  const estAutreCoordinateur = existingFiche.est_proprietaire !== true
   const coordinateur = [existingFiche.coordinateur_prenom, existingFiche.coordinateur_nom]
     .filter(Boolean)
     .join(' ')

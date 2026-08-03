@@ -63,12 +63,16 @@ AS $$
     -- Statut réservé à ma propre fiche : sur celle d'un tiers, c'est une
     -- information de suivi dont l'alerte n'a pas besoin.
     CASE WHEN f.user_id = auth.uid() THEN f.statut END AS statut,
-    (f.user_id = auth.uid()) AS est_proprietaire,
+    -- COALESCE : `user_id` est nullable (0 ligne aujourd'hui, mais le schéma
+    -- l'autorise). Sans lui, la comparaison rendrait NULL et l'appelant
+    -- hériterait d'un tri-état au lieu d'un booléen.
+    COALESCE(f.user_id = auth.uid(), false) AS est_proprietaire,
     -- Les admins gardent l'accès en lecture qu'ils ont déjà via les RLS :
     -- le bouton « Ouvrir existante » reste pertinent pour eux.
-    (
+    COALESCE(
       f.user_id = auth.uid()
-      OR public.get_user_role() IN ('admin', 'super_admin')
+      OR public.get_user_role() IN ('admin', 'super_admin'),
+      false
     ) AS peut_ouvrir,
     -- Identité affichée uniquement quand la fiche est celle d'un tiers.
     CASE WHEN f.user_id = auth.uid() THEN NULL ELSE p.prenom END AS coordinateur_prenom,
