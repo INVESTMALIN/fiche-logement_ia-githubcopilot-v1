@@ -21,6 +21,7 @@ export default function DuplicateAlertModal() {
   // toujours pertinente : toute autre valeur (fiche d'un tiers, fiche sans
   // propriétaire) tombe dans la variante avertissement.
   const estAutreCoordinateur = existingFiche.est_proprietaire !== true
+  const peutOuvrir = Boolean(existingFiche.peut_ouvrir && existingFiche.id)
   const coordinateur = [existingFiche.coordinateur_prenom, existingFiche.coordinateur_nom]
     .filter(Boolean)
     .join(' ')
@@ -57,10 +58,10 @@ export default function DuplicateAlertModal() {
               </p>
             </div>
 
-            <div className="flex gap-3">
-              {/* L'ouverture n'est proposée que si l'appelant a réellement les droits
-                  de lecture sur cette fiche (admin / super admin). */}
-              {existingFiche.peut_ouvrir && existingFiche.id && (
+            {/* L'ouverture n'est proposée que si l'appelant a réellement les droits
+                de lecture sur cette fiche (admin / super admin). */}
+            {peutOuvrir ? (
+              <div className="flex gap-3">
                 <button
                   onClick={handleOpenExisting}
                   className="flex-1 px-4 py-2 rounded text-white font-medium"
@@ -70,14 +71,36 @@ export default function DuplicateAlertModal() {
                 >
                   Ouvrir existante
                 </button>
-              )}
-              <button
-                onClick={handleCreateNew}
-                className="flex-1 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-              >
-                Créer nouvelle
-              </button>
-            </div>
+                <button
+                  onClick={handleCreateNew}
+                  className="flex-1 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+                >
+                  Créer nouvelle
+                </button>
+              </div>
+            ) : (
+              // Sans bouton d'ouverture, la création serait la seule action mise en
+              // avant — soit exactement ce que le message demande d'éviter. On
+              // inverse donc la pente : le retour devient l'action principale, la
+              // création reste à un clic mais discrète (jamais masquée ni retardée).
+              <>
+                <button
+                  onClick={handleCancelDuplicate}
+                  className="w-full px-4 py-2 rounded text-white font-medium"
+                  style={{ backgroundColor: '#dbae61' }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#c49952'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#dbae61'}
+                >
+                  Retour au tableau de bord
+                </button>
+                <button
+                  onClick={handleCreateNew}
+                  className="w-full mt-3 text-gray-500 hover:text-gray-700 text-sm underline"
+                >
+                  Créer une deuxième fiche quand même
+                </button>
+              </>
+            )}
           </>
         ) : (
           <>
@@ -111,12 +134,16 @@ export default function DuplicateAlertModal() {
           </>
         )}
 
-        <button
-          onClick={handleCancelDuplicate}
-          className="w-full mt-3 text-gray-500 hover:text-gray-700 text-sm"
-        >
-          Annuler
-        </button>
+        {/* Le retour est déjà l'action principale de la variante coordinateur :
+            on ne le répète pas en lien discret en dessous. */}
+        {(!estAutreCoordinateur || peutOuvrir) && (
+          <button
+            onClick={handleCancelDuplicate}
+            className="w-full mt-3 text-gray-500 hover:text-gray-700 text-sm"
+          >
+            Annuler
+          </button>
+        )}
       </div>
     </div>
   )
