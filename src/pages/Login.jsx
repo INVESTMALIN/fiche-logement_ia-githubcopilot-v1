@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../components/AuthContext'
 import Button from '../components/Button'
+import { savePendingMondayParams, readPendingMondayParams } from '../lib/pendingMondayParams'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -17,15 +18,18 @@ export default function Login() {
 
     if (hasMondayParams) {
       console.log('🔍 Login: Détection params Monday dans URL:', window.location.search)
-      localStorage.setItem('pendingMondayParams', window.location.search)
+      savePendingMondayParams(window.location.search)
     }
   }, [])
 
   // ✅ Redirection conditionnelle post-login
   useEffect(() => {
     if (isAuthenticated) {
-      const pendingMondayParams = localStorage.getItem('pendingMondayParams')
-      
+      // Souvenir borné : périmé ou hérité d'une session antérieure, il est
+      // ignoré (et purgé) — la connexion repart alors sur le tableau de bord
+      // au lieu d'un formulaire de création.
+      const pendingMondayParams = readPendingMondayParams()
+
       if (pendingMondayParams) {
         console.log('✅ Login: Récupération params Monday depuis localStorage:', pendingMondayParams)
         // ⚠️ NE PAS supprimer localStorage ici - laisser FormContext s'en occuper
@@ -91,7 +95,7 @@ export default function Login() {
             </h2>
 
             {/* ✅ Message si params Monday en attente */}
-            {typeof window !== 'undefined' && localStorage.getItem('pendingMondayParams') && (
+            {typeof window !== 'undefined' && readPendingMondayParams() && (
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-blue-700 text-sm text-center">
                   📋 Formulaire Monday en attente – Connectez-vous pour continuer
