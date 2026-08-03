@@ -2228,14 +2228,14 @@ export function FormProvider({ children }) {
     }
 
     try {
-      // Check en base si une fiche existe déjà pour ce bien chez cet utilisateur
+      // Passage par une RPC SECURITY DEFINER : une lecture directe de `fiches`
+      // est soumise aux RLS, et la policy `coordinateur_own_fiches` masque les
+      // fiches des collègues — le coordinateur ne voyait donc rien quand le
+      // bien était déjà couvert par quelqu'un d'autre (5 des 17 biens en
+      // doublon aujourd'hui). La fonction ne rend qu'une ligne, sans aucun
+      // contenu de fiche : voir docs/migrations/2026-08-03_check_fiche_existante.sql
       const { data, error } = await supabase
-        .from('fiches')
-        .select('id, nom, statut')
-        .eq('user_id', user.id)
-        .eq('logement_numero_bien', numero)
-        .order('updated_at', { ascending: false })
-        .limit(1)
+        .rpc('check_fiche_existante', { p_numero_bien: numero })
 
       if (error) {
         console.error('Erreur lors de la vérification de duplicate:', error)
@@ -2259,7 +2259,9 @@ export function FormProvider({ children }) {
 
 
   const handleOpenExisting = useCallback(() => {
-    if (duplicateAlert?.existingFiche) {
+    // `id` est nul quand la fiche appartient à un collègue : les RLS
+    // refuseraient de la charger, le bouton n'est donc pas proposé.
+    if (duplicateAlert?.existingFiche?.id) {
       navigate(`/fiche?id=${duplicateAlert.existingFiche.id}`)
     }
     setDuplicateAlert(null)
