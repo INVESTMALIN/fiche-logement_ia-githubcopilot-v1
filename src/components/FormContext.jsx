@@ -2272,8 +2272,13 @@ export function FormProvider({ children }) {
 
   const handleCancelDuplicate = useCallback(() => {
     setDuplicateAlert(null)
+    // Le pré-remplissage Monday est appliqué avant l'alerte : en annulant, on le
+    // jette explicitement. La réinitialisation de PRIORITÉ 5 ne s'en chargerait
+    // pas (elle exige un formData.id non nul, or la fiche n'existe pas encore),
+    // et ces valeurs ressortiraient au prochain « Nouvelle fiche ».
+    resetForm()
     navigate('/')
-  }, [navigate])
+  }, [navigate, resetForm])
 
   return (
     <FormContext.Provider value={{
