@@ -8,6 +8,11 @@ import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
 import { validateMondayConstrainedFields } from '../lib/mondayFieldConstraints'
+import {
+  savePendingMondayParams,
+  readPendingMondayParams,
+  clearPendingMondayParams
+} from '../lib/pendingMondayParams'
 
 const FormContext = createContext()
 
@@ -1498,7 +1503,30 @@ export function FormProvider({ children }) {
     const params = new URLSearchParams(location.search);
     const ficheId = params.get('id');
     const mondayParamsPresentInURL = hasMondayParams(location.search);
-    const pendingMondayParamsInStorage = localStorage.getItem('pendingMondayParams');
+    const pendingMondayParamsInStorage = readPendingMondayParams();
+
+    // Pré-remplissage Monday, commun aux deux chemins d'arrivée sur un
+    // formulaire de création : params dans l'URL (utilisateur déjà connecté) ou
+    // params mémorisés pendant la connexion. Les données sont appliquées dans
+    // tous les cas — le garde-fou doublon est une ALERTE, jamais un blocage :
+    // le coordinateur doit pouvoir créer sa fiche en connaissance de cause,
+    // avec son pré-remplissage intact.
+    const appliquerParamsMonday = (searchParams) => {
+      const mondayData = parseMondayParams(searchParams);
+      const nouvellesDonnees = applyMondayData(formData, mondayData);
+      nouvellesDonnees.user_id = user.id;
+
+      setFormData(nouvellesDonnees);
+
+      // Smart naming
+      const generatedName = generateFicheName(nouvellesDonnees);
+      if (generatedName !== "Nouvelle fiche") {
+        setHasManuallyNamedFiche(false);
+        setFormData(prev => ({ ...prev, nom: generatedName }));
+      }
+
+      checkForDuplicate(nouvellesDonnees.section_logement?.numero_bien);
+    };
 
     // 🐛 DEBUG LOGS (commentés pour éviter spam)
     // console.log("--- FormContext useEffect ---");
@@ -1515,27 +1543,15 @@ export function FormProvider({ children }) {
     // 🎯 PRIORITÉ 1: Traiter params Monday en attente APRÈS LOGIN
     if (user && pendingMondayParamsInStorage) {
       console.log('✅ Utilisateur connecté ET Monday params en attente. Application des données.');
-      localStorage.removeItem('pendingMondayParams');
-      const mondayData = parseMondayParams(new URLSearchParams(pendingMondayParamsInStorage));
-      const newFormDataAfterMonday = applyMondayData(formData, mondayData);
-      // 🎯 AJOUTER CETTE LIGNE ICI :
-      newFormDataAfterMonday.user_id = user.id;
-
-      setFormData(newFormDataAfterMonday);
-
-      // Smart naming
-      const generatedName = generateFicheName(newFormDataAfterMonday);
-      if (generatedName !== "Nouvelle fiche") {
-        setHasManuallyNamedFiche(false);
-        setFormData(prev => ({ ...prev, nom: generatedName }));
-      }
+      clearPendingMondayParams();
+      appliquerParamsMonday(new URLSearchParams(pendingMondayParamsInStorage));
       return; // STOP - Données appliquées
     }
 
     // 🎯 PRIORITÉ 2: Redirection login si params Monday + pas connecté
     if (mondayParamsPresentInURL && !ficheId && !authLoading && !user) {
       console.log('🔐 Utilisateur non connecté, sauvegarde params Monday pour après login.');
-      localStorage.setItem('pendingMondayParams', location.search);
+      savePendingMondayParams(location.search);
       navigate('/login', { replace: true });
       return; // STOP - Redirection en cours
     }
@@ -1543,27 +1559,8 @@ export function FormProvider({ children }) {
     // 🎯 PRIORITÉ 3: Application directe si connecté + params Monday
     if (user && mondayParamsPresentInURL && !ficheId && formData.id === null) {
       console.log('✅ Utilisateur déjà connecté, application directe des données Monday.');
-      const mondayData = parseMondayParams(params);
-      const newFormDataAfterMonday = applyMondayData(formData, mondayData);
-      newFormDataAfterMonday.user_id = user.id;
-
-      const generatedName = generateFicheName(newFormDataAfterMonday);
-      if (generatedName !== "Nouvelle fiche") {
-        // 🆕 VÉRIFICATION DUPLICATE
-        checkForDuplicate(generatedName).then(isDuplicate => {
-          if (!isDuplicate) {
-            // Pas de duplicate, application normale
-            setFormData(newFormDataAfterMonday);
-            setHasManuallyNamedFiche(false);
-            setFormData(prev => ({ ...prev, nom: generatedName }));
-          }
-          // Si duplicate, le modal s'affiche automatiquement via setDuplicateAlert
-        });
-      } else {
-        // Pas de nom généré, application directe
-        setFormData(newFormDataAfterMonday);
-      }
-      return; // STOP - Données appliquées ou en cours de vérification
+      appliquerParamsMonday(params);
+      return; // STOP - Données appliquées
     }
 
     // 🎯 PRIORITÉ 4: Chargement fiche existante par ID
@@ -2214,18 +2211,30 @@ export function FormProvider({ children }) {
 
   // Dans FormContext.jsx - Ajouter APRÈS handleCancelDuplicate et AVANT getMondayDebugInfo
 
-  const checkForDuplicate = useCallback(async (generatedName) => {
-    if (!user?.id || !generatedName || generatedName === "Nouvelle fiche") {
+  // 🆕 Détection de doublon sur le NUMÉRO DE BIEN, et non sur le nom de la fiche.
+  // Le nom est renommable — 201 fiches sur 410 en prod ne portent plus
+  // `Bien {numéro}` — alors que le numéro de bien est la clé métier : c'est lui
+  // qui détermine le dossier photos et le dossier Drive partagés par toutes les
+  // fiches d'un même bien. Sur les 14 paires de doublons d'un même coordinateur
+  // constatées en prod, 10 portent des noms différents et échappaient donc
+  // complètement à la détection par nom.
+  // Reste une alerte : le modal laisse toujours ouvrir l'existante, créer quand
+  // même (cas légitimes, par exemple une fiche archivée l'an dernier), ou annuler.
+  const checkForDuplicate = useCallback(async (numeroBien) => {
+    const numero = numeroBien?.toString().trim()
+
+    if (!user?.id || !numero) {
       return false
     }
 
     try {
-      // Check en base si une fiche avec ce nom existe déjà pour cet utilisateur
+      // Check en base si une fiche existe déjà pour ce bien chez cet utilisateur
       const { data, error } = await supabase
         .from('fiches')
         .select('id, nom, statut')
         .eq('user_id', user.id)
-        .eq('nom', generatedName)
+        .eq('logement_numero_bien', numero)
+        .order('updated_at', { ascending: false })
         .limit(1)
 
       if (error) {
