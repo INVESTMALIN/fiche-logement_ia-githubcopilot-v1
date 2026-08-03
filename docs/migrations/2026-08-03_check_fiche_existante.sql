@@ -86,7 +86,9 @@ AS $$
     AND btrim(f.logement_numero_bien) = btrim(p_numero_bien)
   -- Priorité à MA fiche quand plusieurs existent : c'est le cas actionnable
   -- (« Ouvrir existante »). Sinon, la plus récemment travaillée.
-  ORDER BY (f.user_id = auth.uid()) DESC, f.updated_at DESC
+  -- COALESCE ici aussi : `DESC` place les NULL en tête, donc une fiche sans
+  -- propriétaire passerait devant la mienne.
+  ORDER BY COALESCE(f.user_id = auth.uid(), false) DESC, f.updated_at DESC
   LIMIT 1;
 $$;
 
