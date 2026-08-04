@@ -202,7 +202,14 @@ correspondant, sinon le champ est collecté, stocké… et jamais restitué.
 - `section_guide_acces` : hors PDF logement (décision produit, juillet 2026)
 - `avis.logement_etat_general` / `avis.logement_proprete` : dérivés de la grille, remplacés par le verdict global
 - `instructions_menage.a_contacts_maintenance` / `instructions_menage.contacts_maintenance` : destination Monday (board « Artisans / Maintenance »), **jamais** un PDF — cf. la note de confidentialité ci-dessous
+- « Rappel des consommables » : bloc dérivé, aucune donnée à rendre — cf. ci-dessous
 - Photos au-delà de la 4ᵉ par bloc : remplacées par « +N autres photos disponibles »
+
+**Libellés à maintenir dans LES DEUX templates** : `INSTRUCTIONS_MENAGE_LABELS` et
+`INSTRUCTIONS_MENAGE_FOURNISSEUR_LABELS`, déclarés en tête de `PDFTemplate.jsx` **et**
+de `PDFMenageTemplate.jsx`. Sans entrée, un champ sort sous son libellé technique
+(`Kit Composition`) ; sans entrée dans le second map, un booléen `*_par_prestataire`
+sort en « Oui / Non » au lieu de « Propriétaire / Prestataire de ménage ».
 
 ---
 
@@ -218,8 +225,12 @@ prestataire ne voyait donc jamais le type de premier ménage ni la vidéo de l'�
 logement — les deux informations dont il a précisément besoin avant sa première
 intervention.
 
-**Les colonnes n'ont PAS été renommées.** Les cinq champs restent persistés dans les
-colonnes `avis_*` de la table `fiches` :
+**Deux familles de préfixes cohabitent dans cette section, c'est assumé.** Les cinq
+champs déplacés restent persistés dans leurs colonnes `avis_*` d'origine ; les champs
+ajoutés ensuite (août 2026 : consignes générales, produits et matériel, kit de bienvenue,
+points de vigilance) suivent la convention `instructions_menage_*`.
+
+Les colonnes `avis_*` n'ont PAS été renommées :
 
 | Champ FormContext (`section_instructions_menage.*`) | Colonne Supabase |
 |---|---|
@@ -229,12 +240,30 @@ colonnes `avis_*` de la table `fiches` :
 | `a_contacts_maintenance` | `avis_a_contacts_maintenance` |
 | `contacts_maintenance` | `avis_contacts_maintenance` |
 
-La convention `{section}_{champ}` est donc volontairement enfreinte ici. Renommer
-impliquerait de toucher `media_manifest` (routage Drive de `avis_logement_etat_videos`),
-les préfixes de noms de fichiers déjà présents sur le Drive, les deux templates PDF et
-la synchronisation Monday — pour zéro bénéfice utilisateur. Aucune migration n'a été
-faite et aucune n'est prévue. Le mapping vit dans `mapFormDataToSupabase` /
-`mapSupabaseToFormData` (`src/lib/supabaseHelpers.js`).
+La convention `{section}_{champ}` est donc volontairement enfreinte pour ces cinq-là.
+Renommer impliquerait de toucher `media_manifest` (routage Drive de
+`avis_logement_etat_videos`), les préfixes de noms de fichiers déjà présents sur le
+Drive, les deux templates PDF et la synchronisation Monday — pour zéro bénéfice
+utilisateur. Aucune migration de renommage n'a été faite et aucune n'est prévue.
+Le mapping vit dans `mapFormDataToSupabase` / `mapSupabaseToFormData`
+(`src/lib/supabaseHelpers.js`).
+
+#### **📋 Le bloc « Rappel des consommables » ne sort d'AUCUN PDF, par construction**
+
+Ce bloc de la section Instructions Ménage est **dérivé**, jamais persisté : pas de
+colonne, pas de copie, pas de synchronisation. `buildConsommablesRecap`
+(`src/lib/consommablesRecap.js`) le recalcule à chaque rendu depuis
+`section_consommables`, donc une modification côté Consommables se voit immédiatement.
+
+Il ne peut donc pas apparaître dans un PDF — il n'y a aucune donnée à rendre. C'est
+voulu et pas seulement pratique : la section Consommables **est déjà rendue dans le PDF
+ménage**, avec la liste rouge des obligatoires et les « sur demande » cochés. Faire
+figurer le rappel en plus afficherait deux fois la même information dans le même
+document.
+
+⚠️ Corollaire pour une évolution future : si quelqu'un décide un jour de persister ce
+rappel en base « pour simplifier », il devra l'exclure explicitement des deux templates,
+sinon le doublon apparaît côté prestataire.
 
 #### **🔒 Contacts de maintenance : filtre obligatoire côté PDF ménage**
 

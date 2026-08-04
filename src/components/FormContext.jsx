@@ -302,11 +302,12 @@ const initialFormData = {
 
   // 🧹 Instructions destinées au prestataire de ménage.
   //
-  // ⚠️ EXCEPTION DE NOMMAGE ASSUMÉE : ces champs sont persistés dans les colonnes
-  // `avis_*` de la table `fiches` (ils vivaient dans la section Avis avant d'être
-  // déplacés ici). Les colonnes n'ont volontairement PAS été renommées : un rename
-  // toucherait `media_manifest`, les préfixes de fichiers sur le Drive, les deux
-  // templates PDF et la synchro Monday, pour zéro bénéfice utilisateur.
+  // ⚠️ DEUX FAMILLES DE PRÉFIXES EN BASE, c'est voulu :
+  //   - les 5 champs déplacés depuis la section Avis (PR #79) restent persistés
+  //     dans les colonnes `avis_*` — renommer toucherait `media_manifest`, les
+  //     préfixes de fichiers déjà sur le Drive, les deux templates PDF et la
+  //     synchro Monday, pour zéro bénéfice utilisateur ;
+  //   - les champs créés ensuite suivent la convention `instructions_menage_*`.
   // Voir mapFormDataToSupabase / mapSupabaseToFormData dans supabaseHelpers.js.
   section_instructions_menage: {
     // 🎥 Vidéo état du logement → colonne avis_logement_etat_videos
@@ -322,6 +323,32 @@ const initialFormData = {
     // sont destinées au concierge, pas au prestataire de ménage.
     a_contacts_maintenance: null,                // Boolean: true/false/null
     contacts_maintenance: [],                    // Array d'objets contact (cf. supabaseHelpers)
+
+    // 🧽 Consignes générales de ménage propres à ce logement
+    consignes_generales: "",
+    consignes_videos: [],                        // → 8. Ménage / Consignes-menage (media_manifest)
+
+    // 🧴 Produits et matériel : ce qu'il faut utiliser, ce qu'il ne faut pas
+    produits_materiel: "",
+
+    // 🎁 Kit de bienvenue — accueil et mise en scène.
+    // ⚠️ NE PAS confondre avec le 1er panier de consommables (section Consommables) :
+    // le panier, ce sont les consommables obligatoires (papier toilette, savon, café).
+    // Deux notions distinctes, deux jeux de champs. Ne jamais réutiliser les uns
+    // pour les autres.
+    // Booléens : true = prestataire de ménage, false = propriétaire, null = non
+    // renseigné (même convention que consommables_*_par_prestataire).
+    kit_achat_par_prestataire: null,
+    kit_installation_par_prestataire: null,
+    kit_composition: "",
+    kit_photos: [],                              // → 8. Ménage / Kit-bienvenue (media_manifest)
+
+    // ⚠️ Points de vigilance : les oublis classiques sur ce logement
+    points_vigilance: "",
+
+    // ℹ️ Le bloc "Rappel des consommables" ne stocke RIEN : il est calculé à
+    // l'affichage depuis section_consommables (cf. FicheInstructionsMenage).
+    // Pas de copie, pas de colonne, pas de synchronisation à maintenir.
   },
 
   section_gestion_linge: {

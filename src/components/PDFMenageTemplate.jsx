@@ -1,11 +1,25 @@
 // src/components/PDFMenageTemplate.jsx - VERSION 2 CLEAN & PHOTOS GRANDES
 import React from 'react'
 
-// 🧹 Section Instructions Ménage — libellés métier des pills "Type de 1er passage".
-// Sans override, formatFieldName rendrait "Type Premier Menage".
+// 🧹 Section Instructions Ménage — libellés métier.
+// ⚠️ Copie volontaire de PDFTemplate.jsx : les deux templates sont indépendants,
+// rien ne se propage de l'un à l'autre. Tout nouveau champ doit être ajouté ICI
+// AUSSI, sinon il sort sous un libellé technique ("Kit Composition") ou, pour un
+// booléen, en "Oui / Non" au lieu de "Propriétaire / Prestataire de ménage".
 const INSTRUCTIONS_MENAGE_LABELS = {
   type_premier_menage: '🧹 1er ménage',
-  type_premiere_maintenance: '🔧 Maintenance'
+  type_premiere_maintenance: '🔧 Maintenance',
+  consignes_generales: 'Consignes générales de ménage',
+  produits_materiel: 'Produits et matériel',
+  kit_composition: 'Kit de bienvenue — composition et disposition',
+  points_vigilance: 'Points de vigilance'
+}
+
+// 🎁 Kit de bienvenue : booléens `*_par_prestataire` rendus en "qui fait quoi"
+// plutôt qu'en Oui/Non (même traitement que consommables_*_par_prestataire).
+const INSTRUCTIONS_MENAGE_FOURNISSEUR_LABELS = {
+  kit_achat_par_prestataire: 'Kit de bienvenue — acheté par',
+  kit_installation_par_prestataire: 'Kit de bienvenue — mis en place par'
 }
 
 // 🔒 CONFIDENTIALITÉ — NE JAMAIS RETIRER CE FILTRE.
@@ -688,16 +702,29 @@ const PDFMenageTemplate = ({ formData }) => {
         // 🔒 Confidentialité : coupe-circuit avant tout traitement.
         if (excludedFields.includes(fieldKey)) return
 
-        // 🧹 INSTRUCTIONS MÉNAGE : libellés métier pour le type de 1er passage.
-        if (config.key === 'section_instructions_menage' && INSTRUCTIONS_MENAGE_LABELS[fieldKey]) {
-          if (!isEmpty(fieldValue)) {
-            fields.push({
-              key: fieldKey,
-              label: INSTRUCTIONS_MENAGE_LABELS[fieldKey],
-              value: fieldValue
-            })
+        // 🧹 INSTRUCTIONS MÉNAGE : libellés métier (type de 1er passage, consignes,
+        // produits, kit de bienvenue, points de vigilance).
+        if (config.key === 'section_instructions_menage') {
+          if (INSTRUCTIONS_MENAGE_LABELS[fieldKey]) {
+            if (!isEmpty(fieldValue)) {
+              fields.push({
+                key: fieldKey,
+                label: INSTRUCTIONS_MENAGE_LABELS[fieldKey],
+                value: fieldValue
+              })
+            }
+            return
           }
-          return
+          if (INSTRUCTIONS_MENAGE_FOURNISSEUR_LABELS[fieldKey]) {
+            if (fieldValue === true || fieldValue === false) {
+              fields.push({
+                key: fieldKey,
+                label: INSTRUCTIONS_MENAGE_FOURNISSEUR_LABELS[fieldKey],
+                value: fieldValue === true ? 'Prestataire de ménage' : 'Propriétaire'
+              })
+            }
+            return
+          }
         }
         // 🧴 CONSOMMABLES : rendu explicite "qui fournit" (Prestataire / Propriétaire) au lieu de Oui/Non
         // Critique pour la femme de ménage : savoir qui livre le 1er panier vs le renouvellement quotidien.
