@@ -36,6 +36,115 @@ const MENAGE_EXCLUDED_FIELDS = {
   section_instructions_menage: ['a_contacts_maintenance', 'contacts_maintenance']
 }
 
+// ⚙️ ÉQUIPEMENTS — LISTE BLANCHE STRICTE, par correspondance EXACTE.
+//
+// Le PDF ménage est censé être un sous-ensemble du PDF logement. La section
+// Équipements y est la plus volumineuse, et de loin le premier réservoir de photos.
+//
+// ⚠️ POURQUOI UNE LISTE BLANCHE, ET POURQUOI `Set.has` ET NON `includes`.
+// Le filtre précédent comparait `fieldKey.includes(cle.split('_').pop())`, donc
+// uniquement le DERNIER segment de chaque clé. Concrètement, tout champ contenant
+// `emplacement`, `programmation`, `photos`, `payant` ou `details` passait, et tout
+// le reste tombait. Deux conséquences, dans les deux sens :
+//   - `poubelle_ramassage`, `lave_linge_instructions`, `menage_aspirateur_types`…
+//     étaient saisis mais n'arrivaient jamais au prestataire ;
+//   - `wifi_details` et `tv_type_autre_details` sortaient, eux, sans rien à y faire.
+// Une des cinq clés (`poubelle_programmation`) ne correspondait même à aucun champ
+// réel — la colonne s'appelle `poubelle_ramassage`.
+// Une comparaison partielle sur des noms de colonnes est structurellement fragile :
+// il suffit qu'un futur champ s'appelle `..._details` pour qu'il fuite en silence.
+//
+// Liste arbitrée avec la QA et la manager des coordinateurs (août 2026).
+// Tout champ absent d'ici est masqué : ajouter un champ au formulaire ne le fait PAS
+// apparaître dans le PDF ménage, c'est volontaire.
+const MENAGE_EQUIPEMENTS_ALLOWLIST = new Set([
+  // 🗑️ Poubelles — emplacement, jours de ramassage, photos, vidéo d'accès
+  'poubelle_emplacement',
+  'poubelle_ramassage',
+  'poubelle_photos',
+  'video_acces_poubelle',
+
+  // 🧹 Matériel de ménage — types, descriptions et photos
+  'menage_aspirateur_types',
+  'menage_aspirateur_photos',
+  'menage_serpillere_types',
+  'menage_serpillere_photos',
+  'menage_balais_photos',
+  'menage_balayette_photos',
+  'menage_autres_elements',
+  'menage_autres_elements_photos',
+
+  // 🌀 Lave-linge — emplacement, instructions, vidéo
+  'lave_linge_emplacement',
+  'lave_linge_instructions',
+  'lave_linge_video',
+
+  // 🔥 Sèche-linge — emplacement, instructions, vidéo
+  'seche_linge_emplacement',
+  'seche_linge_instructions',
+  'seche_linge_video',
+
+  // 🅿️ Parking — type, détails, photos, vidéos
+  //
+  // ⚠️ `parking_photos` / `parking_videos` au PLURIEL. `initialFormData` déclare
+  // aussi `parking_photo` / `parking_video` au singulier, mais ce sont des clefs
+  // MORTES : le PhotoUpload écrit dans les plurielles (FicheEquipements.jsx), le
+  // mapping ne lit et n'écrit que les plurielles, et le PDF logement ne rend que
+  // les plurielles. Mettre les singulières ici bloquerait les vraies photos de
+  // parking — exactement le type de panne silencieuse que cette PR corrige.
+  'parking_type',
+  'parking_rue_details',
+  'parking_sur_place_types',
+  'parking_sur_place_details',
+  'parking_payant_type',
+  'parking_payant_details',
+  'parking_photos',
+  'parking_videos',
+
+  // ⚡ Disjoncteur — emplacement, photos
+  'disjoncteur_emplacement',
+  'disjoncteur_photos',
+
+  // 🚰 Vanne d'arrêt d'eau — emplacement, photos
+  'vanne_eau_emplacement',
+  'vanne_arret_photos',
+
+  // ♨️ Système d'EAU CHAUDE (chaudière / ballon) — emplacement, photos, vidéo
+  //
+  // ⚠️ PIÈGE DE NOMMAGE, VÉRIFIER DEUX FOIS AVANT DE TOUCHER À CES QUATRE LIGNES.
+  // `video_systeme_chauffage` appartient au bloc "Système de chauffage d'EAU" du
+  // formulaire (FicheEquipements.jsx, radio Chaudière / Ballon d'eau chaude) : elle
+  // SORT, le prestataire peut en avoir besoin.
+  // `chauffage_video`, `chauffage_types`, `chauffage_instructions` sont le chauffage
+  // du LOGEMENT (thermostat) : ils ne sortent PAS — on attend d'un prestataire qu'il
+  // sache faire fonctionner un chauffage. Les noms sont quasi identiques, le sort est
+  // opposé.
+  'systeme_chauffage_eau',
+  'chauffage_eau_emplacement',
+  'chauffage_eau_photos',
+  'video_systeme_chauffage',
+
+  // 🧰 Cinq équipements hors des deux listes du brief, arbitrés comme utiles au
+  // ménage : de quoi repasser et faire sécher, monter le matériel, savoir où jeter,
+  // et savoir qu'il y aura des poils à aspirer.
+  'fer_repasser',
+  'etendoir',
+  'ascenseur',
+  'compacteur_dechets',
+  'animaux_acceptes'
+])
+
+/**
+ * Guichet unique : ce champ a-t-il le droit d'apparaître dans le PDF ménage ?
+ * Appliqué une seule fois par section, en amont, pour que les champs texte, les
+ * photos et les vidéos soient soumis exactement au même contrôle.
+ */
+const isFieldVisibleInMenage = (sectionKey, fieldKey) => {
+  if ((MENAGE_EXCLUDED_FIELDS[sectionKey] || []).includes(fieldKey)) return false
+  if (sectionKey === 'section_equipements') return MENAGE_EQUIPEMENTS_ALLOWLIST.has(fieldKey)
+  return true
+}
+
 const PDFMenageTemplate = ({ formData }) => {
 
   // Vérification des données
@@ -681,14 +790,19 @@ const PDFMenageTemplate = ({ formData }) => {
 
       if (!sectionData || typeof sectionData !== 'object') return
 
-      // 🔒 Champs interdits dans le PDF ménage pour cette section (cf. MENAGE_EXCLUDED_FIELDS).
-      // Appliqué AVANT toute autre logique : champs texte ET extraction des médias.
-      const excludedFields = MENAGE_EXCLUDED_FIELDS[config.key] || []
-      const visibleSectionData = excludedFields.length > 0
-        ? Object.fromEntries(
-          Object.entries(sectionData).filter(([fieldKey]) => !excludedFields.includes(fieldKey))
-        )
-        : sectionData
+      // 🔒 GUICHET UNIQUE DE VISIBILITÉ.
+      // Tout ce qui est masqué dans le PDF ménage passe par `isFieldVisibleInMenage`,
+      // et le filtrage se fait ICI, une seule fois, sur les données de la section.
+      // Les textes, les photos ET les vidéos consomment ensuite le même objet filtré.
+      //
+      // ⚠️ C'est le point clé : avant août 2026, le filtre Équipements ne s'appliquait
+      // qu'à la boucle des champs texte. `extractAllPhotos` recevait les données brutes,
+      // donc TOUTES les photos de la section partaient dans le PDF du prestataire.
+      // Ne jamais réintroduire un filtre local à la boucle texte : il laisserait à
+      // nouveau les médias passer sans contrôle.
+      const visibleSectionData = Object.fromEntries(
+        Object.entries(sectionData).filter(([fieldKey]) => isFieldVisibleInMenage(config.key, fieldKey))
+      )
 
       // Extraire les photos de cette section
       const photos = extractAllPhotos(visibleSectionData, config.key)
@@ -696,11 +810,9 @@ const PDFMenageTemplate = ({ formData }) => {
       // Extraire les vidéos de cette section (rendues en liens, pas en miniatures)
       const videos = extractAllVideos(visibleSectionData)
 
-      // Extraire les champs non-photos avec filtrage spécial équipements
+      // Champs texte : on itère sur les données DÉJÀ filtrées.
       const fields = []
-      Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
-        // 🔒 Confidentialité : coupe-circuit avant tout traitement.
-        if (excludedFields.includes(fieldKey)) return
+      Object.entries(visibleSectionData).forEach(([fieldKey, fieldValue]) => {
 
         // 🧹 INSTRUCTIONS MÉNAGE : libellés métier (type de 1er passage, consignes,
         // produits, kit de bienvenue, points de vigilance).
@@ -756,20 +868,6 @@ const PDFMenageTemplate = ({ formData }) => {
             })
           }
           return // Skip traitement normal
-        }
-
-        // 🎯 FILTRAGE SPÉCIAL ÉQUIPEMENTS pour ménage
-        if (config.key === 'section_equipements') {
-          const menageEquipementsFields = [
-            'poubelle_emplacement',
-            'poubelle_programmation',
-            'poubelle_photos',
-            'parking_stationnement_payant',
-            'parking_details'
-          ]
-          if (!menageEquipementsFields.some(field => fieldKey.includes(field.split('_').pop()))) {
-            return
-          }
         }
 
         const formattedValue = formatValue(fieldValue, fieldKey)
