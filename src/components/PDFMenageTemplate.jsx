@@ -1,6 +1,27 @@
 // src/components/PDFMenageTemplate.jsx - VERSION 2 CLEAN & PHOTOS GRANDES
 import React from 'react'
 
+// 🧹 Section Instructions Ménage — libellés métier des pills "Type de 1er passage".
+// Sans override, formatFieldName rendrait "Type Premier Menage".
+const INSTRUCTIONS_MENAGE_LABELS = {
+  type_premier_menage: '🧹 1er ménage',
+  type_premiere_maintenance: '🔧 Maintenance'
+}
+
+// 🔒 CONFIDENTIALITÉ — NE JAMAIS RETIRER CE FILTRE.
+// Les contacts de maintenance (nom, société, activité, téléphone, email, commentaire)
+// sont saisis par le coordinateur pour le concierge, et remontés au board Monday
+// "Artisans / Maintenance". Le prestataire de ménage ne doit RIEN en voir.
+//
+// Avant le déplacement du bloc, ces coordonnées étaient hors du PDF ménage par simple
+// effet de bord : la section Avis qui les hébergeait n'était pas rendue ici. Ce n'était
+// pas un filtre. Maintenant que le bloc vit dans une section qui, elle, EST rendue, ce
+// filtre explicite est la seule chose qui empêche le carnet d'adresses des concierges
+// de partir dans le document reçu par tous les prestataires de ménage.
+const MENAGE_EXCLUDED_FIELDS = {
+  section_instructions_menage: ['a_contacts_maintenance', 'contacts_maintenance']
+}
+
 const PDFMenageTemplate = ({ formData }) => {
 
   // Vérification des données
@@ -14,13 +35,18 @@ const PDFMenageTemplate = ({ formData }) => {
   }
 
   // 📋 CONFIGURATION : Sections spécifiques à la fiche ménage
+  // ⚠️ Une section absente de cette liste disparaît SILENCIEUSEMENT du PDF entier —
+  // aucune erreur, aucun warning. Toute nouvelle section destinée au prestataire
+  // doit être ajoutée ici (ce template est une COPIE de PDFTemplate.jsx, pas un
+  // import : rien de ce qui est corrigé là-bas ne se propage ici).
   const menageSectionsConfig = [
     { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
     { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
     { key: 'section_clefs', label: '🔑 Clefs', emoji: '🔑' },
     { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
-    { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
     { key: 'section_consommables', label: '🧴 Consommables', emoji: '🧴' },
+    { key: 'section_instructions_menage', label: '🧹 Instructions Ménage', emoji: '🧹' },
+    { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
     { key: 'section_visite', label: '🎥 Visite', emoji: '🎥' },
     { key: 'section_chambres', label: '🛏️ Chambres', emoji: '🛏️' },
     { key: 'section_salle_de_bains', label: '🚿 Salle de Bains', emoji: '🚿' },
@@ -84,6 +110,74 @@ const PDFMenageTemplate = ({ formData }) => {
     }
 
     return []
+  }
+
+  // 🎥 Détection des vidéos — portée depuis PDFTemplate.jsx.
+  // Le template ménage n'avait AUCUN rendu vidéo : extractAllPhotos filtre sur
+  // isImageUrl et formatValue écarte tout champ contenant "video". Les vidéos y
+  // disparaissaient donc silencieusement, dont celle de l'état du logement — que
+  // le prestataire doit justement voir avant sa première intervention.
+  const isVideoUrl = (url) => {
+    if (typeof url !== 'string' || url.trim() === '') return false
+
+    const urlWithoutParams = url.split('?')[0]
+
+    return /\.(mp4|webm|ogg|mov|avi|m4v|mkv|qt)$/i.test(urlWithoutParams)
+  }
+
+  const parseVideoValue = (value) => {
+    if (Array.isArray(value)) {
+      return value.map(url => cleanUrl(url)).filter(url => isVideoUrl(url))
+    }
+
+    if (typeof value === 'string') {
+      const cleaned = cleanUrl(value)
+      if (isVideoUrl(cleaned)) return [cleaned]
+
+      if (value.startsWith('[') || value.startsWith('"[')) {
+        try {
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            return parsed.map(url => cleanUrl(url)).filter(url => isVideoUrl(url))
+          }
+        } catch (e) {
+          console.warn('🎥 Erreur parsing JSON vidéo:', value, e)
+          return []
+        }
+      }
+    }
+
+    return []
+  }
+
+  const extractAllVideos = (sectionData) => {
+    const videos = []
+
+    if (!sectionData || typeof sectionData !== 'object') {
+      return videos
+    }
+
+    const collect = (value, label) => {
+      const urls = parseVideoValue(value)
+      urls.forEach((url, index) => {
+        videos.push({ url, label: urls.length > 1 ? `${label} ${index + 1}` : label })
+      })
+    }
+
+    Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+      // PATTERN 2 : objets imbriqués (ex: chambre_1.video_visite)
+      if (typeof fieldValue === 'object' && fieldValue !== null && !Array.isArray(fieldValue)) {
+        Object.entries(fieldValue).forEach(([subKey, subValue]) => {
+          collect(subValue, `${formatFieldName(fieldKey)} - ${formatFieldName(subKey)}`)
+        })
+        return
+      }
+
+      // PATTERN 1 : arrays directs + strings JSON
+      collect(fieldValue, formatFieldName(fieldKey))
+    })
+
+    return videos
   }
 
   // 🛏️ Helper pour agréger tous les types de lits du logement
@@ -320,6 +414,50 @@ const PDFMenageTemplate = ({ formData }) => {
     return String(value)
   }
 
+  // 🎥 COMPOSANT: Vidéos rendues en liens cliquables (les <a href> restent
+  // cliquables dans le PDF Puppeteer, cf. docs/📄 PLAN UPLOAD PDF.md)
+  const VideosDisplayMenage = ({ videos, sectionTitle }) => {
+    if (!videos || videos.length === 0) return null
+
+    return (
+      <div style={{
+        marginTop: '16px',
+        padding: '16px',
+        backgroundColor: '#f8fafc',
+        border: '1px solid #e2e8f0',
+        borderRadius: '8px',
+        pageBreakInside: 'avoid'
+      }}>
+        <h4 style={{
+          margin: '0 0 12px 0',
+          fontSize: '11pt',
+          fontWeight: '600',
+          color: '#4a5568',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          🎥 Vidéos {sectionTitle} ({videos.length})
+        </h4>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {videos.map((video, index) => (
+            <div key={index} style={{ fontSize: '9pt', color: '#4a5568' }}>
+              <span style={{ fontWeight: '600' }}>{video.label}</span>{' — '}
+              <a
+                href={video.url}
+                target="_blank"
+                style={{ color: '#2563eb', textDecoration: 'underline' }}
+              >
+                voir la vidéo
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   // 🎯 COMPOSANT: Rendu GRAND des photos pour ménage - VERSION CORRIGÉE
   const PhotosDisplayMenage = ({ photos, sectionTitle }) => {
     if (!photos || photos.length === 0) return null
@@ -529,12 +667,38 @@ const PDFMenageTemplate = ({ formData }) => {
 
       if (!sectionData || typeof sectionData !== 'object') return
 
+      // 🔒 Champs interdits dans le PDF ménage pour cette section (cf. MENAGE_EXCLUDED_FIELDS).
+      // Appliqué AVANT toute autre logique : champs texte ET extraction des médias.
+      const excludedFields = MENAGE_EXCLUDED_FIELDS[config.key] || []
+      const visibleSectionData = excludedFields.length > 0
+        ? Object.fromEntries(
+          Object.entries(sectionData).filter(([fieldKey]) => !excludedFields.includes(fieldKey))
+        )
+        : sectionData
+
       // Extraire les photos de cette section
-      const photos = extractAllPhotos(sectionData, config.key)
+      const photos = extractAllPhotos(visibleSectionData, config.key)
+
+      // Extraire les vidéos de cette section (rendues en liens, pas en miniatures)
+      const videos = extractAllVideos(visibleSectionData)
 
       // Extraire les champs non-photos avec filtrage spécial équipements
       const fields = []
       Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+        // 🔒 Confidentialité : coupe-circuit avant tout traitement.
+        if (excludedFields.includes(fieldKey)) return
+
+        // 🧹 INSTRUCTIONS MÉNAGE : libellés métier pour le type de 1er passage.
+        if (config.key === 'section_instructions_menage' && INSTRUCTIONS_MENAGE_LABELS[fieldKey]) {
+          if (!isEmpty(fieldValue)) {
+            fields.push({
+              key: fieldKey,
+              label: INSTRUCTIONS_MENAGE_LABELS[fieldKey],
+              value: fieldValue
+            })
+          }
+          return
+        }
         // 🧴 CONSOMMABLES : rendu explicite "qui fournit" (Prestataire / Propriétaire) au lieu de Oui/Non
         // Critique pour la femme de ménage : savoir qui livre le 1er panier vs le renouvellement quotidien.
         if (config.key === 'section_consommables' && (fieldKey === 'premier_panier_par_prestataire' || fieldKey === 'fournis_par_prestataire')) {
@@ -591,12 +755,13 @@ const PDFMenageTemplate = ({ formData }) => {
         }
       })
 
-      // Ajouter la section seulement si elle a du contenu (champs OU photos)
-      if (fields.length > 0 || photos.length > 0) {
+      // Ajouter la section seulement si elle a du contenu (champs, photos OU vidéos)
+      if (fields.length > 0 || photos.length > 0 || videos.length > 0) {
         sections.push({
           ...config,
           fields,
-          photos
+          photos,
+          videos
         })
       }
     })
@@ -923,6 +1088,11 @@ const PDFMenageTemplate = ({ formData }) => {
             {/* Photos de la section - GRANDES pour ménage */}
             {section.photos.length > 0 && (
               <PhotosDisplayMenage photos={section.photos} sectionTitle={section.label} />
+            )}
+
+            {/* Vidéos de la section - rendues en liens cliquables */}
+            {section.videos.length > 0 && (
+              <VideosDisplayMenage videos={section.videos} sectionTitle={section.label} />
             )}
           </div>
         ))

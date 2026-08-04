@@ -8,7 +8,8 @@ export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
   // 🎯 CONVERSION : Données Supabase brutes → Structure FormContext
   const formData = mapSupabaseToFormData(fiche)
 
-  // 📋 CONFIGURATION : Toutes les 22 sections avec labels et emojis
+  // 📋 CONFIGURATION : Toutes les 23 sections avec labels et emojis
+  // ⚠️ Une section absente de cette liste disparaît silencieusement de l'aperçu.
   const sectionsConfig = [
     { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
     { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
@@ -19,8 +20,9 @@ export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
     { key: 'section_exigences', label: '⚠️ Exigences', emoji: '⚠️' },
     { key: 'section_avis', label: '⭐ Avis', emoji: '⭐' },
     { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
-    { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
     { key: 'section_consommables', label: '🧴 Consommables', emoji: '🧴' },
+    { key: 'section_instructions_menage', label: '🧹 Instructions Ménage', emoji: '🧹' },
+    { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
     { key: 'section_visite', label: '🎥 Visite', emoji: '🎥' },
     { key: 'section_chambres', label: '🛏️ Chambres', emoji: '🛏️' },
     { key: 'section_salle_de_bains', label: '🚿 Salle de Bains', emoji: '🚿' },
@@ -149,6 +151,14 @@ export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
 
       // Parcourir tous les champs de la section
       Object.entries(sectionData).forEach(([fieldKey, fieldValue]) => {
+        // Contacts de maintenance : tableau d'objets JSONB, non rendable par
+        // formatValue (sortirait en "[object Object]"). Consultables dans la
+        // section Instructions Ménage du formulaire.
+        if (config.key === 'section_instructions_menage'
+          && (fieldKey === 'a_contacts_maintenance' || fieldKey === 'contacts_maintenance')) {
+          return
+        }
+
         // Utiliser la fonction isEmpty pour filtrer
         if (isEmpty(fieldValue)) {
           return

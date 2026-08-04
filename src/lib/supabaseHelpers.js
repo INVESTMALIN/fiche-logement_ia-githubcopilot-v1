@@ -213,21 +213,32 @@ export const mapFormDataToSupabase = (formData) => {
     avis_securite_dangers: securiteDangers,
     avis_securite_danger_detecte: securiteDangers.length > 0,
 
+    // 🧹 SECTION INSTRUCTIONS MÉNAGE — colonnes `avis_*` conservées
+    //
+    // ⚠️ EXCEPTION DE NOMMAGE ASSUMÉE : les 5 champs ci-dessous vivent désormais
+    // dans `section_instructions_menage` côté FormContext, mais restent persistés
+    // dans les colonnes `avis_*` (elles datent de l'époque où le bloc était dans
+    // la section Avis). Renommer les colonnes impliquerait de toucher
+    // `media_manifest` (routage Drive de avis_logement_etat_videos), les préfixes
+    // de noms de fichiers déjà sur le Drive, les deux templates PDF et la synchro
+    // Monday — pour zéro bénéfice utilisateur. La convention `{section}_{champ}`
+    // est donc volontairement enfreinte ici.
+
     // 🎥 Vidéo de l'état du logement
-    avis_logement_etat_videos: formData.section_avis?.logement_etat_videos || [],
+    avis_logement_etat_videos: formData.section_instructions_menage?.logement_etat_videos || [],
 
     // 🏷️ Type de 1er passage (ménage / maintenance)
-    avis_type_premier_menage: formData.section_avis?.type_premier_menage || null,
-    avis_type_premiere_maintenance: formData.section_avis?.type_premiere_maintenance || null,
+    avis_type_premier_menage: formData.section_instructions_menage?.type_premier_menage || null,
+    avis_type_premiere_maintenance: formData.section_instructions_menage?.type_premiere_maintenance || null,
 
     // 🔧 Contacts de maintenance fournis par le propriétaire
-    avis_a_contacts_maintenance: formData.section_avis?.a_contacts_maintenance ?? null,
+    avis_a_contacts_maintenance: formData.section_instructions_menage?.a_contacts_maintenance ?? null,
     // Backfill défensif : si un contact arrive ici sans _localId (cas
     // théorique — addContactMaintenance en ajoute toujours un, et
     // mapSupabaseToFormData backfille au load), on le complète pour préserver
     // l'idempotence côté push Monday.
-    avis_contacts_maintenance: formData.section_avis?.a_contacts_maintenance === true
-      ? backfillContactsLocalIds(formData.section_avis?.contacts_maintenance || [])
+    avis_contacts_maintenance: formData.section_instructions_menage?.a_contacts_maintenance === true
+      ? backfillContactsLocalIds(formData.section_instructions_menage?.contacts_maintenance || [])
       : [],
 
     avis_atouts_lumineux: formData.section_avis?.atouts_logement?.lumineux ?? null,
@@ -1457,25 +1468,6 @@ export const mapSupabaseToFormData = (supabaseData) => {
       // ⚠️ Sécurité
       securite_dangers: supabaseData.avis_securite_dangers || [],
 
-      // 🎥 Vidéo de l'état du logement
-      logement_etat_videos: supabaseData.avis_logement_etat_videos || [],
-
-      // 🏷️ Type de 1er passage
-      type_premier_menage: supabaseData.avis_type_premier_menage || null,
-      type_premiere_maintenance: supabaseData.avis_type_premiere_maintenance || null,
-
-      // 🔧 Contacts de maintenance fournis par le propriétaire
-      a_contacts_maintenance: supabaseData.avis_a_contacts_maintenance ?? null,
-      // Backfill _localId au load : contacts pré-PR-30 (sauvés via #29 sans
-      // identifiant technique) en reçoivent un. Persisté au prochain save via
-      // le passthrough de mapFormDataToSupabase → l'idempotence Monday tient
-      // dès que le user touche à la fiche.
-      contacts_maintenance: backfillContactsLocalIds(
-        Array.isArray(supabaseData.avis_contacts_maintenance)
-          ? supabaseData.avis_contacts_maintenance
-          : []
-      ),
-
       atouts_logement: {
         // Anciens atouts (déjà mappés)
         lumineux: supabaseData.avis_atouts_lumineux ?? null,
@@ -1537,6 +1529,30 @@ export const mapSupabaseToFormData = (supabaseData) => {
       },
       types_voyageurs_autre: supabaseData.avis_voyageurs_autre || "",
       explication_adaptation: supabaseData.avis_explication_adaptation || "",
+    },
+
+    // 🧹 Instructions Ménage — alimentée par les colonnes `avis_*` (cf. l'exception
+    // de nommage documentée dans mapFormDataToSupabase). Aucune migration : les
+    // fiches existantes retrouvent leurs valeurs telles quelles.
+    section_instructions_menage: {
+      // 🎥 Vidéo de l'état du logement
+      logement_etat_videos: supabaseData.avis_logement_etat_videos || [],
+
+      // 🏷️ Type de 1er passage
+      type_premier_menage: supabaseData.avis_type_premier_menage || null,
+      type_premiere_maintenance: supabaseData.avis_type_premiere_maintenance || null,
+
+      // 🔧 Contacts de maintenance fournis par le propriétaire
+      a_contacts_maintenance: supabaseData.avis_a_contacts_maintenance ?? null,
+      // Backfill _localId au load : contacts pré-PR-30 (sauvés via #29 sans
+      // identifiant technique) en reçoivent un. Persisté au prochain save via
+      // le passthrough de mapFormDataToSupabase → l'idempotence Monday tient
+      // dès que le user touche à la fiche.
+      contacts_maintenance: backfillContactsLocalIds(
+        Array.isArray(supabaseData.avis_contacts_maintenance)
+          ? supabaseData.avis_contacts_maintenance
+          : []
+      ),
     },
 
     section_gestion_linge: {

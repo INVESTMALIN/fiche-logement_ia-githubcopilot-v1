@@ -785,11 +785,13 @@ export const SPECIAL_VALIDATIONS = {
     // ce qui bloque la finalisation correspond exactement à ce qui sera poussé.
     validateContactsMaintenance: (formData) => {
         const errors = []
-        const avis = formData.section_avis
+        const instructionsMenage = formData.section_instructions_menage
 
-        if (!avis || avis.a_contacts_maintenance !== true) return errors
+        if (!instructionsMenage || instructionsMenage.a_contacts_maintenance !== true) return errors
 
-        const contacts = Array.isArray(avis.contacts_maintenance) ? avis.contacts_maintenance : []
+        const contacts = Array.isArray(instructionsMenage.contacts_maintenance)
+            ? instructionsMenage.contacts_maintenance
+            : []
 
         contacts.forEach((contact, index) => {
             if (!contact || typeof contact !== 'object') return
@@ -801,28 +803,28 @@ export const SPECIAL_VALIDATIONS = {
 
             if (!nomPrenom) {
                 errors.push({
-                    section: 'avis',
-                    field: `section_avis.contacts_maintenance[${index}].nom_prenom`,
+                    section: 'instructions_menage',
+                    field: `section_instructions_menage.contacts_maintenance[${index}].nom_prenom`,
                     message: `Contact maintenance #${numero} : le nom et prénom sont obligatoires`
                 })
             }
             if (!telephone) {
                 errors.push({
-                    section: 'avis',
-                    field: `section_avis.contacts_maintenance[${index}].telephone`,
+                    section: 'instructions_menage',
+                    field: `section_instructions_menage.contacts_maintenance[${index}].telephone`,
                     message: `Contact maintenance #${numero} : le téléphone est obligatoire`
                 })
             } else if (!isPhoneE164Normalizable(telephone)) {
                 errors.push({
-                    section: 'avis',
-                    field: `section_avis.contacts_maintenance[${index}].telephone`,
+                    section: 'instructions_menage',
+                    field: `section_instructions_menage.contacts_maintenance[${index}].telephone`,
                     message: `Contact maintenance #${numero} : le téléphone n'est pas dans un format reconnu (ex : 06 12 34 56 78, +33 6 12 34 56 78)`
                 })
             }
             if (!activite) {
                 errors.push({
-                    section: 'avis',
-                    field: `section_avis.contacts_maintenance[${index}].activite`,
+                    section: 'instructions_menage',
+                    field: `section_instructions_menage.contacts_maintenance[${index}].activite`,
                     message: `Contact maintenance #${numero} : l'activité est obligatoire`
                 })
             }

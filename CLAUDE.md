@@ -32,7 +32,7 @@ npm run preview
 ### Key Components Structure
 
 #### FormContext Pattern
-The entire application revolves around a centralized `FormContext` that manages state for 23 form sections (+ 1 section "Finalisation"):
+The entire application revolves around a centralized `FormContext` that manages state for 24 form sections (+ 1 section "Finalisation"):
 
 ```javascript
 // Required pattern for all form sections
@@ -117,6 +117,7 @@ The application uses a single "flat table" architecture with 950+ columns in the
 
 - **Metadata**: `id`, `user_id`, `nom`, `statut`, `created_at`, `updated_at`
 - **Naming pattern**: `{section}_{field}` (e.g., `proprietaire_prenom`, `logement_surface`)
+  - **Documented exception**: `section_instructions_menage` persists to `avis_*` columns (`avis_logement_etat_videos`, `avis_type_premier_menage`, `avis_type_premiere_maintenance`, `avis_a_contacts_maintenance`, `avis_contacts_maintenance`). The blocks were moved out of the Avis section in August 2026 without renaming the columns — a rename would touch `media_manifest`, existing Drive filename prefixes, both PDF templates and the Monday sync, for zero user benefit. See `docs/📄 PLAN UPLOAD PDF.md`.
 - **Arrays**: Media fields use `TEXT[]` type (e.g., `clefs_photos`, `equipements_poubelle_photos`)
 - **Booleans**: Use `?? null` for proper null handling in mapping
 
@@ -236,9 +237,9 @@ When n8n assistants is called, a SQL trigger sends the validated output to Make.
 2. Sends them to Monday column "Guide d'&accès" and "Création d'annonce"
 
 
-### Form Sections (23 total)
+### Form Sections (24 total)
 
-The application manages 23 form sections covering:
+The application manages 24 form sections covering:
 - Property details (logement, proprietaire)
 - Access management (clefs, guide_acces)
 - Room inspections (chambres, salle_de_bains, cuisine1, cuisine2)
@@ -246,15 +247,19 @@ The application manages 23 form sections covering:
 - Special features (bebe, jacuzzi, barbecue)
 - Booking platforms (airbnb, booking)
 - Reviews and compliance (avis, reglementation)
+- Cleaning provider instructions (instructions_menage)
 
 ### Development Patterns
 
 #### When Adding New Sections
 1. Create new page component following the mandatory template
 2. Add section to `initialFormData` in `FormContext.jsx`
-3. Add database mapping in `supabaseHelpers.js`
+3. Add database mapping in `supabaseHelpers.js` (both `mapFormDataToSupabase` and `mapSupabaseToFormData`)
 4. Update the sections array in FormContext
-5. Add new route in `App.jsx`
+5. Add the step to the `steps` array in `FicheWizard.jsx`, at the same index as in the sections array
+6. Add the section key to `sectionsConfig` in `PDFTemplate.jsx`, to `menageSectionsConfig` in `PDFMenageTemplate.jsx` if the cleaning provider needs it, and to `sectionsConfig` in `FichePreviewModal.jsx`
+
+⚠️ Step 6 is silent when skipped: a section absent from those lists disappears from the entire document with no error and no warning. The two PDF templates are independent copies — a fix on one does not propagate to the other.
 
 #### Boolean Field Handling
 Always use `?? null` for boolean fields to preserve three-state logic (true/false/null):

@@ -1,6 +1,6 @@
 // src/services/mondayContactsService.js
 //
-// Push CREATE-only des contacts de maintenance (section_avis.contacts_maintenance)
+// Push CREATE-only des contacts de maintenance (section_instructions_menage.contacts_maintenance)
 // vers le board Monday "Artisans / Maintenance" via l'Edge Function
 // `monday-contacts-sync`. Logique idempotente par contact :
 //   - un contact poussé reçoit un `monday_item_id` (gravé en DB par l'Edge
@@ -36,7 +36,7 @@ import { normalizePhoneE164, isPhoneE164Normalizable } from '../lib/phoneHelpers
  * où un contact bloque la finalisation mais ne serait pas pushé, ni
  * inversement.
  *
- * @param {Array<Object>} contacts — liste brute depuis formData.section_avis.contacts_maintenance
+ * @param {Array<Object>} contacts — liste brute depuis formData.section_instructions_menage.contacts_maintenance
  * @returns {Array<Object>} contacts éligibles au push (référence directe, pas de copie)
  */
 export function pickContactsToPush(contacts) {
