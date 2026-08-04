@@ -2,6 +2,20 @@
 import React from 'react'
 import { GRILLE_CRITERES, computeGrilleStats, dangerLabelByKey } from '../lib/avisGrilleHelpers'
 
+// 🧹 Section Instructions Ménage — libellés métier des pills "Type de 1er passage".
+// Sans override, formatFieldName rendrait "Type Premier Menage".
+const INSTRUCTIONS_MENAGE_LABELS = {
+  type_premier_menage: '🧹 1er ménage',
+  type_premiere_maintenance: '🔧 Maintenance'
+}
+
+// 🔒 Contacts de maintenance : jamais rendus dans un PDF. Ces coordonnées sont
+// destinées au concierge (board Monday "Artisans / Maintenance"), pas aux
+// documents transmis. Le même filtre existe dans PDFMenageTemplate.jsx — les deux
+// templates sont des copies indépendantes, une correction sur l'un ne se propage
+// PAS à l'autre.
+const INSTRUCTIONS_MENAGE_CONTACT_FIELDS = ['a_contacts_maintenance', 'contacts_maintenance']
+
 const PDFTemplate = ({ formData }) => {
 
   // Vérification des données
@@ -17,7 +31,9 @@ const PDFTemplate = ({ formData }) => {
   const stationRechargeElectrique = formData.section_avis?.atouts_logement?.station_recharge_electrique
   const stationRechargeRenseignee = typeof stationRechargeElectrique === 'boolean'
 
-  // 📋 CONFIGURATION : Toutes les 23 sections avec labels et emojis
+  // 📋 CONFIGURATION : Toutes les 24 sections avec labels et emojis
+  // ⚠️ Une section absente de cette liste disparaît SILENCIEUSEMENT du PDF entier —
+  // aucune erreur, aucun warning. Toute nouvelle section doit être ajoutée ici.
   const sectionsConfig = [
     { key: 'section_proprietaire', label: '👤 Propriétaire', emoji: '👤' },
     { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
@@ -29,8 +45,9 @@ const PDFTemplate = ({ formData }) => {
     { key: 'section_reglementation', label: '📋 Réglementation', emoji: '📋' },
     { key: 'section_exigences', label: '⚠️ Exigences', emoji: '⚠️' },
     { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
-    { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
     { key: 'section_consommables', label: '🧴 Consommables', emoji: '🧴' },
+    { key: 'section_instructions_menage', label: '🧹 Instructions Ménage', emoji: '🧹' },
+    { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
     { key: 'section_visite', label: '🎥 Visite', emoji: '🎥' },
     { key: 'section_chambres', label: '🛏️ Chambres', emoji: '🛏️' },
     { key: 'section_salle_de_bains', label: '🚿 Salle de Bains', emoji: '🚿' },
@@ -783,6 +800,23 @@ const PDFTemplate = ({ formData }) => {
           }
           return
         }
+        // 🧹 INSTRUCTIONS MÉNAGE : libellés métier pour le type de 1er passage,
+        // et exclusion stricte des contacts de maintenance.
+        if (config.key === 'section_instructions_menage') {
+          if (INSTRUCTIONS_MENAGE_LABELS[fieldKey]) {
+            if (!isEmpty(fieldValue)) {
+              fields.push({
+                key: fieldKey,
+                label: INSTRUCTIONS_MENAGE_LABELS[fieldKey],
+                value: fieldValue
+              })
+            }
+            return
+          }
+          // Contacts maintenance : destination Monday (board Artisans / Maintenance),
+          // pas le PDF. Sans exclusion, le tableau d'objets s'affiche en "[object Object]".
+          if (INSTRUCTIONS_MENAGE_CONTACT_FIELDS.includes(fieldKey)) return
+        }
         // 🎬 AVIS : "vidéo globale validée" est une réponse oui/non, pas un média.
         // Sans ce cas explicite, le filtre "photo/vidéo" de formatValue l'écarte.
         if (config.key === 'section_avis' && fieldKey === 'video_globale_validation') {
@@ -827,12 +861,8 @@ const PDFTemplate = ({ formData }) => {
               'grille_odeurs_note', 'grille_odeurs_obs',
               'grille_impression_generale_note', 'grille_impression_generale_obs',
               'securite_dangers',
-              'type_premier_menage', 'type_premiere_maintenance',
               // Les anciennes valeurs sont dérivées de la grille → masquées du PDF (verdict global affiché à la place)
-              'logement_etat_general', 'logement_proprete',
-              // Contacts maintenance : destination Monday (lot séparé), pas le PDF.
-              // Sans exclusion, le tableau d'objets s'affiche en "[object Object]".
-              'a_contacts_maintenance', 'contacts_maintenance'
+              'logement_etat_general', 'logement_proprete'
             ]
             if (avisExcluded.includes(fieldKey)) return
           }
@@ -1363,8 +1393,7 @@ const PDFTemplate = ({ formData }) => {
               const avisData = formData.section_avis || {}
               const stats = computeGrilleStats(avisData)
               const hasObservations = hasGrilleObservations(avisData)
-              if (stats.filled === 0 && !hasObservations && (avisData.securite_dangers || []).length === 0
-                && !avisData.type_premier_menage && !avisData.type_premiere_maintenance) {
+              if (stats.filled === 0 && !hasObservations && (avisData.securite_dangers || []).length === 0) {
                 return null
               }
 
@@ -1470,32 +1499,8 @@ const PDFTemplate = ({ formData }) => {
                     </div>
                   )}
 
-                  {/* Type de 1er passage */}
-                  {(avisData.type_premier_menage || avisData.type_premiere_maintenance) && (
-                    <div style={{
-                      backgroundColor: '#f8fafc',
-                      padding: '10px 16px',
-                      borderTop: '1px solid #e2e8f0',
-                      fontSize: '9pt',
-                      color: '#4a5568',
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '24px'
-                    }}>
-                      {avisData.type_premier_menage && (
-                        <div>
-                          <span style={{ fontWeight: '600' }}>🧹 1er ménage : </span>
-                          <span style={{ color: '#2d3748' }}>{avisData.type_premier_menage}</span>
-                        </div>
-                      )}
-                      {avisData.type_premiere_maintenance && (
-                        <div>
-                          <span style={{ fontWeight: '600' }}>🔧 Maintenance : </span>
-                          <span style={{ color: '#2d3748' }}>{avisData.type_premiere_maintenance}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* ℹ️ Le "Type de 1er passage" est désormais rendu dans la section
+                      Instructions Ménage (champs type_premier_menage / type_premiere_maintenance). */}
                 </div>
               )
             })()}

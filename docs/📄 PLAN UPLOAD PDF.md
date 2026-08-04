@@ -148,8 +148,9 @@ const sectionsConfig = [
   { key: 'section_reglementation', label: '📋 Réglementation', emoji: '📋' },
   { key: 'section_exigences', label: '⚠️ Exigences', emoji: '⚠️' },
   { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
-  { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
   { key: 'section_consommables', label: '🧴 Consommables', emoji: '🧴' },
+  { key: 'section_instructions_menage', label: '🧹 Instructions Ménage', emoji: '🧹' },
+  { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
   { key: 'section_visite', label: '🎥 Visite', emoji: '🎥' },
   { key: 'section_chambres', label: '🛏️ Chambres', emoji: '🛏️' },
   { key: 'section_salle_de_bains', label: '🚿 Salle de Bains', emoji: '🚿' },
@@ -200,8 +201,55 @@ correspondant, sinon le champ est collecté, stocké… et jamais restitué.
 **Exclusions volontaires** (à ne pas « corriger ») :
 - `section_guide_acces` : hors PDF logement (décision produit, juillet 2026)
 - `avis.logement_etat_general` / `avis.logement_proprete` : dérivés de la grille, remplacés par le verdict global
-- `avis.a_contacts_maintenance` / `avis.contacts_maintenance` : destination Monday
+- `instructions_menage.a_contacts_maintenance` / `instructions_menage.contacts_maintenance` : destination Monday (board « Artisans / Maintenance »), **jamais** un PDF — cf. la note de confidentialité ci-dessous
 - Photos au-delà de la 4ᵉ par bloc : remplacées par « +N autres photos disponibles »
+
+---
+
+#### **🧹 Section « Instructions Ménage » — exception de nommage assumée**
+
+La section `section_instructions_menage` (créée en août 2026) regroupe les trois blocs
+destinés au prestataire de ménage, auparavant hébergés dans la section Avis : le
+pense-bête « Points sensibles à filmer » (UI seule, pas de donnée), la vidéo de l'état
+du logement, et le type de 1er ménage / maintenance avec les contacts du propriétaire.
+
+**Motif du déplacement** : la section Avis n'est pas rendue dans le PDF ménage. Le
+prestataire ne voyait donc jamais le type de premier ménage ni la vidéo de l'état du
+logement — les deux informations dont il a précisément besoin avant sa première
+intervention.
+
+**Les colonnes n'ont PAS été renommées.** Les cinq champs restent persistés dans les
+colonnes `avis_*` de la table `fiches` :
+
+| Champ FormContext (`section_instructions_menage.*`) | Colonne Supabase |
+|---|---|
+| `logement_etat_videos` | `avis_logement_etat_videos` |
+| `type_premier_menage` | `avis_type_premier_menage` |
+| `type_premiere_maintenance` | `avis_type_premiere_maintenance` |
+| `a_contacts_maintenance` | `avis_a_contacts_maintenance` |
+| `contacts_maintenance` | `avis_contacts_maintenance` |
+
+La convention `{section}_{champ}` est donc volontairement enfreinte ici. Renommer
+impliquerait de toucher `media_manifest` (routage Drive de `avis_logement_etat_videos`),
+les préfixes de noms de fichiers déjà présents sur le Drive, les deux templates PDF et
+la synchronisation Monday — pour zéro bénéfice utilisateur. Aucune migration n'a été
+faite et aucune n'est prévue. Le mapping vit dans `mapFormDataToSupabase` /
+`mapSupabaseToFormData` (`src/lib/supabaseHelpers.js`).
+
+#### **🔒 Contacts de maintenance : filtre obligatoire côté PDF ménage**
+
+Les contacts de maintenance (nom, société, activité, téléphone, email, commentaire)
+sont saisis pour le **concierge** et remontés au board Monday « Artisans / Maintenance ».
+Le prestataire de ménage ne doit en voir aucun élément.
+
+Avant le déplacement, ils étaient hors du PDF ménage par simple **effet de bord** :
+la section Avis qui les hébergeait n'était pas dans `menageSectionsConfig`. Ce n'était
+pas un filtre. Depuis que le bloc vit dans une section **qui, elle, est rendue**, la
+seule protection est la constante explicite `MENAGE_EXCLUDED_FIELDS` en tête de
+`PDFMenageTemplate.jsx`. Elle est appliquée avant tout traitement : champs texte,
+extraction photos **et** extraction vidéos. **Ne jamais la retirer.**
+Côté PDF logement, ces champs restent exclus comme avant (`avisExcluded` → désormais
+`INSTRUCTIONS_MENAGE_CONTACT_FIELDS`).
 
 **PDFMenageTemplate.jsx** - Fiche filtrée (14 sections)
 ```javascript
@@ -210,8 +258,9 @@ const menageSectionsConfig = [
   { key: 'section_logement', label: '🏠 Logement', emoji: '🏠' },
   { key: 'section_clefs', label: '🔑 Clefs', emoji: '🔑' },
   { key: 'section_gestion_linge', label: '🧺 Gestion Linge', emoji: '🧺' },
-  { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
   { key: 'section_consommables', label: '🧴 Consommables', emoji: '🧴' },
+  { key: 'section_instructions_menage', label: '🧹 Instructions Ménage', emoji: '🧹' },
+  { key: 'section_equipements', label: '⚙️ Équipements', emoji: '⚙️' },
   { key: 'section_visite', label: '🎥 Visite', emoji: '🎥' },
   { key: 'section_chambres', label: '🛏️ Chambres', emoji: '🛏️' },
   { key: 'section_salle_de_bains', label: '🚿 Salle de Bains', emoji: '🚿' },
@@ -228,6 +277,8 @@ const menageSectionsConfig = [
 - ✅ Masquage codes confidentiels (masterpinConciergerie, codeProprietaire, codeVoyageur)
 - ✅ Liste rouge des consommables obligatoires
 - ✅ Filtrage équipements (poubelle, parking uniquement)
+- ✅ Vidéos rendues en liens cliquables (depuis août 2026, cf. ci-dessous)
+- 🔒 `MENAGE_EXCLUDED_FIELDS` : contacts de maintenance retirés de `section_instructions_menage`
 
 > ⚠️ `PDFMenageTemplate.jsx` est une **copie** de `PDFTemplate.jsx` avec une liste de
 > sections réduite : les deux fichiers évoluent séparément. Une correction de rendu
@@ -236,6 +287,15 @@ const menageSectionsConfig = [
 > de rendu groupé (hotte de cuisine, équipement coché sans détail, ventilateur,
 > sèche-serviettes, animaux, PMR, équipement ménage). Vue volontairement filtrée,
 > non complétée dans le chantier de complétude du PDF logement.
+>
+> **Mise à jour août 2026** : le rendu vidéo (`isVideoUrl` / `parseVideoValue` /
+> `extractAllVideos` / `VideosDisplayMenage`) a été porté depuis `PDFTemplate.jsx`.
+> Sans lui, la vidéo de l'état du logement déplacée dans `section_instructions_menage`
+> disparaissait silencieusement du PDF ménage (`extractAllPhotos` filtre sur
+> `isImageUrl`, et `formatValue` écarte toute clé contenant `video`) — ce qui vidait
+> le déplacement de son intérêt. **Effet de bord assumé** : les vidéos des autres
+> sections rendues côté ménage (Visite, Chambres, Clefs…) sortent désormais elles
+> aussi en liens. Les correctifs de rendu groupé restent, eux, non portés.
 
 ---
 

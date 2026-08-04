@@ -17,8 +17,9 @@ import { supabase } from '../lib/supabaseClient'
  */
 export function extractMondaySnapshot(formData) {
   return {
-    type_premier_menage: formData?.section_avis?.type_premier_menage ?? null,
-    type_premiere_maintenance: formData?.section_avis?.type_premiere_maintenance ?? null,
+    // Section Instructions Ménage (colonnes DB `avis_*` conservées, cf. supabaseHelpers)
+    type_premier_menage: formData?.section_instructions_menage?.type_premier_menage ?? null,
+    type_premiere_maintenance: formData?.section_instructions_menage?.type_premiere_maintenance ?? null,
     airbnb_mot_passe: formData?.section_airbnb?.mot_passe ?? null,
     booking_mot_passe: formData?.section_booking?.mot_passe ?? null
   }

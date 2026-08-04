@@ -238,17 +238,6 @@ const initialFormData = {
     // ⚠️ Vérification sécurité (liste de dangers cochés)
     securite_dangers: [],
 
-    // 🎥 Vidéo état du logement
-    logement_etat_videos: [],
-
-    // 🏷️ Type de 1er passage
-    type_premier_menage: null,
-    type_premiere_maintenance: null,
-
-    // 🔧 Contacts de maintenance fournis par le propriétaire
-    a_contacts_maintenance: null,                // Boolean: true/false/null
-    contacts_maintenance: [],                    // Array d'objets contact (cf. supabaseHelpers)
-
     atouts_logement: {
       lumineux: null,
       central: null,
@@ -309,6 +298,30 @@ const initialFormData = {
     },
     types_voyageurs_autre: "",
     explication_adaptation: "",
+  },
+
+  // 🧹 Instructions destinées au prestataire de ménage.
+  //
+  // ⚠️ EXCEPTION DE NOMMAGE ASSUMÉE : ces champs sont persistés dans les colonnes
+  // `avis_*` de la table `fiches` (ils vivaient dans la section Avis avant d'être
+  // déplacés ici). Les colonnes n'ont volontairement PAS été renommées : un rename
+  // toucherait `media_manifest`, les préfixes de fichiers sur le Drive, les deux
+  // templates PDF et la synchro Monday, pour zéro bénéfice utilisateur.
+  // Voir mapFormDataToSupabase / mapSupabaseToFormData dans supabaseHelpers.js.
+  section_instructions_menage: {
+    // 🎥 Vidéo état du logement → colonne avis_logement_etat_videos
+    logement_etat_videos: [],
+
+    // 🏷️ Type de 1er passage → colonnes avis_type_premier_menage / avis_type_premiere_maintenance
+    type_premier_menage: null,
+    type_premiere_maintenance: null,
+
+    // 🔧 Contacts de maintenance fournis par le propriétaire
+    // → colonnes avis_a_contacts_maintenance / avis_contacts_maintenance
+    // ⚠️ JAMAIS rendus dans le PDF ménage (cf. PDFMenageTemplate) : ces coordonnées
+    // sont destinées au concierge, pas au prestataire de ménage.
+    a_contacts_maintenance: null,                // Boolean: true/false/null
+    contacts_maintenance: [],                    // Array d'objets contact (cf. supabaseHelpers)
   },
 
   section_gestion_linge: {
@@ -1317,14 +1330,14 @@ export function FormProvider({ children }) {
   const [duplicateAlert, setDuplicateAlert] = useState(null)
 
   // 🟦 Toast Monday Contacts — état partagé (set par triggerMondayContactsSync,
-  // consommé par un mini composant local dans FicheAvis). null = pas de toast.
+  // consommé par un mini composant local dans FicheInstructionsMenage). null = pas de toast.
   // Shape : { type: 'error', failedCount: number, total: number, timestamp: number }
   const [mondayContactsToast, setMondayContactsToast] = useState(null)
   const clearMondayContactsToast = useCallback(() => setMondayContactsToast(null), [])
 
   const sections = [
     "Propriétaire", "Logement", "Avis", "Clefs", "Airbnb", "Booking", 'E-mail Outlook', "Réglementation",
-    "Exigences", "Gestion linge", "Équipements", "Consommables", "Visite",
+    "Exigences", "Gestion linge", "Consommables", "Instructions Ménage", "Équipements", "Visite",
     "Chambres", "Salle de bains", "Cuisine 1", "Cuisine 2", "Salon / SAM", "Équip. spé. / Extérieur",
     "Communs", "Télétravail", "Bébé", "Guide d'accès", "Sécurité", "Finalisation"
   ]
@@ -1767,7 +1780,7 @@ export function FormProvider({ children }) {
   //     push automatique groupé via `triggerMondayContactsSync` (filet de
   //     sécurité, le coordinateur n'a rien à faire). Géré dans `updateStatut`.
   //   - Post-finalisation (fiche déjà Complété, ajout/modif post-finalisation) →
-  //     bouton manuel "Synchroniser" dans FicheAvis qui appelle
+  //     bouton manuel "Synchroniser" dans FicheInstructionsMenage qui appelle
   //     `syncContactsToMondayManual()`. Pas d'auto-trigger sur les saves
   //     post-finalisation (sinon l'autosave 5s pousserait des contacts
   //     incomplets, observé en prod).
@@ -1787,7 +1800,7 @@ export function FormProvider({ children }) {
     if (!data?.id) {
       return { success: false, pushedCount: 0, failedCount: 0 }
     }
-    const toPush = pickContactsToPush(data.section_avis?.contacts_maintenance)
+    const toPush = pickContactsToPush(data.section_instructions_menage?.contacts_maintenance)
     if (toPush.length === 0) {
       return { success: true, pushedCount: 0, failedCount: 0 }
     }
@@ -1807,12 +1820,12 @@ export function FormProvider({ children }) {
       }
       if (successById.size > 0) {
         setFormData(prev => {
-          const contacts = prev?.section_avis?.contacts_maintenance
+          const contacts = prev?.section_instructions_menage?.contacts_maintenance
           if (!Array.isArray(contacts)) return prev
           return {
             ...prev,
-            section_avis: {
-              ...prev.section_avis,
+            section_instructions_menage: {
+              ...prev.section_instructions_menage,
               contacts_maintenance: contacts.map(c => {
                 if (!c || typeof c !== 'object') return c
                 const itemId = successById.get(c._localId)
@@ -1862,7 +1875,7 @@ export function FormProvider({ children }) {
   // Auto-trigger : appelé uniquement à la TRANSITION Brouillon → Complété
   // (finalisation initiale). Fire-and-forget, ne bloque pas la finalisation.
   // Une re-finalisation (déjà Complété → Complété) ou un save post-finalisation
-  // ne déclenche PAS cette sync — c'est le rôle du bouton manuel dans FicheAvis.
+  // ne déclenche PAS cette sync — c'est le rôle du bouton manuel dans FicheInstructionsMenage.
   const triggerMondayContactsSync = (savedData, wasCompleteBeforeSave) => {
     if (!savedData) return
     if (savedData.statut !== 'Complété') return
@@ -1873,7 +1886,7 @@ export function FormProvider({ children }) {
     })
   }
 
-  // Manual trigger : utilisé par le bouton "Synchroniser" dans FicheAvis.
+  // Manual trigger : utilisé par le bouton "Synchroniser" dans FicheInstructionsMenage.
   // Sauvegarde la fiche d'abord (flush l'état local vers la DB — l'Edge
   // Function lit avis_contacts_maintenance par _localId, un contact en
   // local non-encore-sauvé échouerait sinon avec "introuvable"), puis
@@ -1985,7 +1998,7 @@ export function FormProvider({ children }) {
         // poussait des contacts incomplets vers Monday (observé en prod après
         // PR #30). La sync auto est désormais EXCLUSIVEMENT à la transition
         // Brouillon → Complété (cf. updateStatut). Post-finalisation = bouton
-        // manuel "Synchroniser" dans FicheAvis.
+        // manuel "Synchroniser" dans FicheInstructionsMenage.
 
         return { success: true, data: result.data };
       } else {
@@ -2063,7 +2076,7 @@ export function FormProvider({ children }) {
         triggerMondaySync(result.data, wasCompleteBeforeSave)
         // 🟦 Sync Monday Contacts — UNIQUEMENT à la transition Brouillon → Complété
         // (filet de sécurité pour la finalisation initiale). Post-finalisation =
-        // bouton manuel "Synchroniser" dans FicheAvis, pas d'auto-trigger ici.
+        // bouton manuel "Synchroniser" dans FicheInstructionsMenage, pas d'auto-trigger ici.
         triggerMondayContactsSync(result.data, wasCompleteBeforeSave)
 
         return { success: true, data: result.data };
@@ -2318,11 +2331,11 @@ export function FormProvider({ children }) {
       handleCancelDuplicate,
       checkForDuplicate,
 
-      // 🟦 Toast Monday Contacts Maintenance (consommé par FicheAvis)
+      // 🟦 Toast Monday Contacts Maintenance (consommé par FicheInstructionsMenage)
       mondayContactsToast,
       clearMondayContactsToast,
 
-      // 🟦 Sync Monday Contacts — déclenchement manuel (bouton FicheAvis
+      // 🟦 Sync Monday Contacts — déclenchement manuel (bouton FicheInstructionsMenage
       // post-finalisation). Promise<{ success, pushedCount, failedCount, ... }>.
       syncContactsToMondayManual
     }}>
