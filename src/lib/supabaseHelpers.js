@@ -213,16 +213,17 @@ export const mapFormDataToSupabase = (formData) => {
     avis_securite_dangers: securiteDangers,
     avis_securite_danger_detecte: securiteDangers.length > 0,
 
-    // 🧹 SECTION INSTRUCTIONS MÉNAGE — colonnes `avis_*` conservées
+    // 🧹 SECTION INSTRUCTIONS MÉNAGE — deux familles de préfixes, c'est voulu
     //
-    // ⚠️ EXCEPTION DE NOMMAGE ASSUMÉE : les 5 champs ci-dessous vivent désormais
-    // dans `section_instructions_menage` côté FormContext, mais restent persistés
-    // dans les colonnes `avis_*` (elles datent de l'époque où le bloc était dans
-    // la section Avis). Renommer les colonnes impliquerait de toucher
+    // ⚠️ EXCEPTION DE NOMMAGE ASSUMÉE : les 5 champs `avis_*` ci-dessous vivent
+    // désormais dans `section_instructions_menage` côté FormContext, mais restent
+    // persistés dans leurs colonnes d'origine (elles datent de l'époque où le bloc
+    // était dans la section Avis). Renommer impliquerait de toucher
     // `media_manifest` (routage Drive de avis_logement_etat_videos), les préfixes
     // de noms de fichiers déjà sur le Drive, les deux templates PDF et la synchro
-    // Monday — pour zéro bénéfice utilisateur. La convention `{section}_{champ}`
-    // est donc volontairement enfreinte ici.
+    // Monday — pour zéro bénéfice utilisateur.
+    // Les champs ajoutés ensuite (plus bas) suivent, eux, la convention
+    // `instructions_menage_*`.
 
     // 🎥 Vidéo de l'état du logement
     avis_logement_etat_videos: formData.section_instructions_menage?.logement_etat_videos || [],
@@ -240,6 +241,25 @@ export const mapFormDataToSupabase = (formData) => {
     avis_contacts_maintenance: formData.section_instructions_menage?.a_contacts_maintenance === true
       ? backfillContactsLocalIds(formData.section_instructions_menage?.contacts_maintenance || [])
       : [],
+
+    // 🧽 Consignes générales + vidéos d'illustration
+    instructions_menage_consignes_generales: formData.section_instructions_menage?.consignes_generales || null,
+    instructions_menage_consignes_videos: formData.section_instructions_menage?.consignes_videos || [],
+
+    // 🧴 Produits et matériel
+    instructions_menage_produits_materiel: formData.section_instructions_menage?.produits_materiel || null,
+
+    // 🎁 Kit de bienvenue — distinct du 1er panier de consommables (consommables_*)
+    instructions_menage_kit_achat_par_prestataire: formData.section_instructions_menage?.kit_achat_par_prestataire ?? null,
+    instructions_menage_kit_installation_par_prestataire: formData.section_instructions_menage?.kit_installation_par_prestataire ?? null,
+    instructions_menage_kit_composition: formData.section_instructions_menage?.kit_composition || null,
+    instructions_menage_kit_photos: formData.section_instructions_menage?.kit_photos || [],
+
+    // ⚠️ Points de vigilance
+    instructions_menage_points_vigilance: formData.section_instructions_menage?.points_vigilance || null,
+
+    // ℹ️ Aucune colonne pour le "Rappel des consommables" : bloc calculé à
+    // l'affichage depuis section_consommables, jamais persisté.
 
     avis_atouts_lumineux: formData.section_avis?.atouts_logement?.lumineux ?? null,
     avis_atouts_central: formData.section_avis?.atouts_logement?.central ?? null,
@@ -1553,6 +1573,22 @@ export const mapSupabaseToFormData = (supabaseData) => {
           ? supabaseData.avis_contacts_maintenance
           : []
       ),
+
+      // 🧽 Consignes générales + vidéos d'illustration
+      consignes_generales: supabaseData.instructions_menage_consignes_generales || "",
+      consignes_videos: supabaseData.instructions_menage_consignes_videos || [],
+
+      // 🧴 Produits et matériel
+      produits_materiel: supabaseData.instructions_menage_produits_materiel || "",
+
+      // 🎁 Kit de bienvenue — distinct du 1er panier de consommables
+      kit_achat_par_prestataire: supabaseData.instructions_menage_kit_achat_par_prestataire ?? null,
+      kit_installation_par_prestataire: supabaseData.instructions_menage_kit_installation_par_prestataire ?? null,
+      kit_composition: supabaseData.instructions_menage_kit_composition || "",
+      kit_photos: supabaseData.instructions_menage_kit_photos || [],
+
+      // ⚠️ Points de vigilance
+      points_vigilance: supabaseData.instructions_menage_points_vigilance || "",
     },
 
     section_gestion_linge: {

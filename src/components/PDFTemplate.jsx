@@ -2,11 +2,23 @@
 import React from 'react'
 import { GRILLE_CRITERES, computeGrilleStats, dangerLabelByKey } from '../lib/avisGrilleHelpers'
 
-// 🧹 Section Instructions Ménage — libellés métier des pills "Type de 1er passage".
-// Sans override, formatFieldName rendrait "Type Premier Menage".
+// 🧹 Section Instructions Ménage — libellés métier.
+// Sans override, formatFieldName rendrait "Type Premier Menage",
+// "Consignes Generales", "Kit Composition"…
 const INSTRUCTIONS_MENAGE_LABELS = {
   type_premier_menage: '🧹 1er ménage',
-  type_premiere_maintenance: '🔧 Maintenance'
+  type_premiere_maintenance: '🔧 Maintenance',
+  consignes_generales: 'Consignes générales de ménage',
+  produits_materiel: 'Produits et matériel',
+  kit_composition: 'Kit de bienvenue — composition et disposition',
+  points_vigilance: 'Points de vigilance'
+}
+
+// 🎁 Kit de bienvenue : booléens `*_par_prestataire` rendus en "qui fait quoi"
+// plutôt qu'en Oui/Non (même traitement que consommables_*_par_prestataire).
+const INSTRUCTIONS_MENAGE_FOURNISSEUR_LABELS = {
+  kit_achat_par_prestataire: 'Kit de bienvenue — acheté par',
+  kit_installation_par_prestataire: 'Kit de bienvenue — mis en place par'
 }
 
 // 🔒 Contacts de maintenance : jamais rendus dans un PDF. Ces coordonnées sont
@@ -809,6 +821,16 @@ const PDFTemplate = ({ formData }) => {
                 key: fieldKey,
                 label: INSTRUCTIONS_MENAGE_LABELS[fieldKey],
                 value: fieldValue
+              })
+            }
+            return
+          }
+          if (INSTRUCTIONS_MENAGE_FOURNISSEUR_LABELS[fieldKey]) {
+            if (fieldValue === true || fieldValue === false) {
+              fields.push({
+                key: fieldKey,
+                label: INSTRUCTIONS_MENAGE_FOURNISSEUR_LABELS[fieldKey],
+                value: fieldValue === true ? 'Prestataire de ménage' : 'Propriétaire'
               })
             }
             return

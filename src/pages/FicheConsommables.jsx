@@ -3,6 +3,13 @@ import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
+// Libellés partagés avec le rappel en lecture seule de la section Instructions
+// Ménage : source unique pour que les deux écrans ne puissent pas diverger.
+import {
+  CONSOMMABLES_OBLIGATOIRES,
+  CONSOMMABLES_SUR_DEMANDE,
+  CONSOMMABLES_CAFE
+} from '../lib/consommablesRecap'
 
 export default function FicheConsommables() {
   const { next, back, currentStep, totalSteps, getField, updateField, handleSave, saveStatus } = useForm()
@@ -103,18 +110,9 @@ export default function FicheConsommables() {
                   Les consommables ci-dessous devront OBLIGATOIREMENT être fourni par le prestataire de ménage :
                 </h3>
                 <ul className="text-sm text-red-700 space-y-1">
-                  <li>• 2 rouleaux de papier toilette par toilette</li>
-                  <li>• 1 savon pour les mains disponible par lavabo</li>
-                  <li>• 1 produit vaisselle par cuisine</li>
-                  <li>• 1 éponge par cuisine (en bon état)</li>
-                  <li>• Sel, poivre, sucre (en quantité adéquate)</li>
-                  <li>• Café et thé (1 sachet par personne)</li>
-                  <li>• Essuie-tout/Sopalin</li>
-                  <li>• Sac poubelle</li>
-                  <li>• Produit vitres</li>
-                  <li>• Produit sol</li>
-                  <li>• Produit salle de bain/multi-surfaces ou vinaigre ménager</li>
-                  <li>• Produit WC / Javel</li>
+                  {CONSOMMABLES_OBLIGATOIRES.map((item) => (
+                    <li key={item}>• {item}</li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -126,51 +124,17 @@ export default function FicheConsommables() {
                   Consommables "Sur demande" - Cocher pour ajouter d'autres consommables
                 </label>
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input
-                      type="checkbox"
-                      checked={formData.gel_douche === true}
-                      onChange={(e) => handleCheckboxChange('section_consommables.gel_douche', e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Gel douche</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input
-                      type="checkbox"
-                      checked={formData.shampoing === true}
-                      onChange={(e) => handleCheckboxChange('section_consommables.shampoing', e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Shampoing</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input
-                      type="checkbox"
-                      checked={formData.apres_shampoing === true}
-                      onChange={(e) => handleCheckboxChange('section_consommables.apres_shampoing', e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Après Shampoing</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input
-                      type="checkbox"
-                      checked={formData.pastilles_lave_vaisselle === true}
-                      onChange={(e) => handleCheckboxChange('section_consommables.pastilles_lave_vaisselle', e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Pastilles, sel et liquide de rinçage pour lave-vaisselle</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                    <input
-                      type="checkbox"
-                      checked={formData.autre_consommable === true}
-                      onChange={(e) => handleCheckboxChange('section_consommables.autre_consommable', e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Autre (précisez)</span>
-                  </label>
+                  {CONSOMMABLES_SUR_DEMANDE.map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={formData[key] === true}
+                        onChange={(e) => handleCheckboxChange(`section_consommables.${key}`, e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">{label}</span>
+                    </label>
+                  ))}
                 </div>
                 
                 {/* Champ conditionnel "Autre" */}
@@ -194,69 +158,17 @@ export default function FicheConsommables() {
                 Consommables "Café / Cafetière" <span className="text-red-500">*</span>
               </label>
               <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={formData.cafe_nespresso === true}
-                    onChange={(e) => handleCheckboxChange('section_consommables.cafe_nespresso', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Nespresso</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={formData.cafe_senseo === true}
-                    onChange={(e) => handleCheckboxChange('section_consommables.cafe_senseo', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Senseo</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={formData.cafe_tassimo === true}
-                    onChange={(e) => handleCheckboxChange('section_consommables.cafe_tassimo', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Tassimo</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={formData.cafe_soluble === true}
-                    onChange={(e) => handleCheckboxChange('section_consommables.cafe_soluble', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Café soluble</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={formData.cafe_moulu === true}
-                    onChange={(e) => handleCheckboxChange('section_consommables.cafe_moulu', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Café moulu</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={formData.cafe_grain === true}
-                    onChange={(e) => handleCheckboxChange('section_consommables.cafe_grain', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Café grain</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                  <input
-                    type="checkbox"
-                    checked={formData.cafe_autre === true}
-                    onChange={(e) => handleCheckboxChange('section_consommables.cafe_autre', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Autre (précisez)</span>
-                </label>
+                {CONSOMMABLES_CAFE.map(({ key, label }) => (
+                  <label key={key} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={formData[key] === true}
+                      onChange={(e) => handleCheckboxChange(`section_consommables.${key}`, e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">{label}</span>
+                  </label>
+                ))}
               </div>
               
               {/* Champ conditionnel "Autre café" */}

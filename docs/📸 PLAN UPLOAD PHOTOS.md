@@ -239,11 +239,21 @@ Les dossiers de niveau 1 sont déduits du premier segment de chaque chemin, donc
         │   ├── Équipement/   ← toutes les PHOTOS d'équipement
         │   └── Tuto/         ← toutes les VIDÉOS tuto
         ├── 6. Identifiants Wifi/
-        └── 7. État des lieux/
+        ├── 7. État des lieux/
+        └── 8. Ménage/        ← consignes (vidéos) + kit de bienvenue (photos)
 ```
 
 **Règle tranchée le 29/07/2026** : dans `5. Équipements`, toute vidéo va dans `Tuto`,
 toute photo va dans `Équipement`. Les photos d'éléments abîmés vont dans `Équipement`.
+
+**`8. Ménage`, ajouté le 04/08/2026** (section Instructions Ménage) : photos et vidéos
+cohabitent dans le même dossier, sans sous-dossier `Tuto` / `Équipement`. Deux champs
+seulement — `instructions_menage_consignes_videos` (préfixe `Consignes-menage`) et
+`instructions_menage_kit_photos` (préfixe `Kit-bienvenue`). Le dossier n'a pas été créé
+à la main : `build_media_folders` le déduit du premier segment du chemin déclaré au
+manifeste, Make le crée au premier passage.
+⚠️ La vidéo de l'état du logement (`avis_logement_etat_videos`) reste, elle, dans
+`7. État des lieux` — elle documente l'état constaté, pas les consignes de travail.
 
 **Apostrophes** : les noms `Photos d'accès` et `Vidéos d'accès` utilisent l'apostrophe
 droite `'`, pas l'apostrophe typographique. Le manifeste doit rester aligné sur le Drive,
@@ -357,6 +367,12 @@ totalement vierge d'être traité en un seul passage.
 2. Ajouter le champ dans `PhotoUpload` côté application
 3. `INSERT` dans `media_manifest` : `colonne_db`, `cle`, `dossier`, `prefixe`, `type`, `ordre`
 4. Vérifier que `media_manifest_ecarts` est vide
+
+> ⚠️ **Le nom de la colonne doit contenir `photo` ou `video`.** La vue
+> `media_manifest_ecarts` ne regarde que les colonnes `ARRAY` de `fiches` dont le nom
+> matche `%photo%` ou `%video%`. Une colonne média nommée autrement (`..._medias`,
+> `..._fichiers`) ne serait **jamais** signalée par le garde-fou : le champ n'arriverait
+> pas sur le Drive, et rien ne le dirait.
 
 Aucune intervention dans le scénario Make, aucune dans le trigger.
 

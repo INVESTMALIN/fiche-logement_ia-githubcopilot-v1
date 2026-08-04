@@ -21,6 +21,7 @@ import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 import { TYPES_PASSAGE, TYPES_MAINTENANCE } from '../lib/avisGrilleHelpers'
 import { pickContactsToPush } from '../services/mondayContactsService'
+import { buildConsommablesRecap } from '../lib/consommablesRecap'
 
 // Liste fermée des activités de maintenance (libellés métier figés, alignés
 // sur la future remontée Monday — ne pas modifier sans validation produit).
@@ -80,7 +81,21 @@ export default function FicheInstructionsMenage() {
 
   const formData = getField('section_instructions_menage')
 
+  // 🔁 Rappel des consommables — dérivé, jamais stocké. `getField` relit le
+  // FormContext à chaque rendu, donc une modification dans la section
+  // Consommables se reflète ici immédiatement, sans save ni synchronisation.
+  const consommablesData = getField('section_consommables')
+  const consommablesRecap = useMemo(
+    () => buildConsommablesRecap(consommablesData),
+    [consommablesData]
+  )
+
   const handleChange = (field, value) => updateField(field, value)
+
+  // Booléens `*_par_prestataire` : true = prestataire, false = propriétaire,
+  // null = non renseigné. On garde les trois états (cf. CLAUDE.md).
+  const handleFournisseurChange = (field, value) =>
+    handleChange(field, value === 'true' ? true : (value === 'false' ? false : null))
 
   const [checklistOpen, setChecklistOpen] = useState(false)
 
@@ -522,6 +537,253 @@ export default function FicheInstructionsMenage() {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* 🧽 Bloc 4 — Consignes générales */}
+          <div className="bg-white rounded-xl p-6 shadow mb-6">
+            <h2 className="text-base font-semibold mb-1">🧽 Consignes générales</h2>
+            <p className="text-sm text-text-muted mb-4">
+              Les consignes de ménage propres à ce logement.
+            </p>
+            <textarea
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              rows="4"
+              placeholder="Ex : passer l'aspirateur sous le canapé, aérer 10 min avant de partir…"
+              value={formData.consignes_generales || ''}
+              onChange={(e) => handleChange('section_instructions_menage.consignes_generales', e.target.value)}
+            />
+
+            <div className="mt-5">
+              <label className="block text-sm font-medium mb-1">Vidéos des consignes</label>
+              <p className="text-sm text-text-muted mb-3">
+                Une ou plusieurs vidéos qui illustrent les consignes pendant la prestation :
+                les tâches à traiter, les matériaux sensibles, un tutoriel de nettoyage pour un
+                élément spécifique (jacuzzi…), ou des défauts constatés.
+              </p>
+              <PhotoUpload
+                fieldPath="section_instructions_menage.consignes_videos"
+                label=""
+                multiple={true}
+                maxFiles={5}
+                acceptVideo={true}
+              />
+            </div>
+          </div>
+
+          {/* 🧴 Bloc 5 — Produits et matériel */}
+          <div className="bg-white rounded-xl p-6 shadow mb-6">
+            <h2 className="text-base font-semibold mb-1">🧴 Produits et matériel</h2>
+            <p className="text-sm text-text-muted mb-4">
+              Ce qu'il faut utiliser, et ce qu'il ne faut surtout pas.
+            </p>
+            <textarea
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              rows="4"
+              placeholder="Ex : produit X pour le sol, pas de javel sur le parquet, ne pas utiliser d'éponge abrasive sur la plaque…"
+              value={formData.produits_materiel || ''}
+              onChange={(e) => handleChange('section_instructions_menage.produits_materiel', e.target.value)}
+            />
+          </div>
+
+          {/* 🎁 Bloc 6 — Kit de bienvenue */}
+          <div className="bg-white rounded-xl p-6 shadow mb-6">
+            <h2 className="text-base font-semibold mb-1">🎁 Kit de bienvenue</h2>
+            <p className="text-sm text-text-muted mb-4">
+              L'accueil et la mise en scène à l'arrivée des voyageurs.
+            </p>
+
+            <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-3 mb-5 text-sm">
+              ⚠️ À ne pas confondre avec le <strong>1er panier de consommables</strong> de la
+              section Consommables : le panier, ce sont les consommables obligatoires (papier
+              toilette, savon, café). Le kit, c'est l'accueil.
+            </div>
+
+            <div className="mb-5">
+              <label className="block font-semibold mb-3">Qui achète le kit ?</label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="kit_achat_par_prestataire"
+                    value="false"
+                    checked={formData.kit_achat_par_prestataire === false}
+                    onChange={(e) => handleFournisseurChange('section_instructions_menage.kit_achat_par_prestataire', e.target.value)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span>Propriétaire</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="kit_achat_par_prestataire"
+                    value="true"
+                    checked={formData.kit_achat_par_prestataire === true}
+                    onChange={(e) => handleFournisseurChange('section_instructions_menage.kit_achat_par_prestataire', e.target.value)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span>Prestataire de ménage</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <label className="block font-semibold mb-3">Qui met le kit en place ?</label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="kit_installation_par_prestataire"
+                    value="false"
+                    checked={formData.kit_installation_par_prestataire === false}
+                    onChange={(e) => handleFournisseurChange('section_instructions_menage.kit_installation_par_prestataire', e.target.value)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span>Propriétaire</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="kit_installation_par_prestataire"
+                    value="true"
+                    checked={formData.kit_installation_par_prestataire === true}
+                    onChange={(e) => handleFournisseurChange('section_instructions_menage.kit_installation_par_prestataire', e.target.value)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <span>Prestataire de ménage</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-sm font-medium mb-2">
+                Composition du kit et endroit où le disposer
+              </label>
+              <textarea
+                className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                rows="4"
+                placeholder="Ex : 1 bouteille de vin + 2 verres + mot de bienvenue, sur la table de la cuisine…"
+                value={formData.kit_composition || ''}
+                onChange={(e) => handleChange('section_instructions_menage.kit_composition', e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Photos de disposition du kit</label>
+              <p className="text-sm text-text-muted mb-3">
+                Une ou plusieurs photos qui illustrent la disposition du ou des kits.
+              </p>
+              <PhotoUpload
+                fieldPath="section_instructions_menage.kit_photos"
+                label=""
+                multiple={true}
+                maxFiles={5}
+                acceptVideo={false}
+              />
+            </div>
+          </div>
+
+          {/* 📋 Bloc 7 — Rappel des consommables (lecture seule, dérivé)
+              Aucune donnée stockée ici : tout vient de section_consommables.
+              Ce bloc ne sort dans AUCUN PDF — la section Consommables est déjà
+              rendue dans le PDF ménage, l'y remettre afficherait deux fois la
+              même information dans le même document. */}
+          <div className="bg-white rounded-xl p-6 shadow mb-6">
+            <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
+              <h2 className="text-base font-semibold">📋 Rappel des consommables</h2>
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                Lecture seule
+              </span>
+            </div>
+            <p className="text-sm text-text-muted mb-4">
+              Repris de la section Consommables, pour t'aider à décrire le kit sans confondre
+              les deux. Pour modifier, retourne dans la section Consommables — l'affichage
+              se met à jour tout seul.
+            </p>
+
+            {consommablesRecap.isEmpty ? (
+              <p className="text-sm text-text-muted italic">
+                Rien n'est encore renseigné dans la section Consommables.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                      1er panier (à l'ouverture)
+                    </p>
+                    <p className="text-sm text-gray-900">
+                      {consommablesRecap.premierPanier || <span className="italic text-text-muted">Non renseigné</span>}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                      Au quotidien (renouvellement)
+                    </p>
+                    <p className="text-sm text-gray-900">
+                      {consommablesRecap.quotidien || <span className="italic text-text-muted">Non renseigné</span>}
+                    </p>
+                  </div>
+                </div>
+
+                {consommablesRecap.obligatoires.length > 0 && (
+                  <div className="rounded-lg bg-red-50 border-l-4 border-red-400 p-3">
+                    <p className="text-sm font-semibold text-red-800 mb-2">
+                      Obligatoirement fournis par le prestataire de ménage :
+                    </p>
+                    <ul className="text-sm text-red-700 space-y-0.5">
+                      {consommablesRecap.obligatoires.map((item) => (
+                        <li key={item}>• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {consommablesRecap.surDemande.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                      Consommables « sur demande »
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {consommablesRecap.surDemande.map((item) => (
+                        <span key={item} className="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-800">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {consommablesRecap.cafe.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                      Café / Cafetière
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {consommablesRecap.cafe.map((item) => (
+                        <span key={item} className="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-800">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ⚠️ Bloc 8 — Points de vigilance */}
+          <div className="bg-white rounded-xl p-6 shadow mb-6">
+            <h2 className="text-base font-semibold mb-1">⚠️ Points de vigilance</h2>
+            <p className="text-sm text-text-muted mb-4">
+              Les oublis classiques sur ce logement.
+            </p>
+            <textarea
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              rows="4"
+              placeholder="Ex : bien refermer le velux, purger la clim, fermer le volet du bas…"
+              value={formData.points_vigilance || ''}
+              onChange={(e) => handleChange('section_instructions_menage.points_vigilance', e.target.value)}
+            />
           </div>
 
           {/* Indicateur de sauvegarde */}
