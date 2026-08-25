@@ -202,17 +202,26 @@ function matchesPropertyFolder(folderName, propertyNumber) {
 
 async function resolvePropertyFolder(propertyNumberInput) {
   const propertyNumber = normalizePropertyNumber(propertyNumberInput)
-  const query = `'${getTargetFolderId()}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`
+  const query = `'${getTargetFolderId()}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false and name contains '${propertyNumber}'`
   const params = new URLSearchParams({
     q: query,
     spaces: 'drive',
     pageSize: '1000',
     includeItemsFromAllDrives: 'true',
     supportsAllDrives: 'true',
-    fields: 'files(id,name,mimeType,parents,trashed,capabilities(canAddChildren))',
+    fields: 'nextPageToken,files(id,name,mimeType,parents,trashed,capabilities(canAddChildren))',
   })
-  const { data } = await googleRequest(`https://www.googleapis.com/drive/v3/files?${params}`)
-  const matches = (data.files || []).filter((folder) => matchesPropertyFolder(folder.name, propertyNumber))
+  const matches = []
+  let nextPageToken = null
+
+  do {
+    if (nextPageToken) params.set('pageToken', nextPageToken)
+    else params.delete('pageToken')
+
+    const { data } = await googleRequest(`https://www.googleapis.com/drive/v3/files?${params}`)
+    matches.push(...(data.files || []).filter((folder) => matchesPropertyFolder(folder.name, propertyNumber)))
+    nextPageToken = data.nextPageToken || null
+  } while (nextPageToken)
 
   if (matches.length === 0) {
     const error = new Error(`Aucun dossier de bien ne commence par « ${propertyNumber}. » dans le dossier de test.`)
