@@ -29,6 +29,7 @@ import FicheBebe from './FicheBebe'
 import FicheGuideAcces from './FicheGuideAcces'
 import FicheSecurite from './FicheSecurite'
 import FicheFinalisation from './FicheFinalisation'
+import FicheIntrouvable from './FicheIntrouvable'
 
 // Composant placeholder pour les sections pas encore créées
 function PlaceholderSection({ title }) {
@@ -78,7 +79,7 @@ function PlaceholderSection({ title }) {
 }
 
 export default function FicheWizard() {
-  const { currentStep, sections } = useForm()
+  const { currentStep, sections, ficheLoadError } = useForm()
 
   const steps = [
     <FicheForm key="proprietaire" />,
@@ -108,6 +109,13 @@ export default function FicheWizard() {
     <FicheSecurite key="securite" />,
     <FicheFinalisation key="finalisation" />
   ]
+
+  // 🚫 Une fiche etait demandee dans l'URL mais n'a pas pu etre chargee.
+  // On sort AVANT tout rendu de formulaire : un echec de chargement ne doit
+  // jamais retomber sur le formulaire de creation, qui serait enregistrable.
+  if (ficheLoadError) {
+    return <FicheIntrouvable ficheId={ficheLoadError.id} message={ficheLoadError.message} />
+  }
 
   // Vérification de sécurité
   if (currentStep < 0 || currentStep >= steps.length) {

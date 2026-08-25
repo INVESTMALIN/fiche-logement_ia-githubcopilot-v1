@@ -1354,6 +1354,19 @@ export function FormProvider({ children }) {
   })
   const [hasManuallyNamedFiche, setHasManuallyNamedFiche] = useState(false)
 
+  // 🚫 Echec de chargement d'une fiche demandee par l'URL (?id=...).
+  // Volontairement distinct de saveStatus.error, qui porte les erreurs de
+  // SAUVEGARDE : tant que ce drapeau est arme, FicheWizard n'affiche aucun
+  // formulaire enregistrable, au lieu de retomber en mode creation avec un
+  // formulaire vierge qu'un "Enregistrer" transformerait en fiche parasite.
+  // Shape : { id: string, message: string }
+  const [ficheLoadError, setFicheLoadError] = useState(null)
+
+  // Derniere fiche demandee par l'URL. Sert a jeter le resultat d'un
+  // chargement rendu obsolete par une navigation : sans ca, l'echec d'une
+  // fiche A peut s'afficher alors que l'utilisateur regarde deja la fiche B.
+  const ficheDemandeeRef = useRef(null)
+
   const [duplicateAlert, setDuplicateAlert] = useState(null)
 
   // 🟦 Toast Monday Contacts — état partagé (set par triggerMondayContactsSync,
@@ -1529,12 +1542,15 @@ export function FormProvider({ children }) {
         }, 3000)
         return { success: true, data: result.data }
       } else {
+        // La banniere garde le message court ; l'appelant, lui, recoit le
+        // detail technique (« 0 rows » de PostgREST, panne reseau...) — c'est
+        // ce qui permet au support de distinguer les causes.
         setSaveStatus({ saving: false, saved: false, error: result.message });
-        return { success: false, error: result.message }
+        return { success: false, error: result.error || result.message }
       }
     } catch (error) {
       setSaveStatus({ saving: false, saved: false, error: error.message || 'Erreur de connexion' });
-      return { success: false, error: 'Erreur de connexion' }
+      return { success: false, error: error.message || 'Erreur de connexion' }
     }
   }, []);
 
@@ -1544,6 +1560,42 @@ export function FormProvider({ children }) {
     const ficheId = params.get('id');
     const mondayParamsPresentInURL = hasMondayParams(location.search);
     const pendingMondayParamsInStorage = readPendingMondayParams();
+
+    // Changer d'URL repart d'un etat sain : on ne conserve l'erreur que si
+    // elle porte sur la fiche encore demandee. Le retour fonctionnel evite
+    // un rendu inutile quand rien ne change.
+    ficheDemandeeRef.current = ficheId;
+    setFicheLoadError(prev => (prev && prev.id === ficheId ? prev : null));
+
+    // Charge une fiche demandee par l'URL. Recursif a dessein : si l'URL a
+    // change pendant la requete, le resultat recu porte sur une fiche que
+    // l'utilisateur ne regarde plus — on le jette et on relance sur la fiche
+    // reellement demandee, car cet effet ne se rejouera pas de lui-meme
+    // (saveStatus.saving n'est volontairement pas dans ses dependances).
+    const chargerFicheDemandee = (idDemande) => {
+      handleLoad(idDemande).then(result => {
+        const demandee = ficheDemandeeRef.current;
+        if (demandee !== idDemande) {
+          console.log('↩️ Resultat de chargement perime, ignore :', idDemande);
+          if (demandee) chargerFicheDemandee(demandee);
+          return;
+        }
+
+        if (result.success) {
+          setFicheLoadError(null);
+          if (result.data.nom === "Nouvelle fiche" || generateFicheName(result.data) === result.data.nom) {
+            setHasManuallyNamedFiche(false);
+          } else {
+            setHasManuallyNamedFiche(true);
+          }
+        } else {
+          // Fiche absente, ou filtree par la RLS : PostgREST renvoie "0 rows"
+          // dans les deux cas, on ne peut pas les distinguer cote client.
+          console.warn('🚫 Fiche non chargeable :', idDemande, result.error);
+          setFicheLoadError({ id: idDemande, message: result.error || 'Erreur de chargement' });
+        }
+      });
+    };
 
     // Pré-remplissage Monday, commun aux deux chemins d'arrivée sur un
     // formulaire de création : params dans l'URL (utilisateur déjà connecté) ou
@@ -1606,15 +1658,7 @@ export function FormProvider({ children }) {
     // 🎯 PRIORITÉ 4: Chargement fiche existante par ID
     if (ficheId && formData.id !== ficheId && !saveStatus.saving) {
       console.log('📂 Chargement de la fiche existante par ID:', ficheId);
-      handleLoad(ficheId).then(result => {
-        if (result.success) {
-          if (result.data.nom === "Nouvelle fiche" || generateFicheName(result.data) === result.data.nom) {
-            setHasManuallyNamedFiche(false);
-          } else {
-            setHasManuallyNamedFiche(true);
-          }
-        }
-      });
+      chargerFicheDemandee(ficheId);
       return; // STOP - Chargement en cours
     }
 
@@ -2342,6 +2386,7 @@ export function FormProvider({ children }) {
       handleSave,
       handleLoad,
       saveStatus,
+      ficheLoadError,
       updateStatut,
       finaliserFiche,
       archiverFiche,
