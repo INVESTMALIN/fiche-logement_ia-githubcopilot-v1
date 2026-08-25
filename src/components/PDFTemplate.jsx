@@ -1,6 +1,6 @@
 // src/components/PDFTemplate.jsx - VERSION 2 CLEAN & COMPLETE
 import React from 'react'
-import { GRILLE_CRITERES, computeGrilleStats, dangerLabelByKey } from '../lib/avisGrilleHelpers'
+import { GRILLE_CRITERES, VUE_TYPES, computeGrilleStats, dangerLabelByKey } from '../lib/avisGrilleHelpers'
 
 // 🧹 Section Instructions Ménage — libellés métier.
 // Sans override, formatFieldName rendrait "Type Premier Menage",
@@ -153,7 +153,12 @@ const PDFTemplate = ({ formData }) => {
 
       // 🚲 LOCAL À VÉLO - Type d'accès
       'libre': 'Libre',
-      'avec_cle': 'Avec clé'
+      'avec_cle': 'Avec clé',
+
+      // 👁️ VUE DEPUIS LE LOGEMENT (section Avis, multi-sélection)
+      // Libellés repris du référentiel partagé : la page Avis et le PDF ne peuvent
+      // pas diverger, et une clé ajoutée en amont est traduite ici sans intervention.
+      ...Object.fromEntries(VUE_TYPES.map(({ key, label }) => [key, label]))
     }
 
     return translations[value] || value
@@ -396,7 +401,9 @@ const PDFTemplate = ({ formData }) => {
       pied_des_pistes: 'Au pied des pistes',
       // Champs conditionnels rattachés à un équipement dont ils ne portent pas le préfixe
       pmr_details: 'Détails accessibilité',
-      animaux_commentaire: 'Commentaire'
+      animaux_commentaire: 'Commentaire',
+      // Sans override, formatFieldName rendrait "Vue Types"
+      vue_types: 'Vue depuis le logement'
     }
 
     if (fieldTranslations[fieldName]) return fieldTranslations[fieldName]
