@@ -10,6 +10,10 @@
 // Se reconnecte tout seul si la session en cache a expire.
 // La capture sort dans .shots/ a la racine du repo (dossier ignore par git),
 // pour que les agents puissent la relire avec leurs outils fichiers.
+//
+// La fiche est ouverte via /fiche?id=<uuid> : c'est le seul format que
+// FormContext sait lire. Le script echoue explicitement si la fiche n'est pas
+// chargee, au lieu de capturer un formulaire vierge (cf. verifierFicheChargee).
 
 import { chromium } from 'playwright-core'
 import { readFileSync, mkdirSync, existsSync } from 'node:fs'
@@ -38,7 +42,10 @@ function readEnv() {
 
 const env = readEnv()
 const ficheId = env.DEV_AGENT_FICHE_ID
-const cible = ficheId ? `${baseUrl}/fiche/${ficheId}` : `${baseUrl}/`
+// FormContext lit l'id de fiche dans la QUERY STRING (params.get('id')), jamais
+// dans le parametre de route. La route /fiche/:id existe dans App.jsx mais
+// personne ne la lit : elle rend un formulaire vierge, sans erreur.
+const cible = ficheId ? `${baseUrl}/fiche?id=${ficheId}` : `${baseUrl}/`
 
 const browser = await chromium.launch({ headless: true })
 const context = await browser.newContext({
@@ -50,6 +57,37 @@ const page = await context.newPage()
 const errors = []
 page.on('pageerror', e => errors.push(`pageerror: ${e.message}`))
 page.on('console', m => { if (m.type() === 'error') errors.push(`console: ${m.text()}`) })
+
+// Le champ "Nom de la Fiche" (placeholder "Le nom se genere automatiquement...")
+// vaut "Nouvelle fiche" tant qu'aucune fiche n'est chargee. C'est le seul signal
+// visible : un mauvais format d'URL ne leve aucune erreur.
+const SELECTEUR_NOM_FICHE = 'input[placeholder*="automatiquement"]'
+
+// Echoue net si la fiche attendue n'est pas chargee. Sans ce garde-fou le script
+// capture un formulaire vide en pretendant montrer la fiche, et un agent qui
+// enchainerait sur "Enregistrer" ecraserait toutes les colonnes de la fiche.
+async function verifierFicheChargee() {
+  const champNom = page.locator(SELECTEUR_NOM_FICHE).first()
+  await champNom.waitFor({ state: 'visible', timeout: 15000 })
+  try {
+    await page.waitForFunction(
+      sel => {
+        const v = document.querySelector(sel)?.value.trim()
+        return Boolean(v) && v !== 'Nouvelle fiche'
+      },
+      SELECTEUR_NOM_FICHE,
+      { timeout: 15000 }
+    )
+  } catch {
+    const vu = (await champNom.inputValue()).trim() || '(vide)'
+    throw new Error(
+      `fiche non chargee : le formulaire affiche "${vu}" au lieu des donnees de ` +
+      `la fiche ${ficheId}. FormContext lit l'id dans la query string, l'URL ` +
+      `doit etre /fiche?id=<uuid> et non /fiche/<uuid>.`
+    )
+  }
+  return (await champNom.inputValue()).trim()
+}
 
 async function login() {
   await page.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' })
@@ -70,6 +108,9 @@ try {
     reconnecte = true
     await page.goto(cible, { waitUntil: 'networkidle', timeout: 30000 })
   }
+
+  // Avant tout clic : la fiche visee est-elle vraiment chargee ?
+  const ficheChargee = ficheId ? await verifierFicheChargee() : null
 
   if (section) {
     const lien = page.getByText(section, { exact: false }).first()
@@ -108,6 +149,7 @@ try {
   console.log(JSON.stringify({
     ok: true,
     url: page.url(),
+    ficheChargee: ficheChargee || '(aucune fiche visee)',
     section: section || '(aucune)',
     texteCherche: cibleTexte || '(aucun)',
     texteTrouve,
