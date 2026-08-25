@@ -1354,6 +1354,14 @@ export function FormProvider({ children }) {
   })
   const [hasManuallyNamedFiche, setHasManuallyNamedFiche] = useState(false)
 
+  // 🚫 Echec de chargement d'une fiche demandee par l'URL (?id=...).
+  // Volontairement distinct de saveStatus.error, qui porte les erreurs de
+  // SAUVEGARDE : tant que ce drapeau est arme, FicheWizard n'affiche aucun
+  // formulaire enregistrable, au lieu de retomber en mode creation avec un
+  // formulaire vierge qu'un "Enregistrer" transformerait en fiche parasite.
+  // Shape : { id: string, message: string }
+  const [ficheLoadError, setFicheLoadError] = useState(null)
+
   const [duplicateAlert, setDuplicateAlert] = useState(null)
 
   // 🟦 Toast Monday Contacts — état partagé (set par triggerMondayContactsSync,
@@ -1545,6 +1553,11 @@ export function FormProvider({ children }) {
     const mondayParamsPresentInURL = hasMondayParams(location.search);
     const pendingMondayParamsInStorage = readPendingMondayParams();
 
+    // Changer d'URL repart d'un etat sain : on ne conserve l'erreur que si
+    // elle porte sur la fiche encore demandee. Le retour fonctionnel evite
+    // un rendu inutile quand rien ne change.
+    setFicheLoadError(prev => (prev && prev.id === ficheId ? prev : null));
+
     // Pré-remplissage Monday, commun aux deux chemins d'arrivée sur un
     // formulaire de création : params dans l'URL (utilisateur déjà connecté) ou
     // params mémorisés pendant la connexion. Les données sont appliquées dans
@@ -1608,11 +1621,17 @@ export function FormProvider({ children }) {
       console.log('📂 Chargement de la fiche existante par ID:', ficheId);
       handleLoad(ficheId).then(result => {
         if (result.success) {
+          setFicheLoadError(null);
           if (result.data.nom === "Nouvelle fiche" || generateFicheName(result.data) === result.data.nom) {
             setHasManuallyNamedFiche(false);
           } else {
             setHasManuallyNamedFiche(true);
           }
+        } else {
+          // Fiche absente, ou filtree par la RLS : Postgrest renvoie "0 rows"
+          // dans les deux cas, on ne peut pas les distinguer cote client.
+          console.warn('🚫 Fiche non chargeable :', ficheId, result.error);
+          setFicheLoadError({ id: ficheId, message: result.error || 'Erreur de chargement' });
         }
       });
       return; // STOP - Chargement en cours
@@ -2342,6 +2361,7 @@ export function FormProvider({ children }) {
       handleSave,
       handleLoad,
       saveStatus,
+      ficheLoadError,
       updateStatut,
       finaliserFiche,
       archiverFiche,
