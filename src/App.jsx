@@ -10,6 +10,7 @@ import FicheWizard from './pages/FicheWizard'
 import { FormProvider } from './components/FormContext'
 import { AuthProvider } from './components/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import FicheLegacyRedirect from './components/FicheLegacyRedirect'
 import AdminRoute from './components/AdminRoute'
 import AdminConsole from './pages/AdminConsole'
 import AnnonceInspection from './pages/AnnonceInspection'
@@ -60,14 +61,9 @@ export default function App() {
             }
           />
 
-          <Route
-            path="/fiche/:id"
-            element={
-              <ProtectedRoute>
-                <FicheWizard />
-              </ProtectedRoute>
-            }
-          />
+          {/* Compatibilite : ancienne forme /fiche/<uuid>, redirigee vers
+              l'URL officielle /fiche?id=<uuid> (cf. FicheLegacyRedirect). */}
+          <Route path="/fiche/:id" element={<FicheLegacyRedirect />} />
 
           <Route
             path="/admin"
