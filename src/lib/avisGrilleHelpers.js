@@ -1,5 +1,6 @@
 // src/lib/avisGrilleHelpers.js
-// Logique partagée pour la grille d'évaluation objective (FicheAvis + supabaseHelpers + PDF)
+// Référentiels et logique partagés de la section Avis (FicheAvis + supabaseHelpers + PDF) :
+// grille d'évaluation objective, dangers sécurité, types de vue.
 
 export const GRILLE_CRITERES = [
   {
@@ -115,6 +116,33 @@ export const SECURITE_DANGERS = [
 
 export const dangerLabelByKey = (key) =>
   SECURITE_DANGERS.find(d => d.key === key)?.label || key
+
+// 👁️ Vue depuis le logement (multi-sélection, colonne avis_vue_types TEXT[]).
+// Référentiel unique : la page Avis affiche ces libellés et le PDF logement les
+// réutilise via translateValue. Les clés sont stables et persistées telles quelles
+// — ne jamais les renommer, seuls les libellés peuvent évoluer.
+export const VUE_TYPES = [
+  { key: 'vue_mer', label: 'Vue sur la mer' },
+  { key: 'vue_lac', label: 'Vue sur le lac' },
+  { key: 'vue_riviere', label: 'Vue sur une rivière' },
+  { key: 'vue_canal', label: 'Vue sur un canal' },
+  { key: 'vue_montagne', label: 'Vue sur la montagne' },
+  { key: 'vue_campagne', label: 'Vue sur la campagne' },
+  { key: 'vue_foret', label: 'Vue sur la forêt' },
+  { key: 'vue_vignoble', label: 'Vue sur les vignobles' },
+  { key: 'vue_port', label: 'Vue sur le port' },
+  { key: 'vue_monument', label: 'Vue sur un monument' },
+  { key: 'vue_ville', label: 'Vue sur la ville' },
+  { key: 'vue_toits', label: 'Vue sur les toits' },
+  { key: 'vue_jardin', label: 'Vue sur un jardin' },
+  { key: 'vue_cour_interieure', label: 'Vue sur une cour intérieure' },
+  { key: 'vue_piscine', label: 'Vue sur la piscine' },
+  { key: 'vue_panoramique', label: 'Vue panoramique' },
+  { key: 'vue_aucune', label: 'Aucune vue particulière à mettre en avant' }
+]
+
+export const vueLabelByKey = (key) =>
+  VUE_TYPES.find(v => v.key === key)?.label || key
 
 export const TYPES_PASSAGE = [
   'Vérification / Inventaire',

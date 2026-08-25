@@ -57,7 +57,7 @@ La rue (`section_proprietaire.adresse.rue`) n'est **pas** dans le contrat modèl
 | Champ fiche | Note |
 |---|---|
 | `section_avis.atouts_logement` (+ `atouts_logement_autre`) | liste marketing curatée par le coordinateur, colonne vertébrale. **Règle atout vs fait** appliquée (cf. partie 4) |
-| `section_avis.vue_types` | vue (15 types atomiques) |
+| `section_avis.vue_types` | vue (16 types atomiques + « aucune vue ») |
 | `section_equip_spe_exterieur.exterieur_description_generale` | texte libre ambiance/orientation, passé tel quel |
 | `section_avis.atouts_logement.renove` | signal « récemment rénové », sans année |
 
