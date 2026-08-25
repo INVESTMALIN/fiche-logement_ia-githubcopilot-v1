@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import AdminConsole from './pages/AdminConsole'
 import AnnonceInspection from './pages/AnnonceInspection'
+import DriveUploadTest from './pages/DriveUploadTest'
 import { setAuthNavigateCallback } from './lib/supabaseClient'
 import PrintPDF from './pages/PrintPDF'
 import PrintPDFMenage from './pages/PrintPDFMenage'
@@ -83,6 +84,16 @@ export default function App() {
             element={
               <AdminRoute>
                 <AnnonceInspection />
+              </AdminRoute>
+            }
+          />
+
+          {/* POC upload direct Google Drive — outil interne, réservé super_admin */}
+          <Route
+            path="/test-upload-drive"
+            element={
+              <AdminRoute>
+                <DriveUploadTest />
               </AdminRoute>
             }
           />
