@@ -1,5 +1,5 @@
 # 📊 SUPABASE SPEC - Fiche Logement
-*Architecture technique - Mise à jour : 15 mai 2026*
+*Architecture technique - Mise à jour : 26 août 2026*
 
 ---
 
@@ -39,8 +39,6 @@ CREATE TABLE fiches (
   -- PDF Assistants IA
   guide_acces_pdf_url TEXT,
   guide_acces_last_generated_at TIMESTAMP WITH TIME ZONE,
-  annonce_pdf_url TEXT,
-  annonce_last_generated_at TIMESTAMP WITH TIME ZONE,
   
   -- Sections (pattern {section}_{champ})
   proprietaire_prenom TEXT,
@@ -120,10 +118,8 @@ export const mapFormDataToSupabase = (formData) => {
     pdf_logement_url: formData.pdf_logement_url || null,
     pdf_menage_url: formData.pdf_menage_url || null,
     guide_acces_pdf_url: formData.guide_acces_pdf_url || null,
-    annonce_pdf_url: formData.annonce_pdf_url || null,
     // pdf_last_generated_at: JAMAIS mappé
     // guide_acces_last_generated_at: JAMAIS mappé
-    // annonce_last_generated_at: JAMAIS mappé
   }
 }
 
@@ -138,7 +134,6 @@ export const mapSupabaseToFormData = (supabaseData) => ({
   // Timestamps OK en lecture
   pdf_last_generated_at: supabaseData.pdf_last_generated_at,
   guide_acces_last_generated_at: supabaseData.guide_acces_last_generated_at,
-  annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 })
 ```
 
@@ -284,45 +279,7 @@ CREATE TRIGGER fiche_guide_acces_pdf_webhook
   EXECUTE FUNCTION notify_guide_acces_pdf_update();
 ```
 
-### **4. Trigger PDF Annonce**
-
-**Déclenchement :** `annonce_last_generated_at` change  
-**Webhook :** `https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z`
-
-```sql
-CREATE OR REPLACE FUNCTION public.notify_annonce_pdf_update()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $function$
-BEGIN
-  IF OLD.annonce_last_generated_at IS DISTINCT FROM NEW.annonce_last_generated_at THEN
-    PERFORM net.http_post(
-      url := 'https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z',
-      body := jsonb_build_object(
-        'id', NEW.id,
-        'nom', NEW.nom,
-        'assistant_pdf', jsonb_build_object(
-          'url', NEW.annonce_pdf_url,
-          'type', 'annonce',
-          'last_generated_at', NEW.annonce_last_generated_at
-        ),
-        'trigger_type', 'assistant_pdf_update',
-        'pdf_type', 'annonce'
-      ),
-      headers := '{"Content-Type": "application/json"}'::jsonb
-    );
-  END IF;
-  RETURN NEW;
-END;
-$function$;
-
-CREATE TRIGGER fiche_annonce_pdf_webhook
-  AFTER UPDATE ON public.fiches
-  FOR EACH ROW
-  EXECUTE FUNCTION notify_annonce_pdf_update();
-```
-
-### **5. Trigger Alertes (Optionnel)**
+### **4. Trigger Alertes (Optionnel)**
 
 **Déclenchement :** Finalisation OU modification des 12 champs d'alertes  
 **Webhook :** `https://hook.eu2.make.com/b935os296umo923k889s254wb88wjxn4`
@@ -340,7 +297,6 @@ CREATE TRIGGER fiche_annonce_pdf_webhook
 | **Finalisation** | `statut` → "Complété" | `ydjwftmd7czs4rygv1rjhi6u4pvb4gdj` | 95 champs média + PDFs |
 | **PDF Fiches** | `pdf_last_generated_at` change | `3vmb2eijfjw8nc5y68j8hp3fbw67az9q` | URLs Logement + Ménage |
 | **PDF Guide** | `guide_acces_last_generated_at` change | `wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | URL + `pdf_type: 'guide_acces'` |
-| **PDF Annonce** | `annonce_last_generated_at` change | `wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | URL + `pdf_type: 'annonce'` |
 | **Alertes** | Finalisation OU champs alertes | `b935os296umo923k889s254wb88wjxn4` | 12 champs d'alertes |
 
 ---
@@ -363,8 +319,9 @@ CREATE TRIGGER fiche_annonce_pdf_webhook
 📁 guide-acces-pdfs (PUBLIC)
 └── guide_acces_{ficheId}.pdf
 
-📁 annonce-pdfs (PUBLIC)
-└── annonce_{ficheId}.pdf
+📁 annonce-pdfs (PUBLIC)  ⚠️ DÉPRÉCIÉ — vidé de tout usage depuis le retrait de
+└── annonce_{ficheId}.pdf      l'ancien agent annonce (août 2026). Plus aucun code
+                               n'y écrit ni n'y lit. Suppression manuelle à faire.
 ```
 
 ### **95 Champs Média Total**
@@ -575,18 +532,13 @@ const triggerPdfWebhook = async (pdfLogementUrl, pdfMenageUrl) => {
     .eq('id', formData.id)
 }
 
-// Trigger PDF Assistants (Guide/Annonce)
-const triggerAssistantPdfWebhook = async (guideAccesUrl, annonceUrl) => {
+// Trigger PDF Assistants (Guide d'accès)
+const triggerAssistantPdfWebhook = async (guideAccesUrl) => {
   const updateData = {}
   
   if (guideAccesUrl) {
     updateData.guide_acces_pdf_url = guideAccesUrl
     updateData.guide_acces_last_generated_at = new Date().toISOString()
-  }
-  
-  if (annonceUrl) {
-    updateData.annonce_pdf_url = annonceUrl
-    updateData.annonce_last_generated_at = new Date().toISOString()
   }
   
   updateData.updated_at = new Date().toISOString()
@@ -621,14 +573,13 @@ const handleSave = async () => {
 
 ## 🎯 **COMPORTEMENTS ATTENDUS**
 
-| Action | Trigger Finalisation | Trigger PDF Fiches | Trigger Guide | Trigger Annonce | Trigger Alertes |
-|--------|---------------------|-------------------|---------------|-----------------|-----------------|
-| Finalisation (Brouillon → Complété) | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Génération PDF Fiches | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Génération PDF Guide | ❌ | ❌ | ✅ | ❌ | ❌ |
-| Génération PDF Annonce | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Modification champ alerte (Complété) | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Sauvegarde normale | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Action | Trigger Finalisation | Trigger PDF Fiches | Trigger Guide | Trigger Alertes |
+|--------|---------------------|-------------------|---------------|-----------------|
+| Finalisation (Brouillon → Complété) | ✅ | ❌ | ❌ | ✅ |
+| Génération PDF Fiches | ❌ | ✅ | ❌ | ❌ |
+| Génération PDF Guide | ❌ | ❌ | ✅ | ❌ |
+| Modification champ alerte (Complété) | ❌ | ❌ | ❌ | ✅ |
+| Sauvegarde normale | ❌ | ❌ | ❌ | ❌ |
 
 ---
 

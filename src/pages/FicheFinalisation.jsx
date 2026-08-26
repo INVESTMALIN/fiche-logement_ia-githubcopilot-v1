@@ -1,5 +1,5 @@
 // src/pages/FicheFinalisation.jsx
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from '../components/FormContext'
 import SidebarMenu from '../components/SidebarMenu'
@@ -8,9 +8,7 @@ import Button from '../components/Button'
 import PDFUpload from '../components/PDFUpload'
 import MiniDashboard from '../components/MiniDashboard'
 import AnnonceAgentPanel from '../components/annonce/AnnonceAgentPanel'
-import { prepareForN8nWebhook } from '../lib/PdfFormatter'
-import { CheckCircle, PenTool, Send, RefreshCw, Copy, AlertCircle, Sparkles, Loader2, Check, FileText, FileEdit, Ban, Construction, AlertTriangle, ExternalLink, CheckCircle2, Pause, XCircle } from 'lucide-react'
-import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
+import { CheckCircle, RefreshCw, AlertCircle, Loader2, FileText, FileEdit, Ban, AlertTriangle, ExternalLink, CheckCircle2, Pause, XCircle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
 import { validateRequiredFields } from '../lib/validationConfig'
 import { normalizePhotoField } from '../lib/photoHelpers'
@@ -20,27 +18,11 @@ import { createChecklistsOnLoomky, normalizeFormDataToFiche, enrichPropertyOnLoo
 export default function FicheFinalisation() {
   const navigate = useNavigate()
   const [showFinalModal, setShowFinalModal] = useState(false)
-  const [chatMessages, setChatMessages] = useState([])
-  const [currentInput, setCurrentInput] = useState('')
-  const [annonceLoading, setAnnonceLoading] = useState(false)
-  const [copiedIndex, setCopiedIndex] = useState(null)
-  const [validatingAnnonce, setValidatingAnnonce] = useState(false)
-  const [validatedAnnonce, setValidatedAnnonce] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
   const [showValidationErrors, setShowValidationErrors] = useState(false)
   const [loomkyToken, setLoomkyToken] = useState('')
   const [loomkyStatus, setLoomkyStatus] = useState({ syncing: false, error: null })
-  const annonceSessionIdRef = useRef(null)
-  const messagesEndRef = useRef(null)
   const errorBlockRef = useRef(null)
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [chatMessages, annonceLoading])
 
   const {
     back,
@@ -50,170 +32,8 @@ export default function FicheFinalisation() {
     handleSave,
     saveStatus,
     handleLoad,
-    finaliserFiche,
-    triggerAssistantPdfWebhook
+    finaliserFiche
   } = useForm()
-
-  useEffect(() => {
-    if (!annonceSessionIdRef.current && formData) {
-      const ficheId = formData.id || formData.nom || 'nouvelle_fiche'
-      const slug = String(ficheId).toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]/g, '')
-      annonceSessionIdRef.current = `fiche_${slug}_annonce`
-    }
-  }, [formData])
-
-  const sendMessage = async (message) => {
-    if (!message.trim()) return
-
-    const userMessage = { role: 'user', content: message }
-    setChatMessages(prev => [...prev, userMessage])
-    setCurrentInput('')
-
-    try {
-      setAnnonceLoading(true)
-
-      const ficheDataForAI = prepareForN8nWebhook(formData)
-
-      const requestBody = {
-        message: message,
-        sessionId: annonceSessionIdRef.current,
-        ficheData: ficheDataForAI
-      }
-
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 120000)
-
-      const response = await fetch('https://hub.cardin.cloud/webhook/d9187cd4-1fd5-4ecd-afe0-125924773f69/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...requestBody,
-          numero_bien: formData.section_logement?.numero_bien || null
-        }),
-        signal: controller.signal
-      })
-
-      clearTimeout(timeout)
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-
-      const responseText = await response.text()
-      console.log('🔍 Réponse Annonce webhook:', responseText)
-
-      if (!responseText || responseText.trim() === '') {
-        throw new Error('Le webhook n\'a renvoyé aucune donnée')
-      }
-
-      const responseData = JSON.parse(responseText)
-      const data = Array.isArray(responseData) ? responseData[0] : responseData
-      const content = data.data?.output || data.output || 'Réponse indisponible.'
-
-      const botMessage = {
-        role: 'assistant',
-        content: content
-      }
-
-      setChatMessages(prev => [...prev, botMessage])
-
-    } catch (error) {
-      console.error('Erreur création annonce:', error)
-
-      let errorMessage = 'Erreur lors de la génération. Merci de réessayer.'
-
-      if (error.name === 'AbortError') {
-        errorMessage = 'La génération a pris trop de temps. Vérifiez votre connexion et réessayez.'
-      } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        errorMessage = 'Problème de connexion réseau. Vérifiez votre connexion internet et réessayez.'
-      }
-
-      const errorMsg = {
-        role: 'assistant',
-        content: errorMessage
-      }
-      setChatMessages(prev => [...prev, errorMsg])
-    } finally {
-      setAnnonceLoading(false)
-    }
-  }
-
-  const handleValidateAnnonce = async () => {
-    const lastMessage = chatMessages[chatMessages.length - 1]
-
-    if (!lastMessage || lastMessage.role !== 'assistant') {
-      console.error('Aucune annonce à valider')
-      return
-    }
-
-    setValidatingAnnonce(true)
-
-    try {
-      console.log('📄 Validation de l\'annonce...')
-
-      const metadata = {
-        numero_bien: formData.section_logement?.numero_bien || 'N/A',
-        type_propriete: formData.section_logement?.type_propriete || 'Non spécifié',
-        adresse: {
-          rue: formData.section_proprietaire?.adresse?.rue || '',
-          complement: formData.section_proprietaire?.adresse?.complement || '',
-          code_postal: formData.section_proprietaire?.adresse?.codePostal || '',
-          ville: formData.section_proprietaire?.adresse?.ville || ''
-        }
-      }
-
-      // Nettoyer le contenu
-      const cleanedContent = lastMessage.content
-        .replace(/([^\s]):/g, '$1 :')
-        .replace(/([^\s])!/g, '$1 !')
-        .replace(/([^\s])\?/g, '$1 ?')
-        .replace(/([^\s]);/g, '$1 ;')
-        .replace(/\u00A0/g, ' ')
-        .replace(/\u202F/g, ' ')
-
-      // Générer le PDF
-      const pdfUrl = await generateAnnoncePDF(
-        cleanedContent,
-        metadata,
-        formData.id || formData.nom || 'nouvelle_fiche'
-      )
-
-      console.log('✅ PDF Annonce généré:', pdfUrl)
-
-      // 🔥 DÉCLENCHER WEBHOOK via FormContext
-      const result = await triggerAssistantPdfWebhook(null, pdfUrl)
-
-      if (result.success) {
-        console.log('✅ URL annonce sauvegardée et webhook déclenché!')
-        setValidatedAnnonce(true)
-        setTimeout(() => setValidatedAnnonce(false), 3000)
-      } else {
-        console.error('❌ Erreur sauvegarde URL annonce:', result.error)
-        throw new Error(result.error)
-      }
-
-    } catch (err) {
-      console.error('❌ Erreur validation annonce:', err)
-    } finally {
-      setValidatingAnnonce(false)
-    }
-  }
-
-  const handleGenererAnnonce = async () => {
-    const prompt = "Crée une annonce attractive pour ce logement basée sur l'inspection réalisée"
-    await sendMessage(prompt)
-  }
-
-  const handleCopyMessage = (content, index) => {
-    navigator.clipboard.writeText(content)
-      .then(() => {
-        setCopiedIndex(index)
-        setTimeout(() => setCopiedIndex(null), 2000)
-      })
-      .catch(() => {
-        // Fail silencieux
-      })
-  }
 
   const handleFinaliser = async () => {
     // 1. Valider les champs obligatoires
@@ -516,14 +336,10 @@ export default function FicheFinalisation() {
 
             </div>
 
-
-
-
             {/* ============================================
-                AGENT ANNONCE (nouveau flux) — BLOC PRINCIPAL, au-dessus de
-                l'ancien assistant n8n. Génération + édition par consigne +
-                validation (PDF + push Monday). `pdfMetadata` alimente le header
-                du PDF (mêmes champs que l'ancien flux) ; numéro/adresse fiche.
+                AGENT ANNONCE — Génération + édition par consigne + validation
+                (PDF + push Monday). `pdfMetadata` alimente le header du PDF :
+                numéro de bien, type de propriété et adresse de la fiche.
             ============================================ */}
             <AnnonceAgentPanel
               ficheId={formData.id}
@@ -538,187 +354,6 @@ export default function FicheFinalisation() {
                 }
               }}
             />
-
-            {/* ANCIEN ASSISTANT ANNONCE (n8n) — DÉSACTIVÉ DU FRONT (transition terminée).
-                Remplacé par AnnonceAgentPanel ci-dessus. On conserve le bloc en code,
-                neutralisé via `false &&`, le temps de valider le nouveau flux ; suppression
-                définitive prévue dans un second temps. Ne rend plus rien à l'écran.
-                NB : `false &&` plutôt qu'un commentaire JSX car le bloc contient déjà des
-                commentaires JSX imbriqués, et l'imbrication de commentaires JSX est interdite.
-                Les state/handlers associés (chatMessages, sendMessage, handleValidateAnnonce,
-                handleGenererAnnonce, handleCopyMessage...) restent référencés ici, donc pas de
-                warning "unused" ; ils seront retirés lors de la suppression définitive. */}
-            {false && (
-            <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gray-400 rounded-lg flex items-center justify-center">
-                  <PenTool className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Assistant Annonce</h3>
-                  <p className="text-sm text-gray-600">Générez et affinez votre annonce avec l'IA</p>
-                </div>
-              </div>
-
-              {/* Bouton générer (seulement si pas encore de messages) */}
-              {chatMessages.length === 0 && !annonceLoading && (
-                <button
-                  onClick={handleGenererAnnonce}
-                  disabled={annonceLoading}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  Générer l'annonce
-                </button>
-              )}
-
-              <div className="mt-4 mb-6 p-4 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-amber-800 leading-relaxed">
-                  <p className="font-semibold">Assistant en cours de remplacement</p>
-                  <p className="mt-1">
-                    Cet assistant est progressivement remplacé par le nouvel <strong>Agent annonce</strong> ci-dessus. Il reste fonctionnel le temps de la transition, mais privilégiez désormais le nouvel agent.
-                  </p>
-                </div>
-              </div>
-
-              {/* Loading state */}
-              {annonceLoading && (
-                <div className="flex items-center justify-center gap-3 py-8">
-                  <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
-                  <div className="text-center">
-                    <p className="font-medium text-gray-900">
-                      {chatMessages.length === 0 ? 'Génération en cours...' : 'Envoi en cours...'}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {chatMessages.length === 0
-                        ? 'L\'IA génère votre annonce...'
-                        : 'Envoi de votre message à l\'assistant'
-                      }
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Conversation */}
-              {chatMessages.length > 0 && (
-                <div className="space-y-4">
-                  {/* Historique des messages */}
-                  <div className="bg-white rounded-lg border max-h-96 overflow-y-auto p-4 space-y-3">
-                    {chatMessages.map((msg, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-100 text-gray-900'
-                            }`}
-                        >
-                          <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                            {msg.content}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
-
-                  {/* Zone d'actions : Copier + Valider */}
-                  {chatMessages[chatMessages.length - 1]?.role === 'assistant' && (
-                    <div className="space-y-3">
-
-                      {/* Boutons Copier + Valider (côte à côte) */}
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => handleCopyMessage(chatMessages[chatMessages.length - 1].content, chatMessages.length - 1)}
-                          className="flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg font-medium transition-all flex-1"
-                        >
-                          {copiedIndex === chatMessages.length - 1 ? (
-                            <>
-                              <Check className="w-4 h-4 text-green-600" />
-                              <span className="text-green-600">Copié !</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-4 h-4 text-gray-700" />
-                              <span className="text-gray-700">Copier le texte</span>
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          onClick={handleValidateAnnonce}
-                          disabled={validatingAnnonce}
-                          className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-1"
-                        >
-                          {validatingAnnonce ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span>Génération PDF...</span>
-                            </>
-                          ) : validatedAnnonce ? (
-                            <>
-                              <Check className="w-4 h-4" />
-                              <span>Annonce validée !</span>
-                            </>
-                          ) : (
-                            <>
-                              <Check className="w-4 h-4" />
-                              <span>Valider cette annonce</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Input pour continuer la conversation */}
-                  <div className="flex gap-2">
-                    <textarea
-                      value={currentInput}
-                      onChange={(e) => setCurrentInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey && !annonceLoading) {
-                          e.preventDefault()
-                          sendMessage(currentInput)
-                        }
-                      }}
-                      placeholder="Demandez une modification ou posez une question... (Maj+Entrée pour aller à la ligne)"
-                      disabled={annonceLoading}
-                      rows={3}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                    />
-                    <button
-                      onClick={() => sendMessage(currentInput)}
-                      disabled={annonceLoading || !currentInput.trim()}
-                      className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${annonceLoading || !currentInput.trim()
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-purple-600 hover:bg-purple-700 text-white'
-                        }`}
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Bouton recommencer (discret) */}
-                  <button
-                    onClick={() => {
-                      setChatMessages([])
-                      setCurrentInput('')
-                    }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-all"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Recommencer une nouvelle génération
-                  </button>
-                </div>
-              )}
-            </div>
-            )}
-
-
 
             {/* SECTION PRÉ-FINALISATION (statuts et champs obligatoires) */}
             <div className="mb-8 space-y-4">

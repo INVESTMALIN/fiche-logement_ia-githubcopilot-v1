@@ -292,7 +292,7 @@ export default function FicheGuideAcces() {
       console.log('✅ PDF Guide d\'accès généré:', pdfUrl)
 
       // 🔥 DÉCLENCHER WEBHOOK via FormContext
-      const result = await triggerAssistantPdfWebhook(pdfUrl, null)
+      const result = await triggerAssistantPdfWebhook(pdfUrl)
 
       if (result.success) {
         console.log('✅ URL guide sauvegardée et webhook déclenché!')
