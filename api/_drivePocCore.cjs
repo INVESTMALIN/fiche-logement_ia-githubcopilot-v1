@@ -5,6 +5,9 @@ const { createClient } = require('@supabase/supabase-js')
 const DEFAULT_FOLDER_ID = '1XY1JgojvBJhHjIq6yHrAQ9p4ek2IzKBn'
 const MAX_FILE_SIZE = 25 * 1024 * 1024
 const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/drive'
+const DRIVE_FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder'
+const DUPLICATION_BATCH_SIZE = 20
+const DUPLICATION_CONCURRENCY = 4
 
 let cachedGoogleToken = null
 let cachedGoogleTokenExpiresAt = 0
@@ -200,7 +203,17 @@ function matchesPropertyFolder(folderName, propertyNumber) {
   return new RegExp(`^${escapedNumber}(?:\\.|\\s|$)`, 'i').test(String(folderName || '').trim())
 }
 
-async function resolvePropertyFolder(propertyNumberInput) {
+function normalizeTestDestinationNumber(value) {
+  const propertyNumber = normalizePropertyNumber(value)
+  if (!propertyNumber.toUpperCase().includes('TEST')) {
+    const error = new Error('Le numéro cible du POC doit contenir « TEST » pour éviter de créer un vrai dossier par erreur.')
+    error.statusCode = 400
+    throw error
+  }
+  return propertyNumber
+}
+
+async function findPropertyFolders(propertyNumberInput) {
   const propertyNumber = normalizePropertyNumber(propertyNumberInput)
   const query = `'${getTargetFolderId()}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false and name contains '${propertyNumber}'`
   const params = new URLSearchParams({
@@ -223,6 +236,12 @@ async function resolvePropertyFolder(propertyNumberInput) {
     nextPageToken = data.nextPageToken || null
   } while (nextPageToken)
 
+  return { propertyNumber, matches }
+}
+
+async function resolvePropertyFolder(propertyNumberInput) {
+  const { propertyNumber, matches } = await findPropertyFolders(propertyNumberInput)
+
   if (matches.length === 0) {
     const error = new Error(`Aucun dossier de bien ne commence par « ${propertyNumber}. » dans le dossier de test.`)
     error.statusCode = 404
@@ -240,6 +259,254 @@ async function resolvePropertyFolder(propertyNumberInput) {
   }
 
   return matches[0]
+}
+
+async function listDriveChildren(folderId) {
+  const files = []
+  let nextPageToken = null
+  const params = new URLSearchParams({
+    q: `'${folderId}' in parents and trashed = false`,
+    spaces: 'drive',
+    pageSize: '1000',
+    includeItemsFromAllDrives: 'true',
+    supportsAllDrives: 'true',
+    fields: 'nextPageToken,files(id,name,mimeType,parents,size,trashed,capabilities(canCopy,canAddChildren))',
+  })
+
+  do {
+    if (nextPageToken) params.set('pageToken', nextPageToken)
+    else params.delete('pageToken')
+    const { data } = await googleRequest(`https://www.googleapis.com/drive/v3/files?${params}`)
+    files.push(...(data.files || []))
+    nextPageToken = data.nextPageToken || null
+  } while (nextPageToken)
+
+  return files
+}
+
+async function inventoryDriveFolder(rootFolder) {
+  const folders = []
+  const files = []
+  const queue = [{
+    id: rootFolder.id,
+    name: rootFolder.name,
+    path: rootFolder.name,
+    depth: 0,
+    topLevelName: '(racine)',
+  }]
+
+  while (queue.length > 0) {
+    const currentFolder = queue.shift()
+    const children = await listDriveChildren(currentFolder.id)
+
+    for (const child of children) {
+      const path = `${currentFolder.path}/${child.name}`
+      const depth = currentFolder.depth + 1
+      const topLevelName = currentFolder.depth === 0 ? child.name : currentFolder.topLevelName
+      const item = {
+        ...child,
+        parentId: currentFolder.id,
+        path,
+        depth,
+        topLevelName,
+      }
+
+      if (child.mimeType === DRIVE_FOLDER_MIME_TYPE) {
+        folders.push(item)
+        queue.push(item)
+      } else {
+        files.push(item)
+      }
+    }
+  }
+
+  return { folders, files }
+}
+
+function summarizeDriveInventory(inventory) {
+  const topLevelMap = new Map()
+  let totalBytes = 0
+  let unknownSize = 0
+  let maxDepth = 0
+
+  for (const item of [...inventory.folders, ...inventory.files]) {
+    maxDepth = Math.max(maxDepth, item.depth)
+    if (!topLevelMap.has(item.topLevelName)) {
+      topLevelMap.set(item.topLevelName, { folders: 0, files: 0, bytes: 0 })
+    }
+    const summary = topLevelMap.get(item.topLevelName)
+    if (item.mimeType === DRIVE_FOLDER_MIME_TYPE) {
+      summary.folders += 1
+    } else {
+      summary.files += 1
+      if (item.size == null) unknownSize += 1
+      else {
+        const size = Number(item.size)
+        totalBytes += size
+        summary.bytes += size
+      }
+    }
+  }
+
+  const blockedFiles = inventory.files.filter((file) => file.capabilities?.canCopy === false)
+  return {
+    folders: inventory.folders.length,
+    files: inventory.files.length,
+    totalBytes,
+    totalMiB: Number((totalBytes / 1024 / 1024).toFixed(2)),
+    maxDepth,
+    unknownSize,
+    blockedFiles: blockedFiles.map((file) => file.path),
+    estimatedWriteCalls: 1 + inventory.folders.length + inventory.files.length,
+    topLevel: [...topLevelMap.entries()].map(([name, summary]) => ({
+      name,
+      folders: summary.folders,
+      files: summary.files,
+      totalMiB: Number((summary.bytes / 1024 / 1024).toFixed(2)),
+    })),
+  }
+}
+
+function buildDuplicateFolderName(sourceFolderName, sourcePropertyNumber, targetPropertyNumber) {
+  const escapedNumber = sourcePropertyNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return String(sourceFolderName).replace(new RegExp(`^${escapedNumber}`, 'i'), targetPropertyNumber)
+}
+
+async function prepareDuplication(body) {
+  const sourcePropertyNumber = normalizePropertyNumber(body.sourcePropertyNumber)
+  const targetPropertyNumber = normalizeTestDestinationNumber(body.targetPropertyNumber)
+  if (sourcePropertyNumber.toLowerCase() === targetPropertyNumber.toLowerCase()) {
+    const error = new Error('Le numéro cible doit être différent du numéro source.')
+    error.statusCode = 400
+    throw error
+  }
+
+  const sourceFolder = await resolvePropertyFolder(sourcePropertyNumber)
+  const { matches: existingTargets } = await findPropertyFolders(targetPropertyNumber)
+  if (existingTargets.length > 0) {
+    const error = new Error(`Le dossier cible existe déjà : ${existingTargets.map((folder) => folder.name).join(', ')}.`)
+    error.statusCode = 409
+    throw error
+  }
+
+  const inventory = await inventoryDriveFolder(sourceFolder)
+  return {
+    sourcePropertyNumber,
+    targetPropertyNumber,
+    sourceFolder,
+    destinationName: buildDuplicateFolderName(sourceFolder.name, sourcePropertyNumber, targetPropertyNumber),
+    inventory,
+    summary: summarizeDriveInventory(inventory),
+  }
+}
+
+async function runWithConcurrency(items, concurrency, worker) {
+  let cursor = 0
+  const results = []
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor
+      cursor += 1
+      results[index] = await worker(items[index], index)
+    }
+  })
+  await Promise.all(workers)
+  return results
+}
+
+async function createDriveFolder({ name, parentId, appProperties }) {
+  const { data } = await googleRequest(
+    'https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id,name,mimeType,parents,driveId,appProperties',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        mimeType: DRIVE_FOLDER_MIME_TYPE,
+        parents: [parentId],
+        appProperties,
+      }),
+    },
+  )
+  return data
+}
+
+async function getDuplicationJobRoot(body) {
+  const destinationRootId = String(body.destinationRootId || '')
+  const jobId = String(body.jobId || '')
+  const sourcePropertyNumber = normalizePropertyNumber(body.sourcePropertyNumber)
+  const targetPropertyNumber = normalizeTestDestinationNumber(body.targetPropertyNumber)
+  if (!/^[a-zA-Z0-9_-]{10,}$/.test(destinationRootId) || !/^[a-f0-9-]{36}$/i.test(jobId)) {
+    const error = new Error('Identifiants de duplication invalides.')
+    error.statusCode = 400
+    throw error
+  }
+
+  const fields = 'id,name,mimeType,parents,driveId,trashed,appProperties,capabilities(canAddChildren)'
+  const { data } = await googleRequest(
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(destinationRootId)}?supportsAllDrives=true&fields=${encodeURIComponent(fields)}`,
+  )
+  const properties = data.appProperties || {}
+  if (
+    data.trashed
+    || data.mimeType !== DRIVE_FOLDER_MIME_TYPE
+    || !data.parents?.includes(getTargetFolderId())
+    || !data.capabilities?.canAddChildren
+    || properties.duplicationJobId !== jobId
+    || properties.sourcePropertyNumber !== sourcePropertyNumber
+    || properties.targetPropertyNumber !== targetPropertyNumber
+    || !properties.sourceRootId
+  ) {
+    const error = new Error('Le dossier de duplication ne correspond pas au travail demandé.')
+    error.statusCode = 403
+    throw error
+  }
+
+  return { folder: data, sourcePropertyNumber, targetPropertyNumber }
+}
+
+async function listDuplicationJobItems(jobId, driveId) {
+  const files = []
+  let nextPageToken = null
+  const params = new URLSearchParams({
+    q: `trashed = false and appProperties has { key='duplicationJobId' and value='${jobId}' }`,
+    corpora: 'drive',
+    driveId,
+    spaces: 'drive',
+    pageSize: '1000',
+    includeItemsFromAllDrives: 'true',
+    supportsAllDrives: 'true',
+    fields: 'nextPageToken,files(id,name,mimeType,parents,appProperties)',
+  })
+
+  do {
+    if (nextPageToken) params.set('pageToken', nextPageToken)
+    else params.delete('pageToken')
+    const { data } = await googleRequest(`https://www.googleapis.com/drive/v3/files?${params}`)
+    files.push(...(data.files || []))
+    nextPageToken = data.nextPageToken || null
+  } while (nextPageToken)
+
+  return files
+}
+
+async function copyDriveFile({ sourceFile, destinationParentId, jobId }) {
+  const { data } = await googleRequest(
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(sourceFile.id)}/copy?supportsAllDrives=true&fields=id,name,mimeType,parents,size,appProperties`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: sourceFile.name,
+        parents: [destinationParentId],
+        appProperties: {
+          duplicationJobId: jobId,
+          sourceItemId: sourceFile.id,
+        },
+      }),
+    },
+  )
+  return data
 }
 
 async function getVerifiedPropertyFolder(folderIdInput, propertyNumberInput) {
@@ -337,6 +604,167 @@ async function handleResolveFolder(body) {
   return {
     folder,
     folderUrl: `https://drive.google.com/drive/folders/${folder.id}`,
+  }
+}
+
+async function handleAnalyzeDuplication(body) {
+  const prepared = await prepareDuplication(body)
+  return {
+    analysis: {
+      sourceFolder: prepared.sourceFolder,
+      sourceFolderUrl: `https://drive.google.com/drive/folders/${prepared.sourceFolder.id}`,
+      sourcePropertyNumber: prepared.sourcePropertyNumber,
+      targetPropertyNumber: prepared.targetPropertyNumber,
+      destinationName: prepared.destinationName,
+      summary: prepared.summary,
+    },
+  }
+}
+
+async function handleStartDuplication(body) {
+  const prepared = await prepareDuplication(body)
+  if (prepared.summary.blockedFiles.length > 0) {
+    const error = new Error(`${prepared.summary.blockedFiles.length} fichier(s) ne peuvent pas être copiés. La duplication est bloquée.`)
+    error.statusCode = 409
+    throw error
+  }
+
+  const jobId = crypto.randomUUID()
+  const commonProperties = {
+    duplicationJobId: jobId,
+    sourceRootId: prepared.sourceFolder.id,
+    sourcePropertyNumber: prepared.sourcePropertyNumber,
+    targetPropertyNumber: prepared.targetPropertyNumber,
+    totalFolders: String(prepared.summary.folders),
+    totalFiles: String(prepared.summary.files),
+  }
+  const destinationRoot = await createDriveFolder({
+    name: prepared.destinationName,
+    parentId: getTargetFolderId(),
+    appProperties: {
+      ...commonProperties,
+      sourceItemId: prepared.sourceFolder.id,
+    },
+  })
+  const destinationBySourceId = new Map([[prepared.sourceFolder.id, destinationRoot.id]])
+  const maxDepth = prepared.inventory.folders.reduce((maximum, folder) => Math.max(maximum, folder.depth), 0)
+
+  for (let depth = 1; depth <= maxDepth; depth += 1) {
+    const foldersAtDepth = prepared.inventory.folders.filter((folder) => folder.depth === depth)
+    await runWithConcurrency(foldersAtDepth, DUPLICATION_CONCURRENCY, async (sourceFolder) => {
+      const destinationParentId = destinationBySourceId.get(sourceFolder.parentId)
+      if (!destinationParentId) throw new Error(`Parent de destination introuvable pour ${sourceFolder.path}.`)
+      const createdFolder = await createDriveFolder({
+        name: sourceFolder.name,
+        parentId: destinationParentId,
+        appProperties: {
+          ...commonProperties,
+          sourceItemId: sourceFolder.id,
+        },
+      })
+      destinationBySourceId.set(sourceFolder.id, createdFolder.id)
+    })
+  }
+
+  return {
+    job: {
+      id: jobId,
+      sourceFolderId: prepared.sourceFolder.id,
+      sourcePropertyNumber: prepared.sourcePropertyNumber,
+      targetPropertyNumber: prepared.targetPropertyNumber,
+      destinationRootId: destinationRoot.id,
+      destinationName: destinationRoot.name,
+      destinationUrl: `https://drive.google.com/drive/folders/${destinationRoot.id}`,
+      totalFolders: prepared.summary.folders,
+      totalFiles: prepared.summary.files,
+      copiedFiles: 0,
+      remainingFiles: prepared.summary.files,
+      pendingFileIds: prepared.inventory.files.map((file) => file.id),
+      done: prepared.summary.files === 0,
+    },
+  }
+}
+
+async function handleCopyDuplicationBatch(body) {
+  const verifiedJob = await getDuplicationJobRoot(body)
+  const sourceFileIds = [...new Set(Array.isArray(body.sourceFileIds) ? body.sourceFileIds.map(String) : [])]
+  if (sourceFileIds.length === 0 || sourceFileIds.length > DUPLICATION_BATCH_SIZE) {
+    const error = new Error(`Un lot doit contenir entre 1 et ${DUPLICATION_BATCH_SIZE} fichiers.`)
+    error.statusCode = 400
+    throw error
+  }
+  if (sourceFileIds.some((fileId) => !/^[a-zA-Z0-9_-]{10,}$/.test(fileId))) {
+    const error = new Error('Un identifiant de fichier source est invalide.')
+    error.statusCode = 400
+    throw error
+  }
+
+  const jobItems = await listDuplicationJobItems(body.jobId, verifiedJob.folder.driveId)
+  const destinationFolderBySourceId = new Map(
+    jobItems
+      .filter((item) => item.mimeType === DRIVE_FOLDER_MIME_TYPE && item.appProperties?.sourceItemId)
+      .map((item) => [item.appProperties.sourceItemId, item.id]),
+  )
+  const copiedSourceIds = new Set(
+    jobItems
+      .filter((item) => item.mimeType !== DRIVE_FOLDER_MIME_TYPE && item.appProperties?.sourceItemId)
+      .map((item) => item.appProperties.sourceItemId),
+  )
+  const alreadyCopiedIds = sourceFileIds.filter((fileId) => copiedSourceIds.has(fileId))
+  const pendingSourceIds = sourceFileIds.filter((fileId) => !copiedSourceIds.has(fileId))
+  const failures = []
+  const successfulSourceIds = []
+
+  await runWithConcurrency(pendingSourceIds, DUPLICATION_CONCURRENCY, async (sourceFileId) => {
+    try {
+      const fields = 'id,name,mimeType,parents,trashed,capabilities(canCopy)'
+      const { data: sourceFile } = await googleRequest(
+        `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(sourceFileId)}?supportsAllDrives=true&fields=${encodeURIComponent(fields)}`,
+      )
+      const destinationParentId = sourceFile.parents?.length === 1
+        ? destinationFolderBySourceId.get(sourceFile.parents[0])
+        : null
+      if (
+        sourceFile.trashed
+        || sourceFile.mimeType === DRIVE_FOLDER_MIME_TYPE
+        || sourceFile.capabilities?.canCopy === false
+        || !destinationParentId
+      ) {
+        const error = new Error('Le fichier source ne se trouve pas dans l’arborescence autorisée ou ne peut pas être copié.')
+        error.statusCode = 403
+        throw error
+      }
+      await copyDriveFile({ sourceFile, destinationParentId, jobId: body.jobId })
+      successfulSourceIds.push(sourceFile.id)
+      return sourceFile.id
+    } catch (error) {
+      failures.push({ sourceFileId, error: error.message })
+      return null
+    }
+  })
+
+  const processedSourceFileIds = [...alreadyCopiedIds, ...successfulSourceIds]
+  const totalFiles = Number(verifiedJob.folder.appProperties.totalFiles || 0)
+  const totalFolders = Number(verifiedJob.folder.appProperties.totalFolders || 0)
+  const copiedFiles = Math.min(totalFiles, copiedSourceIds.size + successfulSourceIds.length)
+  const remainingAfterBatch = Math.max(0, totalFiles - copiedFiles)
+  return {
+    job: {
+      id: body.jobId,
+      sourceFolderId: verifiedJob.folder.appProperties.sourceRootId,
+      sourcePropertyNumber: verifiedJob.sourcePropertyNumber,
+      targetPropertyNumber: verifiedJob.targetPropertyNumber,
+      destinationRootId: verifiedJob.folder.id,
+      destinationName: verifiedJob.folder.name,
+      destinationUrl: `https://drive.google.com/drive/folders/${verifiedJob.folder.id}`,
+      totalFolders,
+      totalFiles,
+      copiedFiles,
+      remainingFiles: remainingAfterBatch,
+      done: remainingAfterBatch === 0 && failures.length === 0,
+      failures,
+      processedSourceFileIds,
+    },
   }
 }
 
@@ -464,6 +892,15 @@ async function handleDrivePocRequest(request, response) {
         break
       case 'resolve-folder':
         result = await handleResolveFolder(body)
+        break
+      case 'analyze-duplication':
+        result = await handleAnalyzeDuplication(body)
+        break
+      case 'start-duplication':
+        result = await handleStartDuplication(body)
+        break
+      case 'copy-duplication-batch':
+        result = await handleCopyDuplicationBatch(body)
         break
       case 'create-session':
         result = await handleCreateSession(body, request, user)

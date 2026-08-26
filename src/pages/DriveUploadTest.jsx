@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Camera, CheckCircle2, ExternalLink, Images, Loader2, Trash2, XCircle } from 'lucide-react'
+import { ArrowLeft, Camera, CheckCircle2, Copy, ExternalLink, FolderSearch, Images, Loader2, RefreshCw, Trash2, XCircle } from 'lucide-react'
 import imageCompression from 'browser-image-compression'
 import { supabase } from '../lib/supabaseClient'
 
 const MAX_SOURCE_SIZE = 30 * 1024 * 1024
 const CONCURRENCY = 3
+
+function formatFileSize(bytes) {
+  const value = Number(bytes || 0)
+  if (value >= 1024 ** 3) return `${(value / 1024 ** 3).toFixed(2)} Go`
+  return `${(value / 1024 ** 2).toFixed(1)} Mo`
+}
 
 function updateItem(items, id, patch) {
   return items.map((item) => (item.id === id ? { ...item, ...patch } : item))
@@ -43,6 +49,14 @@ export default function DriveUploadTest() {
   const [propertyNumber, setPropertyNumber] = useState('7755')
   const [filePrefix, setFilePrefix] = useState('Four')
   const [folderStatus, setFolderStatus] = useState({ loading: true, error: '', folder: null, folderUrl: '' })
+  const [duplicationSourceNumber, setDuplicationSourceNumber] = useState('2155')
+  const [duplicationTargetNumber, setDuplicationTargetNumber] = useState('2155-TEST-COPIE')
+  const [duplicationState, setDuplicationState] = useState({
+    status: 'idle',
+    analysis: null,
+    job: null,
+    error: '',
+  })
 
   const apiRequest = async (payload) => {
     const { data: sessionData } = await supabase.auth.getSession()
@@ -217,6 +231,94 @@ export default function DriveUploadTest() {
     }
   }
 
+  const resetDuplication = () => {
+    setDuplicationState({ status: 'idle', analysis: null, job: null, error: '' })
+  }
+
+  const analyzeDuplication = async () => {
+    setDuplicationState({ status: 'analyzing', analysis: null, job: null, error: '' })
+    try {
+      const data = await apiRequest({
+        action: 'analyze-duplication',
+        sourcePropertyNumber: duplicationSourceNumber.trim(),
+        targetPropertyNumber: duplicationTargetNumber.trim(),
+      })
+      setDuplicationState({ status: 'ready', analysis: data.analysis, job: null, error: '' })
+    } catch (error) {
+      setDuplicationState({ status: 'error', analysis: null, job: null, error: error.message })
+    }
+  }
+
+  const copyDuplicationBatches = async (initialJob, analysis) => {
+    let currentJob = { ...initialJob, pendingFileIds: initialJob.pendingFileIds || [] }
+    setDuplicationState({ status: 'copying', analysis, job: currentJob, error: '' })
+
+    while (currentJob.pendingFileIds.length > 0) {
+      const sourceFileIds = currentJob.pendingFileIds.slice(0, 20)
+      const data = await apiRequest({
+        action: 'copy-duplication-batch',
+        jobId: currentJob.id,
+        destinationRootId: currentJob.destinationRootId,
+        sourcePropertyNumber: currentJob.sourcePropertyNumber,
+        targetPropertyNumber: currentJob.targetPropertyNumber,
+        sourceFileIds,
+      })
+      const processedSourceFileIds = new Set(data.job.processedSourceFileIds || [])
+      currentJob = {
+        ...data.job,
+        pendingFileIds: currentJob.pendingFileIds.filter((fileId) => !processedSourceFileIds.has(fileId)),
+      }
+      setDuplicationState({
+        status: currentJob.pendingFileIds.length === 0 && currentJob.done ? 'done' : 'copying',
+        analysis,
+        job: currentJob,
+        error: '',
+      })
+      if (currentJob.failures?.length > 0) {
+        throw new Error(`${currentJob.failures.length} fichier(s) n’ont pas pu être copiés. Vous pouvez reprendre sans créer de doublons.`)
+      }
+    }
+
+    if (currentJob.done) {
+      setDuplicationState({ status: 'done', analysis, job: currentJob, error: '' })
+    }
+  }
+
+  const startDuplication = async () => {
+    const analysis = duplicationState.analysis
+    if (!analysis) return
+    const confirmed = window.confirm(
+      `Créer « ${analysis.destinationName} » et y copier ${analysis.summary.files} fichiers ?`,
+    )
+    if (!confirmed) return
+
+    setDuplicationState((current) => ({ ...current, status: 'starting', error: '' }))
+    try {
+      const data = await apiRequest({
+        action: 'start-duplication',
+        sourcePropertyNumber: duplicationSourceNumber.trim(),
+        targetPropertyNumber: duplicationTargetNumber.trim(),
+      })
+      await copyDuplicationBatches(data.job, analysis)
+    } catch (error) {
+      setDuplicationState((current) => ({ ...current, status: 'error', error: error.message }))
+    }
+  }
+
+  const resumeDuplication = async () => {
+    if (!duplicationState.job || !duplicationState.analysis) return
+    try {
+      await copyDuplicationBatches(duplicationState.job, duplicationState.analysis)
+    } catch (error) {
+      setDuplicationState((current) => ({ ...current, status: 'error', error: error.message }))
+    }
+  }
+
+  const duplicationBusy = ['analyzing', 'starting', 'copying'].includes(duplicationState.status)
+  const duplicationProgress = duplicationState.job?.totalFiles
+    ? Math.round((duplicationState.job.copiedFiles / duplicationState.job.totalFiles) * 100)
+    : 0
+
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
@@ -386,6 +488,160 @@ export default function DriveUploadTest() {
                 </div>
               </div>
             )}
+
+            <section className="space-y-5 rounded-2xl border border-indigo-200 bg-indigo-50/40 p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <Copy className="mt-0.5 flex-none text-indigo-700" size={24} />
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">POC duplication Drive</p>
+                  <h2 className="mt-1 text-xl font-semibold text-slate-950">Recopier un dossier propriétaire complet</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    L’analyse ne modifie rien. La copie crée ensuite un dossier de test et reproduit son arborescence par petits lots.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-800">Numéro source existant</span>
+                  <input
+                    value={duplicationSourceNumber}
+                    onChange={(event) => {
+                      setDuplicationSourceNumber(event.target.value)
+                      resetDuplication()
+                    }}
+                    inputMode="numeric"
+                    disabled={duplicationBusy || Boolean(duplicationState.job)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
+                    placeholder="Ex. 2155"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-800">Numéro du dossier de test</span>
+                  <input
+                    value={duplicationTargetNumber}
+                    onChange={(event) => {
+                      setDuplicationTargetNumber(event.target.value)
+                      resetDuplication()
+                    }}
+                    disabled={duplicationBusy || Boolean(duplicationState.job)}
+                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
+                    placeholder="Ex. 2155-TEST-COPIE"
+                  />
+                  <span className="mt-1 block text-xs text-slate-500">La cible doit contenir TEST. Un dossier existant ne sera jamais remplacé.</span>
+                </label>
+              </div>
+
+              {!duplicationState.analysis && !duplicationState.job && (
+                <button
+                  type="button"
+                  onClick={analyzeDuplication}
+                  disabled={duplicationBusy || !duplicationSourceNumber.trim() || !duplicationTargetNumber.trim()}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-700 px-5 py-3 font-semibold text-white shadow-sm hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  {duplicationState.status === 'analyzing' ? <Loader2 className="animate-spin" size={18} /> : <FolderSearch size={18} />}
+                  {duplicationState.status === 'analyzing' ? 'Analyse en cours…' : 'Analyser la duplication'}
+                </button>
+              )}
+
+              {duplicationState.analysis && (
+                <div className="space-y-4 rounded-xl border border-indigo-200 bg-white p-4">
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-700">Analyse terminée, aucune écriture effectuée</p>
+                      <p className="mt-1 font-semibold text-slate-950">{duplicationState.analysis.sourceFolder.name}</p>
+                      <p className="mt-1 text-sm text-slate-600">Future copie : {duplicationState.analysis.destinationName}</p>
+                    </div>
+                    <a
+                      href={duplicationState.analysis.sourceFolderUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-700 hover:text-indigo-900"
+                    >
+                      Ouvrir la source <ExternalLink size={14} />
+                    </a>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="rounded-lg bg-slate-50 p-3">
+                      <p className="text-xs text-slate-500">Dossiers</p>
+                      <p className="mt-1 text-lg font-semibold text-slate-950">{duplicationState.analysis.summary.folders}</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 p-3">
+                      <p className="text-xs text-slate-500">Fichiers</p>
+                      <p className="mt-1 text-lg font-semibold text-slate-950">{duplicationState.analysis.summary.files}</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 p-3">
+                      <p className="text-xs text-slate-500">Volume</p>
+                      <p className="mt-1 text-lg font-semibold text-slate-950">{formatFileSize(duplicationState.analysis.summary.totalBytes)}</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 p-3">
+                      <p className="text-xs text-slate-500">Éléments à créer</p>
+                      <p className="mt-1 text-lg font-semibold text-slate-950">{duplicationState.analysis.summary.estimatedWriteCalls}</p>
+                    </div>
+                  </div>
+
+                  {duplicationState.analysis.summary.blockedFiles.length > 0 ? (
+                    <p className="rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700">
+                      {duplicationState.analysis.summary.blockedFiles.length} fichier(s) ne peuvent pas être copiés. Le lancement restera bloqué.
+                    </p>
+                  ) : (
+                    <p className="rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
+                      Tous les fichiers sont copiables par le compte technique.
+                    </p>
+                  )}
+
+                  {!duplicationState.job && duplicationState.status !== 'done' && (
+                    <button
+                      type="button"
+                      onClick={startDuplication}
+                      disabled={duplicationBusy || duplicationState.analysis.summary.blockedFiles.length > 0}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-5 py-3 font-semibold text-white shadow-sm hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    >
+                      {duplicationState.status === 'starting' ? <Loader2 className="animate-spin" size={18} /> : <Copy size={18} />}
+                      {duplicationState.status === 'starting' ? 'Création de l’arborescence…' : 'Lancer la copie réelle'}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {duplicationState.job && (
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold text-slate-950">
+                      {duplicationState.status === 'done' ? 'Duplication terminée' : 'Copie des fichiers'}
+                    </p>
+                    <p className="text-sm font-semibold text-slate-600">{duplicationState.job.copiedFiles} / {duplicationState.job.totalFiles}</p>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                    <div className="h-full rounded-full bg-indigo-600 transition-all" style={{ width: `${duplicationProgress}%` }} />
+                  </div>
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                    <p className="text-sm text-slate-600">
+                      {duplicationState.status === 'done' ? 'Tous les dossiers et fichiers ont été recopiés.' : `${duplicationProgress} %, vous pouvez laisser cette page ouverte.`}
+                    </p>
+                    <a href={duplicationState.job.destinationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-700 hover:text-indigo-900">
+                      Ouvrir la copie <ExternalLink size={14} />
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {duplicationState.error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                  <p className="flex items-start gap-2 text-sm font-medium text-red-700"><XCircle className="mt-0.5 flex-none" size={17} /> {duplicationState.error}</p>
+                  {duplicationState.job ? (
+                    <button type="button" onClick={resumeDuplication} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">
+                      <RefreshCw size={16} /> Reprendre sans doublons
+                    </button>
+                  ) : (
+                    <button type="button" onClick={analyzeDuplication} className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-red-700 hover:text-red-900">
+                      <RefreshCw size={16} /> Réessayer l’analyse
+                    </button>
+                  )}
+                </div>
+              )}
+            </section>
           </div>
         </section>
       </div>
