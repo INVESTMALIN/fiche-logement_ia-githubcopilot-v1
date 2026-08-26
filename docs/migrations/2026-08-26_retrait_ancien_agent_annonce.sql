@@ -11,13 +11,31 @@
 --   1. PR applicative mergee (plus aucune ligne de code executee ne
 --      reference les deux colonnes).
 --   2. Deploiement Vercel verifie en production.
---   3. 2026-08-26_precontrole_retrait_ancien_agent_annonce.sql execute
---      et son resultat relu.
+--   3. FENETRE DE DRAIN respectee (voir ci-dessous). NE PAS enchainer
+--      immediatement apres le deploiement.
+--   4. 2026-08-26_precontrole_retrait_ancien_agent_annonce.sql execute
+--      et son resultat relu, requete 0 comprise.
 --
 -- L'ordre code-puis-colonnes est obligatoire : c'est une SUPPRESSION, pas
 -- un ajout. Si les colonnes partaient avant le deploiement, le code encore
 -- en ligne ecrirait dans des colonnes absentes et la sauvegarde de fiche
 -- casserait en production.
+--
+-- FENETRE DE DRAIN — le deploiement ne suffit pas.
+-- Vercel ne met a jour que les NOUVEAUX chargements de page. Un coordinateur
+-- qui a laisse un onglet ouvert AVANT le deploiement tourne encore sur
+-- l'ancien bundle, qui envoie annonce_pdf_url a chaque sauvegarde. Des que la
+-- colonne disparait, PostgREST rejette l'UPDATE entier (PGRST204) : la
+-- sauvegarde echoue et l'inspection en cours peut etre perdue.
+-- Donc : appliquer hors heures de terrain, assez loin du deploiement pour que
+-- les onglets d'avant aient ete fermes ou recharges (une nuit est un ordre de
+-- grandeur raisonnable), apres avoir verifie la requete 0 du precontrole
+-- (fiches_modifiees_1h a 0). Prevenir les coordinateurs de recharger leur
+-- onglet est le complement naturel : c'est la seule action qui purge
+-- reellement un vieux bundle.
+-- Ce drain reduit le risque, il ne l'annule pas. Pour l'annuler vraiment il
+-- faudrait un mecanisme applicatif du type "nouvelle version disponible,
+-- rechargez" — c'est un chantier a part, hors perimetre de ce retrait.
 --
 -- ATTENTION AU JUMEAU. Ce fichier ne touche QUE la moitie annonce :
 --   fiche_annonce_pdf_webhook      -> notify_annonce_pdf_update()      -> RETIRE ICI

@@ -21,6 +21,35 @@
 
 
 -- ---------------------------------------------------------------------
+-- 0. FENETRE DE DRAIN — A LIRE EN PREMIER
+--
+--    Le deploiement Vercel ne met a jour que les NOUVEAUX chargements de
+--    page. Un coordinateur qui a laisse un onglet ouvert AVANT le deploiement
+--    continue de tourner sur l'ancien bundle, qui envoie encore
+--    annonce_pdf_url a chaque sauvegarde. Des la suppression de la colonne,
+--    PostgREST rejette l'UPDATE entier (PGRST204, colonne absente du cache de
+--    schema) : la sauvegarde echoue et le coordinateur peut perdre son
+--    inspection en cours.
+--
+--    Choisir donc un creneau ou personne ne saisit : hors heures de terrain,
+--    et assez loin du deploiement pour que les onglets d'avant aient ete
+--    fermes ou recharges (une nuit est un ordre de grandeur raisonnable).
+--    Prevenir les coordinateurs de recharger leur onglet est le complement
+--    naturel : c'est la seule action qui purge reellement un vieux bundle.
+--
+--    Cette requete mesure l'activite recente pour choisir le creneau.
+--    Attendu avant de lancer la migration : inactivite confortable et
+--    fiches_modifiees_1h a 0.
+-- ---------------------------------------------------------------------
+SELECT
+  max(updated_at)                                                  AS derniere_sauvegarde,
+  now() - max(updated_at)                                          AS inactivite,
+  count(*) FILTER (WHERE updated_at > now() - interval '1 hour')    AS fiches_modifiees_1h,
+  count(*) FILTER (WHERE updated_at > now() - interval '24 hours')  AS fiches_modifiees_24h
+FROM public.fiches;
+
+
+-- ---------------------------------------------------------------------
 -- 1. Etat des DEUX triggers jumeaux
 --    Attendu avant migration : 2 lignes.
 --    Apres migration, seul fiche_guide_acces_pdf_webhook doit subsister.
