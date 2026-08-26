@@ -620,8 +620,9 @@ guide_acces_pdf_url TEXT
 guide_acces_last_generated_at TIMESTAMP WITH TIME ZONE
 
 -- ⚠️ ORPHELINES : encore présentes en base, plus référencées par aucune ligne de
--- code depuis le retrait de l'ancien agent annonce (août 2026). Leur suppression,
--- avec le trigger fiche_annonce_pdf_webhook, est une étape manuelle en attente.
+-- code depuis le retrait de l'ancien agent annonce (août 2026). Suppression, avec
+-- le trigger fiche_annonce_pdf_webhook :
+-- docs/migrations/2026-08-26_retrait_ancien_agent_annonce.sql (à appliquer à la main).
 annonce_pdf_url TEXT
 annonce_last_generated_at TIMESTAMP WITH TIME ZONE
 ```
@@ -669,7 +670,7 @@ $function$;
 - **Trigger :** `fiche_annonce_pdf_webhook` sur `public.fiches`
 - **Condition :** `annonce_last_generated_at` change
 
-Encore présent en base, mais **plus jamais déclenché** : depuis le retrait de l'ancien agent annonce (août 2026), plus aucune ligne de code n'écrit dans `annonce_last_generated_at`. Son retrait, avec la fonction et les deux colonnes, est une étape manuelle en attente. Ne pas confondre avec son jumeau `fiche_guide_acces_pdf_webhook`, qui reste vivant.
+Encore présent en base, mais **plus jamais déclenché** : depuis le retrait de l'ancien agent annonce (août 2026), plus aucune ligne de code n'écrit dans `annonce_last_generated_at`. Son retrait, avec la fonction et les deux colonnes, se fait par `docs/migrations/2026-08-26_retrait_ancien_agent_annonce.sql`, à appliquer à la main après le précontrôle du même dossier. Ne pas confondre avec son jumeau `fiche_guide_acces_pdf_webhook`, qui reste vivant.
 
 ---
 

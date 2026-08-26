@@ -41,7 +41,8 @@ CREATE TABLE fiches (
   guide_acces_last_generated_at TIMESTAMP WITH TIME ZONE,
   -- ⚠️ ORPHELINES : encore présentes en base, plus référencées par aucune ligne
   -- de code depuis le retrait de l'ancien agent annonce (août 2026).
-  -- Leur suppression est une étape manuelle en attente.
+  -- Suppression : docs/migrations/2026-08-26_retrait_ancien_agent_annonce.sql,
+  -- à appliquer à la main après le précontrôle du même dossier.
   annonce_pdf_url TEXT,
   annonce_last_generated_at TIMESTAMP WITH TIME ZONE,
   
@@ -290,7 +291,7 @@ CREATE TRIGGER fiche_guide_acces_pdf_webhook
 - **Trigger :** `fiche_annonce_pdf_webhook` sur `public.fiches`
 - **Condition :** `annonce_last_generated_at` change
 
-Ce trigger existe encore en base mais **ne se déclenche plus jamais** : depuis le retrait de l'ancien agent annonce (août 2026), plus aucune ligne de code n'écrit dans `annonce_last_generated_at`. Le retrait du trigger, de la fonction et des deux colonnes est une étape manuelle en attente. Le jumeau `fiche_guide_acces_pdf_webhook` / `notify_guide_acces_pdf_update()` reste vivant et ne doit pas être touché.
+Ce trigger existe encore en base mais **ne se déclenche plus jamais** : depuis le retrait de l'ancien agent annonce (août 2026), plus aucune ligne de code n'écrit dans `annonce_last_generated_at`. Le retrait du trigger, de la fonction et des deux colonnes se fait par `docs/migrations/2026-08-26_retrait_ancien_agent_annonce.sql`, à appliquer à la main après le précontrôle du même dossier. Le jumeau `fiche_guide_acces_pdf_webhook` / `notify_guide_acces_pdf_update()` reste vivant et ne doit pas être touché.
 
 ### **5. Trigger Alertes (Optionnel)**
 
