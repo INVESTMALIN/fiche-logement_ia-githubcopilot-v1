@@ -28,7 +28,6 @@ const backfillContactsLocalIds = (contacts) => {
 // 🔄 Mapping FormContext → Colonnes Supabase
 export const mapFormDataToSupabase = (formData) => {
   console.log('🔍 formData.guide_acces_pdf_url:', formData.guide_acces_pdf_url)
-  console.log('🔍 formData.annonce_pdf_url:', formData.annonce_pdf_url)
 
   // Calcul du verdict et des valeurs legacy dérivées depuis la grille d'évaluation
   const grilleStats = computeGrilleStats(formData.section_avis)
@@ -1256,9 +1255,7 @@ export const mapFormDataToSupabase = (formData) => {
 
     // PDF URLs - Assistants IA
     guide_acces_pdf_url: formData.guide_acces_pdf_url || null,
-    annonce_pdf_url: formData.annonce_pdf_url || null,
     // guide_acces_last_generated_at: NE PAS MAPPER (géré par triggerAssistantPdfWebhook)
-    // annonce_last_generated_at: NE PAS MAPPER (géré par triggerAssistantPdfWebhook)
 
     // Section Sécurité
     securite_equipements: formData.section_securite?.equipements || [],
@@ -2564,11 +2561,9 @@ export const mapSupabaseToFormData = (supabaseData) => {
       video_acces: supabaseData.guide_acces_video_acces || [],
     },
 
-    // PDF Guide d'accès et annonce
+    // PDF Guide d'accès
     guide_acces_pdf_url: supabaseData.guide_acces_pdf_url || null,
-    annonce_pdf_url: supabaseData.annonce_pdf_url || null,
     guide_acces_last_generated_at: supabaseData.guide_acces_last_generated_at,
-    annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 
     section_securite: {
       equipements: supabaseData.securite_equipements || [],

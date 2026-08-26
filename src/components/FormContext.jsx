@@ -2216,7 +2216,7 @@ export function FormProvider({ children }) {
     }
   }
 
-  const triggerAssistantPdfWebhook = async (guideAccesUrl, annonceUrl) => {
+  const triggerAssistantPdfWebhook = async (guideAccesUrl) => {
     if (!formData.id) {
       console.error('❌ Impossible de déclencher webhook Assistant PDF : pas d\'ID fiche')
       return { success: false, error: 'Pas d\'ID fiche disponible' }
@@ -2225,8 +2225,7 @@ export function FormProvider({ children }) {
     try {
       console.log('🔄 Déclenchement webhook Assistant PDF...', {
         fiche: formData.id,
-        guideAccesUrl,
-        annonceUrl
+        guideAccesUrl
       })
 
       const updateData = {}
@@ -2234,11 +2233,6 @@ export function FormProvider({ children }) {
       if (guideAccesUrl) {
         updateData.guide_acces_pdf_url = guideAccesUrl
         updateData.guide_acces_last_generated_at = new Date().toISOString()
-      }
-
-      if (annonceUrl) {
-        updateData.annonce_pdf_url = annonceUrl
-        updateData.annonce_last_generated_at = new Date().toISOString()
       }
 
       updateData.updated_at = new Date().toISOString()

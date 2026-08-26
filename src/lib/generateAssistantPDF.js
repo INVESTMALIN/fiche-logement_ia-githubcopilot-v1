@@ -305,46 +305,8 @@ export const generateGuideAccesPDF = async (content, metadata, ficheId) => {
   }
 }
 
-/**
- * Générer PDF Annonce
- */
-export const generateAnnoncePDF = async (content, metadata, ficheId) => {
-  console.log('📄 Génération PDF Annonce...')
-  
-  try {
-    const doc = new jsPDF('p', 'mm', 'a4')
-    
-    let yPos = renderHeader(doc, 'annonce', metadata)
-    yPos = renderContent(doc, content, yPos)
-    renderFooter(doc, 'annonce', metadata)
-    
-    const pdfBlob = doc.output('blob')
-    const fileName = `annonce_${ficheId}.pdf`
-    
-    const { error: uploadError } = await supabase.storage
-      .from('annonce-pdfs')
-      .upload(fileName, pdfBlob, {
-        contentType: 'application/pdf',
-        upsert: true
-      })
-    
-    if (uploadError) throw uploadError
-    
-    const { data: { publicUrl } } = supabase.storage
-      .from('annonce-pdfs')
-      .getPublicUrl(fileName)
-    
-    console.log('✅ PDF Annonce généré:', publicUrl)
-    return publicUrl
-
-  } catch (error) {
-    console.error('❌ Erreur génération PDF Annonce:', error)
-    throw error
-  }
-}
-
 // ============================================================
-// PDF de l'agent annonce (nouveau) — rendu STRUCTURÉ
+// PDF de l'agent annonce — rendu STRUCTURÉ
 // ------------------------------------------------------------
 // L'agent annonce produit une annonce STRUCTURÉE (sections de output_assemble),
 // pas du texte brut. On ne passe donc PAS par renderContent (heuristique
@@ -352,9 +314,8 @@ export const generateAnnoncePDF = async (content, metadata, ficheId) => {
 // du rendu écran (AnnonceRendu.jsx), tout en réutilisant le header/footer Letahost
 // (ligne dorée, bandeau BIEN N° / TYPE / GÉNÉRÉ LE / ADRESSE).
 //
-// Pas d'upload bucket ici (contrairement à generateAnnoncePDF) : le PDF part
-// directement sur Monday via l'Edge Function annonce-validate. On renvoie donc le
-// PDF en base64, prêt à être transporté en JSON.
+// Pas d'upload bucket ici : le PDF part directement sur Monday via l'Edge Function
+// annonce-validate. On renvoie donc le PDF en base64, prêt à être transporté en JSON.
 // ============================================================
 
 const hasText = (v) => typeof v === 'string' && v.trim() !== ''

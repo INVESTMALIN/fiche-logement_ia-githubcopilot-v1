@@ -1,5 +1,5 @@
 # 📄 SYSTÈME DE GÉNÉRATION PDF - Documentation Complète
-*Mise à jour : 12 février 2026*
+*Mise à jour : 26 août 2026*
 
 ---
 
@@ -12,8 +12,8 @@ Système complet de génération et synchronisation PDF pour l'application Fiche
 - **Fiche Ménage** : PDF filtré avec 14 sections spécifiques
 
 ### **🤖 PDF Assistants IA (jsPDF client-side)**
-- **Guide d'accès** : Généré depuis l'assistant IA
-- **Annonce** : Généré depuis l'assistant IA
+- **Guide d'accès** : Généré depuis l'assistant IA (bucket + trigger + Make)
+- **Annonce** : Généré par l'agent annonce interne et poussé directement sur Monday par l'Edge Function `annonce-validate` — ni bucket, ni trigger SQL
 
 ### **🔄 Synchronisation automatique**
 - Upload vers Supabase Storage
@@ -517,8 +517,10 @@ const triggerPdfWebhook = async (pdfLogementUrl, pdfMenageUrl) => {
 #### **generateAssistantPDF.js** - Bibliothèque jsPDF
 
 **Fonctions principales** :
-- `generateGuideAccesPDF(content, metadata, ficheId)` : Génère PDF guide d'accès
-- `generateAnnoncePDF(content, metadata, ficheId)` : Génère PDF annonce
+- `generateGuideAccesPDF(content, metadata, ficheId)` : Génère le PDF guide d'accès et l'uploade dans le bucket `guide-acces-pdfs`
+- `buildAnnonceStructuredPdfBase64({ outputAssemble, plateforme, metadata })` : Fabrique le PDF de l'agent annonce et le renvoie en base64, sans upload bucket
+
+⚠️ `renderHeader`, `renderFooter` et `renderContent` sont **partagés** par les deux. Une retouche de ces helpers pour le guide d'accès change aussi le PDF de l'annonce, et réciproquement.
 
 **Exemple : generateGuideAccesPDF**
 ```javascript
@@ -596,31 +598,6 @@ const handleValidateGuide = async () => {
 
 ---
 
-#### **FicheFinalisation.jsx** - Page Annonce
-
-```javascript
-import { generateAnnoncePDF } from '../lib/generateAssistantPDF'
-
-const handleValidateAnnonce = async () => {
-  // 1. Nettoyer contenu IA
-  const cleanedContent = message.content
-    .replace(/([^\s]):/g, '$1 :')
-    .replace(/\u00A0/g, ' ')
-  
-  // 2. Générer PDF
-  const pdfUrl = await generateAnnoncePDF(
-    cleanedContent,
-    metadata,
-    formData.id
-  )
-  
-  // 3. Déclencher webhook
-  const result = await triggerAssistantPdfWebhook(null, pdfUrl)
-}
-```
-
----
-
 ### **💾 Storage Supabase**
 
 ```
@@ -628,9 +605,9 @@ const handleValidateAnnonce = async () => {
 ├── 📄 guide_acces_6ce4732b-1062-4f43-bc4d-e91aff9f32c9.pdf
 └── ...
 
-📁 Bucket "annonce-pdfs" (PUBLIC)
-├── 📄 annonce_6ce4732b-1062-4f43-bc4d-e91aff9f32c9.pdf
-└── ...
+📁 Bucket "annonce-pdfs" (PUBLIC) — ⚠️ DÉPRÉCIÉ
+└── plus aucun code n'y écrit ni n'y lit depuis le retrait de l'ancien
+    agent annonce (août 2026). Suppression manuelle à faire.
 ```
 
 ---
@@ -641,13 +618,17 @@ const handleValidateAnnonce = async () => {
 -- Colonnes PDF Assistants
 guide_acces_pdf_url TEXT
 guide_acces_last_generated_at TIMESTAMP WITH TIME ZONE
+
+-- ⚠️ ORPHELINES : encore présentes en base, plus référencées par aucune ligne de
+-- code depuis le retrait de l'ancien agent annonce (août 2026). Leur suppression,
+-- avec le trigger fiche_annonce_pdf_webhook, est une étape manuelle en attente.
 annonce_pdf_url TEXT
 annonce_last_generated_at TIMESTAMP WITH TIME ZONE
 ```
 
 ---
 
-### **⚡ Triggers SQL (2 triggers séparés)**
+### **⚡ Triggers SQL (1 vivant, 1 orphelin)**
 
 #### **Trigger Guide d'accès**
 ```sql
@@ -682,55 +663,25 @@ END;
 $function$;
 ```
 
-#### **Trigger Annonce**
-```sql
--- Fonction : notify_annonce_pdf_update()
--- Trigger : fiche_annonce_pdf_webhook
--- Condition : annonce_last_generated_at change
+#### **Trigger Annonce — ⚠️ ORPHELIN**
 
-CREATE OR REPLACE FUNCTION public.notify_annonce_pdf_update()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $function$
-BEGIN
-  IF OLD.annonce_last_generated_at IS DISTINCT FROM NEW.annonce_last_generated_at THEN
-    PERFORM net.http_post(
-      url := 'https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z',
-      body := jsonb_build_object(
-        'id', NEW.id,
-        'nom', NEW.nom,
-        'assistant_pdf', jsonb_build_object(
-          'url', NEW.annonce_pdf_url,
-          'type', 'annonce',
-          'last_generated_at', NEW.annonce_last_generated_at
-        ),
-        'trigger_type', 'assistant_pdf_update',
-        'pdf_type', 'annonce'
-      ),
-      headers := '{"Content-Type": "application/json"}'::jsonb
-    );
-  END IF;
-  RETURN NEW;
-END;
-$function$;
-```
+- **Fonction :** `notify_annonce_pdf_update()`
+- **Trigger :** `fiche_annonce_pdf_webhook` sur `public.fiches`
+- **Condition :** `annonce_last_generated_at` change
+
+Encore présent en base, mais **plus jamais déclenché** : depuis le retrait de l'ancien agent annonce (août 2026), plus aucune ligne de code n'écrit dans `annonce_last_generated_at`. Son retrait, avec la fonction et les deux colonnes, est une étape manuelle en attente. Ne pas confondre avec son jumeau `fiche_guide_acces_pdf_webhook`, qui reste vivant.
 
 ---
 
 ### **🔄 FormContext.jsx**
 
 ```javascript
-const triggerAssistantPdfWebhook = async (guideAccesUrl, annonceUrl) => {
+const triggerAssistantPdfWebhook = async (guideAccesUrl) => {
   const updateData = {}
   
   if (guideAccesUrl) {
     updateData.guide_acces_pdf_url = guideAccesUrl
     updateData.guide_acces_last_generated_at = new Date().toISOString()
-  }
-  
-  if (annonceUrl) {
-    updateData.annonce_pdf_url = annonceUrl
-    updateData.annonce_last_generated_at = new Date().toISOString()
   }
   
   updateData.updated_at = new Date().toISOString()
@@ -759,9 +710,7 @@ pdf_menage_url: formData.pdf_menage_url || null,
 
 // PDF Assistants
 guide_acces_pdf_url: formData.guide_acces_pdf_url || null,
-annonce_pdf_url: formData.annonce_pdf_url || null,
 // guide_acces_last_generated_at: NE PAS MAPPER (géré par triggerAssistantPdfWebhook)
-// annonce_last_generated_at: NE PAS MAPPER (géré par triggerAssistantPdfWebhook)
 ```
 
 ### **mapSupabaseToFormData**
@@ -773,9 +722,7 @@ pdf_last_generated_at: supabaseData.pdf_last_generated_at,
 
 // PDF Assistants
 guide_acces_pdf_url: supabaseData.guide_acces_pdf_url || null,
-annonce_pdf_url: supabaseData.annonce_pdf_url || null,
 guide_acces_last_generated_at: supabaseData.guide_acces_last_generated_at,
-annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 ```
 
 ---
@@ -786,7 +733,7 @@ annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 |------|------------|---------|---------|
 | PDF Fiches | `https://hook.eu2.make.com/3vmb2eijfjw8nc5y68j8hp3fbw67az9q` | `pdf_last_generated_at` change | Logement + Ménage URLs |
 | PDF Guide d'accès | `https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | `guide_acces_last_generated_at` change | Guide URL + `pdf_type: 'guide_acces'` |
-| PDF Annonce | `https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | `annonce_last_generated_at` change | Annonce URL + `pdf_type: 'annonce'` |
+| PDF Annonce ⚠️ orphelin | `https://hook.eu2.make.com/wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | `annonce_last_generated_at` change — plus jamais écrit | Annonce URL + `pdf_type: 'annonce'` |
 
 ---
 
@@ -819,9 +766,8 @@ annonce_last_generated_at: supabaseData.annonce_last_generated_at,
 
 ### **PDF Assistants**
 - ✅ Génération Guide d'accès depuis IA
-- ✅ Génération Annonce depuis IA
 - ✅ Upload Storage avec upsert
-- ✅ Triggers séparés fonctionnels
+- ✅ Trigger guide d'accès fonctionnel
 - ✅ Make route selon `pdf_type`
 - ✅ Timestamps mis à jour correctement
 - ✅ Regénération fonctionne (même URLs)

@@ -231,9 +231,11 @@ When PDF is generated, a SQL trigger sends payload to Make.com webhook, which:
 3. Updates the Google Drive folder with the PDF files
 
 #### Make.com Assistants Webhook
-When n8n assistants is called, a SQL trigger sends the validated output to Make.com webhook, which:
-1. Generates the PDF files
-2. Sends them to Monday column "Guide d'&accès" and "Création d'annonce"
+When the n8n guide d'accès assistant is validated, a SQL trigger sends the validated output to a Make.com webhook, which:
+1. Generates the PDF file
+2. Sends it to the Monday column "Guide d'accès"
+
+The scenario keeps an "annonce" branch, but it is inert since the old n8n annonce assistant was retired (August 2026): no code writes `annonce_last_generated_at` any more, so its trigger never fires. That trigger, its function and the two `annonce_*` columns are still in the database as orphans — dropping them is a pending manual step. The current annonce agent pushes its PDF straight to Monday from the `annonce-validate` Edge Function, without going through Make.
 
 
 ### Form Sections (23 total)
@@ -277,7 +279,7 @@ All media fields should be arrays (`TEXT[]` in Supabase) and follow the naming p
 - `src/lib/supabaseHelpers.js`: Database mapping logic
 - `src/lib/validationConfig.js`: Finalization validation rules
 - `src/lib/checklistHelpers.js`: Checklist generation from fiche data
-- `src/lib/DataProcessor.js`, `PdfFormatter.js`, `AlerteDetector.js`: PDF/assistant data processing
+- `src/lib/AlerteDetector.js`: alert detection for the MiniDashboard
 - `src/lib/pdfRenderer.js`, `generateAssistantPDF.js`: PDF rendering utilities
 - `src/components/PhotoUpload.jsx`: Media upload component
 - `src/components/PDFTemplate.jsx`, `PDFMenageTemplate.jsx`: PDF print templates
