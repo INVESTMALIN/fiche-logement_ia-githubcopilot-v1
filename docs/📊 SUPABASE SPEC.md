@@ -39,6 +39,11 @@ CREATE TABLE fiches (
   -- PDF Assistants IA
   guide_acces_pdf_url TEXT,
   guide_acces_last_generated_at TIMESTAMP WITH TIME ZONE,
+  -- ⚠️ ORPHELINES : encore présentes en base, plus référencées par aucune ligne
+  -- de code depuis le retrait de l'ancien agent annonce (août 2026).
+  -- Leur suppression est une étape manuelle en attente.
+  annonce_pdf_url TEXT,
+  annonce_last_generated_at TIMESTAMP WITH TIME ZONE,
   
   -- Sections (pattern {section}_{champ})
   proprietaire_prenom TEXT,
@@ -279,7 +284,15 @@ CREATE TRIGGER fiche_guide_acces_pdf_webhook
   EXECUTE FUNCTION notify_guide_acces_pdf_update();
 ```
 
-### **4. Trigger Alertes (Optionnel)**
+### **4. Trigger PDF Annonce — ⚠️ ORPHELIN**
+
+- **Fonction :** `notify_annonce_pdf_update()`
+- **Trigger :** `fiche_annonce_pdf_webhook` sur `public.fiches`
+- **Condition :** `annonce_last_generated_at` change
+
+Ce trigger existe encore en base mais **ne se déclenche plus jamais** : depuis le retrait de l'ancien agent annonce (août 2026), plus aucune ligne de code n'écrit dans `annonce_last_generated_at`. Le retrait du trigger, de la fonction et des deux colonnes est une étape manuelle en attente. Le jumeau `fiche_guide_acces_pdf_webhook` / `notify_guide_acces_pdf_update()` reste vivant et ne doit pas être touché.
+
+### **5. Trigger Alertes (Optionnel)**
 
 **Déclenchement :** Finalisation OU modification des 12 champs d'alertes  
 **Webhook :** `https://hook.eu2.make.com/b935os296umo923k889s254wb88wjxn4`
@@ -297,6 +310,7 @@ CREATE TRIGGER fiche_guide_acces_pdf_webhook
 | **Finalisation** | `statut` → "Complété" | `ydjwftmd7czs4rygv1rjhi6u4pvb4gdj` | 95 champs média + PDFs |
 | **PDF Fiches** | `pdf_last_generated_at` change | `3vmb2eijfjw8nc5y68j8hp3fbw67az9q` | URLs Logement + Ménage |
 | **PDF Guide** | `guide_acces_last_generated_at` change | `wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | URL + `pdf_type: 'guide_acces'` |
+| **PDF Annonce** ⚠️ orphelin | `annonce_last_generated_at` change — plus jamais écrit | `wjonl6ikb3fl8sk2tr5k7f95lupo4t6z` | URL + `pdf_type: 'annonce'` |
 | **Alertes** | Finalisation OU champs alertes | `b935os296umo923k889s254wb88wjxn4` | 12 champs d'alertes |
 
 ---
@@ -573,13 +587,16 @@ const handleSave = async () => {
 
 ## 🎯 **COMPORTEMENTS ATTENDUS**
 
-| Action | Trigger Finalisation | Trigger PDF Fiches | Trigger Guide | Trigger Alertes |
-|--------|---------------------|-------------------|---------------|-----------------|
-| Finalisation (Brouillon → Complété) | ✅ | ❌ | ❌ | ✅ |
-| Génération PDF Fiches | ❌ | ✅ | ❌ | ❌ |
-| Génération PDF Guide | ❌ | ❌ | ✅ | ❌ |
-| Modification champ alerte (Complété) | ❌ | ❌ | ❌ | ✅ |
-| Sauvegarde normale | ❌ | ❌ | ❌ | ❌ |
+| Action | Trigger Finalisation | Trigger PDF Fiches | Trigger Guide | Trigger Annonce ⚠️ orphelin | Trigger Alertes |
+|--------|---------------------|-------------------|---------------|-----------------------------|-----------------|
+| Finalisation (Brouillon → Complété) | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Génération PDF Fiches | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Génération PDF Guide | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Génération annonce (nouvel agent) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Modification champ alerte (Complété) | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Sauvegarde normale | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+Le trigger Annonce est à ❌ partout : il existe encore en base, mais plus aucune ligne de code n'écrit `annonce_last_generated_at`, donc rien ne le déclenche. Le nouvel agent annonce pousse son PDF directement sur Monday depuis l'Edge Function `annonce-validate`, sans passer par un trigger SQL.
 
 ---
 

@@ -235,7 +235,7 @@ When the n8n guide d'accès assistant is validated, a SQL trigger sends the vali
 1. Generates the PDF file
 2. Sends it to the Monday column "Guide d'accès"
 
-The scenario keeps an "annonce" branch, but it is inert since the old n8n annonce assistant was retired (August 2026): its trigger and columns are gone, so nothing fires it any more. The current annonce agent pushes its PDF straight to Monday from the `annonce-validate` Edge Function, without going through Make.
+The scenario keeps an "annonce" branch, but it is inert since the old n8n annonce assistant was retired (August 2026): no code writes `annonce_last_generated_at` any more, so its trigger never fires. That trigger, its function and the two `annonce_*` columns are still in the database as orphans — dropping them is a pending manual step. The current annonce agent pushes its PDF straight to Monday from the `annonce-validate` Edge Function, without going through Make.
 
 
 ### Form Sections (23 total)

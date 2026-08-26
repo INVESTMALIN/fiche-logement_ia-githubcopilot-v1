@@ -71,7 +71,7 @@ Tout ce qui est déterministe, légal ou sensible (réglementation, disclosure �
 
 ## Note de déploiement
 
-L'agent est seul en production depuis juin 2026. L'ancien système n8n a été démantelé en août 2026 : appel webhook, `generateAnnoncePDF`, trigger `fiche_annonce_pdf_webhook`, fonction `notify_annonce_pdf_update()` et colonnes `annonce_pdf_url` / `annonce_last_generated_at` sont retirés. Restent à traiter à la main : désactivation du workflow n8n de l'annonce (celui du guide d'accès reste vivant) et suppression du bucket `annonce-pdfs`.
+L'agent est seul en production depuis juin 2026. Le code de l'ancien système n8n a été retiré du dépôt en août 2026 : appel webhook et `generateAnnoncePDF` n'existent plus. Côté base, le trigger `fiche_annonce_pdf_webhook`, la fonction `notify_annonce_pdf_update()` et les colonnes `annonce_pdf_url` / `annonce_last_generated_at` sont devenus orphelins — plus rien ne les alimente, leur suppression est une étape manuelle en attente. Restent également à traiter à la main : la désactivation du workflow n8n de l'annonce (celui du guide d'accès reste vivant) et la suppression du bucket `annonce-pdfs`.
 
 ## Périmètre
 
