@@ -56,6 +56,7 @@ FROM public.fiches;
 -- ---------------------------------------------------------------------
 SELECT
   t.tgname                 AS trigger_name,
+  nt.nspname               AS table_schema,
   c.relname                AS table_name,
   p.proname                AS fonction_appelee,
   CASE t.tgenabled
@@ -65,10 +66,12 @@ SELECT
   END                      AS etat,
   pg_get_triggerdef(t.oid) AS definition
 FROM pg_trigger t
-JOIN pg_class c ON c.oid = t.tgrelid
-JOIN pg_proc  p ON p.oid = t.tgfoid
+JOIN pg_class     c  ON c.oid  = t.tgrelid
+JOIN pg_namespace nt ON nt.oid = c.relnamespace
+JOIN pg_proc      p  ON p.oid  = t.tgfoid
 WHERE NOT t.tgisinternal
-  AND c.relname = 'fiches'
+  AND nt.nspname = 'public'
+  AND c.relname  = 'fiches'
   AND t.tgname IN ('fiche_annonce_pdf_webhook', 'fiche_guide_acces_pdf_webhook')
 ORDER BY t.tgname;
 
@@ -89,19 +92,26 @@ ORDER BY p.proname;
 
 -- ---------------------------------------------------------------------
 -- 3. La fonction annonce a-t-elle un AUTRE consommateur ?
---    Attendu : une seule ligne, fiche_annonce_pdf_webhook sur fiches.
+--    Attendu : une seule ligne, public.fiches / fiche_annonce_pdf_webhook.
 --    Si une autre ligne apparait : NE PAS APPLIQUER LA MIGRATION,
 --    la fonction sert a autre chose que ce qui a ete recense.
+--    Volontairement SANS filtre de schema, contrairement a la requete 1 :
+--    le but est justement de voir un consommateur inattendu, y compris
+--    dans un autre schema. Le schema est donc affiche en colonne.
 -- ---------------------------------------------------------------------
 SELECT
-  t.tgname  AS trigger_name,
-  c.relname AS table_name
+  t.tgname   AS trigger_name,
+  nt.nspname AS table_schema,
+  c.relname  AS table_name,
+  np.nspname AS fonction_schema
 FROM pg_trigger t
-JOIN pg_class c ON c.oid = t.tgrelid
-JOIN pg_proc  p ON p.oid = t.tgfoid
+JOIN pg_class     c  ON c.oid  = t.tgrelid
+JOIN pg_namespace nt ON nt.oid = c.relnamespace
+JOIN pg_proc      p  ON p.oid  = t.tgfoid
+JOIN pg_namespace np ON np.oid = p.pronamespace
 WHERE NOT t.tgisinternal
   AND p.proname = 'notify_annonce_pdf_update'
-ORDER BY c.relname, t.tgname;
+ORDER BY nt.nspname, c.relname, t.tgname;
 
 
 -- ---------------------------------------------------------------------

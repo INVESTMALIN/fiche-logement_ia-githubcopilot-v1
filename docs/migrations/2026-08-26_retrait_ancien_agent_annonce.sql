@@ -133,23 +133,27 @@ BEGIN
   IF EXISTS (
     SELECT 1
     FROM pg_trigger t
-    JOIN pg_class c ON c.oid = t.tgrelid
+    JOIN pg_class     c  ON c.oid  = t.tgrelid
+    JOIN pg_namespace nt ON nt.oid = c.relnamespace
     WHERE NOT t.tgisinternal
-      AND c.relname = 'fiches'
-      AND t.tgname  = 'fiche_annonce_pdf_webhook'
+      AND nt.nspname = 'public'
+      AND c.relname  = 'fiches'
+      AND t.tgname   = 'fiche_annonce_pdf_webhook'
   ) THEN
-    RAISE EXCEPTION 'trigger fiche_annonce_pdf_webhook toujours present : migration annulee';
+    RAISE EXCEPTION 'trigger public.fiches.fiche_annonce_pdf_webhook toujours present : migration annulee';
   END IF;
 
   IF NOT EXISTS (
     SELECT 1
     FROM pg_trigger t
-    JOIN pg_class c ON c.oid = t.tgrelid
+    JOIN pg_class     c  ON c.oid  = t.tgrelid
+    JOIN pg_namespace nt ON nt.oid = c.relnamespace
     WHERE NOT t.tgisinternal
-      AND c.relname = 'fiches'
-      AND t.tgname  = 'fiche_guide_acces_pdf_webhook'
+      AND nt.nspname = 'public'
+      AND c.relname  = 'fiches'
+      AND t.tgname   = 'fiche_guide_acces_pdf_webhook'
   ) THEN
-    RAISE EXCEPTION 'JUMEAU CASSE : fiche_guide_acces_pdf_webhook a disparu, migration annulee';
+    RAISE EXCEPTION 'JUMEAU CASSE : public.fiches.fiche_guide_acces_pdf_webhook a disparu, migration annulee';
   END IF;
 
   IF NOT EXISTS (
@@ -182,18 +186,20 @@ COMMIT;
 -- =====================================================================
 -- CONTROLE POST-MIGRATION (lecture seule, a executer apres le COMMIT)
 -- Attendu :
---   - requete 1 : 1 seule ligne, fiche_guide_acces_pdf_webhook ;
+--   - requete 1 : 1 seule ligne, public / fiche_guide_acces_pdf_webhook ;
 --   - requete 2 : 1 seule ligne, notify_guide_acces_pdf_update ;
 --   - requete 3 : 2 lignes, les colonnes guide_acces uniquement.
 -- =====================================================================
 
 -- 1.
-SELECT t.tgname AS trigger_name, p.proname AS fonction_appelee
+SELECT t.tgname AS trigger_name, nt.nspname AS table_schema, p.proname AS fonction_appelee
 FROM pg_trigger t
-JOIN pg_class c ON c.oid = t.tgrelid
-JOIN pg_proc  p ON p.oid = t.tgfoid
+JOIN pg_class     c  ON c.oid  = t.tgrelid
+JOIN pg_namespace nt ON nt.oid = c.relnamespace
+JOIN pg_proc      p  ON p.oid  = t.tgfoid
 WHERE NOT t.tgisinternal
-  AND c.relname = 'fiches'
+  AND nt.nspname = 'public'
+  AND c.relname  = 'fiches'
   AND t.tgname IN ('fiche_annonce_pdf_webhook', 'fiche_guide_acces_pdf_webhook');
 
 -- 2.
