@@ -51,6 +51,26 @@
 BEGIN;
 
 -- ---------------------------------------------------------------------
+-- Garde-fou de verrou — a ne pas retirer.
+-- ALTER TABLE ... DROP COLUMN prend un ACCESS EXCLUSIVE sur public.fiches.
+-- Si une autre connexion tient une transaction ouverte sur la table, l'ALTER
+-- se met en file d'attente, et TOUTES les requetes suivantes sur fiches
+-- attendent derriere lui : l'application se fige, lecture comprise.
+-- lock_timeout borne cette attente : au bout de 5 s la transaction echoue
+-- proprement (55P03 lock_not_available) sans rien avoir modifie. Il suffit
+-- alors de relancer le fichier plus tard.
+-- Le precontrole ne peut pas couvrir ce cas : il ne mesure que des updated_at
+-- deja commites, pas les transactions en cours.
+-- statement_timeout est une securite en plus. Le DROP COLUMN est purement
+-- metadata sous PostgreSQL (pas de reecriture de table), donc une fois le
+-- verrou obtenu il est immediat : 60 s sont tres largement suffisantes.
+-- SET LOCAL : les deux reglages ne valent que pour cette transaction.
+-- ---------------------------------------------------------------------
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '60s';
+
+
+-- ---------------------------------------------------------------------
 -- Garde-fou d'entree : on est bien sur la base qui porte le jumeau vivant.
 -- Si notify_guide_acces_pdf_update() est absente, on n'est pas sur la
 -- bonne base (ou le guide a deja ete casse) : on annule tout.
