@@ -1994,6 +1994,9 @@ function HistoriqueTab() {
                 } else if (event.action === 'loomky_sync_blocked_no_phone') {
                   color = 'bg-amber-500'
                   icon = '🚫'
+                } else if (event.action === 'loomky_sync_blocked_registry_error') {
+                  color = 'bg-rose-500'
+                  icon = '⛔'
                 }
 
                 return (
@@ -2024,6 +2027,7 @@ function HistoriqueTab() {
                             {event.action === 'loomky_owner_assigned' && `${icon} Propriétaire existant assigné au logement`}
                             {event.action === 'loomky_checklists_created' && `${icon} Checklists créées sur Loomky`}
                             {event.action === 'loomky_sync_blocked_no_phone' && `${icon} Synchro Loomky bloquée : téléphone propriétaire manquant ou invalide`}
+                            {event.action === 'loomky_sync_blocked_registry_error' && `${icon} Synchro Loomky bloquée : registre des propriétaires illisible`}
                           </div>
 
                           <div className="flex items-center gap-3 text-xs text-gray-500">

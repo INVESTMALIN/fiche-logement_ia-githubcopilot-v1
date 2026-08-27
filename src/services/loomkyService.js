@@ -1277,6 +1277,9 @@ export function formatLoomkyApiError(response, data) {
  * Message affiché quand la synchro est bloquée faute de téléphone propriétaire.
  * Exporté pour que l'écran de synchro et le service partagent le même texte.
  */
+export const OWNER_REGISTRY_UNAVAILABLE_MESSAGE =
+    "Synchronisation impossible : le registre des propriétaires déjà créés sur Loomky est momentanément illisible. Sans lui, la synchronisation risquerait de créer un doublon de propriétaire. Réessayez dans un instant ; si l'erreur persiste, prévenez un administrateur."
+
 export const OWNER_PHONE_REQUIRED_MESSAGE =
     "Synchronisation impossible : le téléphone du propriétaire est absent ou dans un format non reconnu. Loomky l'exige pour créer un nouveau propriétaire. Renseignez-le dans la Fiche propriétaire (format international pour un numéro étranger, ex. +44 7769 645867), enregistrez, puis relancez la synchronisation."
 
@@ -1286,11 +1289,18 @@ export const OWNER_PHONE_REQUIRED_MESSAGE =
  * (`checkOwnerSyncPrerequisites`) ET par la création (`createPropertyOwnerOnLoomky`),
  * pour que les deux ne puissent pas diverger.
  *
+ * Retourne un résultat qui DISTINGUE "aucun owner pour cet email" de "registre
+ * illisible" (cf. review Codex). Confondre les deux ferait traiter une lecture en
+ * échec comme un propriétaire à créer : on afficherait au coordinateur un message
+ * de téléphone manquant qui n'est pas le vrai problème, il saisirait un numéro
+ * pour débloquer, et la synchro créerait un DOUBLON d'owner puisque la
+ * déduplication n'a justement pas pu lire le registre.
+ *
  * @param {string} email
- * @returns {Promise<string|null>} - loomky_owner_id ou null
+ * @returns {Promise<{ownerId: string|null, error: Object|null}>}
  */
-export async function findExistingOwnerId(email) {
-    if (!email) return null
+export async function findExistingOwner(email) {
+    if (!email) return { ownerId: null, error: null }
 
     const { data, error } = await supabase
         .from('loomky_owners')
@@ -1299,11 +1309,11 @@ export async function findExistingOwnerId(email) {
         .maybeSingle()
 
     if (error) {
-        console.warn('findExistingOwnerId: lecture du registre owners échouée:', error)
-        return null
+        console.warn('findExistingOwner: lecture du registre owners échouée:', error)
+        return { ownerId: null, error }
     }
 
-    return data?.loomky_owner_id || null
+    return { ownerId: data?.loomky_owner_id || null, error: null }
 }
 
 /**
@@ -1329,7 +1339,20 @@ export async function findExistingOwnerId(email) {
  * @returns {Promise<Object>} - { ok: true, ownerExists } ou { ok: false, reason, message }
  */
 export async function checkOwnerSyncPrerequisites(fiche) {
-    const existingOwnerId = await findExistingOwnerId(fiche?.proprietaire_email || '')
+    const { ownerId: existingOwnerId, error } = await findExistingOwner(fiche?.proprietaire_email || '')
+
+    // Registre illisible : on ne sait pas si l'owner existe. On s'arrête sur
+    // l'erreur technique réelle, sans appliquer la règle du téléphone — qui
+    // afficherait un motif faux et enregistrerait un blocage téléphone qui n'en
+    // est pas un, faussant le compteur qui sert à décider si la règle doit être
+    // desserrée.
+    if (error) {
+        return {
+            ok: false,
+            reason: 'owner_registry_unavailable',
+            message: OWNER_REGISTRY_UNAVAILABLE_MESSAGE
+        }
+    }
 
     // Owner déjà connu → aucun téléphone ne sera envoyé, rien à contrôler.
     if (existingOwnerId) {
@@ -1821,8 +1844,16 @@ export async function createPropertyOwnerOnLoomky(fiche, token, options = {}) {
     // "création", donc vers le garde-fou téléphone — en laissant orpheline la
     // property déjà créée et persistée à l'étape 1 (cf. review Codex).
     // Sans indice fourni (appel direct hors parcours de synchro), on lit le
-    // registre comme avant.
-    const existingOwnerId = options.knownOwnerId || await findExistingOwnerId(email)
+    // registre. Une lecture en échec arrête là : passer outre créerait un doublon
+    // d'owner pour un email peut-être déjà connu.
+    let existingOwnerId = options.knownOwnerId || null
+    if (!existingOwnerId) {
+        const lookup = await findExistingOwner(email)
+        if (lookup.error) {
+            return { success: false, error: OWNER_REGISTRY_UNAVAILABLE_MESSAGE, reason: 'owner_registry_unavailable' }
+        }
+        existingOwnerId = lookup.ownerId
+    }
     if (existingOwnerId) {
         // Owner déjà connu → on ne recrée pas, et AUCUN téléphone n'est envoyé.
         // Mais on (re)durcit ses permissions à chaque passage : le PATCH est
