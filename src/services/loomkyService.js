@@ -5,11 +5,9 @@
 import { supabase } from '../lib/supabaseClient'
 import { normalizePhoneE164 } from '../lib/phoneHelpers'
 
-// Back-compat : la normalisation E.164 a été extraite dans phoneHelpers
-// (partagée avec la sync Monday Contacts Maintenance qui a la même
-// exigence). On ré-exporte sous l'ancien nom pour ne pas casser les
-// call-sites existants (FicheForm.jsx).
-export { normalizePhoneE164 as normalizePhoneForLoomky } from '../lib/phoneHelpers'
+// La normalisation E.164 vit dans phoneHelpers (partagée avec la sync Monday
+// Contacts Maintenance et la validation du champ téléphone propriétaire, qui
+// ont la même exigence).
 
 /**
  * Configuration Loomky
