@@ -4,7 +4,7 @@ import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import { Eye, EyeOff, House, Loader2, CheckCircle2, XCircle, Construction, RefreshCw, Rocket, Trash2, ChevronDown, AlertTriangle } from 'lucide-react'
-import { createPropertyOnLoomky, createPropertyOwnerOnLoomky, assignPropertyToOwnerOnLoomky, normalizeFormDataToFiche, deletePropertyOnLoomky, logLoomkyEvent } from '../services/loomkyService'
+import { createPropertyOnLoomky, createPropertyOwnerOnLoomky, assignPropertyToOwnerOnLoomky, normalizeFormDataToFiche, deletePropertyOnLoomky, logLoomkyEvent, checkOwnerSyncPrerequisites } from '../services/loomkyService'
 import { supabase } from '../lib/supabaseClient'
 
 export default function FicheEmailOutlook() {
@@ -39,6 +39,21 @@ export default function FicheEmailOutlook() {
 
         try {
             const ficheNormalized = normalizeFormDataToFiche(formData)
+
+            // Étape 0 : contrôle amont, AVANT le moindre appel Loomky.
+            // L'étape 1 crée la property et persiste son id sur la fiche avant que
+            // l'étape 2 ne touche au propriétaire : bloquer plus tard laisserait une
+            // property orpheline chez Loomky et un loomky_property_id persisté.
+            // Ne bloque que si la synchro créerait un NOUVEAU propriétaire — un owner
+            // déjà présent dans le registre n'envoie aucun téléphone.
+            const prerequisites = await checkOwnerSyncPrerequisites(ficheNormalized)
+            if (!prerequisites.ok) {
+                setLoomkyError(prerequisites.message)
+                // Trace durable : un blocage qui ne vivrait que dans un console.log ne
+                // serait pas observable, on ne saurait jamais combien de fois il tire.
+                logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_sync_blocked_no_phone', formData.user_id)
+                return
+            }
 
             // Étape 1 : Création de la property
             setLoomkyStep('property')

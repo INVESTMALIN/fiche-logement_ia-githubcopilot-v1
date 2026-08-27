@@ -3,7 +3,7 @@
 // Service centralisé pour l'intégration Loomky
 // ============================================
 import { supabase } from '../lib/supabaseClient'
-import { normalizePhoneE164 } from '../lib/phoneHelpers'
+import { normalizePhoneE164, isPhoneE164Normalizable } from '../lib/phoneHelpers'
 
 // La normalisation E.164 vit dans phoneHelpers (partagée avec la sync Monday
 // Contacts Maintenance et la validation du champ téléphone propriétaire, qui
@@ -1231,6 +1231,123 @@ export function buildResolvedChecklists(fiche) {
 // ============================================
 
 /**
+ * Construit le message d'erreur affiché au coordinateur à partir d'une réponse
+ * Loomky en échec.
+ *
+ * Loomky renvoie toujours la même phrase générique dans `message` sur une 400
+ * ("The request has validation errors."), et met le détail utile — le champ
+ * fautif et la raison — dans le tableau `validationErrors` :
+ *
+ *   {"error":"VALIDATION_ERROR","message":"The request has validation errors.",
+ *    "validationErrors":[{"message":"Phone number is required","field":"phone"}]}
+ *
+ * On expose donc TOUTES les entrées de `validationErrors` quand il y en a : en
+ * n'en montrant qu'une, le coordinateur corrige un champ, relance, et se prend
+ * le suivant. Fallback sur `message` puis `statusText` pour les réponses qui
+ * n'ont pas cette forme (401, 500, erreurs non métier).
+ *
+ * Extraction centralisée : tous les appels Loomky de ce service partagent la
+ * même forme de réponse, pas de logique dupliquée par endpoint.
+ *
+ * @param {Response} response - Réponse fetch en échec
+ * @param {Object} data - Corps de la réponse déjà parsé en JSON (peut être {})
+ * @returns {string} - Message prêt à afficher
+ */
+export function formatLoomkyApiError(response, data) {
+    const validationErrors = Array.isArray(data?.validationErrors) ? data.validationErrors : []
+
+    const details = validationErrors
+        .map(e => {
+            const field = (e?.field || '').trim()
+            const message = (e?.message || '').trim()
+            if (field && message) return `${field} : ${message}`
+            return field || message
+        })
+        .filter(Boolean)
+
+    if (details.length > 0) {
+        return `Erreur ${response.status} — champs refusés par Loomky : ${details.join(' ; ')}`
+    }
+
+    const fallback = data?.message || response.statusText || 'Erreur inconnue'
+    return `Erreur ${response.status}: ${fallback}`
+}
+
+/**
+ * Message affiché quand la synchro est bloquée faute de téléphone propriétaire.
+ * Exporté pour que l'écran de synchro et le service partagent le même texte.
+ */
+export const OWNER_PHONE_REQUIRED_MESSAGE =
+    "Synchronisation impossible : le téléphone du propriétaire est absent ou dans un format non reconnu. Loomky l'exige pour créer un nouveau propriétaire. Renseignez-le dans la Fiche propriétaire (format international pour un numéro étranger, ex. +44 7769 645867), enregistrez, puis relancez la synchronisation."
+
+/**
+ * Cherche un owner Loomky déjà créé pour cet email dans le registre local.
+ * Source unique de la déduplication : utilisée par le contrôle amont
+ * (`checkOwnerSyncPrerequisites`) ET par la création (`createPropertyOwnerOnLoomky`),
+ * pour que les deux ne puissent pas diverger.
+ *
+ * @param {string} email
+ * @returns {Promise<string|null>} - loomky_owner_id ou null
+ */
+export async function findExistingOwnerId(email) {
+    if (!email) return null
+
+    const { data, error } = await supabase
+        .from('loomky_owners')
+        .select('loomky_owner_id')
+        .eq('email', email)
+        .maybeSingle()
+
+    if (error) {
+        console.warn('findExistingOwnerId: lecture du registre owners échouée:', error)
+        return null
+    }
+
+    return data?.loomky_owner_id || null
+}
+
+/**
+ * Contrôle AMONT de la synchro, à appeler AVANT le premier appel Loomky.
+ *
+ * Pourquoi avant : l'étape 1 crée la property et persiste son id sur la fiche
+ * avant que l'étape 2 ne touche au propriétaire. Un blocage au moment de créer
+ * l'owner laisserait une property orpheline chez Loomky et un
+ * `loomky_property_id` persisté côté fiche. Le contrôle doit donc tomber avant
+ * que quoi que ce soit ne parte.
+ *
+ * Le téléphone est OBLIGATOIRE côté Loomky pour créer un propriétaire (sondé :
+ * vide, null ou absent → 400 sur le champ `phone`). Historiquement le code
+ * envoyait un numéro en dur à la place, ce qui faisait passer la synchro en
+ * inscrivant chez un vrai client un numéro qui n'appartient à personne.
+ *
+ * Le contrôle ne s'applique QUE si la synchro aboutirait à créer un NOUVEAU
+ * propriétaire : si l'owner est déjà dans le registre local, la création est
+ * court-circuitée, aucun téléphone n'est envoyé, et une deuxième property pour
+ * un propriétaire déjà connu doit continuer de passer.
+ *
+ * @param {Object} fiche - Fiche normalisée (via normalizeFormDataToFiche)
+ * @returns {Promise<Object>} - { ok: true, ownerExists } ou { ok: false, reason, message }
+ */
+export async function checkOwnerSyncPrerequisites(fiche) {
+    const existingOwnerId = await findExistingOwnerId(fiche?.proprietaire_email || '')
+
+    // Owner déjà connu → aucun téléphone ne sera envoyé, rien à contrôler.
+    if (existingOwnerId) {
+        return { ok: true, ownerExists: true, ownerId: existingOwnerId }
+    }
+
+    if (!isPhoneE164Normalizable(fiche?.proprietaire_telephone)) {
+        return {
+            ok: false,
+            reason: 'owner_phone_missing',
+            message: OWNER_PHONE_REQUIRED_MESSAGE
+        }
+    }
+
+    return { ok: true, ownerExists: false }
+}
+
+/**
  * Crée une property dans Loomky
  * 
  * @param {Object} payload - Payload property
@@ -1265,10 +1382,9 @@ export async function createProperty(payload, token) {
         }
 
         if (!response.ok) {
-            const errorMsg = data?.message || response.statusText || 'Erreur inconnue'
             return {
                 success: false,
-                error: `Erreur ${response.status}: ${errorMsg}`
+                error: formatLoomkyApiError(response, data)
             }
         }
 
@@ -1356,8 +1472,7 @@ export async function createChecklists(propertyId, checklists, token) {
                 return { success: false, error: `Erreur ${response.status}: ${text.substring(0, 100)}` }
             }
 
-            const errorMsg = errorData?.message || response.statusText || 'Erreur inconnue'
-            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+            return { success: false, error: formatLoomkyApiError(response, errorData) }
         }
 
         // Si 200 avec body (cas idéal)
@@ -1424,8 +1539,7 @@ export async function updateProperty(propertyId, payload, token) {
                 return { success: false, error: `Erreur ${response.status}: ${text.substring(0, 100)}` }
             }
 
-            const errorMsg = errorData?.message || response.statusText || 'Erreur inconnue'
-            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+            return { success: false, error: formatLoomkyApiError(response, errorData) }
         }
 
         // Si 200 avec body
@@ -1698,39 +1812,44 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
 
     const email = fiche.proprietaire_email || ''
 
-    // Vérifier si cet owner existe déjà dans le registre local
-    if (email) {
-        const { data: existing } = await supabase
-            .from('loomky_owners')
-            .select('loomky_owner_id')
-            .eq('email', email)
-            .maybeSingle()
-
-        if (existing?.loomky_owner_id) {
-            // Owner déjà connu → on ne recrée pas. Mais on (re)durcit ses permissions
-            // à chaque passage : le PATCH est idempotent, et c'est le seul moyen de
-            // rattraper un durcissement qui aurait échoué (timeout/réseau) lors d'une
-            // création précédente — sinon l'owner garderait les stats larges par
-            // défaut de Loomky à vie (cf. review Codex). Non bloquant.
-            const permsResult = await updatePropertyOwnerPermissions(existing.loomky_owner_id, MINIMAL_OWNER_PERMISSIONS, token)
-            if (permsResult.success) {
-                console.log(`✅ Loomky owner ${existing.loomky_owner_id} (dédup) : permissions (re)minimisées`)
-            } else {
-                console.warn(`⚠️ Loomky PATCH permissions échoué pour owner dédupé ${existing.loomky_owner_id} (non-bloquant):`, permsResult.error)
-            }
-            return { success: true, ownerId: existing.loomky_owner_id, existing: true, permissionsUpdated: permsResult.success }
+    // Vérifier si cet owner existe déjà dans le registre local (même lecture que
+    // le contrôle amont checkOwnerSyncPrerequisites, pour qu'ils ne divergent pas)
+    const existingOwnerId = await findExistingOwnerId(email)
+    if (existingOwnerId) {
+        // Owner déjà connu → on ne recrée pas, et AUCUN téléphone n'est envoyé.
+        // Mais on (re)durcit ses permissions à chaque passage : le PATCH est
+        // idempotent, et c'est le seul moyen de rattraper un durcissement qui
+        // aurait échoué (timeout/réseau) lors d'une création précédente — sinon
+        // l'owner garderait les stats larges par défaut de Loomky à vie
+        // (cf. review Codex). Non bloquant.
+        const permsResult = await updatePropertyOwnerPermissions(existingOwnerId, MINIMAL_OWNER_PERMISSIONS, token)
+        if (permsResult.success) {
+            console.log(`✅ Loomky owner ${existingOwnerId} (dédup) : permissions (re)minimisées`)
+        } else {
+            console.warn(`⚠️ Loomky PATCH permissions échoué pour owner dédupé ${existingOwnerId} (non-bloquant):`, permsResult.error)
         }
+        return { success: true, ownerId: existingOwnerId, existing: true, permissionsUpdated: permsResult.success }
     }
 
     // Normalisation E.164 avant envoi à Loomky (qui rejette les autres formats avec une 400).
-    // Si la normalisation retourne `''` (vide / non reconnu / garbage), le fallback prend le relais.
     const normalizedPhone = normalizePhoneE164(fiche.proprietaire_telephone)
+
+    // Garde-fou de dernier recours : sans téléphone exploitable, on n'envoie RIEN.
+    // Il n'y a plus de numéro de repli en dur : le `+33700000000` envoyé jusqu'ici
+    // était accepté par Loomky, donc la synchro passait en inscrivant chez un vrai
+    // client un numéro qui n'appartient à personne, sans que rien ne le signale.
+    // Le blocage attendu se fait en amont (checkOwnerSyncPrerequisites, avant le
+    // premier appel Loomky) ; ce contrôle-ci ne couvre qu'un appel direct à cette
+    // fonction, hors du parcours de synchro.
+    if (!normalizedPhone) {
+        return { success: false, error: OWNER_PHONE_REQUIRED_MESSAGE, reason: 'owner_phone_missing' }
+    }
 
     const payload = {
         email,
         firstName: fiche.proprietaire_prenom || '',
         lastName: fiche.proprietaire_nom || '',
-        phone: normalizedPhone || '+33700000000',
+        phone: normalizedPhone,
         address: {
             street: fiche.proprietaire_adresse_rue || '',
             city: fiche.proprietaire_adresse_ville || '',
@@ -1761,8 +1880,7 @@ export async function createPropertyOwnerOnLoomky(fiche, token) {
         }
 
         if (!response.ok) {
-            const errorMsg = data?.message || response.statusText || 'Erreur inconnue'
-            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+            return { success: false, error: formatLoomkyApiError(response, data) }
         }
 
         const ownerId = data.owner?._id
@@ -1838,8 +1956,7 @@ export async function updatePropertyOwnerPermissions(ownerId, ownerPermissions, 
         try { data = text ? JSON.parse(text) : {} } catch (e) { /* réponse non-JSON, ignorée */ }
 
         if (!response.ok) {
-            const errorMsg = data?.message || response.statusText || 'Erreur inconnue'
-            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+            return { success: false, error: formatLoomkyApiError(response, data) }
         }
 
         return { success: true, data }
@@ -1879,8 +1996,7 @@ export async function assignPropertyToOwnerOnLoomky(ownerId, propertyId, token) 
             const text = await response.text()
             let errorData = {}
             try { errorData = text ? JSON.parse(text) : {} } catch (e) { /* noop */ }
-            const errorMsg = errorData?.message || response.statusText || 'Erreur inconnue'
-            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+            return { success: false, error: formatLoomkyApiError(response, errorData) }
         }
 
         return { success: true }
@@ -1993,8 +2109,7 @@ export async function addChecklistPhotoModels(propertyId, checklistId, photoUrls
             const text = await response.text()
             let errorData = {}
             try { errorData = text ? JSON.parse(text) : {} } catch (e) { /* noop */ }
-            const errorMsg = errorData?.message || response.statusText || 'Erreur inconnue'
-            return { success: false, error: `Erreur ${response.status}: ${errorMsg}` }
+            return { success: false, error: formatLoomkyApiError(response, errorData) }
         }
 
         // Réponse attendue : la checklist avec son tableau photoModels mis à jour.
