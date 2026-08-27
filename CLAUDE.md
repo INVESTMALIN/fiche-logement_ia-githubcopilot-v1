@@ -282,8 +282,8 @@ All media fields should be arrays (`TEXT[]` in Supabase) and follow the naming p
 - `src/lib/supabaseHelpers.js`: Database mapping logic
 - `src/lib/validationConfig.js`: Finalization validation rules
 - `src/lib/checklistHelpers.js`: Checklist generation from fiche data
-- `src/lib/DataProcessor.js`, `PdfFormatter.js`, `AlerteDetector.js`: PDF/assistant data processing
-- `src/lib/pdfRenderer.js`, `generateAssistantPDF.js`: PDF rendering utilities
+- `src/lib/AlerteDetector.js`: PDF/assistant data processing
+- `src/lib/generateAssistantPDF.js`: PDF rendering utilities (shared by the guide d'acces and the annonce agent — never delete this file wholesale)
 - `src/components/PhotoUpload.jsx`: Media upload component
 - `src/components/PDFTemplate.jsx`, `PDFMenageTemplate.jsx`: PDF print templates
 - `src/hooks/useFiches.js`: Custom hook for fiche operations
