@@ -1297,6 +1297,29 @@ const OWNER_DATA_MISSING_PARTS = {
     country: "le pays de l'adresse du propriétaire n'est pas renseigné"
 }
 
+const EMAIL_PLAUSIBLE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/**
+ * Forme normalisée d'un email : la saisie brute débarrassée des espaces qui
+ * l'entourent. UNE seule normalisation, partagée par les trois usages — contrôle
+ * de plausibilité, recherche dans le registre local, et envoi à Loomky.
+ *
+ * Sans elle, un email importé du type ` owner@exemple.com ` passait le contrôle
+ * (qui travaillait sur une copie nettoyée) mais partait tel quel dans la recherche
+ * registre, dont l'égalité est exacte : le propriétaire déjà connu n'était pas
+ * reconnu, on tentait de le recréer, et Loomky pouvait refuser les espaces — donc
+ * une propriété orpheline de plus (cf. review Codex).
+ *
+ * La base conserve toujours la saisie brute du coordinateur ; la normalisation se
+ * fait au moment de l'usage, exactement comme pour le téléphone.
+ *
+ * @param {string|null|undefined} email
+ * @returns {string}
+ */
+export function normalizeEmail(email) {
+    return typeof email === 'string' ? email.trim() : ''
+}
+
 /**
  * Prédicat : l'email a-t-il une chance d'être accepté par Loomky ?
  *
@@ -1312,8 +1335,7 @@ const OWNER_DATA_MISSING_PARTS = {
  * @returns {boolean}
  */
 export function isEmailPlausible(email) {
-    if (typeof email !== 'string') return false
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+    return EMAIL_PLAUSIBLE.test(normalizeEmail(email))
 }
 
 /**
@@ -1425,7 +1447,9 @@ export function planLoomkySync({ propertyId, ownerId } = {}) {
  * @returns {Promise<Object>} - { ok: true, ownerExists } ou { ok: false, reason, message }
  */
 export async function checkOwnerSyncPrerequisites(fiche) {
-    const { ownerId: existingOwnerId, error } = await findExistingOwner(fiche?.proprietaire_email || '')
+    // Même forme normalisée pour la recherche registre et pour le contrôle ci-dessous.
+    const email = normalizeEmail(fiche?.proprietaire_email)
+    const { ownerId: existingOwnerId, error } = await findExistingOwner(email)
 
     // Le pays est exigé MÊME quand l'owner existe déjà : contrairement au téléphone,
     // il ne part pas seulement dans la création de propriétaire, il part aussi dans
@@ -1459,7 +1483,7 @@ export async function checkOwnerSyncPrerequisites(fiche) {
     }
 
     const missing = []
-    if (!isEmailPlausible(fiche?.proprietaire_email)) missing.push('email')
+    if (!isEmailPlausible(email)) missing.push('email')
     if (!isPhoneE164Normalizable(fiche?.proprietaire_telephone)) missing.push('phone')
     if (countryMissing) missing.push('country')
 
@@ -1945,7 +1969,10 @@ const MINIMAL_OWNER_PERMISSIONS = {
 export async function createPropertyOwnerOnLoomky(fiche, token, options = {}) {
     if (!token) return { success: false, error: 'Token requis' }
 
-    const email = fiche.proprietaire_email || ''
+    // Normalisé une fois, puis utilisé partout : recherche registre, payload envoyé
+    // à Loomky, et écriture dans le registre local — les trois doivent porter la
+    // MÊME valeur, sinon la déduplication rate sur un simple espace.
+    const email = normalizeEmail(fiche.proprietaire_email)
 
     // Le contrôle amont (checkOwnerSyncPrerequisites) a déjà lu le registre : on
     // réutilise SON résultat, y compris quand il est négatif. Une seule lecture par
