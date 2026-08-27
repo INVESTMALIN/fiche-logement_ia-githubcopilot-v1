@@ -1292,8 +1292,50 @@ export const OWNER_REGISTRY_UNAVAILABLE_MESSAGE =
  * Un seul mécanisme pour toutes ces données : la liste grandit ici, pas ailleurs.
  */
 const OWNER_DATA_MISSING_PARTS = {
+    email: "l'email du propriétaire est absent ou visiblement mal formé",
     phone: "le téléphone du propriétaire est absent ou dans un format non reconnu (pour un numéro étranger, utilisez le format international, ex. +44 7769 645867)",
     country: "le pays de l'adresse du propriétaire n'est pas renseigné"
+}
+
+const EMAIL_PLAUSIBLE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/**
+ * Forme normalisée d'un email : la saisie brute débarrassée des espaces qui
+ * l'entourent. UNE seule normalisation, partagée par les trois usages — contrôle
+ * de plausibilité, recherche dans le registre local, et envoi à Loomky.
+ *
+ * Sans elle, un email importé du type ` owner@exemple.com ` passait le contrôle
+ * (qui travaillait sur une copie nettoyée) mais partait tel quel dans la recherche
+ * registre, dont l'égalité est exacte : le propriétaire déjà connu n'était pas
+ * reconnu, on tentait de le recréer, et Loomky pouvait refuser les espaces — donc
+ * une propriété orpheline de plus (cf. review Codex).
+ *
+ * La base conserve toujours la saisie brute du coordinateur ; la normalisation se
+ * fait au moment de l'usage, exactement comme pour le téléphone.
+ *
+ * @param {string|null|undefined} email
+ * @returns {string}
+ */
+export function normalizeEmail(email) {
+    return typeof email === 'string' ? email.trim() : ''
+}
+
+/**
+ * Prédicat : l'email a-t-il une chance d'être accepté par Loomky ?
+ *
+ * VOLONTAIREMENT MINIMAL. Loomky reste l'autorité sur la validité d'un email, et
+ * depuis la PR #88 son refus nomme le champ fautif (`400`, `validationErrors`
+ * `[{ field: "email", message: "Invalid email address" }]`). Le rôle de ce test
+ * n'est pas de rejouer la RFC 5322 — impossible avec une regex, et inutile ici —
+ * mais d'attraper l'évident (champ vide, chaîne sans arobase, sans domaine) AVANT
+ * de créer quoi que ce soit. Un email exotique mais valide passe ici et sera tranché
+ * par Loomky ; un email absurde est arrêté avant que la propriété n'existe.
+ *
+ * @param {string|null|undefined} email - Saisie utilisateur brute
+ * @returns {boolean}
+ */
+export function isEmailPlausible(email) {
+    return EMAIL_PLAUSIBLE.test(normalizeEmail(email))
 }
 
 /**
@@ -1347,6 +1389,42 @@ export async function findExistingOwner(email) {
 }
 
 /**
+ * État réel de la synchro Loomky d'une fiche, et étapes qu'il reste à jouer.
+ *
+ * L'écran raisonnait sur « la propriété existe ou non », soit deux cas. Il y en a
+ * TROIS, et c'est le troisième qui piégeait : l'étape 1 crée la propriété et persiste
+ * son identifiant avant que l'étape 2 ne touche au propriétaire. Une étape 2 en échec
+ * laissait donc une propriété sans propriétaire, un bouton de création disparu, et
+ * pour seule issue la suppression de la propriété.
+ *
+ * Une SEULE dérivation, consommée par l'affichage ET par le séquencement des appels :
+ * s'ils la calculaient chacun de leur côté, ils pourraient diverger — un bouton qui
+ * propose une reprise que le handler ne joue pas, ou l'inverse.
+ *
+ * @param {Object} ids
+ * @param {string|null} ids.propertyId - fiches.loomky_property_id
+ * @param {string|null} ids.ownerId - fiches.loomky_owner_id
+ * @returns {{state: 'non_demarree'|'incomplete'|'terminee', createProperty: boolean, createOwner: boolean, assign: boolean}}
+ */
+export function planLoomkySync({ propertyId, ownerId } = {}) {
+    const state = !propertyId
+        ? 'non_demarree'
+        : (!ownerId ? 'incomplete' : 'terminee')
+
+    return {
+        state,
+        // Jamais de seconde propriété pour une fiche qui en a déjà une : c'est la
+        // garantie qui rend la reprise sûre.
+        createProperty: state === 'non_demarree',
+        createOwner: state !== 'terminee',
+        // L'association suit la création du propriétaire. On ne la rejoue pas sur une
+        // synchro terminée : la sémantique de cet endpoint pour un propriétaire qui
+        // possède plusieurs biens n'est pas établie, et on ne la sonde pas ici.
+        assign: state !== 'terminee'
+    }
+}
+
+/**
  * Contrôle AMONT de la synchro, à appeler AVANT le premier appel Loomky.
  *
  * Pourquoi avant : l'étape 1 crée la property et persiste son id sur la fiche
@@ -1369,7 +1447,9 @@ export async function findExistingOwner(email) {
  * @returns {Promise<Object>} - { ok: true, ownerExists } ou { ok: false, reason, message }
  */
 export async function checkOwnerSyncPrerequisites(fiche) {
-    const { ownerId: existingOwnerId, error } = await findExistingOwner(fiche?.proprietaire_email || '')
+    // Même forme normalisée pour la recherche registre et pour le contrôle ci-dessous.
+    const email = normalizeEmail(fiche?.proprietaire_email)
+    const { ownerId: existingOwnerId, error } = await findExistingOwner(email)
 
     // Le pays est exigé MÊME quand l'owner existe déjà : contrairement au téléphone,
     // il ne part pas seulement dans la création de propriétaire, il part aussi dans
@@ -1403,6 +1483,7 @@ export async function checkOwnerSyncPrerequisites(fiche) {
     }
 
     const missing = []
+    if (!isEmailPlausible(email)) missing.push('email')
     if (!isPhoneE164Normalizable(fiche?.proprietaire_telephone)) missing.push('phone')
     if (countryMissing) missing.push('country')
 
@@ -1888,7 +1969,10 @@ const MINIMAL_OWNER_PERMISSIONS = {
 export async function createPropertyOwnerOnLoomky(fiche, token, options = {}) {
     if (!token) return { success: false, error: 'Token requis' }
 
-    const email = fiche.proprietaire_email || ''
+    // Normalisé une fois, puis utilisé partout : recherche registre, payload envoyé
+    // à Loomky, et écriture dans le registre local — les trois doivent porter la
+    // MÊME valeur, sinon la déduplication rate sur un simple espace.
+    const email = normalizeEmail(fiche.proprietaire_email)
 
     // Le contrôle amont (checkOwnerSyncPrerequisites) a déjà lu le registre : on
     // réutilise SON résultat, y compris quand il est négatif. Une seule lecture par

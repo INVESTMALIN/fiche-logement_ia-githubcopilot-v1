@@ -4,7 +4,7 @@ import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import { Eye, EyeOff, House, Loader2, CheckCircle2, XCircle, Construction, RefreshCw, Rocket, Trash2, ChevronDown, AlertTriangle } from 'lucide-react'
-import { createPropertyOnLoomky, createPropertyOwnerOnLoomky, assignPropertyToOwnerOnLoomky, normalizeFormDataToFiche, deletePropertyOnLoomky, logLoomkyEvent, checkOwnerSyncPrerequisites } from '../services/loomkyService'
+import { createPropertyOnLoomky, createPropertyOwnerOnLoomky, assignPropertyToOwnerOnLoomky, normalizeFormDataToFiche, deletePropertyOnLoomky, logLoomkyEvent, checkOwnerSyncPrerequisites, planLoomkySync } from '../services/loomkyService'
 import { supabase } from '../lib/supabaseClient'
 
 export default function FicheEmailOutlook() {
@@ -30,12 +30,32 @@ export default function FicheEmailOutlook() {
     const [loomkyStep, setLoomkyStep] = useState(null) // 'property' | 'owner' | 'assign'
     const [loomkyError, setLoomkyError] = useState(null)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [successModal, setSuccessModal] = useState(null) // { type: 'created' | 'deleted', propertyId }
+    const [successModal, setSuccessModal] = useState(null) // { type: 'created' | 'resumed' | 'deleted', propertyId }
 
-    const handleCreateProperty = async () => {
+    // Affichage et séquencement lisent le MÊME plan (cf. planLoomkySync).
+    //
+    // ⚠️ Angle mort connu et assumé : un échec de l'étape 3 (association) laisse les deux
+    // identifiants posés, donc un état vu comme « terminée » alors que le propriétaire
+    // n'est pas rattaché. Le détecter demanderait de persister l'issue de l'association,
+    // donc une colonne, donc une migration — hors périmètre ici. À reprendre si le cas
+    // se produit.
+    const loomkySyncState = planLoomkySync({
+        propertyId: formData.loomky_property_id,
+        ownerId: formData.loomky_owner_id
+    }).state
+
+    const handleSyncLoomky = async () => {
         setLoomkyLoading(true)
         setLoomkyStep(null)
         setLoomkyError(null)
+
+        // Plan figé à l'entrée du handler : les étapes persistent des identifiants au
+        // fur et à mesure, un plan recalculé en cours de route changerait sous nos pieds.
+        const plan = planLoomkySync({
+            propertyId: formData.loomky_property_id,
+            ownerId: formData.loomky_owner_id
+        })
+        const reprise = plan.state === 'incomplete'
 
         try {
             const ficheNormalized = normalizeFormDataToFiche(formData)
@@ -63,58 +83,67 @@ export default function FicheEmailOutlook() {
                 return
             }
 
-            // Étape 1 : Création de la property
-            setLoomkyStep('property')
-            const propertyResult = await createPropertyOnLoomky(ficheNormalized, loomkyToken)
-            if (!propertyResult.success) {
-                setLoomkyError(propertyResult.error)
-                return
-            }
-            const propertyId = propertyResult.propertyId
+            // Étape 1 : Création de la property — SAUTÉE si elle existe déjà.
+            // C'est ce qui rend la reprise sûre : on ne recrée jamais une propriété.
+            let propertyId = formData.loomky_property_id
+            if (plan.createProperty) {
+                setLoomkyStep('property')
+                const propertyResult = await createPropertyOnLoomky(ficheNormalized, loomkyToken)
+                if (!propertyResult.success) {
+                    setLoomkyError(propertyResult.error)
+                    return
+                }
+                propertyId = propertyResult.propertyId
 
-            // Sauvegarder immédiatement le propertyId — évite une property orpheline si les étapes suivantes échouent
-            await supabase
-                .from('fiches')
-                .update({ loomky_property_id: propertyId })
-                .eq('id', formData.id)
-            updateField('loomky_property_id', propertyId)
-            logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_property_created', formData.user_id)
-
-            // Étape 2 : Création du propriétaire
-            setLoomkyStep('owner')
-            // On transmet le résultat de la lecture faite à l'étape 0, owner trouvé
-            // OU pas : une seconde lecture du registre pourrait échouer alors que la
-            // property vient d'être créée et persistée, et la laisserait orpheline.
-            const ownerResult = await createPropertyOwnerOnLoomky(ficheNormalized, loomkyToken, {
-                ownerLookup: { ownerId: prerequisites.ownerId ?? null }
-            })
-            if (!ownerResult.success) {
-                setLoomkyError(ownerResult.error)
-                return
-            }
-            const ownerId = ownerResult.ownerId
-
-            // Sauvegarder immédiatement l'ownerId — évite de le perdre si l'étape suivante échoue
-            await supabase
-                .from('fiches')
-                .update({ loomky_owner_id: ownerId })
-                .eq('id', formData.id)
-            updateField('loomky_owner_id', ownerId)
-            if (!ownerResult.existing) {
-                logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_owner_created', formData.user_id)
-            } else {
-                logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_owner_assigned', formData.user_id)
+                // Sauvegarder immédiatement le propertyId — évite une property orpheline si les étapes suivantes échouent
+                await supabase
+                    .from('fiches')
+                    .update({ loomky_property_id: propertyId })
+                    .eq('id', formData.id)
+                updateField('loomky_property_id', propertyId)
+                logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_property_created', formData.user_id)
             }
 
-            // Étape 3 : Association propriétaire ↔ property
-            setLoomkyStep('assign')
-            const assignResult = await assignPropertyToOwnerOnLoomky(ownerId, propertyId, loomkyToken)
-            if (!assignResult.success) {
-                setLoomkyError(assignResult.error)
-                return
+            // Étape 2 : Création du propriétaire — SAUTÉE si elle est déjà faite.
+            let ownerId = formData.loomky_owner_id
+            if (plan.createOwner) {
+                setLoomkyStep('owner')
+                // On transmet le résultat de la lecture faite à l'étape 0, owner trouvé
+                // OU pas : une seconde lecture du registre pourrait échouer alors que la
+                // property vient d'être créée et persistée, et la laisserait orpheline.
+                const ownerResult = await createPropertyOwnerOnLoomky(ficheNormalized, loomkyToken, {
+                    ownerLookup: { ownerId: prerequisites.ownerId ?? null }
+                })
+                if (!ownerResult.success) {
+                    setLoomkyError(ownerResult.error)
+                    return
+                }
+                ownerId = ownerResult.ownerId
+
+                // Sauvegarder immédiatement l'ownerId — évite de le perdre si l'étape suivante échoue
+                await supabase
+                    .from('fiches')
+                    .update({ loomky_owner_id: ownerId })
+                    .eq('id', formData.id)
+                updateField('loomky_owner_id', ownerId)
+                if (!ownerResult.existing) {
+                    logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_owner_created', formData.user_id)
+                } else {
+                    logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_owner_assigned', formData.user_id)
+                }
             }
 
-            setSuccessModal({ type: 'created', propertyId })
+            // Étape 3 : Association propriétaire ↔ property.
+            if (plan.assign) {
+                setLoomkyStep('assign')
+                const assignResult = await assignPropertyToOwnerOnLoomky(ownerId, propertyId, loomkyToken)
+                if (!assignResult.success) {
+                    setLoomkyError(assignResult.error)
+                    return
+                }
+            }
+
+            setSuccessModal({ type: reprise ? 'resumed' : 'created', propertyId })
 
         } catch (err) {
             setLoomkyError(err.message || 'Erreur inattendue')
@@ -261,7 +290,21 @@ export default function FicheEmailOutlook() {
                             {/* Statut — caché pendant la création (loomkyStep défini) et pendant la modal de succès,
                                 pour préserver l'ordre perçu : spinner → modal → (fermeture) → bloc vert.
                                 La persistance immédiate du loomky_property_id après l'étape 1 reste intacte. */}
-                            {formData.loomky_property_id && !loomkyStep && !successModal && (
+                            {loomkySyncState === 'incomplete' && !loomkyStep && !successModal && (
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <p className="text-sm text-amber-900 flex items-start gap-2">
+                                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                                        <span>
+                                            Synchronisation incomplète : le logement est créé sur Loomky, mais le propriétaire n'a pas pu l'être. Corrigez la donnée signalée dans la Fiche propriétaire, enregistrez, puis reprenez — le logement ne sera pas recréé.
+                                        </span>
+                                    </p>
+                                    <div className="mt-2 text-xs text-amber-800 bg-amber-100 rounded px-2 py-1.5 font-mono">
+                                        <span className="text-amber-700">ID logement :</span> {formData.loomky_property_id}
+                                    </div>
+                                </div>
+                            )}
+
+                            {loomkySyncState === 'terminee' && !loomkyStep && !successModal && (
                                 <div className="bg-green-50 border border-green-200 rounded-lg overflow-hidden">
                                     <div className="p-3">
                                         <div className="flex items-center justify-between">
@@ -298,9 +341,9 @@ export default function FicheEmailOutlook() {
 
                             {/* Boutons */}
                             <div className="flex gap-3">
-                                {!formData.loomky_property_id ? (
+                                {loomkySyncState !== 'terminee' ? (
                                     <button
-                                        onClick={handleCreateProperty}
+                                        onClick={handleSyncLoomky}
                                         disabled={loomkyLoading || !loomkyToken.trim()}
                                         className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white transition-all ${loomkyLoading || !loomkyToken.trim()
                                             ? 'bg-gray-400 cursor-not-allowed'
@@ -320,11 +363,12 @@ export default function FicheEmailOutlook() {
                                         ) : (
                                             <>
                                                 <Rocket className="w-4 h-4" />
-                                                <span>Créer le logement</span>
+                                                <span>{loomkySyncState === 'incomplete' ? 'Reprendre la synchronisation' : 'Créer le logement'}</span>
                                             </>
                                         )}
                                     </button>
-                                ) : (
+                                ) : null}
+                                {loomkySyncState !== 'non_demarree' && (
                                     <button
                                         onClick={handleDeleteProperty}
                                         disabled={loomkyLoading || !loomkyToken.trim()}
@@ -400,6 +444,18 @@ export default function FicheEmailOutlook() {
                                         <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
                                             {successModal.propertyId}
                                         </code>.
+                                    </p>
+                                </>
+                            ) : successModal.type === 'resumed' ? (
+                                <>
+                                    <h2 className="text-xl font-bold text-gray-900 mb-3">
+                                        Synchronisation reprise avec succès !
+                                    </h2>
+                                    <p className="text-gray-600 text-sm leading-relaxed">
+                                        Le propriétaire a été créé et rattaché au logement{' '}
+                                        <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
+                                            {successModal.propertyId}
+                                        </code>, qui n'a pas été recréé.
                                     </p>
                                 </>
                             ) : (
