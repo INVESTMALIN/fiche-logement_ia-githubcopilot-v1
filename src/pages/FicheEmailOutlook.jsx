@@ -74,7 +74,10 @@ export default function FicheEmailOutlook() {
 
             // Étape 2 : Création du propriétaire
             setLoomkyStep('owner')
-            const ownerResult = await createPropertyOwnerOnLoomky(ficheNormalized, loomkyToken)
+            // On transmet l'owner déjà résolu à l'étape 0 : le rechercher une seconde
+            // fois exposerait la synchro à une lecture du registre qui échoue entre
+            // les deux, avec une property déjà créée à l'étape 1.
+            const ownerResult = await createPropertyOwnerOnLoomky(ficheNormalized, loomkyToken, { knownOwnerId: prerequisites.ownerId })
             if (!ownerResult.success) {
                 setLoomkyError(ownerResult.error)
                 return

@@ -1805,16 +1805,24 @@ const MINIMAL_OWNER_PERMISSIONS = {
  * Crée un propriétaire (property owner) dans Loomky depuis une fiche normalisée
  * @param {Object} fiche - Fiche normalisée (via normalizeFormDataToFiche)
  * @param {string} token - Token JWT Loomky (saisi par le coordinateur)
+ * @param {Object} [options]
+ * @param {string} [options.knownOwnerId] - Owner déjà résolu par checkOwnerSyncPrerequisites
  * @returns {Promise<Object>} - { success, ownerId } ou { success: false, error }
  */
-export async function createPropertyOwnerOnLoomky(fiche, token) {
+export async function createPropertyOwnerOnLoomky(fiche, token, options = {}) {
     if (!token) return { success: false, error: 'Token requis' }
 
     const email = fiche.proprietaire_email || ''
 
-    // Vérifier si cet owner existe déjà dans le registre local (même lecture que
-    // le contrôle amont checkOwnerSyncPrerequisites, pour qu'ils ne divergent pas)
-    const existingOwnerId = await findExistingOwnerId(email)
+    // Owner déjà résolu par le contrôle amont (checkOwnerSyncPrerequisites) : on
+    // réutilise SON résultat au lieu de relire le registre. Relire rouvrirait la
+    // fenêtre que le contrôle amont est censé fermer : une lecture qui échoue
+    // transitoirement ferait basculer un owner pourtant connu vers la branche
+    // "création", donc vers le garde-fou téléphone — en laissant orpheline la
+    // property déjà créée et persistée à l'étape 1 (cf. review Codex).
+    // Sans indice fourni (appel direct hors parcours de synchro), on lit le
+    // registre comme avant.
+    const existingOwnerId = options.knownOwnerId || await findExistingOwnerId(email)
     if (existingOwnerId) {
         // Owner déjà connu → on ne recrée pas, et AUCUN téléphone n'est envoyé.
         // Mais on (re)durcit ses permissions à chaque passage : le PATCH est
