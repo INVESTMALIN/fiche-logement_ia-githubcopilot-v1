@@ -1367,7 +1367,7 @@ export async function checkOwnerSyncPrerequisites(fiche) {
         }
     }
 
-    return { ok: true, ownerExists: false }
+    return { ok: true, ownerExists: false, ownerId: null }
 }
 
 /**
@@ -1829,7 +1829,8 @@ const MINIMAL_OWNER_PERMISSIONS = {
  * @param {Object} fiche - Fiche normalisée (via normalizeFormDataToFiche)
  * @param {string} token - Token JWT Loomky (saisi par le coordinateur)
  * @param {Object} [options]
- * @param {string} [options.knownOwnerId] - Owner déjà résolu par checkOwnerSyncPrerequisites
+ * @param {{ownerId: string|null}} [options.ownerLookup] - Lecture du registre déjà
+ *   effectuée par checkOwnerSyncPrerequisites, résultat NÉGATIF inclus (ownerId: null)
  * @returns {Promise<Object>} - { success, ownerId } ou { success: false, error }
  */
 export async function createPropertyOwnerOnLoomky(fiche, token, options = {}) {
@@ -1837,17 +1838,18 @@ export async function createPropertyOwnerOnLoomky(fiche, token, options = {}) {
 
     const email = fiche.proprietaire_email || ''
 
-    // Owner déjà résolu par le contrôle amont (checkOwnerSyncPrerequisites) : on
-    // réutilise SON résultat au lieu de relire le registre. Relire rouvrirait la
-    // fenêtre que le contrôle amont est censé fermer : une lecture qui échoue
-    // transitoirement ferait basculer un owner pourtant connu vers la branche
-    // "création", donc vers le garde-fou téléphone — en laissant orpheline la
-    // property déjà créée et persistée à l'étape 1 (cf. review Codex).
-    // Sans indice fourni (appel direct hors parcours de synchro), on lit le
-    // registre. Une lecture en échec arrête là : passer outre créerait un doublon
-    // d'owner pour un email peut-être déjà connu.
-    let existingOwnerId = options.knownOwnerId || null
-    if (!existingOwnerId) {
+    // Le contrôle amont (checkOwnerSyncPrerequisites) a déjà lu le registre : on
+    // réutilise SON résultat, y compris quand il est négatif. Une seule lecture par
+    // synchro, donc aucune seconde lecture susceptible d'échouer APRÈS que la
+    // property a été créée et persistée à l'étape 1 — c'est précisément ce qui
+    // laisserait une property orpheline (cf. reviews Codex).
+    // Sans résultat fourni (appel direct hors parcours de synchro), on lit ici. Une
+    // lecture en échec arrête là : passer outre créerait un doublon d'owner pour un
+    // email peut-être déjà connu.
+    let existingOwnerId = null
+    if (options.ownerLookup) {
+        existingOwnerId = options.ownerLookup.ownerId || null
+    } else {
         const lookup = await findExistingOwner(email)
         if (lookup.error) {
             return { success: false, error: OWNER_REGISTRY_UNAVAILABLE_MESSAGE, reason: 'owner_registry_unavailable' }
