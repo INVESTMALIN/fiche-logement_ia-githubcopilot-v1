@@ -1991,7 +1991,7 @@ function HistoriqueTab() {
                 } else if (event.action === 'loomky_checklists_created') {
                   color = 'bg-emerald-600'
                   icon = '✅'
-                } else if (event.action === 'loomky_sync_blocked_no_phone') {
+                } else if (event.action === 'loomky_sync_blocked_no_phone' || event.action === 'loomky_sync_blocked_owner_data') {
                   color = 'bg-amber-500'
                   icon = '🚫'
                 } else if (event.action === 'loomky_sync_blocked_registry_error') {
@@ -2026,7 +2026,9 @@ function HistoriqueTab() {
                             {event.action === 'loomky_owner_created' && `${icon} Propriétaire créé sur Loomky`}
                             {event.action === 'loomky_owner_assigned' && `${icon} Propriétaire existant assigné au logement`}
                             {event.action === 'loomky_checklists_created' && `${icon} Checklists créées sur Loomky`}
+                            {/* Action historique, conservée pour les lignes déjà écrites */}
                             {event.action === 'loomky_sync_blocked_no_phone' && `${icon} Synchro Loomky bloquée : téléphone propriétaire manquant ou invalide`}
+                            {event.action === 'loomky_sync_blocked_owner_data' && `${icon} Synchro Loomky bloquée : données propriétaire manquantes${event.new_value ? ` (${event.new_value})` : ''}`}
                             {event.action === 'loomky_sync_blocked_registry_error' && `${icon} Synchro Loomky bloquée : registre des propriétaires illisible`}
                           </div>
 

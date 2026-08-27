@@ -4,6 +4,7 @@
 // ============================================
 import { supabase } from '../lib/supabaseClient'
 import { normalizePhoneE164, isPhoneE164Normalizable } from '../lib/phoneHelpers'
+import { isLoomkyCountryCode } from '../lib/countries'
 
 // La normalisation E.164 vit dans phoneHelpers (partagée avec la sync Monday
 // Contacts Maintenance et la validation du champ téléphone propriétaire, qui
@@ -57,6 +58,7 @@ export function normalizeFormDataToFiche(formData) {
         proprietaire_adresse_complement: formData.section_proprietaire?.adresse?.complement || '',
         proprietaire_adresse_ville: formData.section_proprietaire?.adresse?.ville || '',
         proprietaire_adresse_code_postal: formData.section_proprietaire?.adresse?.codePostal || '',
+        proprietaire_adresse_pays: formData.section_proprietaire?.adresse?.pays || '',
 
         // Logement (section_logement → flat)
         logement_numero_bien: formData.section_logement?.numero_bien || '',
@@ -427,7 +429,11 @@ export function buildPropertyPayload(fiche) {
             street: fiche.proprietaire_adresse_rue || 'Non renseignée',
             city: fiche.proprietaire_adresse_ville || 'Non renseignée',
             postalCode: fiche.proprietaire_adresse_code_postal || '00000',
-            country: 'FR'
+            // Pas de repli : un pays absent doit échouer, pas partir en 'FR' inventé.
+            // Le contrôle amont (checkOwnerSyncPrerequisites) bloque la synchro avant
+            // d'en arriver là. L'adresse de la property est construite sur les mêmes
+            // champs que celle du propriétaire : les deux doivent déclarer le même pays.
+            country: fiche.proprietaire_adresse_pays || ''
         },
         description: `${fiche.logement_type_propriete || ''} - ${fiche.logement_typologie || ''} à ${fiche.proprietaire_adresse_ville || ''}`.trim() || 'Logement de vacances',
         status: "active",
@@ -1274,14 +1280,38 @@ export function formatLoomkyApiError(response, data) {
 }
 
 /**
- * Message affiché quand la synchro est bloquée faute de téléphone propriétaire.
- * Exporté pour que l'écran de synchro et le service partagent le même texte.
+ * Message affiché quand la synchro est bloquée parce que le registre local des
+ * owners est illisible. Exporté pour que l'écran de synchro et le service
+ * partagent le même texte.
  */
 export const OWNER_REGISTRY_UNAVAILABLE_MESSAGE =
     "Synchronisation impossible : le registre des propriétaires déjà créés sur Loomky est momentanément illisible. Sans lui, la synchronisation risquerait de créer un doublon de propriétaire. Réessayez dans un instant ; si l'erreur persiste, prévenez un administrateur."
 
-export const OWNER_PHONE_REQUIRED_MESSAGE =
-    "Synchronisation impossible : le téléphone du propriétaire est absent ou dans un format non reconnu. Loomky l'exige pour créer un nouveau propriétaire. Renseignez-le dans la Fiche propriétaire (format international pour un numéro étranger, ex. +44 7769 645867), enregistrez, puis relancez la synchronisation."
+/**
+ * Motifs de blocage exprimés en clair, un par donnée propriétaire exigée par Loomky.
+ * Un seul mécanisme pour toutes ces données : la liste grandit ici, pas ailleurs.
+ */
+const OWNER_DATA_MISSING_PARTS = {
+    phone: "le téléphone du propriétaire est absent ou dans un format non reconnu (pour un numéro étranger, utilisez le format international, ex. +44 7769 645867)",
+    country: "le pays de l'adresse du propriétaire n'est pas renseigné"
+}
+
+/**
+ * Message affiché quand la synchro est bloquée faute de données propriétaire.
+ * Liste TOUT ce qui manque d'un coup : n'en montrer qu'un ferait corriger, relancer,
+ * et se prendre le suivant (même raison que pour les validationErrors de Loomky).
+ *
+ * @param {string[]} missing - Clés de OWNER_DATA_MISSING_PARTS
+ * @returns {string}
+ */
+export function buildOwnerDataMissingMessage(missing) {
+    const parts = missing.map(key => OWNER_DATA_MISSING_PARTS[key]).filter(Boolean)
+    const enumeration = parts.length > 1
+        ? parts.slice(0, -1).join(', ') + ' et ' + parts[parts.length - 1]
+        : (parts[0] || 'une donnée obligatoire du propriétaire est manquante')
+
+    return `Synchronisation impossible : ${enumeration}. Loomky l'exige. Corrigez dans la Fiche propriétaire (premier écran du formulaire), enregistrez, puis relancez la synchronisation.`
+}
 
 /**
  * Cherche un owner Loomky déjà créé pour cet email dans le registre local.
@@ -1341,6 +1371,11 @@ export async function findExistingOwner(email) {
 export async function checkOwnerSyncPrerequisites(fiche) {
     const { ownerId: existingOwnerId, error } = await findExistingOwner(fiche?.proprietaire_email || '')
 
+    // Le pays est exigé MÊME quand l'owner existe déjà : contrairement au téléphone,
+    // il ne part pas seulement dans la création de propriétaire, il part aussi dans
+    // l'adresse de la property, créée à chaque synchro (buildPropertyPayload).
+    const countryMissing = !isLoomkyCountryCode(fiche?.proprietaire_adresse_pays)
+
     // Registre illisible : on ne sait pas si l'owner existe. On s'arrête sur
     // l'erreur technique réelle, sans appliquer la règle du téléphone — qui
     // afficherait un motif faux et enregistrerait un blocage téléphone qui n'en
@@ -1354,16 +1389,29 @@ export async function checkOwnerSyncPrerequisites(fiche) {
         }
     }
 
-    // Owner déjà connu → aucun téléphone ne sera envoyé, rien à contrôler.
+    // Owner déjà connu → aucun téléphone ne sera envoyé, seul le pays reste exigé.
     if (existingOwnerId) {
+        if (countryMissing) {
+            return {
+                ok: false,
+                reason: 'owner_data_missing',
+                missing: ['country'],
+                message: buildOwnerDataMissingMessage(['country'])
+            }
+        }
         return { ok: true, ownerExists: true, ownerId: existingOwnerId }
     }
 
-    if (!isPhoneE164Normalizable(fiche?.proprietaire_telephone)) {
+    const missing = []
+    if (!isPhoneE164Normalizable(fiche?.proprietaire_telephone)) missing.push('phone')
+    if (countryMissing) missing.push('country')
+
+    if (missing.length > 0) {
         return {
             ok: false,
-            reason: 'owner_phone_missing',
-            message: OWNER_PHONE_REQUIRED_MESSAGE
+            reason: 'owner_data_missing',
+            missing,
+            message: buildOwnerDataMissingMessage(missing)
         }
     }
 
@@ -1772,8 +1820,11 @@ function calculateBedCounts(fiche) {
  * @param {string} ficheName
  * @param {string} action - 'loomky_property_created' | 'loomky_owner_created' | 'loomky_checklists_created'
  * @param {string} userId
+ * @param {string} [details] - Précision libre stockée dans new_value (colonne existante),
+ *   par ex. la liste des données manquantes sur un blocage. Évite de multiplier les
+ *   valeurs d'action juste pour distinguer des variantes du même événement.
  */
-export async function logLoomkyEvent(ficheId, numeroBien, ficheName, action, userId) {
+export async function logLoomkyEvent(ficheId, numeroBien, ficheName, action, userId, details = null) {
     try {
         await supabase
             .from('fiches_history')
@@ -1782,6 +1833,7 @@ export async function logLoomkyEvent(ficheId, numeroBien, ficheName, action, use
                 numero_bien: numeroBien || '',
                 fiche_nom: ficheName || '',
                 action,
+                new_value: details || null,
                 changed_by: userId || null,
                 changed_at: new Date().toISOString()
             })
@@ -1883,7 +1935,7 @@ export async function createPropertyOwnerOnLoomky(fiche, token, options = {}) {
     // premier appel Loomky) ; ce contrôle-ci ne couvre qu'un appel direct à cette
     // fonction, hors du parcours de synchro.
     if (!normalizedPhone) {
-        return { success: false, error: OWNER_PHONE_REQUIRED_MESSAGE, reason: 'owner_phone_missing' }
+        return { success: false, error: buildOwnerDataMissingMessage(['phone']), reason: 'owner_data_missing', missing: ['phone'] }
     }
 
     const payload = {
@@ -1894,7 +1946,7 @@ export async function createPropertyOwnerOnLoomky(fiche, token, options = {}) {
         address: {
             street: fiche.proprietaire_adresse_rue || '',
             city: fiche.proprietaire_adresse_ville || '',
-            country: 'FR',
+            country: fiche.proprietaire_adresse_pays || '',
             postalCode: fiche.proprietaire_adresse_code_postal || ''
         },
         ownerPermissions: MINIMAL_OWNER_PERMISSIONS,

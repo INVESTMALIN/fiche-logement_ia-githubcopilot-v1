@@ -5,6 +5,7 @@ import { useForm } from '../components/FormContext'
 import Button from '../components/Button'
 import { useNavigate } from 'react-router-dom';
 import { isOptionalPhoneValid } from '../lib/phoneHelpers'
+import { COUNTRY_OPTIONS } from '../lib/countries'
 
 /**
  * Téléphone propriétaire : champ optionnel, accepté dans n'importe quel
@@ -164,10 +165,25 @@ export default function FicheForm() {
             <input
               type="text"
               placeholder="Code Postal"
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded mb-2"
               value={getField('section_proprietaire.adresse.codePostal')}
               onChange={(e) => handleInputChange('section_proprietaire.adresse.codePostal', e.target.value)}
             />
+            {/* Liste déroulante et non saisie libre : Loomky exige un code à deux
+                lettres en MAJUSCULES pris dans SA liste (243 codes, qui n'est pas la
+                liste ISO complète). Une saisie libre partirait en 400 une fois sur
+                deux. Le libellé est lisible, la valeur stockée est le code. */}
+            <select
+              className="w-full p-2 border rounded bg-white"
+              value={getField('section_proprietaire.adresse.pays')}
+              onChange={(e) => handleInputChange('section_proprietaire.adresse.pays', e.target.value)}
+              aria-label="Pays"
+            >
+              <option value="">Pays…</option>
+              {COUNTRY_OPTIONS.map(({ code, label }) => (
+                <option key={code} value={code}>{label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Indicateur de sauvegarde */}
