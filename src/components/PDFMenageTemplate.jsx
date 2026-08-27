@@ -1,5 +1,6 @@
 // src/components/PDFMenageTemplate.jsx - VERSION 2 CLEAN & PHOTOS GRANDES
 import React from 'react'
+import { getCountryLabel } from '../lib/countries'
 
 // 🧹 Section Instructions Ménage — libellés métier.
 // ⚠️ Copie volontaire de PDFTemplate.jsx : les deux templates sont indépendants,
@@ -517,6 +518,9 @@ const PDFMenageTemplate = ({ formData }) => {
         let formattedVal = maskSecretCodes(val, key)
         if (val === true) formattedVal = 'Oui'
         else if (val === false) formattedVal = 'Non'
+        // Le pays est stocké en code à deux lettres (contrainte Loomky) : on rend le
+        // libellé, pas "GB". Aucune autre clé "pays" n'existe dans le formulaire.
+        else if (key === 'pays') formattedVal = getCountryLabel(val)
 
         return `${formatFieldName(key)}: ${formattedVal}`
       })

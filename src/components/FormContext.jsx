@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { saveFiche, loadFiche } from '../lib/supabaseHelpers'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import { DEFAULT_COUNTRY_CODE } from '../lib/countries'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
@@ -33,7 +34,11 @@ const initialFormData = {
       rue: "",
       complement: "",
       ville: "",
-      codePostal: ""
+      codePostal: "",
+      // Défaut AFFICHÉ à l'écran, pas un repli silencieux : le parc est
+      // massivement français, le coordinateur voit "France" pré-sélectionné et
+      // peut le changer. Rien n'est deviné côté code (cf. countries.js).
+      pays: DEFAULT_COUNTRY_CODE
     }
   },
   section_logement: {

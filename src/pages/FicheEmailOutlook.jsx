@@ -51,12 +51,15 @@ export default function FicheEmailOutlook() {
                 setLoomkyError(prerequisites.message)
                 // Trace durable : un blocage qui ne vivrait que dans un console.log ne
                 // serait pas observable, on ne saurait jamais combien de fois il tire.
-                // Une action par motif : un blocage technique (registre illisible) ne
-                // doit pas gonfler le compteur des blocages "téléphone manquant".
+                // Une action par FAMILLE de motif : un blocage technique (registre
+                // illisible) ne doit pas gonfler le compteur des données manquantes.
+                // Le détail (quelles données) part dans new_value plutôt que dans une
+                // nouvelle valeur d'action à chaque champ ajouté au contrôle.
                 const blockedAction = prerequisites.reason === 'owner_registry_unavailable'
                     ? 'loomky_sync_blocked_registry_error'
-                    : 'loomky_sync_blocked_no_phone'
-                logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, blockedAction, formData.user_id)
+                    : 'loomky_sync_blocked_owner_data'
+                const blockedDetails = prerequisites.missing?.join(', ') || null
+                logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, blockedAction, formData.user_id, blockedDetails)
                 return
             }
 

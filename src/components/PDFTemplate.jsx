@@ -1,6 +1,7 @@
 // src/components/PDFTemplate.jsx - VERSION 2 CLEAN & COMPLETE
 import React from 'react'
 import { GRILLE_CRITERES, VUE_TYPES, computeGrilleStats, dangerLabelByKey } from '../lib/avisGrilleHelpers'
+import { getCountryLabel } from '../lib/countries'
 
 // 🧹 Section Instructions Ménage — libellés métier.
 // Sans override, formatFieldName rendrait "Type Premier Menage",
@@ -507,6 +508,9 @@ const PDFTemplate = ({ formData }) => {
         let formattedVal = val
         if (val === true) formattedVal = 'Oui'
         else if (val === false) formattedVal = 'Non'
+        // Le pays est stocké en code à deux lettres (contrainte Loomky) : on rend le
+        // libellé, pas "GB". Aucune autre clé "pays" n'existe dans le formulaire.
+        else if (key === 'pays') formattedVal = getCountryLabel(val)
 
         return `${formatFieldName(key)}: ${formattedVal}`
       })

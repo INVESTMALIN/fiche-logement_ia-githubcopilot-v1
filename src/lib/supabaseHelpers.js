@@ -48,6 +48,7 @@ export const mapFormDataToSupabase = (formData) => {
     proprietaire_adresse_complement: formData.section_proprietaire?.adresse?.complement || null,
     proprietaire_adresse_ville: formData.section_proprietaire?.adresse?.ville || null,
     proprietaire_adresse_code_postal: formData.section_proprietaire?.adresse?.codePostal || null,
+    proprietaire_adresse_pays: formData.section_proprietaire?.adresse?.pays || null,
 
     // Section Logement - CORRIGÉ POUR LES NOUVEAUX CHAMPS
     // ✅ NOUVEAUX champs Monday (priorité)
@@ -1292,7 +1293,10 @@ export const mapSupabaseToFormData = (supabaseData) => {
         rue: supabaseData.proprietaire_adresse_rue || "",
         complement: supabaseData.proprietaire_adresse_complement || "",
         ville: supabaseData.proprietaire_adresse_ville || "",
-        codePostal: supabaseData.proprietaire_adresse_code_postal || ""
+        codePostal: supabaseData.proprietaire_adresse_code_postal || "",
+        // Pas de repli sur 'FR' à la relecture : une fiche sans pays doit rester
+        // visiblement sans pays, le contrôle amont de la synchro Loomky s'en charge.
+        pays: supabaseData.proprietaire_adresse_pays || ""
       }
     },
 
