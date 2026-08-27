@@ -1292,8 +1292,28 @@ export const OWNER_REGISTRY_UNAVAILABLE_MESSAGE =
  * Un seul mécanisme pour toutes ces données : la liste grandit ici, pas ailleurs.
  */
 const OWNER_DATA_MISSING_PARTS = {
+    email: "l'email du propriétaire est absent ou visiblement mal formé",
     phone: "le téléphone du propriétaire est absent ou dans un format non reconnu (pour un numéro étranger, utilisez le format international, ex. +44 7769 645867)",
     country: "le pays de l'adresse du propriétaire n'est pas renseigné"
+}
+
+/**
+ * Prédicat : l'email a-t-il une chance d'être accepté par Loomky ?
+ *
+ * VOLONTAIREMENT MINIMAL. Loomky reste l'autorité sur la validité d'un email, et
+ * depuis la PR #88 son refus nomme le champ fautif (`400`, `validationErrors`
+ * `[{ field: "email", message: "Invalid email address" }]`). Le rôle de ce test
+ * n'est pas de rejouer la RFC 5322 — impossible avec une regex, et inutile ici —
+ * mais d'attraper l'évident (champ vide, chaîne sans arobase, sans domaine) AVANT
+ * de créer quoi que ce soit. Un email exotique mais valide passe ici et sera tranché
+ * par Loomky ; un email absurde est arrêté avant que la propriété n'existe.
+ *
+ * @param {string|null|undefined} email - Saisie utilisateur brute
+ * @returns {boolean}
+ */
+export function isEmailPlausible(email) {
+    if (typeof email !== 'string') return false
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 }
 
 /**
@@ -1344,6 +1364,42 @@ export async function findExistingOwner(email) {
     }
 
     return { ownerId: data?.loomky_owner_id || null, error: null }
+}
+
+/**
+ * État réel de la synchro Loomky d'une fiche, et étapes qu'il reste à jouer.
+ *
+ * L'écran raisonnait sur « la propriété existe ou non », soit deux cas. Il y en a
+ * TROIS, et c'est le troisième qui piégeait : l'étape 1 crée la propriété et persiste
+ * son identifiant avant que l'étape 2 ne touche au propriétaire. Une étape 2 en échec
+ * laissait donc une propriété sans propriétaire, un bouton de création disparu, et
+ * pour seule issue la suppression de la propriété.
+ *
+ * Une SEULE dérivation, consommée par l'affichage ET par le séquencement des appels :
+ * s'ils la calculaient chacun de leur côté, ils pourraient diverger — un bouton qui
+ * propose une reprise que le handler ne joue pas, ou l'inverse.
+ *
+ * @param {Object} ids
+ * @param {string|null} ids.propertyId - fiches.loomky_property_id
+ * @param {string|null} ids.ownerId - fiches.loomky_owner_id
+ * @returns {{state: 'non_demarree'|'incomplete'|'terminee', createProperty: boolean, createOwner: boolean, assign: boolean}}
+ */
+export function planLoomkySync({ propertyId, ownerId } = {}) {
+    const state = !propertyId
+        ? 'non_demarree'
+        : (!ownerId ? 'incomplete' : 'terminee')
+
+    return {
+        state,
+        // Jamais de seconde propriété pour une fiche qui en a déjà une : c'est la
+        // garantie qui rend la reprise sûre.
+        createProperty: state === 'non_demarree',
+        createOwner: state !== 'terminee',
+        // L'association suit la création du propriétaire. On ne la rejoue pas sur une
+        // synchro terminée : la sémantique de cet endpoint pour un propriétaire qui
+        // possède plusieurs biens n'est pas établie, et on ne la sonde pas ici.
+        assign: state !== 'terminee'
+    }
 }
 
 /**
@@ -1403,6 +1459,7 @@ export async function checkOwnerSyncPrerequisites(fiche) {
     }
 
     const missing = []
+    if (!isEmailPlausible(fiche?.proprietaire_email)) missing.push('email')
     if (!isPhoneE164Normalizable(fiche?.proprietaire_telephone)) missing.push('phone')
     if (countryMissing) missing.push('country')
 
