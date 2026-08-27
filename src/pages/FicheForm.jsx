@@ -4,20 +4,20 @@ import ProgressBar from '../components/ProgressBar'
 import { useForm } from '../components/FormContext'
 import Button from '../components/Button'
 import { useNavigate } from 'react-router-dom';
-import { normalizePhoneForLoomky } from '../services/loomkyService'
+import { isOptionalPhoneValid } from '../lib/phoneHelpers'
 
 /**
- * Téléphone propriétaire optionnel. Si saisi, doit être un numéro français valide.
- * On réutilise le helper backend normalizePhoneForLoomky pour garantir que ce qui passe
- * la validation ici sera accepté côté API Loomky (cohérence front/back, pas de regex
- * parallèle qui pourrait diverger). Un numéro français normalisé est `+33` + 9 chiffres
- * = 12 caractères ; tout autre indicatif (ex: `+32` belge) est rejeté.
+ * Téléphone propriétaire : champ optionnel, accepté dans n'importe quel
+ * indicatif international. On réutilise le prédicat partagé `isOptionalPhoneValid`
+ * (phoneHelpers), le même socle de normalisation que les contacts maintenance et
+ * les envois API — pas de regex parallèle qui pourrait diverger.
+ *
+ * ⚠️ Un numéro saisi en format national (`0...`) est interprété comme français,
+ * sans détection de pays. D'où le rappel explicite du format international dans
+ * le placeholder, l'aide sous le champ et le message d'erreur.
  */
-function isValidFrenchPhone(value) {
-  if (!value || !value.trim()) return true // optionnel : champ vide = valide
-  const normalized = normalizePhoneForLoomky(value)
-  return normalized.startsWith('+33') && normalized.length === 12
-}
+const PHONE_ERROR_MESSAGE =
+  "Format invalide. Pour un numéro français : 06 12 34 56 78. Pour un numéro étranger : format international avec l'indicatif, ex. +44 7769 645867."
 
 export default function FicheForm() {
   const navigate = useNavigate();
@@ -45,11 +45,7 @@ export default function FicheForm() {
   }
 
   const handlePhoneBlur = (value) => {
-    setPhoneError(
-      isValidFrenchPhone(value)
-        ? ''
-        : 'Format invalide. Numéro français attendu (ex : 06 12 34 56 78).'
-    )
+    setPhoneError(isOptionalPhoneValid(value) ? '' : PHONE_ERROR_MESSAGE)
   }
 
   const handleCancel = () => {
@@ -119,17 +115,23 @@ export default function FicheForm() {
             />
           </div>
 
-          {/* Téléphone — validation au blur (champ optionnel mais format français exigé si saisi) */}
+          {/* Téléphone — champ optionnel, validation au blur (tout indicatif international accepté) */}
           <div className="mb-4">
             <label className="block font-semibold mb-1">Téléphone</label>
             <input
               type="tel"
-              placeholder="+33 6 00 00 00 00"
+              placeholder="06 12 34 56 78 ou +44 7769 645867"
               className="w-full p-2 border rounded"
               value={getField('section_proprietaire.telephone')}
               onChange={(e) => handlePhoneChange(e.target.value)}
               onBlur={(e) => handlePhoneBlur(e.target.value)}
             />
+            {/* Rappel permanent : un numéro étranger saisi en format national
+                (commençant par 0) est interprété comme français sans jamais
+                déclencher d'erreur — le message d'erreur seul ne couvre pas ce cas. */}
+            <p className="text-sm text-gray-500 mt-1">
+              Numéro étranger : utilisez le format international avec l'indicatif (ex. +44 7769 645867). Un numéro commençant par 0 est interprété comme français.
+            </p>
             {phoneError && (
               <p className="text-sm text-red-600 mt-1">{phoneError}</p>
             )}

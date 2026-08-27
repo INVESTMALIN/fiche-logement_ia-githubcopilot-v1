@@ -92,3 +92,29 @@ export function normalizePhoneE164(phone) {
 export function isPhoneE164Normalizable(phone) {
     return normalizePhoneE164(phone) !== ''
 }
+
+/**
+ * Prédicat pour un champ téléphone **optionnel** : vrai si la valeur est vide
+ * (champ non renseigné = valide) ou normalisable en E.164.
+ *
+ * Aucun indicatif n'est privilégié : un numéro étranger bien formé
+ * (`+447769645867`) est accepté au même titre qu'un français. Sondé sur
+ * l'API Loomky (POST /v1/property-owners), un numéro anglais est accepté au
+ * même titre qu'un français — le champ est bien validé côté Loomky (un
+ * numéro volontairement invalide renvoie 400 en nommant `phone`), donc le
+ * 200 sur `+447769645867` est une acceptation, pas une absence de contrôle.
+ *
+ * ⚠️ Conséquence assumée de `normalizePhoneE164` : un numéro saisi en format
+ * national (`0...`) est interprété comme français quel que soit le pays réel
+ * du propriétaire. Aucune détection de pays n'est faite. C'est pour cela que
+ * l'UI du champ demande explicitement le format international pour un numéro
+ * étranger (cf. `FicheForm.jsx`).
+ *
+ * @param {string|null|undefined} phone - Saisie utilisateur brute
+ * @returns {boolean}
+ */
+export function isOptionalPhoneValid(phone) {
+    if (!phone) return true // null, undefined, '' → champ non renseigné
+    if (typeof phone === 'string' && !phone.trim()) return true // '   ' → idem
+    return isPhoneE164Normalizable(phone)
+}
