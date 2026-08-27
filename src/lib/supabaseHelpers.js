@@ -2581,6 +2581,13 @@ export const mapSupabaseToFormData = (supabaseData) => {
     pdf_last_generated_at: supabaseData.pdf_last_generated_at,
 
     loomky_property_id: supabaseData.loomky_property_id || null,
+    // Écrit par un update ciblé depuis l'écran de synchro, comme loomky_property_id,
+    // et donc absent du sens ÉCRITURE (une sauvegarde normale ne doit pas l'écraser).
+    // Il manquait ici : après un rechargement de page, une synchro pourtant terminée
+    // se relisait sans propriétaire. Invisible tant que l'écran ne regardait que la
+    // propriété ; devenu visible dès qu'il distingue « incomplète » de « terminée »
+    // (cf. review Codex).
+    loomky_owner_id: supabaseData.loomky_owner_id || null,
     loomky_checklist_ids: supabaseData.loomky_checklist_ids || null,
     loomky_sync_status: supabaseData.loomky_sync_status || null,
     loomky_synced_at: supabaseData.loomky_synced_at || null,
