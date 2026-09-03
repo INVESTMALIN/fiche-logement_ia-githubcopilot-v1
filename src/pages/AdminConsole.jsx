@@ -1008,6 +1008,60 @@ function UsersTab({ users, onRefresh }) {
   )
 }
 
+// 📄 PAGINATION: découpe une liste en pages.
+// `page` est ramenée dans les bornes pour éviter une page vide quand la liste
+// rétrécit (filtre, recherche ou rechargement des données).
+function paginate(items, page, pageSize) {
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+  const currentPage = Math.min(Math.max(page, 1), totalPages)
+  const indexOfFirst = (currentPage - 1) * pageSize
+  return {
+    currentPage,
+    totalPages,
+    indexOfFirst,
+    pageItems: items.slice(indexOfFirst, indexOfFirst + pageSize)
+  }
+}
+
+// 📄 PAGINATION: compteur + boutons de navigation, partagés par les tableaux admin
+function TablePagination({ currentPage, totalPages, indexOfFirst, pageSize, totalItems, itemLabel, onPageChange }) {
+  if (totalItems === 0) return null
+
+  return (
+    <div className="p-6 border-t space-y-4">
+      {/* Compteur d'éléments */}
+      <div className="text-center text-sm text-gray-600">
+        Affichage de {indexOfFirst + 1}–{Math.min(indexOfFirst + pageSize, totalItems)} sur {totalItems} {itemLabel}
+      </div>
+
+      {/* Boutons de navigation */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-3">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+            className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Précédent
+          </button>
+
+          <span className="px-4 py-2 text-gray-700 font-medium">
+            Page {currentPage} / {totalPages}
+          </span>
+
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => onPageChange(currentPage + 1)}
+            className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Suivant
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Composant Toutes les Fiches avec design moderne
 function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, onMenuAction }) {
   const [searchTerm, setSearchTerm] = useState("") // ✅ NOUVEAU
@@ -1024,10 +1078,8 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
   )
 
   // 📄 PAGINATION: Calcul des fiches à afficher
-  const indexOfLast = currentPage * fichesPerPage
-  const indexOfFirst = indexOfLast - fichesPerPage
-  const currentFiches = filteredFiches.slice(indexOfFirst, indexOfLast)
-  const totalPages = Math.ceil(filteredFiches.length / fichesPerPage)
+  const { currentPage: safePage, totalPages, indexOfFirst, pageItems: currentFiches } =
+    paginate(filteredFiches, currentPage, fichesPerPage)
 
   // 📄 PAGINATION: Reset à page 1 quand recherche change
   useEffect(() => {
@@ -1182,39 +1234,15 @@ function FichesTab({ fiches, users, onRefresh, onPreviewFiche, onReassignFiche, 
       </div>
 
       {/* 📄 PAGINATION: Contrôles de navigation */}
-      {filteredFiches.length > 0 && (
-        <div className="p-6 border-t space-y-4">
-          {/* Compteur de fiches */}
-          <div className="text-center text-sm text-gray-600">
-            Affichage de {indexOfFirst + 1}–{Math.min(indexOfLast, filteredFiches.length)} sur {filteredFiches.length} fiches
-          </div>
-
-          {/* Boutons de navigation */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-3">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
-                className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Précédent
-              </button>
-
-              <span className="px-4 py-2 text-gray-700 font-medium">
-                Page {currentPage} / {totalPages}
-              </span>
-
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => p + 1)}
-                className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Suivant
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      <TablePagination
+        currentPage={safePage}
+        totalPages={totalPages}
+        indexOfFirst={indexOfFirst}
+        pageSize={fichesPerPage}
+        totalItems={filteredFiches.length}
+        itemLabel="fiches"
+        onPageChange={setCurrentPage}
+      />
     </div>
   )
 }
@@ -1597,9 +1625,19 @@ function LoomkyTab() {
   const [syncFilter, setSyncFilter] = useState('incomplete')
   const [syncSearch, setSyncSearch] = useState('')
 
+  // 📄 PAGINATION
+  const rowsPerPage = 25
+  const [ownersPage, setOwnersPage] = useState(1)
+  const [syncPage, setSyncPage] = useState(1)
+
   useEffect(() => {
     loadLoomkyData()
   }, [])
+
+  // 📄 PAGINATION: Reset à la page 1 quand le filtre ou la recherche change
+  useEffect(() => {
+    setSyncPage(1)
+  }, [syncFilter, syncSearch])
 
   const loadLoomkyData = async () => {
     setLoading(true)
@@ -1669,6 +1707,9 @@ function LoomkyTab() {
     )
   }
 
+  // 📄 PAGINATION: propriétaires affichés
+  const ownersPagination = paginate(owners, ownersPage, rowsPerPage)
+
   return (
     <div className="space-y-6">
 
@@ -1724,7 +1765,7 @@ function LoomkyTab() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {owners.map(owner => (
+                {ownersPagination.pageItems.map(owner => (
                   <tr key={owner.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm text-gray-900">{owner.email}</td>
                     <td className="px-6 py-4 text-sm font-mono text-gray-600">{owner.loomky_owner_id}</td>
@@ -1735,6 +1776,17 @@ function LoomkyTab() {
             </table>
           )}
         </div>
+
+        {/* 📄 PAGINATION: Contrôles de navigation */}
+        <TablePagination
+          currentPage={ownersPagination.currentPage}
+          totalPages={ownersPagination.totalPages}
+          indexOfFirst={ownersPagination.indexOfFirst}
+          pageSize={rowsPerPage}
+          totalItems={owners.length}
+          itemLabel="propriétaires"
+          onPageChange={setOwnersPage}
+        />
       </div>
 
       {/* Section 3 — État de synchro des fiches */}
@@ -1749,6 +1801,9 @@ function LoomkyTab() {
         const displayed = syncSearch.trim()
           ? base.filter(f => (f.logement_numero_bien || '').toLowerCase().includes(syncSearch.trim().toLowerCase()))
           : base
+
+        // 📄 PAGINATION: fiches affichées sur la page courante
+        const syncPagination = paginate(displayed, syncPage, rowsPerPage)
 
         return (
           <div className="bg-white rounded-lg shadow">
@@ -1817,7 +1872,7 @@ function LoomkyTab() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {displayed.map((fiche, index) => (
+                    {syncPagination.pageItems.map((fiche, index) => (
                       <tr key={index} className="hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{fiche.nom}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{fiche.logement_numero_bien || '—'}</td>
@@ -1830,6 +1885,17 @@ function LoomkyTab() {
                 </table>
               )}
             </div>
+
+            {/* 📄 PAGINATION: Contrôles de navigation */}
+            <TablePagination
+              currentPage={syncPagination.currentPage}
+              totalPages={syncPagination.totalPages}
+              indexOfFirst={syncPagination.indexOfFirst}
+              pageSize={rowsPerPage}
+              totalItems={displayed.length}
+              itemLabel="fiches"
+              onPageChange={setSyncPage}
+            />
           </div>
         )
       })()}
