@@ -167,6 +167,44 @@ test('pas de faux vert : deux societes ne se valident pas par un mot generique',
   assert.equal(r.motif, 'PROPRIETAIRE_DIFFERENT')
 })
 
+test('pas de faux vert : une commune plus longue est une autre commune', () => {
+  // « Saint-Pierre » et « Saint-Pierre-des-Corps » sont deux communes : une
+  // simple inclusion des mots de la fiche dans ceux du dossier ne suffit pas.
+  const r = evaluerCorrespondanceDossier({
+    nomDossier: '2150. Louis LEPLAT - Saint-Pierre-des-Corps',
+    proprietaireNom: 'LEPLAT',
+    ville: 'Saint-Pierre',
+  })
+  assert.equal(r.etat, 'autre_bien')
+  assert.equal(r.motif, 'VILLE_DIFFERENTE')
+})
+
+test('le code postal accole reste le seul supplement tolere', () => {
+  const r = evaluerCorrespondanceDossier({
+    nomDossier: '2282. Marie-Amélie CHENAVAS - Vaulnaveys-le-Haut 38410',
+    proprietaireNom: 'CHENAVAS',
+    ville: 'Vaulnaveys-le-Haut',
+  })
+  assert.equal(r.etat, 'correspond')
+})
+
+test('proprietaire entierement generique : non comparable, pas de conclusion', () => {
+  // « SCI IMMO » ne distingue rien. On ne doit ni le valider ni s'en servir
+  // pour accuser : seule la ville reste, donc pas de vert non plus.
+  const identique = evaluerCorrespondanceDossier({
+    nomDossier: '2150. SCI IMMO - Nantes', proprietaireNom: 'SCI IMMO', ville: 'Nantes',
+  })
+  assert.equal(identique.etat, 'incertain')
+  assert.equal(identique.motif, 'FICHE_SANS_PROPRIETAIRE')
+
+  // Mais une ville qui contredit reste rouge.
+  const villeContredit = evaluerCorrespondanceDossier({
+    nomDossier: '2150. SCI IMMO - Nantes', proprietaireNom: 'SCI IMMO', ville: 'Lyon',
+  })
+  assert.equal(villeContredit.etat, 'autre_bien')
+  assert.equal(villeContredit.nomVerifie, false)
+})
+
 test('un nom de societe reste comparable par sa partie distinctive', () => {
   // Cas reel du corpus : « BERNARD / SCI PALAZZO IMMO » face a un dossier qui
   // ne porte que le nom de la personne.

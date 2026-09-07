@@ -102,8 +102,19 @@ function motsDuSegment(segment) {
  */
 function proprietaireCorrespond(attendu, segment) {
   const motsSegment = motsDuSegment(segment)
-  return motsSignificatifs(attendu, MOTS_GENERIQUES_PROPRIETAIRE)
-    .some((mot) => motsSegment.has(mot) && !MOTS_GENERIQUES_PROPRIETAIRE.has(mot))
+  return motsSignificatifs(attendu, MOTS_GENERIQUES_PROPRIETAIRE).some((mot) => motsSegment.has(mot))
+}
+
+/**
+ * Un propriétaire entièrement composé de mots génériques (« SCI IMMO ») ne
+ * distingue rien : on le traite comme non comparable plutôt que d'en tirer un
+ * vert ou un rouge que la donnée ne permet pas.
+ */
+function proprietaireEstDiscriminant(attendu) {
+  return normaliserPourComparaison(attendu)
+    .split(' ')
+    .filter(Boolean)
+    .some((mot) => !MOTS_GENERIQUES_PROPRIETAIRE.has(mot))
 }
 
 /**
@@ -114,9 +125,20 @@ function proprietaireCorrespond(attendu, segment) {
  * unique dont les mots forment un tout, contrairement au nom du propriétaire.
  */
 function villeCorrespondAuSegment(attendue, segment) {
-  const motsSegment = motsDuSegment(segment)
-  const mots = motsSignificatifs(attendue, MOTS_LIAISON_VILLE)
-  return mots.length > 0 && mots.every((mot) => motsSegment.has(mot))
+  const motsAttendus = motsSignificatifs(attendue, MOTS_LIAISON_VILLE)
+  // Le code postal est régulièrement accolé à la ville dans le nom du dossier :
+  // c'est le seul supplément toléré.
+  const motsDossier = motsSignificatifs(segment, MOTS_LIAISON_VILLE)
+    .filter((mot) => !/^\d+$/.test(mot))
+
+  if (motsAttendus.length === 0 || motsDossier.length === 0) return false
+
+  // Égalité des deux ensembles, pas une simple inclusion : sans ça
+  // « Saint-Pierre » validerait « Saint-Pierre-des-Corps », deux communes
+  // différentes, et le vert désignerait le dossier d'un autre logement.
+  const ensembleDossier = new Set(motsDossier)
+  return motsAttendus.length === ensembleDossier.size
+    && motsAttendus.every((mot) => ensembleDossier.has(mot))
 }
 
 /**
@@ -141,7 +163,7 @@ export function evaluerCorrespondanceDossier({ nomDossier, proprietaireNom, vill
 
   // Ce qui est réellement COMPARABLE : il faut la donnée des deux côtés. Le
   // segment propriétaire existe toujours ; le segment ville, non.
-  const nomComparable = !!nomAttendu
+  const nomComparable = !!nomAttendu && proprietaireEstDiscriminant(proprietaireNom)
   const villeComparable = !!villeAttendue && aUneVille
 
   // Rien de comparable : on ne conclut pas. On distingue les deux causes, elles

@@ -282,10 +282,20 @@ export default function ChangerNumeroBienModal({
 
                 {!driveEnCours && drive?.etat === 'ambigu' && (
                   <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
-                    Plusieurs dossiers Drive contiennent ce numéro
-                    {drive.dossiers?.length ? ` (${drive.dossiers.map((d) => d.nom).join(', ')})` : ''}.
-                    Vérifiez manuellement lequel correspond à ce logement avant de continuer : le transfert
-                    des photos cible le premier trouvé.
+                    {drive.raison === 'candidat_non_conforme' ? (
+                      <>
+                        Aucun dossier Drive ne porte exactement ce numéro, mais «{' '}
+                        {drive.dossiers?.[0]?.nom} » le contient : c'est ce dossier que recevrait le
+                        transfert des photos. Vérifiez-le manuellement avant de continuer.
+                      </>
+                    ) : (
+                      <>
+                        Plusieurs dossiers Drive contiennent ce numéro
+                        {drive.dossiers?.length ? ` (${drive.dossiers.map((d) => d.nom).join(', ')})` : ''}.
+                        Vérifiez manuellement lequel correspond à ce logement avant de continuer : le
+                        transfert des photos cible le premier trouvé.
+                      </>
+                    )}
                   </Ligne>
                 )}
 
