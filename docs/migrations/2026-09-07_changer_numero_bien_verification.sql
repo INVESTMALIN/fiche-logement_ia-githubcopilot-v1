@@ -25,7 +25,7 @@
 --   4. numéro invalide / identique : refusés
 --   5. numéro déjà utilisé (casse comprise) : refusé, fiche en conflit identifiée
 --   6. succès : SEULES les colonnes prévues changent (médias et données métier intacts)
---   7. marqueurs Loomky remis à zéro, sans aucun appel distant
+--   7. marqueurs Loomky remis à zéro, sans aucun appel distant, et snapshot Monday vidé
 --   8. annonces : `valide` -> `genere`, contenu conservé, trace Monday périmée retirée
 --   9. historique : une ligne `numero_bien_changed` ancien -> nouveau, au nom de l'admin
 --  10. verrou : le verrou de sérialisation est bien pris pendant la transaction
@@ -43,7 +43,7 @@ DECLARE
   v_diff      text;
   v_attendu   text := 'logement_numero_bien, loomky_checklist_ids, loomky_owner_id, '
                    || 'loomky_property_id, loomky_snapshot, loomky_sync_status, '
-                   || 'loomky_synced_at, updated_at';
+                   || 'loomky_synced_at, monday_snapshot, updated_at';
   v_annonce   record;
   v_hist      record;
   v_photos    text[];
@@ -69,12 +69,13 @@ BEGIN
   INSERT INTO fiches (nom, logement_numero_bien, statut, user_id, updated_at,
                       clefs_photos, proprietaire_email, logement_surface,
                       loomky_property_id, loomky_owner_id, loomky_checklist_ids,
-                      loomky_sync_status, loomky_synced_at, loomky_snapshot)
+                      loomky_sync_status, loomky_synced_at, loomky_snapshot, monday_snapshot)
   VALUES ('ZZTEST fiche renumerotation', 'ZZTEST1', 'Brouillon', v_coord, timestamp '2026-01-01 10:00:00',
           ARRAY['https://exemple/photo-1.jpg', 'https://exemple/photo-2.jpg'],
           'zztest@exemple.fr', 42,
           'prop-ancien-compte', 'owner-ancien-compte', '["chk-1","chk-2"]'::jsonb,
-          'synced', now(), '{"source":"ancienne conciergerie"}'::jsonb)
+          'synced', now(), '{"source":"ancienne conciergerie"}'::jsonb,
+          '{"avis_logement_etat_general":"Bon"}'::jsonb)
   RETURNING id INTO v_fiche;
 
   -- Fiche concurrente qui occupe déjà le numéro ZZTEST2.
@@ -239,6 +240,15 @@ BEGIN
   ELSE
     v_ok := false;
     v_rapport := v_rapport || E'\n[ECHEC] 7. marqueurs Loomky encore poses';
+  END IF;
+
+  -- 7b. Snapshot Monday : vide, sinon le prochain enregistrement ne pousserait
+  -- rien vers l'item du NOUVEAU numero (detection de changement faussee).
+  IF (SELECT monday_snapshot FROM fiches WHERE id = v_fiche) IS NULL THEN
+    v_rapport := v_rapport || E'\n[OK]    7b. snapshot Monday vide : le prochain save fera un push complet vers le nouvel item';
+  ELSE
+    v_ok := false;
+    v_rapport := v_rapport || E'\n[ECHEC] 7b. snapshot Monday conserve';
   END IF;
 
   -- 8. Annonces

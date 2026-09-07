@@ -167,6 +167,16 @@ BEGIN
   -- recrée jamais une property tant que loomky_property_id est posé).
   -- Le logement et les checklists restent INTACTS chez Loomky : aucune
   -- suppression distante n'est demandée, ici ni ailleurs dans ce parcours.
+  -- `monday_snapshot` part avec : il mémorise ce qui a été poussé sur l'item de
+  -- l'ANCIEN numéro, et sert de détection de changement à `triggerMondaySync`.
+  -- Le garder ferait comparer la fiche à l'état d'un autre item : sur une fiche
+  -- Complétée dont rien d'autre ne bouge, plus AUCUN push ne partirait, et le
+  -- nouvel item resterait vide ; un changement ultérieur ne pousserait que le
+  -- champ modifié, laissant les autres manquants pour toujours. Remis à NULL, le
+  -- prochain enregistrement repart sur un push COMPLET vers le nouvel item
+  -- (branche « déjà Complété mais pas de snapshot » de triggerMondaySync).
+  -- L'item Monday lui-même n'est pas touché ici : aucun appel n'est fait.
+  --
   -- Rien d'autre n'est touché : ni user_id, ni statut, ni la moindre donnée
   -- métier, ni la moindre URL de média.
   UPDATE fiches
@@ -177,6 +187,7 @@ BEGIN
       loomky_sync_status    = NULL,
       loomky_synced_at      = NULL,
       loomky_snapshot       = NULL,
+      monday_snapshot       = NULL,
       updated_at            = (now() AT TIME ZONE 'utc')
   WHERE id = p_fiche_id;
 

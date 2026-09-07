@@ -2304,7 +2304,11 @@ export function FormProvider({ children }) {
       loomky_checklist_ids: null,
       loomky_sync_status: null,
       loomky_synced_at: null,
-      loomky_snapshot: null
+      loomky_snapshot: null,
+      // Vidé lui aussi par la fonction SQL : il décrivait ce qui avait été
+      // poussé sur l'item Monday de l'ancien numéro. Sans ça, la détection de
+      // changement de `triggerMondaySync` ne pousserait rien vers le nouvel item.
+      monday_snapshot: null
     }))
   }, [])
 
