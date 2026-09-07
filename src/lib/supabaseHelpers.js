@@ -2623,6 +2623,17 @@ export const saveFiche = async (formData, userId = null) => {
     let result
 
     if (formData.id) {
+      // 🔒 Le numéro de bien ne change JAMAIS par un enregistrement ordinaire.
+      // Il est posé à la création puis verrouillé (il identifie le dossier photos
+      // Supabase, le dossier Drive, l'item Monday et le lookup de l'agent
+      // annonce), et seul le parcours administrateur peut le changer, via la
+      // fonction SQL `changer_numero_bien`.
+      // Le laisser dans le payload d'UPDATE le ferait réécrire à chaque save
+      // depuis l'état en mémoire : un onglet ouvert AVANT une renumérotation
+      // restaurerait silencieusement l'ancien numéro au premier champ modifié,
+      // alors que les marqueurs Loomky et Monday, eux, resteraient nettoyés.
+      delete supabaseData.logement_numero_bien
+
       // UPDATE
       result = await safeSupabaseQuery(
         supabase

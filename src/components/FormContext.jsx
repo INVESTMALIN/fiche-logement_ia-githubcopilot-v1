@@ -1827,13 +1827,26 @@ export function FormProvider({ children }) {
     pushToMonday({ ficheId: savedData.id, numeroBien, snapshot: newSnapshot, changedFields })
       .then(async (mondayResult) => {
         if (mondayResult?.success) {
-          // Persist le nouveau snapshot pour la prochaine dirty-detection
-          const { error: updateError } = await supabase
+          // Persist le nouveau snapshot pour la prochaine dirty-detection.
+          // ⚠️ Garde sur le numéro de bien : ce push est fire-and-forget, il peut
+          // atterrir APRÈS qu'un administrateur a renuméroté la fiche
+          // (changer_numero_bien vide le snapshot pour forcer un push complet
+          // vers le nouvel item). Sans la garde, on réécrirait le snapshot de
+          // l'ANCIEN item par-dessus ce NULL, et le nouvel item resterait vide.
+          // Le numéro est repris BRUT de la ligne sauvegardée, pas trimmé, pour
+          // matcher exactement ce qui est en base.
+          const { data: majSnapshot, error: updateError } = await supabase
             .from('fiches')
             .update({ monday_snapshot: newSnapshot })
             .eq('id', savedData.id)
+            .eq('logement_numero_bien', savedData.section_logement?.numero_bien)
+            .select('id')
           if (updateError) {
             console.warn('[Monday sync] Snapshot DB update failed:', updateError.message)
+          } else if (!majSnapshot || majSnapshot.length === 0) {
+            // Le numéro a changé pendant le push : on laisse le snapshot à NULL,
+            // le prochain enregistrement repoussera tout vers le nouvel item.
+            console.warn(`[Monday sync] Snapshot non persisté : le numéro de bien a changé pendant le push (fiche=${savedData.id}, push sur numero_bien=${numeroBien})`)
           } else {
             setFormData(prev => ({ ...prev, monday_snapshot: newSnapshot }))
             console.log(`[Monday sync] OK — fiche=${savedData.id} numero_bien=${numeroBien} columns=${mondayResult.updatedColumns?.join(',')}`)
@@ -2191,6 +2204,12 @@ export function FormProvider({ children }) {
       console.log('🔍 Données envoyées à Supabase:', updateData)
 
       // UPDATE des colonnes PDF en base → déclenche automatiquement le trigger
+      // ⚠️ Garde sur le numéro de bien. Cet UPDATE fait tirer `notify_pdf_update`,
+      // qui envoie à Make le numéro COURANT de la fiche. Si un administrateur a
+      // renuméroté pendant la génération, le PDF qu'on vient de produire porte
+      // l'ANCIEN numéro et serait publié sur l'item Monday et dans le dossier
+      // Drive du NOUVEAU. On refuse : le PDF est à régénérer, ce que la checklist
+      // de renumérotation annonce déjà.
       const { data, error } = await supabase
         .from('fiches')
         .update({
@@ -2200,6 +2219,7 @@ export function FormProvider({ children }) {
           updated_at: new Date().toISOString()
         })
         .eq('id', formData.id)
+        .eq('logement_numero_bien', formData.section_logement?.numero_bien)
         .select()
 
       if (error) {
@@ -2208,8 +2228,12 @@ export function FormProvider({ children }) {
       }
 
       if (!data || data.length === 0) {
-        console.error('❌ Aucune fiche mise à jour')
-        return { success: false, error: 'Fiche non trouvée' }
+        console.error('❌ Aucune fiche mise à jour (fiche absente ou numéro de bien modifié entre-temps)')
+        return {
+          success: false,
+          error: "Les PDF n'ont pas été publiés : le numéro de bien de cette fiche a changé pendant la génération. "
+            + 'Rechargez la fiche et régénérez les PDF pour qu\'ils partent sur le bon dossier.'
+        }
       }
 
       console.log('✅ Webhook PDF déclenché avec succès!')
@@ -2244,10 +2268,15 @@ export function FormProvider({ children }) {
 
       console.log('🔍 Données envoyées à Supabase:', updateData)
 
+      // ⚠️ Même garde que pour les PDF logement / ménage : cet UPDATE fait tirer
+      // `notify_guide_acces_pdf_update`, qui envoie à Make le numéro COURANT de
+      // la fiche. Un guide rendu avant une renumérotation partirait sur l'item
+      // Monday et le dossier Drive du nouveau numéro.
       const { data, error } = await supabase
         .from('fiches')
         .update(updateData)
         .eq('id', formData.id)
+        .eq('logement_numero_bien', formData.section_logement?.numero_bien)
         .select()
 
       if (error) {
@@ -2256,8 +2285,12 @@ export function FormProvider({ children }) {
       }
 
       if (!data || data.length === 0) {
-        console.error('❌ Aucune fiche mise à jour')
-        return { success: false, error: 'Fiche non trouvée' }
+        console.error('❌ Aucune fiche mise à jour (fiche absente ou numéro de bien modifié entre-temps)')
+        return {
+          success: false,
+          error: "Le guide d'accès n'a pas été publié : le numéro de bien de cette fiche a changé pendant la "
+            + 'génération. Rechargez la fiche et recréez le guide pour qu\'il parte sur le bon dossier.'
+        }
       }
 
       console.log('✅ Webhook Assistant PDF déclenché avec succès!')
@@ -2268,6 +2301,11 @@ export function FormProvider({ children }) {
       return { success: false, error: error.message || 'Erreur inconnue' }
     }
   }
+
+  // Une saisie utilisateur attend-elle son autosave (débounce de 5 s) ?
+  // Lu au clic, pas observé en continu : `isUserChangeRef` est volontairement
+  // une ref, pour que taper dans un champ ne provoque pas de rendu.
+  const aDesModificationsEnAttente = useCallback(() => isUserChangeRef.current, [])
 
   const getFormDataPreview = () => {
     return {
@@ -2280,6 +2318,47 @@ export function FormProvider({ children }) {
     }
   }
 
+
+  // 🔢 Aligne l'état local après un changement de numéro de bien déjà ÉCRIT EN
+  // BASE par la fonction SQL `changer_numero_bien` (parcours administrateur).
+  //
+  // Pourquoi pas `updateField` : il lève `isUserChangeRef`, donc l'autosave
+  // repartirait — inutile (la base est déjà à jour), et carrément gênant pour un
+  // rôle `admin`, qui n'a pas l'UPDATE sur `fiches` et verrait un faux message
+  // d'échec de sauvegarde. Ici on ne fait que refléter la base : pas d'autosave
+  // déclenché, et un éventuel autosave en attente (qui porterait encore l'ANCIEN
+  // numéro) est annulé par le changement de `formData`, qui rejoue son effet.
+  //
+  // `nom` n'est volontairement PAS régénéré : la fonction SQL ne le touche pas,
+  // le régénérer ici ferait diverger l'écran de la base.
+  const appliquerNumeroBienChange = useCallback((nouveauNumero) => {
+    // Le drapeau doit tomber AVANT le changement d'état : sinon l'effet
+    // d'autosave se rejoue sur le nouveau `formData`, voit un changement
+    // utilisateur encore en attente (l'administrateur a modifié un champ moins
+    // de 5 s avant de confirmer) et reprogramme un enregistrement ordinaire.
+    // Pour un rôle `admin`, qui n'a pas l'UPDATE sur `fiches`, cet
+    // enregistrement échoue et affiche une erreur juste après une
+    // renumérotation pourtant réussie.
+    // L'autosave normal n'est pas perturbé : le drapeau se relève au prochain
+    // updateField / updateSection, et le bouton « Enregistrer » reste dispo.
+    isUserChangeRef.current = false
+    setFormData(prev => ({
+      ...prev,
+      section_logement: { ...(prev.section_logement || {}), numero_bien: nouveauNumero },
+      // Remis à zéro par la même fonction SQL : la fiche n'est plus rattachée au
+      // compte Loomky de l'ancienne conciergerie.
+      loomky_property_id: null,
+      loomky_owner_id: null,
+      loomky_checklist_ids: null,
+      loomky_sync_status: null,
+      loomky_synced_at: null,
+      loomky_snapshot: null,
+      // Vidé lui aussi par la fonction SQL : il décrivait ce qui avait été
+      // poussé sur l'item Monday de l'ancien numéro. Sans ça, la détection de
+      // changement de `triggerMondaySync` ne pousserait rien vers le nouvel item.
+      monday_snapshot: null
+    }))
+  }, [])
 
   // 🐛 DEBUG HELPER (optionnel)
   const getMondayDebugInfo = () => {
@@ -2394,6 +2473,11 @@ export function FormProvider({ children }) {
 
       getFormDataPreview,
       getMondayDebugInfo,
+
+      // 🔢 Changement de numéro de bien (admin) : reflet local d'une écriture
+      // déjà faite en base par la fonction SQL, sans redéclencher l'autosave.
+      appliquerNumeroBienChange,
+      aDesModificationsEnAttente,
 
       // 🆕 AJOUT FONCTIONS DUPLICATE
       duplicateAlert,

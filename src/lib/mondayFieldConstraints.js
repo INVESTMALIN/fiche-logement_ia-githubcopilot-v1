@@ -54,15 +54,11 @@
 // colonne : « 123456789012345678901 » (21 chiffres) est un entier valide mais
 // dépasse varchar(20) et ferait échouer l'INSERT — exactement le bug qu'on
 // corrige. Les règles à forme connue combinent donc forme ET longueur.
+import { estNumeroBienValide, NUMERO_BIEN_ATTENDU, NUMERO_BIEN_LONGUEUR_MAX } from './numeroBien'
+
 const digitsOnly = (v) => /^\d+$/.test(v.trim())
 const isFrenchPostalCode = (v) => /^\d{5}$/.test(v.trim())
 const maxLength = (max) => (v) => v.length <= max
-// Identifiant compact : lettres/chiffres + séparateurs usuels, mais NI espace NI
-// texte libre. Autorise les formats à préfixe que le service Monday supporte
-// déjà comme identifiants exacts (ex : « PAR-2189 », « A2189 ») — on ne veut
-// jamais coincer un coordinateur sur un numéro légitime — tout en rejetant la
-// contamination réelle type « 2084 BARBELLION » (espace) ou « 5 + 1 bébé ».
-const isCompactIdentifier = (v) => /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(v.trim())
 
 // Chaque règle : où lire la valeur brute (même arbre que le mapping Supabase),
 // comment la valider, et quoi afficher au coordinateur.
@@ -91,8 +87,14 @@ const RULES = [
     sectionLabel: 'Logement',
     fieldLabel: 'Numéro de bien',
     getValue: (fd) => fd?.section_logement?.numero_bien,
-    isValid: (v) => isCompactIdentifier(v) && v.length <= 50,
-    expected: 'un numéro sans espace ni texte autour (ex : 2189)',
+    // Forme mutualisée avec le parcours administrateur de changement de numéro
+    // (src/lib/numeroBien.js) : les deux chemins qui écrivent
+    // `logement_numero_bien` doivent accepter EXACTEMENT les mêmes valeurs.
+    // La longueur est revérifiée sur la valeur BRUTE : c'est elle qui part en
+    // base (le mapping ne trimme pas), donc c'est elle qui doit tenir dans
+    // varchar(50).
+    isValid: (v) => estNumeroBienValide(v) && v.length <= NUMERO_BIEN_LONGUEUR_MAX,
+    expected: NUMERO_BIEN_ATTENDU,
     // DB: logement_numero_bien varchar(50) — param Monday `numeroDu`
     // On valide la LONGUEUR (varchar 50) + l'absence d'espace/texte libre, PAS
     // "chiffres uniquement". Les données live au 2026-07-24 sont à 100 %
@@ -100,7 +102,7 @@ const RULES = [
     // explicitement des identifiants à préfixe non numérique selon les
     // conventions Letahost : exiger des chiffres seuls coincerait pour toujours
     // un coordinateur sur un numéro légitime type « PAR-2189 » (la création est
-    // bloquée tant que la valeur est invalide). isCompactIdentifier laisse passer
+    // bloquée tant que la valeur est invalide). NUMERO_BIEN_FORMAT laisse passer
     // ces formats et ne rejette que la contamination réelle (espaces, texte).
   },
 

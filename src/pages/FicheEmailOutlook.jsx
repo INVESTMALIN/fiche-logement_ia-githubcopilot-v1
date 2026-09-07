@@ -57,6 +57,14 @@ export default function FicheEmailOutlook() {
         })
         const reprise = plan.state === 'incomplete'
 
+        // Numéro de bien AU DÉPART de la synchro, repris brut de la fiche chargée.
+        // Il sert de garde aux écritures d'identifiants Loomky ci-dessous : un
+        // administrateur peut renuméroter la fiche pendant la synchro, ce qui remet
+        // justement ces marqueurs à zéro (changer_numero_bien). Sans garde, on
+        // réécrirait des identifiants de l'ANCIEN compte Loomky sur une fiche qui
+        // appartient désormais à la nouvelle conciergerie.
+        const numeroAuDepart = formData.section_logement?.numero_bien
+
         try {
             const ficheNormalized = normalizeFormDataToFiche(formData)
 
@@ -96,10 +104,20 @@ export default function FicheEmailOutlook() {
                 propertyId = propertyResult.propertyId
 
                 // Sauvegarder immédiatement le propertyId — évite une property orpheline si les étapes suivantes échouent
-                await supabase
+                const { data: majPropriete } = await supabase
                     .from('fiches')
                     .update({ loomky_property_id: propertyId })
                     .eq('id', formData.id)
+                    .eq('logement_numero_bien', numeroAuDepart)
+                    .select('id')
+                if (!majPropriete || majPropriete.length === 0) {
+                    setLoomkyError(
+                        `Le numéro de bien de cette fiche a changé pendant la synchronisation. Le logement ${propertyId} `
+                        + `a bien été créé côté Loomky, mais sur le compte correspondant à l'ancien numéro : il n'a pas été `
+                        + `rattaché à la fiche. Rechargez la fiche et relancez la synchronisation avec le token de la nouvelle conciergerie.`
+                    )
+                    return
+                }
                 updateField('loomky_property_id', propertyId)
                 logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_property_created', formData.user_id)
             }
@@ -121,10 +139,20 @@ export default function FicheEmailOutlook() {
                 ownerId = ownerResult.ownerId
 
                 // Sauvegarder immédiatement l'ownerId — évite de le perdre si l'étape suivante échoue
-                await supabase
+                const { data: majProprietaire } = await supabase
                     .from('fiches')
                     .update({ loomky_owner_id: ownerId })
                     .eq('id', formData.id)
+                    .eq('logement_numero_bien', numeroAuDepart)
+                    .select('id')
+                if (!majProprietaire || majProprietaire.length === 0) {
+                    setLoomkyError(
+                        `Le numéro de bien de cette fiche a changé pendant la synchronisation. Le propriétaire ${ownerId} `
+                        + `n'a pas été rattaché à la fiche. Rechargez la fiche et relancez la synchronisation avec le token `
+                        + `de la nouvelle conciergerie.`
+                    )
+                    return
+                }
                 updateField('loomky_owner_id', ownerId)
                 if (!ownerResult.existing) {
                     logLoomkyEvent(formData.id, ficheNormalized.logement_numero_bien, formData.nom, 'loomky_owner_created', formData.user_id)
