@@ -255,8 +255,11 @@ export default function ChangerNumeroBienModal({
                       Le dossier « {drive.dossier?.nom} » porte ce numéro mais correspond à un autre logement.
                     </p>
                     <p className="mt-1">
-                      {correspondance.motif === 'VILLE_DIFFERENTE'
-                        && `Même propriétaire, mais la ville du dossier n'est pas celle de cette fiche${villeBien ? ` (${villeBien})` : ''}.`}
+                      {correspondance.motif === 'VILLE_DIFFERENTE' && (
+                        correspondance.nomVerifie
+                          ? `Même propriétaire, mais la ville du dossier n'est pas celle de cette fiche${villeBien ? ` (${villeBien})` : ''}.`
+                          : `La ville du dossier n'est pas celle de cette fiche${villeBien ? ` (${villeBien})` : ''}.`
+                      )}
                       {correspondance.motif === 'PROPRIETAIRE_DIFFERENT'
                         && `La ville correspond, mais pas le propriétaire de cette fiche${proprietaireNom ? ` (${proprietaireNom})` : ''}.`}
                       {correspondance.motif === 'AUCUNE_CORRESPONDANCE'

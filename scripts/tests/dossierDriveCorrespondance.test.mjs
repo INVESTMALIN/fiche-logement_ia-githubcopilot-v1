@@ -138,6 +138,59 @@ test('pas de faux vert : la ville ne peut pas se reconnaitre dans le proprietair
   assert.equal(r.motif, 'AUCUNE_CORRESPONDANCE')
 })
 
+test('pas de faux vert : un mot court qui identifie reste exige', () => {
+  // « Saint-Leu » ne doit pas se reduire a « saint » : ce serait valider
+  // n'importe quelle commune en « Saint- ».
+  const contredit = evaluerCorrespondanceDossier({
+    nomDossier: '2150. Louis LEPLAT - Saint Brieuc',
+    proprietaireNom: 'LEPLAT',
+    ville: 'Saint-Leu',
+  })
+  assert.equal(contredit.etat, 'autre_bien')
+  assert.equal(contredit.motif, 'VILLE_DIFFERENTE')
+
+  const correspond = evaluerCorrespondanceDossier({
+    nomDossier: '2150. Louis LEPLAT - Saint Leu',
+    proprietaireNom: 'LEPLAT',
+    ville: 'Saint-Leu',
+  })
+  assert.equal(correspond.etat, 'correspond')
+})
+
+test('pas de faux vert : deux societes ne se valident pas par un mot generique', () => {
+  const r = evaluerCorrespondanceDossier({
+    nomDossier: '2150. SCI ALPHA IMMO - Nantes',
+    proprietaireNom: 'SCI BETA IMMO',
+    ville: 'Nantes',
+  })
+  assert.equal(r.etat, 'autre_bien')
+  assert.equal(r.motif, 'PROPRIETAIRE_DIFFERENT')
+})
+
+test('un nom de societe reste comparable par sa partie distinctive', () => {
+  // Cas reel du corpus : « BERNARD / SCI PALAZZO IMMO » face a un dossier qui
+  // ne porte que le nom de la personne.
+  const r = evaluerCorrespondanceDossier({
+    nomDossier: '1952. BERNARD - Grenoble',
+    proprietaireNom: 'BERNARD / SCI PALAZZO IMMO',
+    ville: 'GRENOBLE',
+  })
+  assert.equal(r.etat, 'correspond')
+})
+
+test('rouge sur la ville : on n affirme le proprietaire que s il a ete compare', () => {
+  const sansProprietaire = evaluerCorrespondanceDossier({
+    nomDossier: '2150. Louis LEPLAT - Nantes', proprietaireNom: '', ville: 'Lyon',
+  })
+  assert.equal(sansProprietaire.etat, 'autre_bien')
+  assert.equal(sansProprietaire.nomVerifie, false)
+
+  const avecProprietaire = evaluerCorrespondanceDossier({
+    nomDossier: '2150. Louis LEPLAT - Nantes', proprietaireNom: 'LEPLAT', ville: 'Lyon',
+  })
+  assert.equal(avecProprietaire.nomVerifie, true)
+})
+
 test('un nom de famille court reste comparable', () => {
   // Les mots de moins de 4 lettres sont ecartes… sauf s'il ne reste rien.
   const correspond = evaluerCorrespondanceDossier({

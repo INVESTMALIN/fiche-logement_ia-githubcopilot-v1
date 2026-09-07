@@ -23,10 +23,26 @@
 // Module volontairement SANS import : règle pure, testable directement
 // (scripts/tests/dossierDriveCorrespondance.test.mjs).
 
-// En dessous de 4 caractères, un mot n'identifie plus rien de façon fiable
-// (« le », « sur », « sci », « des »…) : le retenir rouvrirait la porte aux faux
-// verts que les mots entiers viennent de fermer.
-const LONGUEUR_MOT_SIGNIFICATIF = 4
+// On écarte des LISTES de mots connus, jamais les mots courts en bloc : « Leu »
+// (Saint-Leu) et « Roy » identifient, alors que « sur » et « SCI » non. Un
+// filtre par longueur réduisait « Saint-Leu » au seul « saint » et le faisait
+// correspondre à « Saint Brieuc ».
+
+// Liaisons des toponymes français : présentes ou non selon la source, jamais
+// discriminantes.
+const MOTS_LIAISON_VILLE = new Set([
+  'le', 'la', 'les', 'l', 'de', 'du', 'des', 'd', 'sur', 'sous', 'en',
+  'au', 'aux', 'et', 'lez', 'ls',
+])
+
+// Formes juridiques et mots d'enseigne : deux propriétaires distincts les
+// partagent couramment (« SCI BETA IMMO » et « SCI ALPHA IMMO »).
+const MOTS_GENERIQUES_PROPRIETAIRE = new Set([
+  'sci', 'sarl', 'sas', 'sasu', 'eurl', 'sa', 'sc', 'scp', 'snc', 'sccv',
+  'immo', 'immobilier', 'immobiliere', 'invest', 'investissement', 'investissements',
+  'home', 'holding', 'group', 'groupe', 'patrimoine', 'gestion', 'conciergerie',
+  'monsieur', 'madame', 'mr', 'mme',
+])
 
 /**
  * Forme comparable : minuscules, sans accents, sans ponctuation ni séparateurs.
@@ -43,14 +59,14 @@ export function normaliserPourComparaison(texte) {
 }
 
 /**
- * Mots retenus pour la comparaison. On privilégie les mots significatifs et on
- * ne retombe sur les mots courts que s'il n'en reste aucun — un nom de famille
- * de trois lettres (ROY, FAY) doit rester comparable.
+ * Mots porteurs de sens, une fois les mots connus non discriminants retirés.
+ * Si le filtrage ne laisse rien (un propriétaire nommé « SCI IMMO »), on rend
+ * les mots d'origine : mieux vaut comparer faiblement que ne plus rien comparer.
  */
-function motsSignificatifs(texte) {
+function motsSignificatifs(texte, motsIgnores) {
   const mots = normaliserPourComparaison(texte).split(' ').filter(Boolean)
-  const longs = mots.filter((mot) => mot.length >= LONGUEUR_MOT_SIGNIFICATIF)
-  return longs.length > 0 ? longs : mots
+  const retenus = mots.filter((mot) => !motsIgnores.has(mot))
+  return retenus.length > 0 ? retenus : mots
 }
 
 /**
@@ -86,7 +102,8 @@ function motsDuSegment(segment) {
  */
 function proprietaireCorrespond(attendu, segment) {
   const motsSegment = motsDuSegment(segment)
-  return motsSignificatifs(attendu).some((mot) => motsSegment.has(mot))
+  return motsSignificatifs(attendu, MOTS_GENERIQUES_PROPRIETAIRE)
+    .some((mot) => motsSegment.has(mot) && !MOTS_GENERIQUES_PROPRIETAIRE.has(mot))
 }
 
 /**
@@ -98,7 +115,7 @@ function proprietaireCorrespond(attendu, segment) {
  */
 function villeCorrespondAuSegment(attendue, segment) {
   const motsSegment = motsDuSegment(segment)
-  const mots = motsSignificatifs(attendue)
+  const mots = motsSignificatifs(attendue, MOTS_LIAISON_VILLE)
   return mots.length > 0 && mots.every((mot) => motsSegment.has(mot))
 }
 
@@ -150,7 +167,10 @@ export function evaluerCorrespondanceDossier({ nomDossier, proprietaireNom, vill
     }
   }
   if (villeComparable && !villeCorrespond) {
-    return { etat: 'autre_bien', motif: 'VILLE_DIFFERENTE', villeDuDossier }
+    // `nomVerifie` dit si le propriétaire a réellement été comparé : sans lui,
+    // l'écran annoncerait « même propriétaire » alors que la fiche n'en porte
+    // aucun et qu'aucune comparaison n'a eu lieu.
+    return { etat: 'autre_bien', motif: 'VILLE_DIFFERENTE', villeDuDossier, nomVerifie: nomComparable }
   }
 
   // Le vert exige les DEUX : un propriétaire seul ne distingue pas ses deux
