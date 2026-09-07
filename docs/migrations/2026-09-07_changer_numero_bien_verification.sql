@@ -31,6 +31,8 @@
 --  10. verrou : le verrou de sérialisation est bien pris pendant la transaction
 --  11. écriture concurrente partie avant la renumérotation : bloquée par la garde
 --      sur le numéro (aucun marqueur de l'ancienne conciergerie restauré)
+--  12. verrou de colonne : sous le rôle `authenticated`, un UPDATE direct du
+--      numéro est refusé, les autres colonnes restent modifiables
 -- ============================================================
 
 DO $verif$
@@ -305,6 +307,40 @@ BEGIN
     v_ok := false;
     v_rapport := v_rapport || E'\n[ECHEC] 11. une ecriture concurrente a restaure des marqueurs (' || v_lignes || ' ligne(s))';
   END IF;
+
+  -- 12. VERROU DE COLONNE. Un coordinateur qui appelle PostgREST directement
+  -- écrit sous le rôle `authenticated` : le trigger doit refuser un UPDATE du
+  -- numéro (12a) et laisser passer les autres colonnes (12b).
+  -- Les deux vont ensemble : si le GRANT UPDATE manquait sur la table, 12a
+  -- passerait pour la mauvaise raison (« permission denied » est aussi un
+  -- insufficient_privilege) — c'est 12b qui écarte ce faux positif. Le message
+  -- exact est reporté pour lever toute ambiguïté.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_coord, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+
+  BEGIN
+    UPDATE fiches SET logement_numero_bien = 'ZZTEST7' WHERE id = v_fiche;
+    v_ok := false;
+    v_rapport := v_rapport || E'\n[ECHEC] 12a. un UPDATE direct a pu changer le numero sous le role authenticated';
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_rapport := v_rapport || E'\n[OK]    12a. UPDATE direct du numero refuse : ' || SQLERRM;
+  END;
+
+  BEGIN
+    UPDATE fiches SET logement_surface = 99 WHERE id = v_fiche;
+    GET DIAGNOSTICS v_lignes = ROW_COUNT;
+    IF v_lignes = 1 THEN
+      v_rapport := v_rapport || E'\n[OK]    12b. les enregistrements ordinaires du coordinateur restent autorises';
+    ELSE
+      v_ok := false;
+      v_rapport := v_rapport || E'\n[ECHEC] 12b. UPDATE ordinaire bloque (' || v_lignes || ' ligne)';
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    v_ok := false;
+    v_rapport := v_rapport || E'\n[ECHEC] 12b. UPDATE ordinaire en erreur : ' || SQLERRM;
+  END;
+
+  EXECUTE 'RESET ROLE';
 
   -- 10. Verrou de sérialisation encore tenu par la transaction
   IF EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND pid = pg_backend_pid()) THEN

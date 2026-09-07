@@ -4,8 +4,9 @@
 -- Branche   : feat/admin-change-property-number
 -- ============================================================
 -- À exécuter dans le SQL Editor du dashboard Supabase.
--- Migration ADDITIVE : une seule nouvelle fonction. Aucune table modifiée,
--- aucune policy touchée, aucun trigger modifié, aucune donnée déplacée.
+-- Migration ADDITIVE : deux nouvelles fonctions et un nouveau trigger de
+-- protection. Aucune table modifiée, aucune policy touchée, aucun trigger
+-- existant modifié, aucune donnée déplacée.
 --
 -- ⚠️ ORDRE IMPÉRATIF : appliquer CETTE migration AVANT de merger la PR.
 --    Le bouton « Modifier le numéro » appelle `changer_numero_bien` dès son
@@ -220,6 +221,61 @@ BEGIN
 END;
 $fn$;
 
+-- ============================================================
+-- VERROU DE LA COLONNE `logement_numero_bien`
+--
+-- La fonction ci-dessus est le SEUL chemin autorisé pour changer un numéro,
+-- mais rien ne l'imposait : la policy `coordinateur_own_fiches` donne l'UPDATE
+-- de TOUTES les colonnes de ses propres fiches au coordinateur. Un appel
+-- PostgREST direct (`PATCH /rest/v1/fiches?id=eq.<uuid>` avec
+-- `{"logement_numero_bien": "..."}`) contournait donc le contrôle de rôle, le
+-- contrôle de collision ET la remise à zéro Loomky / Monday, en laissant la
+-- fiche rattachée aux intégrations de son ancien numéro.
+-- Retirer la colonne du payload côté client (saveFiche) protège l'écran, pas
+-- la base : le verrou doit être ici.
+--
+-- MÉCANIQUE : le trigger ne bloque que les écritures venant d'un CLIENT REST.
+-- `current_user` vaut alors `authenticated` (ou `anon`). Dans
+-- `changer_numero_bien`, qui est SECURITY DEFINER, il vaut le PROPRIÉTAIRE de
+-- la fonction — le parcours administrateur passe donc sans avoir besoin d'un
+-- drapeau de session (qu'un client pourrait chercher à poser). Les écritures
+-- `service_role` (Edge Functions) et les corrections manuelles depuis le SQL
+-- Editor restent possibles, volontairement.
+--
+-- `UPDATE OF logement_numero_bien` : le trigger ne se déclenche que si la
+-- colonne est citée dans le SET. Un enregistrement ordinaire, qui ne l'envoie
+-- plus, n'en paie même pas le coût.
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.protege_numero_bien()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $protege$
+BEGIN
+  IF NEW.logement_numero_bien IS DISTINCT FROM OLD.logement_numero_bien
+     AND current_user IN ('authenticated', 'anon') THEN
+    RAISE EXCEPTION
+      'Le numero de bien ne se modifie pas par une ecriture directe : passez par changer_numero_bien().'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  RETURN NEW;
+END;
+$protege$;
+
+CREATE OR REPLACE TRIGGER fiches_protege_numero_bien
+  BEFORE UPDATE OF logement_numero_bien ON public.fiches
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protege_numero_bien();
+
+COMMENT ON FUNCTION public.protege_numero_bien() IS
+  'Verrou de la colonne logement_numero_bien : refuse toute modification venant '
+  'd''un client REST (roles authenticated / anon). Le parcours administrateur '
+  'passe par changer_numero_bien(), SECURITY DEFINER, dont le current_user est '
+  'le proprietaire de la fonction. Les ecritures service_role et SQL Editor ne '
+  'sont pas bridees.';
+
 COMMENT ON FUNCTION public.changer_numero_bien(uuid, text) IS
   'Changement controle du numero de bien d''une fiche existante. Reserve aux '
   'roles admin et super_admin (controle fait ICI, pas dans React). Verifie la '
@@ -246,6 +302,14 @@ GRANT  EXECUTE ON FUNCTION public.changer_numero_bien(uuid, text) TO authenticat
 --    docs/migrations/2026-09-07_changer_numero_bien_verification.sql
 --    Il s'annule tout seul et ne laisse AUCUNE écriture derrière lui.
 --
+-- 3. Verrou de colonne (exécutable depuis le SQL Editor, qui n'est ni
+--    `authenticated` ni `anon` : la modification y passe donc, c'est voulu) :
+--
+--      SELECT tgname FROM pg_trigger WHERE tgname = 'fiches_protege_numero_bien';
+--      -- attendu : 1 ligne
+--
 -- ROLLBACK de cette migration :
+--      DROP TRIGGER IF EXISTS fiches_protege_numero_bien ON public.fiches;
+--      DROP FUNCTION IF EXISTS public.protege_numero_bien();
 --      DROP FUNCTION IF EXISTS public.changer_numero_bien(uuid, text);
 -- ============================================================

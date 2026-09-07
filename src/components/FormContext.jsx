@@ -2307,6 +2307,16 @@ export function FormProvider({ children }) {
   // `nom` n'est volontairement PAS régénéré : la fonction SQL ne le touche pas,
   // le régénérer ici ferait diverger l'écran de la base.
   const appliquerNumeroBienChange = useCallback((nouveauNumero) => {
+    // Le drapeau doit tomber AVANT le changement d'état : sinon l'effet
+    // d'autosave se rejoue sur le nouveau `formData`, voit un changement
+    // utilisateur encore en attente (l'administrateur a modifié un champ moins
+    // de 5 s avant de confirmer) et reprogramme un enregistrement ordinaire.
+    // Pour un rôle `admin`, qui n'a pas l'UPDATE sur `fiches`, cet
+    // enregistrement échoue et affiche une erreur juste après une
+    // renumérotation pourtant réussie.
+    // L'autosave normal n'est pas perturbé : le drapeau se relève au prochain
+    // updateField / updateSection, et le bouton « Enregistrer » reste dispo.
+    isUserChangeRef.current = false
     setFormData(prev => ({
       ...prev,
       section_logement: { ...(prev.section_logement || {}), numero_bien: nouveauNumero },
