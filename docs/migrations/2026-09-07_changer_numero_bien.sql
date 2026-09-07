@@ -47,6 +47,13 @@
 --   champs d'alerte `avis_*` / `equipements_wifi_statut`, tous intacts ici.
 -- ============================================================
 
+-- Filet : une version antérieure de cette branche exposait la fonction en
+-- (uuid, text), sans le numéro attendu. `CREATE OR REPLACE` ne remplace pas une
+-- signature différente, il la SURCHARGE — on se retrouverait avec deux
+-- fonctions, dont une sans compare-and-swap. On supprime donc l'ancienne si
+-- elle traîne (elle n'existe pas en production au 2026-09-07, vérifié).
+DROP FUNCTION IF EXISTS public.changer_numero_bien(uuid, text);
+
 CREATE OR REPLACE FUNCTION public.changer_numero_bien(
   p_fiche_id       uuid,
   p_numero_attendu text,
