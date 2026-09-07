@@ -28,11 +28,15 @@ function avecDossierParent(valeur, fn) {
   })
 }
 
-test('rapprochement du dossier : préfixe, pas "contains"', () => {
+test('rapprochement du dossier : préfixe « {numero}. », pas "contains"', () => {
   // Convention Drive : « {numero}. {Nom Propriétaire} - {Ville} ».
   assert.equal(matchesPropertyFolder('2155. Sebastien VIAL - Vichy', '2155'), true)
-  assert.equal(matchesPropertyFolder('2155 Sebastien VIAL', '2155'), true)
-  assert.equal(matchesPropertyFolder('2155', '2155'), true)
+  assert.equal(matchesPropertyFolder('  2155. Sebastien VIAL  ', '2155'), true)
+  // Le point fait partie de la convention : sans lui, rien ne dit que c'est le
+  // dossier du bien. Ces noms partent en `ambigu`, pas en vert.
+  assert.equal(matchesPropertyFolder('2155 Sebastien VIAL', '2155'), false)
+  assert.equal(matchesPropertyFolder('2155 Archive', '2155'), false)
+  assert.equal(matchesPropertyFolder('2155', '2155'), false)
   // Dossiers réels du Drive qui NE SONT PAS le dossier du bien 2155.
   assert.equal(matchesPropertyFolder('2155-TEST-COPIE. Sebastien VIAL - Vichy', '2155'), false)
   assert.equal(matchesPropertyFolder('21550. Autre proprietaire', '2155'), false)
@@ -89,12 +93,22 @@ test('plusieurs candidats : ambigu, avec tous les noms que Make peut voir', asyn
     const res = await chercherDossierBien('2155', {
       lister: resultatDrive([
         { id: 'a', name: '2155. Un' },
-        { id: 'b', name: '2155 Deux' },
+        { id: 'b', name: '2155. Deux' },
       ]),
     })
     assert.equal(res.etat, 'ambigu')
     assert.equal(res.raison, 'plusieurs_candidats')
-    assert.deepEqual(res.dossiers.map((d) => d.nom), ['2155. Un', '2155 Deux'])
+    assert.deepEqual(res.dossiers.map((d) => d.nom), ['2155. Un', '2155. Deux'])
+  })
+})
+
+test('candidat unique sans le point : ambigu, jamais vert', async () => {
+  await avecDossierParent(PARENT, async () => {
+    const res = await chercherDossierBien('2155', {
+      lister: resultatDrive([{ id: 'a', name: '2155 Archive' }]),
+    })
+    assert.equal(res.etat, 'ambigu')
+    assert.equal(res.raison, 'candidat_non_conforme')
   })
 })
 

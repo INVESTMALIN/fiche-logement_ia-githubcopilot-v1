@@ -10,9 +10,9 @@
 //
 // Convention de nommage des dossiers de bien (Drive Letahost, dossier
 // « 2. DOSSIERS PROPRIETAIRES ») : « {numero}. {Nom Propriétaire} - {Ville} ».
-// Le rapprochement se fait donc sur le PRÉFIXE, pas sur un `contains` : le
-// dossier « 2155-TEST-COPIE. Sébastien VIAL » ne doit pas être pris pour le
-// dossier du bien 2155.
+// Le rapprochement se fait donc sur le PRÉFIXE « {numero}. », pas sur un
+// `contains` : ni « 2155-TEST-COPIE. Sébastien VIAL » ni « 21550. Autre » ne
+// sont le dossier du bien 2155.
 
 const fs = require('node:fs')
 const crypto = require('node:crypto')
@@ -126,9 +126,14 @@ function normalizePropertyNumber(value) {
   return propertyNumber
 }
 
+// Convention Drive : « {numero}. {Nom Propriétaire} - {Ville} ». Le POINT est
+// exigé, il fait partie de la convention — sans lui, « 2155 Archive » ou un
+// dossier nommé « 2155 » tout court passeraient pour le dossier du bien alors
+// que rien ne le dit. Ces cas remontent en `ambigu` côté vérification, et le POC
+// les refuse : son message d'erreur annonce déjà « ne commence par "2155." ».
 function matchesPropertyFolder(folderName, propertyNumber) {
   const escapedNumber = propertyNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`^${escapedNumber}(?:\\.|\\s|$)`, 'i').test(String(folderName || '').trim())
+  return new RegExp(`^${escapedNumber}\\.`, 'i').test(String(folderName || '').trim())
 }
 
 /**
