@@ -103,6 +103,54 @@ test('ORANGE : la fiche n a ni proprietaire ni ville a comparer', () => {
   assert.equal(r.motif, 'FICHE_SANS_REFERENCE')
 })
 
+// Les faux VERTS sont le pire resultat possible : ils envoient les photos dans
+// un dossier que plus personne ne verifie. On compare donc des MOTS ENTIERS,
+// chacun dans SON segment du nom de dossier.
+test('pas de faux vert : un nom plus long ne vaut pas correspondance', () => {
+  const r = evaluerCorrespondanceDossier({
+    nomDossier: '2150. Jean MARTINEZ - Nantes',
+    proprietaireNom: 'MARTIN',
+    ville: 'Nantes',
+  })
+  assert.equal(r.etat, 'autre_bien')
+  assert.equal(r.motif, 'PROPRIETAIRE_DIFFERENT')
+})
+
+test('pas de faux vert : une ville plus longue ne vaut pas correspondance', () => {
+  const r = evaluerCorrespondanceDossier({
+    nomDossier: '2150. Louis LEPLAT - Parisot',
+    proprietaireNom: 'LEPLAT',
+    ville: 'Paris',
+  })
+  assert.equal(r.etat, 'autre_bien')
+  assert.equal(r.motif, 'VILLE_DIFFERENTE')
+})
+
+test('pas de faux vert : la ville ne peut pas se reconnaitre dans le proprietaire', () => {
+  // « Nantes » n'apparait que dans le segment proprietaire : ce n'est pas la
+  // ville du dossier, et ca ne doit pas valider.
+  const r = evaluerCorrespondanceDossier({
+    nomDossier: '2150. SCI NANTES INVEST - Bordeaux',
+    proprietaireNom: 'DUPONT',
+    ville: 'Nantes',
+  })
+  assert.equal(r.etat, 'autre_bien')
+  assert.equal(r.motif, 'AUCUNE_CORRESPONDANCE')
+})
+
+test('un nom de famille court reste comparable', () => {
+  // Les mots de moins de 4 lettres sont ecartes… sauf s'il ne reste rien.
+  const correspond = evaluerCorrespondanceDossier({
+    nomDossier: '2150. Jean ROY - Nantes', proprietaireNom: 'ROY', ville: 'Nantes',
+  })
+  assert.equal(correspond.etat, 'correspond')
+
+  const contredit = evaluerCorrespondanceDossier({
+    nomDossier: '2150. Jean ROYER - Nantes', proprietaireNom: 'ROY', ville: 'Nantes',
+  })
+  assert.equal(contredit.etat, 'autre_bien')
+})
+
 test('fiche partiellement renseignee : la seule information disponible tranche', () => {
   // Ville connue, proprietaire absent de la fiche : on ne peut pas exiger le nom.
   const correspond = evaluerCorrespondanceDossier({

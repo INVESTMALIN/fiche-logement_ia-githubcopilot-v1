@@ -12,8 +12,21 @@
 // distingue donc CONTREDIT (rouge) de NE SAIT PAS (orange) : on n'affirme jamais
 // qu'un dossier est le mauvais quand l'information manque.
 //
+// DEUX RÈGLES QUI ÉVITENT LES FAUX VERTS, le pire résultat possible ici (un vert
+// laisse diriger les photos vers un dossier sans que personne ne vérifie) :
+//   1. On compare des MOTS ENTIERS, pas des sous-chaînes : « MARTIN » ne doit pas
+//      valider un dossier « MARTINEZ », ni « Paris » un dossier « Parisot ».
+//   2. Chaque référence est comparée à SON segment : le propriétaire contre la
+//      partie propriétaire, la ville contre la partie ville. Sinon une ville
+//      pourrait se reconnaître dans le nom du propriétaire, et inversement.
+//
 // Module volontairement SANS import : règle pure, testable directement
 // (scripts/tests/dossierDriveCorrespondance.test.mjs).
+
+// En dessous de 4 caractères, un mot n'identifie plus rien de façon fiable
+// (« le », « sur », « sci », « des »…) : le retenir rouvrirait la porte aux faux
+// verts que les mots entiers viennent de fermer.
+const LONGUEUR_MOT_SIGNIFICATIF = 4
 
 /**
  * Forme comparable : minuscules, sans accents, sans ponctuation ni séparateurs.
@@ -30,14 +43,41 @@ export function normaliserPourComparaison(texte) {
 }
 
 /**
- * Partie « ville » du nom de dossier : ce qui suit le dernier tiret séparateur.
- * Rend '' quand le dossier n'en comporte pas — cas réel des dossiers créés hors
- * convention, qu'il ne faut pas confondre avec « ville différente ».
+ * Mots retenus pour la comparaison. On privilégie les mots significatifs et on
+ * ne retombe sur les mots courts que s'il n'en reste aucun — un nom de famille
+ * de trois lettres (ROY, FAY) doit rester comparable.
  */
-function partieVilleDuDossier(nomDossier) {
+function motsSignificatifs(texte) {
+  const mots = normaliserPourComparaison(texte).split(' ').filter(Boolean)
+  const longs = mots.filter((mot) => mot.length >= LONGUEUR_MOT_SIGNIFICATIF)
+  return longs.length > 0 ? longs : mots
+}
+
+/**
+ * Découpe « 2173. Mustapha ZINOUN - Hermanville sur Mer » en ses deux segments.
+ * Le séparateur de ville est le DERNIER « - » entouré d'espaces : les noms de
+ * villes en contiennent aussi (« Vaulnaveys-le-Haut »), mais sans espaces.
+ * `ville` vaut '' quand le dossier n'en porte pas — à ne pas confondre avec
+ * « ville différente ».
+ */
+function segmentsDuDossier(nomDossier) {
   const nom = String(nomDossier || '')
-  const separateur = nom.lastIndexOf(' - ')
-  return separateur === -1 ? '' : nom.slice(separateur + 3)
+  const finNumero = nom.indexOf('.')
+  const apresNumero = finNumero === -1 ? nom : nom.slice(finNumero + 1)
+
+  const separateur = apresNumero.lastIndexOf(' - ')
+  return separateur === -1
+    ? { proprietaire: apresNumero.trim(), ville: '' }
+    : {
+      proprietaire: apresNumero.slice(0, separateur).trim(),
+      ville: apresNumero.slice(separateur + 3).trim(),
+    }
+}
+
+/** Au moins un mot significatif en commun, comparé en mots ENTIERS. */
+function partagentUnMot(attendu, segment) {
+  const motsSegment = new Set(normaliserPourComparaison(segment).split(' ').filter(Boolean))
+  return motsSignificatifs(attendu).some((mot) => motsSegment.has(mot))
 }
 
 /**
@@ -45,7 +85,7 @@ function partieVilleDuDossier(nomDossier) {
  *
  * @param {object} params
  * @param {string} params.nomDossier          nom exact du dossier Drive
- * @param {string} params.proprietaireNom     `proprietaire_nom` de la fiche (nom de famille)
+ * @param {string} params.proprietaireNom     `proprietaire_nom` de la fiche
  * @param {string} params.ville               `proprietaire_adresse_ville` — c'est bien la ville
  *                                            DU BIEN (elle part comme `address.city` du logement
  *                                            Loomky), malgré le préfixe `proprietaire_` de la colonne
@@ -53,18 +93,21 @@ function partieVilleDuDossier(nomDossier) {
  *            villeDuDossier: string}}
  */
 export function evaluerCorrespondanceDossier({ nomDossier, proprietaireNom, ville } = {}) {
-  const dossier = normaliserPourComparaison(nomDossier)
+  const segments = segmentsDuDossier(nomDossier)
+  const villeDuDossier = segments.ville
+  const aUneVille = normaliserPourComparaison(villeDuDossier) !== ''
+
   const nomAttendu = normaliserPourComparaison(proprietaireNom)
   const villeAttendue = normaliserPourComparaison(ville)
-  const villeDuDossier = partieVilleDuDossier(nomDossier)
 
   // Rien à comparer côté fiche : on ne conclut pas.
   if (!nomAttendu && !villeAttendue) {
     return { etat: 'incertain', motif: 'FICHE_SANS_REFERENCE', villeDuDossier }
   }
 
-  const nomCorrespond = !!nomAttendu && dossier.includes(nomAttendu)
-  const villeCorrespond = !!villeAttendue && dossier.includes(villeAttendue)
+  // Chaque référence contre SON segment.
+  const nomCorrespond = !!nomAttendu && partagentUnMot(proprietaireNom, segments.proprietaire)
+  const villeCorrespond = !!villeAttendue && aUneVille && partagentUnMot(ville, villeDuDossier)
 
   if (nomCorrespond && villeCorrespond) {
     return { etat: 'correspond', motif: null, villeDuDossier }
@@ -80,7 +123,7 @@ export function evaluerCorrespondanceDossier({ nomDossier, proprietaireNom, vill
 
   // Le dossier ne porte aucune ville : impossible de contredire sur ce point.
   // Le propriétaire correspond → on demande une vérification, on n'accuse pas.
-  if (nomCorrespond && !villeCorrespond && normaliserPourComparaison(villeDuDossier) === '') {
+  if (nomCorrespond && !aUneVille) {
     return { etat: 'incertain', motif: 'DOSSIER_SANS_VILLE', villeDuDossier }
   }
 
