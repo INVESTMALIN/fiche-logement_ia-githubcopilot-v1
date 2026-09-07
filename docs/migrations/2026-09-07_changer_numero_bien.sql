@@ -110,7 +110,14 @@ BEGIN
   -- création simultanée — périmètre inchangé sur ce point.
   PERFORM pg_advisory_xact_lock(hashtext('fiches.logement_numero_bien:' || lower(v_nouveau)));
 
-  SELECT btrim(f.logement_numero_bien),
+  -- `coalesce` : le schéma autorise `logement_numero_bien` à NULL (aucune fiche
+  -- dans ce cas au 2026-09-07, et `handleSave` refuse d'enregistrer sans numéro,
+  -- mais un import ou un script pourrait en produire). Sans lui, `v_ancien`
+  -- resterait NULL, le compare-and-swap ci-dessous verrait toujours une
+  -- différence avec le `''` envoyé par le client, et une telle fiche ne pourrait
+  -- PLUS jamais recevoir de numéro : ni par ce parcours, ni par le formulaire
+  -- (champ verrouillé), ni par un UPDATE direct (refusé par le trigger).
+  SELECT btrim(coalesce(f.logement_numero_bien, '')),
          (f.loomky_property_id   IS NOT NULL
        OR f.loomky_owner_id      IS NOT NULL
        OR f.loomky_checklist_ids IS NOT NULL
@@ -135,6 +142,8 @@ BEGIN
   -- caduques sans que personne ne le sache. Le numéro décidant des chemins de
   -- médias, ce conflit ne se règle pas en « dernier arrivé gagne ».
   -- On rend le numéro réel : l'écran peut dire quoi recharger.
+  -- Les deux côtés sont normalisés de la même façon (coalesce + btrim), sans
+  -- quoi une fiche sans numéro serait éternellement « désynchronisée ».
   IF v_ancien IS DISTINCT FROM btrim(coalesce(p_numero_attendu, '')) THEN
     RETURN jsonb_build_object(
       'ok', false,

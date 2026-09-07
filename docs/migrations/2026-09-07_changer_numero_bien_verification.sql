@@ -35,6 +35,8 @@
 --      numéro est refusé, les autres colonnes restent modifiables
 --  13. compare-and-swap : une confirmation partie d'un numéro de départ périmé
 --      (autre administrateur passé avant) est refusée, avec le numéro réel
+--  14. fiche sans numéro (NULL, permis par le schéma) : le parcours peut lui en
+--      donner un, le compare-and-swap ne la bloque pas éternellement
 -- ============================================================
 
 DO $verif$
@@ -42,6 +44,7 @@ DECLARE
   v_admin     uuid;
   v_coord     uuid;
   v_fiche     uuid;
+  v_fiche_vide uuid;
   v_conflit   uuid;
   v_res       jsonb;
   v_avant     jsonb;
@@ -321,6 +324,26 @@ BEGIN
   ELSE
     v_ok := false;
     v_rapport := v_rapport || E'\n[ECHEC] 13. compare-and-swap -> ' || v_res::text;
+  END IF;
+
+  -- 14. FICHE SANS NUMÉRO. Le schéma autorise `logement_numero_bien` à NULL.
+  -- Le client envoie alors `''` (mapSupabaseToFormData normalise NULL en chaîne
+  -- vide) : sans le `coalesce` sur `v_ancien`, le compare-and-swap verrait
+  -- toujours une différence et la fiche ne pourrait JAMAIS recevoir de numéro,
+  -- ni ici, ni par le formulaire (champ verrouillé), ni par un UPDATE direct
+  -- (refusé par le trigger). Cas inexistant en production, mais rendu
+  -- irréparable par le verrou : on vérifie qu'il passe.
+  INSERT INTO fiches (nom, logement_numero_bien, statut, user_id)
+  VALUES ('ZZTEST fiche sans numero', NULL, 'Brouillon', v_coord)
+  RETURNING id INTO v_fiche_vide;
+
+  v_res := changer_numero_bien(v_fiche_vide, '', 'ZZTEST6');
+  IF v_res->>'ok' = 'true'
+     AND (SELECT logement_numero_bien FROM fiches WHERE id = v_fiche_vide) = 'ZZTEST6' THEN
+    v_rapport := v_rapport || E'\n[OK]    14. fiche sans numero : le parcours peut lui en donner un';
+  ELSE
+    v_ok := false;
+    v_rapport := v_rapport || E'\n[ECHEC] 14. fiche sans numero -> ' || v_res::text;
   END IF;
 
   -- 12. VERROU DE COLONNE. Un coordinateur qui appelle PostgREST directement
