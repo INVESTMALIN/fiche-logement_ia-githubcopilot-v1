@@ -1,7 +1,11 @@
+import { useState } from 'react'
 import SidebarMenu from '../components/SidebarMenu'
 import ProgressBar from '../components/ProgressBar'
 import { useForm } from '../components/FormContext'
+import { useAuth } from '../components/AuthContext'
 import Button from '../components/Button'
+import ChangerNumeroBienModal from '../components/ChangerNumeroBienModal'
+import { peutModifierNumeroBien } from '../lib/numeroBien'
 
 export default function FicheLogement() {
   const {
@@ -12,8 +16,11 @@ export default function FicheLogement() {
     getField,
     updateField,
     handleSave,
-    saveStatus
+    saveStatus,
+    appliquerNumeroBienChange
   } = useForm()
+  const { userRole } = useAuth()
+  const [modaleNumeroOuverte, setModaleNumeroOuverte] = useState(false)
 
   // Options pour le dropdown "Autre"
   const autresTypes = [
@@ -61,6 +68,14 @@ export default function FicheLogement() {
   const handleInputChange = (fieldPath, value) => {
     updateField(fieldPath, value)
   }
+
+  // Le numéro de bien est verrouillé dès que la fiche existe : il identifie le
+  // dossier photos Supabase, le dossier Drive, l'item Monday et le lookup de
+  // l'agent annonce. Seuls admin et super_admin peuvent le changer, par le
+  // parcours dédié (ChangerNumeroBienModal). Masquer le bouton ne protège rien :
+  // l'autorité est la fonction SQL `changer_numero_bien`.
+  const ficheExistante = !!getField('id')
+  const peutRenumeroter = ficheExistante && peutModifierNumeroBien(userRole)
 
   // Récupération des valeurs pour affichage conditionnel
   const formData = getField('section_logement')
@@ -144,12 +159,21 @@ export default function FicheLogement() {
                     } ${getField('id') ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   value={getField('section_logement.numero_bien') || ''}
                   onChange={(e) => handleInputChange('section_logement.numero_bien', e.target.value)}
-                  disabled={!!getField('id')}
+                  disabled={ficheExistante}
                 />
                 {(!getField('section_logement.numero_bien') || getField('section_logement.numero_bien').trim() === '') && (
                   <p className="text-red-600 text-sm mt-1">
                     ⚠️ Le numéro de bien est obligatoire
                   </p>
+                )}
+                {peutRenumeroter && (
+                  <button
+                    type="button"
+                    onClick={() => setModaleNumeroOuverte(true)}
+                    className="mt-2 text-sm underline text-gray-600 hover:text-gray-900"
+                  >
+                    Modifier le numéro
+                  </button>
                 )}
               </div>
 
@@ -386,6 +410,16 @@ export default function FicheLogement() {
             </div>
           </div>
           <div className="h-20"></div>
+
+          {modaleNumeroOuverte && (
+            <ChangerNumeroBienModal
+              ficheId={getField('id')}
+              numeroActuel={getField('section_logement.numero_bien')}
+              sauvegardeEnCours={saveStatus.saving}
+              onClose={() => setModaleNumeroOuverte(false)}
+              onSuccess={(resultat) => appliquerNumeroBienChange(resultat.nouveau_numero)}
+            />
+          )}
         </div>
       </div>
     </div >

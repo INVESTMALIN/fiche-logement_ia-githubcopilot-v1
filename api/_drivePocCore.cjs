@@ -1,175 +1,18 @@
-const fs = require('node:fs')
 const crypto = require('node:crypto')
-const { createClient } = require('@supabase/supabase-js')
+const { sendJson, readJsonBody, requireRole } = require('./_apiCore.cjs')
+const {
+  getGoogleAccessToken,
+  googleRequest,
+  normalizePropertyNumber,
+  matchesPropertyFolder,
+  listPropertyFolders,
+} = require('./_googleDriveCore.cjs')
 
+// Dossier de TEST « 2. Dossiers propriétaires (tests) ». Le POC n'écrit jamais
+// ailleurs. Le vrai dossier des propriétaires n'est lu qu'en lecture seule, par
+// `_dossierBienCore.cjs`.
 const DEFAULT_FOLDER_ID = '1XY1JgojvBJhHjIq6yHrAQ9p4ek2IzKBn'
 const MAX_FILE_SIZE = 25 * 1024 * 1024
-const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/drive'
-
-let cachedGoogleToken = null
-let cachedGoogleTokenExpiresAt = 0
-
-function sendJson(response, statusCode, payload) {
-  response.statusCode = statusCode
-  response.setHeader('Content-Type', 'application/json; charset=utf-8')
-  response.setHeader('Cache-Control', 'no-store')
-  response.end(JSON.stringify(payload))
-}
-
-async function readJsonBody(request) {
-  if (request.body && typeof request.body === 'object') return request.body
-
-  const chunks = []
-  for await (const chunk of request) chunks.push(chunk)
-  if (chunks.length === 0) return {}
-
-  try {
-    return JSON.parse(Buffer.concat(chunks).toString('utf8'))
-  } catch {
-    throw new Error('Corps JSON invalide.')
-  }
-}
-
-function getBearerToken(request) {
-  const authorization = request.headers.authorization || ''
-  const match = authorization.match(/^Bearer\s+(.+)$/i)
-  return match?.[1] || null
-}
-
-function getSupabaseConfig() {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
-
-  if (!url || !anonKey) {
-    throw new Error('Configuration Supabase serveur manquante.')
-  }
-
-  return { url, anonKey }
-}
-
-async function requireSuperAdmin(request) {
-  const token = getBearerToken(request)
-  if (!token) {
-    const error = new Error('Session utilisateur manquante.')
-    error.statusCode = 401
-    throw error
-  }
-
-  const { url, anonKey } = getSupabaseConfig()
-  const supabase = createClient(url, anonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  })
-
-  const { data: userData, error: userError } = await supabase.auth.getUser(token)
-  if (userError || !userData?.user) {
-    const error = new Error('Session utilisateur invalide ou expirée.')
-    error.statusCode = 401
-    throw error
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('role, active')
-    .eq('id', userData.user.id)
-    .single()
-
-  if (profileError || !profile) {
-    const error = new Error('Impossible de vérifier le rôle utilisateur.')
-    error.statusCode = 403
-    throw error
-  }
-
-  if (profile.active === false || profile.role !== 'super_admin') {
-    const error = new Error('Cette page de test est réservée au super-administrateur.')
-    error.statusCode = 403
-    throw error
-  }
-
-  return userData.user
-}
-
-function getCredentials() {
-  if (process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON) {
-    return JSON.parse(process.env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON)
-  }
-
-  const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
-  if (!credentialsPath) {
-    throw new Error('Configuration du compte technique Google manquante.')
-  }
-
-  return JSON.parse(fs.readFileSync(credentialsPath, 'utf8'))
-}
-
-function encodeJwtPart(value) {
-  return Buffer.from(JSON.stringify(value)).toString('base64url')
-}
-
-async function getGoogleAccessToken() {
-  if (cachedGoogleToken && Date.now() < cachedGoogleTokenExpiresAt) {
-    return cachedGoogleToken
-  }
-
-  const credentials = getCredentials()
-  const now = Math.floor(Date.now() / 1000)
-  const signingInput = `${encodeJwtPart({ alg: 'RS256', typ: 'JWT' })}.${encodeJwtPart({
-    iss: credentials.client_email,
-    scope: GOOGLE_SCOPE,
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600,
-  })}`
-  const signature = crypto
-    .sign('RSA-SHA256', Buffer.from(signingInput), credentials.private_key)
-    .toString('base64url')
-
-  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: `${signingInput}.${signature}`,
-    }),
-  })
-  const tokenData = await tokenResponse.json()
-
-  if (!tokenResponse.ok || !tokenData.access_token) {
-    throw new Error(`Authentification Google refusée (${tokenResponse.status}).`)
-  }
-
-  cachedGoogleToken = tokenData.access_token
-  cachedGoogleTokenExpiresAt = Date.now() + Math.max(60, tokenData.expires_in - 120) * 1000
-  return cachedGoogleToken
-}
-
-async function googleRequest(url, options = {}) {
-  const accessToken = await getGoogleAccessToken()
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      ...(options.headers || {}),
-    },
-  })
-
-  const raw = await response.text()
-  let data = null
-  try {
-    data = raw ? JSON.parse(raw) : null
-  } catch {
-    data = raw
-  }
-
-  if (!response.ok) {
-    const message = data?.error?.message || `Erreur Google Drive (${response.status}).`
-    const error = new Error(message)
-    error.statusCode = response.status
-    throw error
-  }
-
-  return { response, data }
-}
 
 function getTargetFolderId() {
   return process.env.GOOGLE_DRIVE_POC_FOLDER_ID || DEFAULT_FOLDER_ID
@@ -185,43 +28,12 @@ function sanitizeFileName(fileName) {
   return safeName.slice(-140) || 'photo'
 }
 
-function normalizePropertyNumber(value) {
-  const propertyNumber = String(value || '').trim()
-  if (!/^[a-zA-Z0-9_-]{1,50}$/.test(propertyNumber)) {
-    const error = new Error('Le numéro de bien est invalide.')
-    error.statusCode = 400
-    throw error
-  }
-  return propertyNumber
-}
-
-function matchesPropertyFolder(folderName, propertyNumber) {
-  const escapedNumber = propertyNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`^${escapedNumber}(?:\\.|\\s|$)`, 'i').test(String(folderName || '').trim())
-}
-
 async function resolvePropertyFolder(propertyNumberInput) {
   const propertyNumber = normalizePropertyNumber(propertyNumberInput)
-  const query = `'${getTargetFolderId()}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false and name contains '${propertyNumber}'`
-  const params = new URLSearchParams({
-    q: query,
-    spaces: 'drive',
-    pageSize: '1000',
-    includeItemsFromAllDrives: 'true',
-    supportsAllDrives: 'true',
-    fields: 'nextPageToken,files(id,name,mimeType,parents,trashed,capabilities(canAddChildren))',
+  const matches = await listPropertyFolders({
+    parentFolderId: getTargetFolderId(),
+    propertyNumber,
   })
-  const matches = []
-  let nextPageToken = null
-
-  do {
-    if (nextPageToken) params.set('pageToken', nextPageToken)
-    else params.delete('pageToken')
-
-    const { data } = await googleRequest(`https://www.googleapis.com/drive/v3/files?${params}`)
-    matches.push(...(data.files || []).filter((folder) => matchesPropertyFolder(folder.name, propertyNumber)))
-    nextPageToken = data.nextPageToken || null
-  } while (nextPageToken)
 
   if (matches.length === 0) {
     const error = new Error(`Aucun dossier de bien ne commence par « ${propertyNumber}. » dans le dossier de test.`)
@@ -454,7 +266,9 @@ async function handleDrivePocRequest(request, response) {
   }
 
   try {
-    const user = await requireSuperAdmin(request)
+    const user = await requireRole(request, ['super_admin'], {
+      message: 'Cette page de test est réservée au super-administrateur.',
+    })
     const body = await readJsonBody(request)
     let result
 

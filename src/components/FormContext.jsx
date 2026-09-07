@@ -2281,6 +2281,33 @@ export function FormProvider({ children }) {
   }
 
 
+  // 🔢 Aligne l'état local après un changement de numéro de bien déjà ÉCRIT EN
+  // BASE par la fonction SQL `changer_numero_bien` (parcours administrateur).
+  //
+  // Pourquoi pas `updateField` : il lève `isUserChangeRef`, donc l'autosave
+  // repartirait — inutile (la base est déjà à jour), et carrément gênant pour un
+  // rôle `admin`, qui n'a pas l'UPDATE sur `fiches` et verrait un faux message
+  // d'échec de sauvegarde. Ici on ne fait que refléter la base : pas d'autosave
+  // déclenché, et un éventuel autosave en attente (qui porterait encore l'ANCIEN
+  // numéro) est annulé par le changement de `formData`, qui rejoue son effet.
+  //
+  // `nom` n'est volontairement PAS régénéré : la fonction SQL ne le touche pas,
+  // le régénérer ici ferait diverger l'écran de la base.
+  const appliquerNumeroBienChange = useCallback((nouveauNumero) => {
+    setFormData(prev => ({
+      ...prev,
+      section_logement: { ...(prev.section_logement || {}), numero_bien: nouveauNumero },
+      // Remis à zéro par la même fonction SQL : la fiche n'est plus rattachée au
+      // compte Loomky de l'ancienne conciergerie.
+      loomky_property_id: null,
+      loomky_owner_id: null,
+      loomky_checklist_ids: null,
+      loomky_sync_status: null,
+      loomky_synced_at: null,
+      loomky_snapshot: null
+    }))
+  }, [])
+
   // 🐛 DEBUG HELPER (optionnel)
   const getMondayDebugInfo = () => {
     const params = new URLSearchParams(location.search)
@@ -2394,6 +2421,10 @@ export function FormProvider({ children }) {
 
       getFormDataPreview,
       getMondayDebugInfo,
+
+      // 🔢 Changement de numéro de bien (admin) : reflet local d'une écriture
+      // déjà faite en base par la fonction SQL, sans redéclencher l'autosave.
+      appliquerNumeroBienChange,
 
       // 🆕 AJOUT FONCTIONS DUPLICATE
       duplicateAlert,

@@ -182,6 +182,9 @@ Roles are stored in the `profiles` table (`role` column), not in `raw_user_meta_
 
 `AuthContext` exposes helpers: `isCoordinateur`, `isAdmin`, `isSuperAdmin`, `canEditAllFiches`, `canViewAllFiches`.
 
+#### Numéro de bien
+`logement_numero_bien` is locked as soon as the fiche exists — it identifies the Supabase photo folder, the Drive folder, the Monday item and the annonce agent lookup. Only `admin` and `super_admin` can change it, through the dedicated two-step flow in `FicheLogement` (`ChangerNumeroBienModal`). The authority is the SQL function `changer_numero_bien` (SECURITY DEFINER): it re-checks the role, refuses a duplicate under an advisory lock, resets the Loomky markers and drops the annonces' `valide` status. Nothing remote is called and no media is moved — the rest is a manual checklist shown to the admin. See `docs/migrations/2026-09-07_changer_numero_bien.sql`.
+
 #### Row Level Security (RLS)
 Supabase policies enforce role-based access using the `profiles` table:
 ```sql
