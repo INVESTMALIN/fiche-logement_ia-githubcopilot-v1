@@ -29,6 +29,8 @@
 --   8. annonces : `valide` -> `genere`, contenu conservé, trace Monday périmée retirée
 --   9. historique : une ligne `numero_bien_changed` ancien -> nouveau, au nom de l'admin
 --  10. verrou : le verrou de sérialisation est bien pris pendant la transaction
+--  11. écriture concurrente partie avant la renumérotation : bloquée par la garde
+--      sur le numéro (aucun marqueur de l'ancienne conciergerie restauré)
 -- ============================================================
 
 DO $verif$
@@ -47,6 +49,7 @@ DECLARE
   v_annonce   record;
   v_hist      record;
   v_photos    text[];
+  v_lignes    integer;
   v_rapport   text := '';
   v_ok        boolean := true;
 BEGIN
@@ -276,6 +279,31 @@ BEGIN
   ELSE
     v_ok := false;
     v_rapport := v_rapport || E'\n[ECHEC] 9. historique -> ' || coalesce(v_hist.old_value, 'NULL') || ' -> ' || coalesce(v_hist.new_value, 'NULL');
+  END IF;
+
+  -- 11. Garde des écrivains concurrents. Une écriture partie AVANT la
+  -- renumérotation (push Monday fire-and-forget, étape de synchro Loomky en
+  -- cours) cible encore l'ANCIEN numéro : elle ne doit toucher aucune ligne,
+  -- sinon elle réécrirait des marqueurs de l'ancienne conciergerie sur une fiche
+  -- qui appartient maintenant à la nouvelle. C'est la garde ajoutée à
+  -- FormContext.triggerMondaySync, FicheEmailOutlook et FicheFinalisation.
+  WITH tentative AS (
+    UPDATE fiches
+    SET loomky_property_id = 'prop-ancien-compte',
+        monday_snapshot    = '{"avis_logement_etat_general":"Bon"}'::jsonb
+    WHERE id = v_fiche
+      AND logement_numero_bien = 'ZZTEST1'
+    RETURNING 1
+  )
+  SELECT count(*) INTO v_lignes FROM tentative;
+
+  IF v_lignes = 0
+     AND (SELECT loomky_property_id FROM fiches WHERE id = v_fiche) IS NULL
+     AND (SELECT monday_snapshot FROM fiches WHERE id = v_fiche) IS NULL THEN
+    v_rapport := v_rapport || E'\n[OK]    11. ecriture concurrente sur l ancien numero : 0 ligne touchee, rien n est restaure';
+  ELSE
+    v_ok := false;
+    v_rapport := v_rapport || E'\n[ECHEC] 11. une ecriture concurrente a restaure des marqueurs (' || v_lignes || ' ligne(s))';
   END IF;
 
   -- 10. Verrou de sérialisation encore tenu par la transaction

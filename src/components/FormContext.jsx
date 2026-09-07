@@ -1827,13 +1827,26 @@ export function FormProvider({ children }) {
     pushToMonday({ ficheId: savedData.id, numeroBien, snapshot: newSnapshot, changedFields })
       .then(async (mondayResult) => {
         if (mondayResult?.success) {
-          // Persist le nouveau snapshot pour la prochaine dirty-detection
-          const { error: updateError } = await supabase
+          // Persist le nouveau snapshot pour la prochaine dirty-detection.
+          // ⚠️ Garde sur le numéro de bien : ce push est fire-and-forget, il peut
+          // atterrir APRÈS qu'un administrateur a renuméroté la fiche
+          // (changer_numero_bien vide le snapshot pour forcer un push complet
+          // vers le nouvel item). Sans la garde, on réécrirait le snapshot de
+          // l'ANCIEN item par-dessus ce NULL, et le nouvel item resterait vide.
+          // Le numéro est repris BRUT de la ligne sauvegardée, pas trimmé, pour
+          // matcher exactement ce qui est en base.
+          const { data: majSnapshot, error: updateError } = await supabase
             .from('fiches')
             .update({ monday_snapshot: newSnapshot })
             .eq('id', savedData.id)
+            .eq('logement_numero_bien', savedData.section_logement?.numero_bien)
+            .select('id')
           if (updateError) {
             console.warn('[Monday sync] Snapshot DB update failed:', updateError.message)
+          } else if (!majSnapshot || majSnapshot.length === 0) {
+            // Le numéro a changé pendant le push : on laisse le snapshot à NULL,
+            // le prochain enregistrement repoussera tout vers le nouvel item.
+            console.warn(`[Monday sync] Snapshot non persisté : le numéro de bien a changé pendant le push (fiche=${savedData.id}, push sur numero_bien=${numeroBien})`)
           } else {
             setFormData(prev => ({ ...prev, monday_snapshot: newSnapshot }))
             console.log(`[Monday sync] OK — fiche=${savedData.id} numero_bien=${numeroBien} columns=${mondayResult.updatedColumns?.join(',')}`)

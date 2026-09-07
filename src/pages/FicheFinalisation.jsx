@@ -88,10 +88,27 @@ export default function FicheFinalisation() {
         updatePayload.loomky_checklist_ids = result.checklistIds
       }
 
-      await supabase
+      // ⚠️ Garde sur le numéro de bien : un administrateur peut renuméroter la
+      // fiche pendant la création des checklists, ce qui remet justement ces
+      // marqueurs à zéro (changer_numero_bien). Sans garde, on réécrirait un état
+      // « synchronisé » qui décrit le compte Loomky de l'ANCIENNE conciergerie.
+      const { data: majSynchro } = await supabase
         .from('fiches')
         .update(updatePayload)
         .eq('id', formData.id)
+        .eq('logement_numero_bien', formData.section_logement?.numero_bien)
+        .select('id')
+
+      if (!majSynchro || majSynchro.length === 0) {
+        setLoomkyStatus({
+          syncing: false,
+          error: "Le numéro de bien de cette fiche a changé pendant la création des checklists. "
+            + "Elles ont été créées sur le compte Loomky correspondant à l'ancien numéro et ne sont pas "
+            + "rattachées à la fiche. Rechargez la fiche et relancez la synchronisation avec le token de "
+            + 'la nouvelle conciergerie.'
+        })
+        return
+      }
 
       // Sync FormContext
       if (result.checklistIds) updateField('loomky_checklist_ids', result.checklistIds)
