@@ -118,7 +118,7 @@ export default function ChangerNumeroBienModal({
   const confirmer = async () => {
     setEnCours(true)
     setErreur(null)
-    const res = await changerNumeroBien({ ficheId, nouveauNumero: numero })
+    const res = await changerNumeroBien({ ficheId, numeroActuel, nouveauNumero: numero })
     setEnCours(false)
 
     if (!res.ok) {

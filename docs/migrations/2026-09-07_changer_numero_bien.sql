@@ -49,6 +49,7 @@
 
 CREATE OR REPLACE FUNCTION public.changer_numero_bien(
   p_fiche_id       uuid,
+  p_numero_attendu text,
   p_nouveau_numero text
 )
 RETURNS jsonb
@@ -116,6 +117,23 @@ BEGIN
 
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'erreur', 'FICHE_INTROUVABLE');
+  END IF;
+
+  -- 3 bis. COMPARE-AND-SWAP sur le numéro de départ.
+  -- Deux administrateurs peuvent avoir la même fiche ouverte et demander des
+  -- numéros différents. Le second attendrait ici la fin du premier, relirait un
+  -- `v_ancien` déjà changé, et renumérotererait quand même — alors que son écran
+  -- lui a fait confirmer une AUTRE transition, et que les opérations déjà
+  -- lancées sur le numéro intermédiaire (dossiers, PDF, synchro) deviendraient
+  -- caduques sans que personne ne le sache. Le numéro décidant des chemins de
+  -- médias, ce conflit ne se règle pas en « dernier arrivé gagne ».
+  -- On rend le numéro réel : l'écran peut dire quoi recharger.
+  IF v_ancien IS DISTINCT FROM btrim(coalesce(p_numero_attendu, '')) THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'erreur', 'NUMERO_DESYNCHRONISE',
+      'numero_reel', v_ancien
+    );
   END IF;
 
   IF v_ancien = v_nouveau THEN
@@ -276,7 +294,7 @@ COMMENT ON FUNCTION public.protege_numero_bien() IS
   'le proprietaire de la fonction. Les ecritures service_role et SQL Editor ne '
   'sont pas bridees.';
 
-COMMENT ON FUNCTION public.changer_numero_bien(uuid, text) IS
+COMMENT ON FUNCTION public.changer_numero_bien(uuid, text, text) IS
   'Changement controle du numero de bien d''une fiche existante. Reserve aux '
   'roles admin et super_admin (controle fait ICI, pas dans React). Verifie la '
   'forme, refuse un numero identique ou deja utilise (sous verrou), remet les '
@@ -286,9 +304,9 @@ COMMENT ON FUNCTION public.changer_numero_bien(uuid, text) IS
 
 -- Appelable uniquement par un utilisateur connecté (le rôle est revérifié dans
 -- le corps de la fonction).
-REVOKE ALL     ON FUNCTION public.changer_numero_bien(uuid, text) FROM PUBLIC;
-REVOKE ALL     ON FUNCTION public.changer_numero_bien(uuid, text) FROM anon;
-GRANT  EXECUTE ON FUNCTION public.changer_numero_bien(uuid, text) TO authenticated;
+REVOKE ALL     ON FUNCTION public.changer_numero_bien(uuid, text, text) FROM PUBLIC;
+REVOKE ALL     ON FUNCTION public.changer_numero_bien(uuid, text, text) FROM anon;
+GRANT  EXECUTE ON FUNCTION public.changer_numero_bien(uuid, text, text) TO authenticated;
 
 -- ============================================================
 -- Vérification post-migration
@@ -311,5 +329,5 @@ GRANT  EXECUTE ON FUNCTION public.changer_numero_bien(uuid, text) TO authenticat
 -- ROLLBACK de cette migration :
 --      DROP TRIGGER IF EXISTS fiches_protege_numero_bien ON public.fiches;
 --      DROP FUNCTION IF EXISTS public.protege_numero_bien();
---      DROP FUNCTION IF EXISTS public.changer_numero_bien(uuid, text);
+--      DROP FUNCTION IF EXISTS public.changer_numero_bien(uuid, text, text);
 -- ============================================================

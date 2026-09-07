@@ -15,6 +15,7 @@ const MESSAGES_ERREUR = {
   NUMERO_DEJA_UTILISE: 'Ce numéro est déjà utilisé par une autre fiche.',
   FICHE_INTROUVABLE: "Cette fiche n'existe plus.",
   ROLE_REFUSE: 'Modification réservée aux administrateurs.',
+  NUMERO_DESYNCHRONISE: 'Le numéro de cette fiche a changé entre-temps.',
 }
 
 /**
@@ -106,13 +107,20 @@ export async function verifierDossierDrive(numero) {
  * sous verrou, remise à zéro Loomky, invalidation de l'état Monday des
  * annonces, et trace dans l'historique via le trigger d'audit.
  *
+ * `numeroActuel` est le numéro que l'écran a fait confirmer. Le serveur le
+ * compare, sous verrou, à celui réellement en base : si un autre administrateur
+ * est passé entre-temps, la transition confirmée n'est plus celle qui aurait
+ * lieu, et l'opération est refusée plutôt qu'appliquée en dernier-arrivé-gagne.
+ *
  * @returns {Promise<{ok: true, ancien_numero: string, nouveau_numero: string,
  *   loomky_reinitialise: boolean, annonces_invalidees: number}
- *   | {ok: false, erreur: string, message: string, fiche_en_conflit?: object}>}
+ *   | {ok: false, erreur: string, message: string, fiche_en_conflit?: object,
+ *      numero_reel?: string}>}
  */
-export async function changerNumeroBien({ ficheId, nouveauNumero }) {
+export async function changerNumeroBien({ ficheId, numeroActuel, nouveauNumero }) {
   const { data, error } = await supabase.rpc('changer_numero_bien', {
     p_fiche_id: ficheId,
+    p_numero_attendu: normaliserNumeroBien(numeroActuel),
     p_nouveau_numero: normaliserNumeroBien(nouveauNumero),
   })
 
@@ -129,11 +137,17 @@ export async function changerNumeroBien({ ficheId, nouveauNumero }) {
 
   if (!data?.ok) {
     const erreur = data?.erreur || 'ERREUR_SERVEUR'
+    let message = MESSAGES_ERREUR[erreur] || 'Le changement de numéro a échoué.'
+    if (erreur === 'NUMERO_DESYNCHRONISE') {
+      message = `Cette fiche porte maintenant le numéro ${data.numero_reel || '(inconnu)'} : `
+        + 'elle a été modifiée pendant que cet écran était ouvert. Rechargez la fiche avant de recommencer.'
+    }
     return {
       ok: false,
       erreur,
-      message: MESSAGES_ERREUR[erreur] || 'Le changement de numéro a échoué.',
+      message,
       fiche_en_conflit: data?.fiche_en_conflit,
+      numero_reel: data?.numero_reel,
     }
   }
 

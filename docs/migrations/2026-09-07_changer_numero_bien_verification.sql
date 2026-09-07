@@ -33,6 +33,8 @@
 --      sur le numéro (aucun marqueur de l'ancienne conciergerie restauré)
 --  12. verrou de colonne : sous le rôle `authenticated`, un UPDATE direct du
 --      numéro est refusé, les autres colonnes restent modifiables
+--  13. compare-and-swap : une confirmation partie d'un numéro de départ périmé
+--      (autre administrateur passé avant) est refusée, avec le numéro réel
 -- ============================================================
 
 DO $verif$
@@ -100,7 +102,7 @@ BEGIN
   -- ---------------------------------------------------------------
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_coord, 'role', 'authenticated')::text, true);
   BEGIN
-    v_res := changer_numero_bien(v_fiche, 'ZZTEST3');
+    v_res := changer_numero_bien(v_fiche, 'ZZTEST1', 'ZZTEST3');
     v_ok := false;
     v_rapport := v_rapport || E'\n[ECHEC] 1. coordinateur : la renumerotation a ete acceptee -> ' || v_res::text;
   EXCEPTION WHEN insufficient_privilege THEN
@@ -112,7 +114,7 @@ BEGIN
   -- ---------------------------------------------------------------
   PERFORM set_config('request.jwt.claims', '', true);
   BEGIN
-    v_res := changer_numero_bien(v_fiche, 'ZZTEST3');
+    v_res := changer_numero_bien(v_fiche, 'ZZTEST1', 'ZZTEST3');
     v_ok := false;
     v_rapport := v_rapport || E'\n[ECHEC] 2. anonyme : la renumerotation a ete acceptee';
   EXCEPTION WHEN insufficient_privilege THEN
@@ -122,8 +124,8 @@ BEGIN
   -- ---------------------------------------------------------------
   -- 3. Droits d'exécution
   -- ---------------------------------------------------------------
-  IF has_function_privilege('authenticated', 'public.changer_numero_bien(uuid,text)', 'EXECUTE')
-     AND NOT has_function_privilege('anon', 'public.changer_numero_bien(uuid,text)', 'EXECUTE') THEN
+  IF has_function_privilege('authenticated', 'public.changer_numero_bien(uuid,text,text)', 'EXECUTE')
+     AND NOT has_function_privilege('anon', 'public.changer_numero_bien(uuid,text,text)', 'EXECUTE') THEN
     v_rapport := v_rapport || E'\n[OK]    3. droits : authenticated=EXECUTE, anon=refuse';
   ELSE
     v_ok := false;
@@ -136,7 +138,7 @@ BEGIN
   -- ---------------------------------------------------------------
   -- 4. Numéro vide / invalide / identique
   -- ---------------------------------------------------------------
-  v_res := changer_numero_bien(v_fiche, '   ');
+  v_res := changer_numero_bien(v_fiche, 'ZZTEST1', '   ');
   IF v_res->>'erreur' = 'NUMERO_INVALIDE' THEN
     v_rapport := v_rapport || E'\n[OK]    4a. numero vide : refuse';
   ELSE
@@ -144,7 +146,7 @@ BEGIN
     v_rapport := v_rapport || E'\n[ECHEC] 4a. numero vide -> ' || v_res::text;
   END IF;
 
-  v_res := changer_numero_bien(v_fiche, '2290 DUPONT');
+  v_res := changer_numero_bien(v_fiche, 'ZZTEST1', '2290 DUPONT');
   IF v_res->>'erreur' = 'NUMERO_INVALIDE' THEN
     v_rapport := v_rapport || E'\n[OK]    4b. numero avec espace/texte : refuse';
   ELSE
@@ -152,7 +154,7 @@ BEGIN
     v_rapport := v_rapport || E'\n[ECHEC] 4b. numero avec texte -> ' || v_res::text;
   END IF;
 
-  v_res := changer_numero_bien(v_fiche, ' ZZTEST1 ');
+  v_res := changer_numero_bien(v_fiche, 'ZZTEST1', ' ZZTEST1 ');
   IF v_res->>'erreur' = 'NUMERO_IDENTIQUE' THEN
     v_rapport := v_rapport || E'\n[OK]    4c. numero identique (espaces compris) : refuse';
   ELSE
@@ -163,7 +165,7 @@ BEGIN
   -- ---------------------------------------------------------------
   -- 5. Numéro déjà utilisé
   -- ---------------------------------------------------------------
-  v_res := changer_numero_bien(v_fiche, 'ZZTEST2');
+  v_res := changer_numero_bien(v_fiche, 'ZZTEST1', 'ZZTEST2');
   IF v_res->>'erreur' = 'NUMERO_DEJA_UTILISE'
      AND v_res->'fiche_en_conflit'->>'id' = v_conflit::text
      AND v_res->'fiche_en_conflit'->>'nom' = 'ZZTEST fiche deja au numero' THEN
@@ -175,7 +177,7 @@ BEGIN
 
   -- Variante de casse d'un numéro déjà pris : refusée aussi (le dossier Drive,
   -- lui, ne fait pas la différence entre ZZTEST2 et zztest2).
-  v_res := changer_numero_bien(v_fiche, 'zztest2');
+  v_res := changer_numero_bien(v_fiche, 'ZZTEST1', 'zztest2');
   IF v_res->>'erreur' = 'NUMERO_DEJA_UTILISE' THEN
     v_rapport := v_rapport || E'\n[OK]    5b. variante de casse d un numero pris : refusee';
   ELSE
@@ -197,7 +199,7 @@ BEGIN
   -- ---------------------------------------------------------------
   SELECT to_jsonb(f) INTO v_avant FROM fiches f WHERE f.id = v_fiche;
 
-  v_res := changer_numero_bien(v_fiche, 'ZZTEST9');
+  v_res := changer_numero_bien(v_fiche, 'ZZTEST1', 'ZZTEST9');
 
   IF v_res->>'ok' = 'true'
      AND v_res->>'ancien_numero' = 'ZZTEST1'
@@ -306,6 +308,19 @@ BEGIN
   ELSE
     v_ok := false;
     v_rapport := v_rapport || E'\n[ECHEC] 11. une ecriture concurrente a restaure des marqueurs (' || v_lignes || ' ligne(s))';
+  END IF;
+
+  -- 13. COMPARE-AND-SWAP. À ce stade la fiche porte ZZTEST9. Une confirmation
+  -- partie d'un écran resté sur ZZTEST1 (second administrateur, fiche ouverte
+  -- avant) doit être refusée, pas appliquée en « dernier arrivé gagne ».
+  v_res := changer_numero_bien(v_fiche, 'ZZTEST1', 'ZZTEST8');
+  IF v_res->>'erreur' = 'NUMERO_DESYNCHRONISE'
+     AND v_res->>'numero_reel' = 'ZZTEST9'
+     AND (SELECT logement_numero_bien FROM fiches WHERE id = v_fiche) = 'ZZTEST9' THEN
+    v_rapport := v_rapport || E'\n[OK]    13. numero de depart perime : refuse, numero reel rendu (ZZTEST9)';
+  ELSE
+    v_ok := false;
+    v_rapport := v_rapport || E'\n[ECHEC] 13. compare-and-swap -> ' || v_res::text;
   END IF;
 
   -- 12. VERROU DE COLONNE. Un coordinateur qui appelle PostgREST directement

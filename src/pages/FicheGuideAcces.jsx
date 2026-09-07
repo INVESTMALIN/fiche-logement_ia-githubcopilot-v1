@@ -305,6 +305,11 @@ export default function FicheGuideAcces() {
 
     } catch (err) {
       console.error('❌ Erreur validation guide:', err)
+      // Sans ça, le bouton revenait à son état initial sans rien afficher :
+      // l'utilisateur pouvait croire que la validation avait abouti. Le message
+      // porte l'action à faire (par exemple recharger la fiche et recréer le
+      // guide quand le numéro de bien a changé pendant la génération).
+      setError(err.message || "La validation du guide d'accès a échoué.")
     } finally {
       setValidating(false)
     }

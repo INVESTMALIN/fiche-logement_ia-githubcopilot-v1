@@ -202,7 +202,10 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave }) => {
           onPDFGenerated(resultLogement.pdfUrl, resultMenage.pdfUrl)
         }
       } else {
-        throw new Error('Échec du déclenchement du webhook')
+        // On remonte le message du webhook tel quel : il porte l'action à faire
+        // (par exemple « le numéro de bien a changé pendant la génération,
+        // rechargez la fiche et régénérez »), qu'un libellé générique effacerait.
+        throw new Error(webhookResult.error || 'Échec du déclenchement du webhook')
       }
 
     } catch (err) {
