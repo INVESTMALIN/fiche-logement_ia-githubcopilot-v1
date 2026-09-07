@@ -17,7 +17,8 @@ export default function FicheLogement() {
     updateField,
     handleSave,
     saveStatus,
-    appliquerNumeroBienChange
+    appliquerNumeroBienChange,
+    aDesModificationsEnAttente
   } = useForm()
   const { userRole } = useAuth()
   const [modaleNumeroOuverte, setModaleNumeroOuverte] = useState(false)
@@ -416,6 +417,8 @@ export default function FicheLogement() {
               ficheId={getField('id')}
               numeroActuel={getField('section_logement.numero_bien')}
               sauvegardeEnCours={saveStatus.saving}
+              modificationsEnAttente={aDesModificationsEnAttente}
+              enregistrer={handleSave}
               onClose={() => setModaleNumeroOuverte(false)}
               onSuccess={(resultat) => appliquerNumeroBienChange(resultat.nouveau_numero)}
             />

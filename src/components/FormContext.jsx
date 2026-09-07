@@ -2204,6 +2204,12 @@ export function FormProvider({ children }) {
       console.log('🔍 Données envoyées à Supabase:', updateData)
 
       // UPDATE des colonnes PDF en base → déclenche automatiquement le trigger
+      // ⚠️ Garde sur le numéro de bien. Cet UPDATE fait tirer `notify_pdf_update`,
+      // qui envoie à Make le numéro COURANT de la fiche. Si un administrateur a
+      // renuméroté pendant la génération, le PDF qu'on vient de produire porte
+      // l'ANCIEN numéro et serait publié sur l'item Monday et dans le dossier
+      // Drive du NOUVEAU. On refuse : le PDF est à régénérer, ce que la checklist
+      // de renumérotation annonce déjà.
       const { data, error } = await supabase
         .from('fiches')
         .update({
@@ -2213,6 +2219,7 @@ export function FormProvider({ children }) {
           updated_at: new Date().toISOString()
         })
         .eq('id', formData.id)
+        .eq('logement_numero_bien', formData.section_logement?.numero_bien)
         .select()
 
       if (error) {
@@ -2221,8 +2228,12 @@ export function FormProvider({ children }) {
       }
 
       if (!data || data.length === 0) {
-        console.error('❌ Aucune fiche mise à jour')
-        return { success: false, error: 'Fiche non trouvée' }
+        console.error('❌ Aucune fiche mise à jour (fiche absente ou numéro de bien modifié entre-temps)')
+        return {
+          success: false,
+          error: "Les PDF n'ont pas été publiés : le numéro de bien de cette fiche a changé pendant la génération. "
+            + 'Rechargez la fiche et régénérez les PDF pour qu\'ils partent sur le bon dossier.'
+        }
       }
 
       console.log('✅ Webhook PDF déclenché avec succès!')
@@ -2257,10 +2268,15 @@ export function FormProvider({ children }) {
 
       console.log('🔍 Données envoyées à Supabase:', updateData)
 
+      // ⚠️ Même garde que pour les PDF logement / ménage : cet UPDATE fait tirer
+      // `notify_guide_acces_pdf_update`, qui envoie à Make le numéro COURANT de
+      // la fiche. Un guide rendu avant une renumérotation partirait sur l'item
+      // Monday et le dossier Drive du nouveau numéro.
       const { data, error } = await supabase
         .from('fiches')
         .update(updateData)
         .eq('id', formData.id)
+        .eq('logement_numero_bien', formData.section_logement?.numero_bien)
         .select()
 
       if (error) {
@@ -2269,8 +2285,12 @@ export function FormProvider({ children }) {
       }
 
       if (!data || data.length === 0) {
-        console.error('❌ Aucune fiche mise à jour')
-        return { success: false, error: 'Fiche non trouvée' }
+        console.error('❌ Aucune fiche mise à jour (fiche absente ou numéro de bien modifié entre-temps)')
+        return {
+          success: false,
+          error: "Le guide d'accès n'a pas été publié : le numéro de bien de cette fiche a changé pendant la "
+            + 'génération. Rechargez la fiche et recréez le guide pour qu\'il parte sur le bon dossier.'
+        }
       }
 
       console.log('✅ Webhook Assistant PDF déclenché avec succès!')
@@ -2281,6 +2301,11 @@ export function FormProvider({ children }) {
       return { success: false, error: error.message || 'Erreur inconnue' }
     }
   }
+
+  // Une saisie utilisateur attend-elle son autosave (débounce de 5 s) ?
+  // Lu au clic, pas observé en continu : `isUserChangeRef` est volontairement
+  // une ref, pour que taper dans un champ ne provoque pas de rendu.
+  const aDesModificationsEnAttente = useCallback(() => isUserChangeRef.current, [])
 
   const getFormDataPreview = () => {
     return {
@@ -2452,6 +2477,7 @@ export function FormProvider({ children }) {
       // 🔢 Changement de numéro de bien (admin) : reflet local d'une écriture
       // déjà faite en base par la fonction SQL, sans redéclencher l'autosave.
       appliquerNumeroBienChange,
+      aDesModificationsEnAttente,
 
       // 🆕 AJOUT FONCTIONS DUPLICATE
       duplicateAlert,

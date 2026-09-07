@@ -57,6 +57,8 @@ export default function ChangerNumeroBienModal({
   ficheId,
   numeroActuel,
   sauvegardeEnCours = false,
+  modificationsEnAttente,
+  enregistrer,
   onClose,
   onSuccess,
 }) {
@@ -67,6 +69,11 @@ export default function ChangerNumeroBienModal({
   const [drive, setDrive] = useState(null)
   const [driveEnCours, setDriveEnCours] = useState(false)
   const [checklistLue, setChecklistLue] = useState(false)
+  // Instantané pris au passage à l'étape 2 : une saisie faite moins de 5 s avant
+  // n'est pas encore partie en base, et la renumérotation coupe l'autosave en
+  // attente. On le dit au lieu de la perdre en silence.
+  const [saisieEnAttente, setSaisieEnAttente] = useState(false)
+  const [enregistrementEnCours, setEnregistrementEnCours] = useState(false)
   const [enCours, setEnCours] = useState(false)
   const [erreur, setErreur] = useState(null)
   const [resultat, setResultat] = useState(null)
@@ -247,7 +254,11 @@ export default function ChangerNumeroBienModal({
                 Annuler
               </button>
               <button
-                onClick={() => { setErreur(null); setEtape(2) }}
+                onClick={() => {
+                  setErreur(null)
+                  setSaisieEnAttente(!!modificationsEnAttente?.())
+                  setEtape(2)
+                }}
                 disabled={!evaluation.pret}
                 className={`px-4 py-2 rounded text-white font-medium ${evaluation.pret ? 'bg-gray-900 hover:bg-gray-800' : 'bg-gray-300 cursor-not-allowed'}`}
               >
@@ -306,14 +317,46 @@ export default function ChangerNumeroBienModal({
               </div>
             )}
 
+            {/* La renumérotation coupe la sauvegarde automatique en attente : sans
+                ce rappel, une saisie récente disparaîtrait sans que personne ne le
+                voie. On informe et on propose de l'enregistrer, sans bloquer :
+                un rôle `admin` n'a pas l'UPDATE sur les fiches, sa saisie ne
+                pourra de toute façon jamais partir. */}
+            {saisieEnAttente && (
+              <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded text-sm text-orange-800">
+                <p>
+                  Des modifications récentes de la fiche ne sont pas encore enregistrées. La renumérotation
+                  ne les emportera pas : enregistrez-les d'abord, ou continuez en les abandonnant.
+                </p>
+                <button
+                  type="button"
+                  disabled={enregistrementEnCours || enCours}
+                  onClick={async () => {
+                    setEnregistrementEnCours(true)
+                    setErreur(null)
+                    const res = await enregistrer?.()
+                    setEnregistrementEnCours(false)
+                    if (res && res.success === false) {
+                      setErreur({ message: `Enregistrement impossible : ${res.error}` })
+                      return
+                    }
+                    setSaisieEnAttente(false)
+                  }}
+                  className="mt-2 underline font-medium disabled:opacity-50"
+                >
+                  {enregistrementEnCours ? 'Enregistrement…' : 'Enregistrer la fiche d\'abord'}
+                </button>
+              </div>
+            )}
+
             <div className="flex justify-end gap-3">
               <button onClick={() => setEtape(1)} disabled={enCours} className="px-4 py-2 rounded text-gray-700 hover:bg-gray-100 disabled:opacity-50">
                 Retour
               </button>
               <button
                 onClick={confirmer}
-                disabled={!checklistLue || enCours || sauvegardeEnCours}
-                className={`px-4 py-2 rounded text-white font-medium ${!checklistLue || enCours || sauvegardeEnCours ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                disabled={!checklistLue || enCours || sauvegardeEnCours || enregistrementEnCours}
+                className={`px-4 py-2 rounded text-white font-medium ${!checklistLue || enCours || sauvegardeEnCours || enregistrementEnCours ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
               >
                 {enCours ? 'Modification…' : 'Confirmer la modification'}
               </button>
