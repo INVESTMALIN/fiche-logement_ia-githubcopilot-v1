@@ -132,13 +132,23 @@ function matchesPropertyFolder(folderName, propertyNumber) {
 }
 
 /**
- * Dossiers du dossier parent dont le NOM commence par le numéro de bien.
- * Lecture seule. La requête Drive filtre en `contains` (seul opérateur
- * disponible), le rapprochement exact est refait localement par
- * `matchesPropertyFolder`.
+ * Dossiers du dossier parent liés à un numéro de bien. Lecture seule.
+ *
+ * Rend DEUX listes, et c'est volontaire :
+ *   - `candidats`      : tout ce que la requête Drive `name contains` remonte.
+ *                        C'est exactement ce que voit le scénario Make V2
+ *                        (module « Dossier Bien » : contains, limit 1), donc
+ *                        l'ensemble dans lequel il peut piocher.
+ *   - `correspondances`: les seuls dont le nom commence VRAIMENT par le numéro
+ *                        (convention « {numero}. {Nom} - {Ville} »).
+ *
+ * Filtrer en silence ne suffit pas : si un leurre comme
+ * « 2155-TEST-COPIE. Dupont » traîne dans le dossier parent, il n'est pas le
+ * dossier du bien 2155, mais Make peut quand même l'attraper et y déposer les
+ * médias. L'appelant a besoin des deux listes pour le dire.
  *
  * @param {{parentFolderId: string, propertyNumber: string}} params
- * @returns {Promise<Array<object>>} dossiers correspondants (0, 1 ou plusieurs)
+ * @returns {Promise<{candidats: Array<object>, correspondances: Array<object>}>}
  */
 async function listPropertyFolders({ parentFolderId, propertyNumber }) {
   const numero = normalizePropertyNumber(propertyNumber)
@@ -151,7 +161,7 @@ async function listPropertyFolders({ parentFolderId, propertyNumber }) {
     supportsAllDrives: 'true',
     fields: 'nextPageToken,files(id,name,mimeType,parents,trashed,capabilities(canAddChildren))',
   })
-  const matches = []
+  const candidats = []
   let nextPageToken = null
 
   do {
@@ -159,11 +169,14 @@ async function listPropertyFolders({ parentFolderId, propertyNumber }) {
     else params.delete('pageToken')
 
     const { data } = await googleRequest(`https://www.googleapis.com/drive/v3/files?${params}`)
-    matches.push(...(data.files || []).filter((folder) => matchesPropertyFolder(folder.name, numero)))
+    candidats.push(...(data.files || []))
     nextPageToken = data.nextPageToken || null
   } while (nextPageToken)
 
-  return matches
+  return {
+    candidats,
+    correspondances: candidats.filter((folder) => matchesPropertyFolder(folder.name, numero)),
+  }
 }
 
 function folderUrl(folderId) {

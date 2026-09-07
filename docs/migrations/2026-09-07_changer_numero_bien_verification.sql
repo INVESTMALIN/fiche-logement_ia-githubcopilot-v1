@@ -23,7 +23,7 @@
 --   2. session anonyme : refusée
 --   3. droits d'exécution : `authenticated` oui, `anon` non
 --   4. numéro invalide / identique : refusés
---   5. numéro déjà utilisé : refusé, avec identification de la fiche en conflit
+--   5. numéro déjà utilisé (casse comprise) : refusé, fiche en conflit identifiée
 --   6. succès : SEULES les colonnes prévues changent (médias et données métier intacts)
 --   7. marqueurs Loomky remis à zéro, sans aucun appel distant
 --   8. annonces : `valide` -> `genere`, contenu conservé, trace Monday périmée retirée
@@ -167,13 +167,23 @@ BEGIN
     v_rapport := v_rapport || E'\n[ECHEC] 5. collision -> ' || v_res::text;
   END IF;
 
-  -- La fiche n'a pas bougé après ces quatre refus.
-  IF (SELECT logement_numero_bien FROM fiches WHERE id = v_fiche) = 'ZZTEST1'
-     AND (SELECT loomky_property_id FROM fiches WHERE id = v_fiche) = 'prop-ancien-compte' THEN
-    v_rapport := v_rapport || E'\n[OK]    5b. aucun effet de bord apres les refus';
+  -- Variante de casse d'un numéro déjà pris : refusée aussi (le dossier Drive,
+  -- lui, ne fait pas la différence entre ZZTEST2 et zztest2).
+  v_res := changer_numero_bien(v_fiche, 'zztest2');
+  IF v_res->>'erreur' = 'NUMERO_DEJA_UTILISE' THEN
+    v_rapport := v_rapport || E'\n[OK]    5b. variante de casse d un numero pris : refusee';
   ELSE
     v_ok := false;
-    v_rapport := v_rapport || E'\n[ECHEC] 5b. un refus a quand meme modifie la fiche';
+    v_rapport := v_rapport || E'\n[ECHEC] 5b. variante de casse -> ' || v_res::text;
+  END IF;
+
+  -- La fiche n'a pas bougé après ces cinq refus.
+  IF (SELECT logement_numero_bien FROM fiches WHERE id = v_fiche) = 'ZZTEST1'
+     AND (SELECT loomky_property_id FROM fiches WHERE id = v_fiche) = 'prop-ancien-compte' THEN
+    v_rapport := v_rapport || E'\n[OK]    5c. aucun effet de bord apres les refus';
+  ELSE
+    v_ok := false;
+    v_rapport := v_rapport || E'\n[ECHEC] 5c. un refus a quand meme modifie la fiche';
   END IF;
 
   -- ---------------------------------------------------------------

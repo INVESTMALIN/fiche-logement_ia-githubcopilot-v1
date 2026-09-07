@@ -30,7 +30,7 @@ function sanitizeFileName(fileName) {
 
 async function resolvePropertyFolder(propertyNumberInput) {
   const propertyNumber = normalizePropertyNumber(propertyNumberInput)
-  const matches = await listPropertyFolders({
+  const { correspondances: matches } = await listPropertyFolders({
     parentFolderId: getTargetFolderId(),
     propertyNumber,
   })

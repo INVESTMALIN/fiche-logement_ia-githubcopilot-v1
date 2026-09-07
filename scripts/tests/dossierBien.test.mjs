@@ -55,10 +55,20 @@ test('numéro exploitable par la recherche Drive', () => {
   assert.equal(estNumeroExploitable('2290\\'), false, 'aucun antislash dans la requête Drive')
 })
 
+// `lister` rend la même forme que listPropertyFolders : `candidats` = ce que la
+// requête Drive `contains` remonte (donc ce que voit Make), `correspondances` =
+// ceux qui respectent la convention de nommage.
+function resultatDrive(candidats, numero = '2155') {
+  return async () => ({
+    candidats,
+    correspondances: candidats.filter((d) => matchesPropertyFolder(d.name, numero)),
+  })
+}
+
 test('dossier trouvé : coche verte, nom exact et lien', async () => {
   await avecDossierParent(PARENT, async () => {
     const res = await chercherDossierBien('2155', {
-      lister: async () => [{ id: 'abc123', name: '2155. Sebastien VIAL - Vichy' }],
+      lister: resultatDrive([{ id: 'abc123', name: '2155. Sebastien VIAL - Vichy' }]),
     })
     assert.equal(res.etat, 'trouve')
     assert.equal(res.dossier.nom, '2155. Sebastien VIAL - Vichy')
@@ -68,22 +78,50 @@ test('dossier trouvé : coche verte, nom exact et lien', async () => {
 
 test('dossier absent : état distinct, aucune erreur', async () => {
   await avecDossierParent(PARENT, async () => {
-    const res = await chercherDossierBien('9998', { lister: async () => [] })
+    const res = await chercherDossierBien('9998', { lister: resultatDrive([], '9998') })
     assert.equal(res.etat, 'absent')
     assert.equal(res.dossier, null)
   })
 })
 
-test('plusieurs dossiers : signalé, avec les noms', async () => {
+test('plusieurs candidats : ambigu, avec tous les noms que Make peut voir', async () => {
   await avecDossierParent(PARENT, async () => {
     const res = await chercherDossierBien('2155', {
-      lister: async () => [
+      lister: resultatDrive([
         { id: 'a', name: '2155. Un' },
         { id: 'b', name: '2155 Deux' },
-      ],
+      ]),
     })
-    assert.equal(res.etat, 'multiple')
+    assert.equal(res.etat, 'ambigu')
+    assert.equal(res.raison, 'plusieurs_candidats')
     assert.deepEqual(res.dossiers.map((d) => d.nom), ['2155. Un', '2155 Deux'])
+  })
+})
+
+test('bon dossier + leurre : ambigu, jamais vert', async () => {
+  // Make cherche en `contains` avec limit 1 : il peut attraper le leurre et y
+  // déposer les médias. Répondre « trouvé » donnerait un faux signal.
+  await avecDossierParent(PARENT, async () => {
+    const res = await chercherDossierBien('2155', {
+      lister: resultatDrive([
+        { id: 'a', name: '2155. Sebastien VIAL - Vichy' },
+        { id: 'b', name: '2155-TEST-COPIE. Sebastien VIAL - Vichy' },
+      ]),
+    })
+    assert.equal(res.etat, 'ambigu')
+    assert.equal(res.raison, 'plusieurs_candidats')
+    assert.equal(res.dossiers.length, 2)
+  })
+})
+
+test('leurre seul : ambigu et non "absent"', async () => {
+  await avecDossierParent(PARENT, async () => {
+    const res = await chercherDossierBien('2155', {
+      lister: resultatDrive([{ id: 'b', name: '2155-TEST-COPIE. Sebastien VIAL - Vichy' }]),
+    })
+    assert.equal(res.etat, 'ambigu')
+    assert.equal(res.raison, 'candidat_non_conforme')
+    assert.equal(res.dossiers[0].nom, '2155-TEST-COPIE. Sebastien VIAL - Vichy')
   })
 })
 
@@ -101,7 +139,9 @@ test('panne Google : indisponible, jamais "absent"', async () => {
 test('dossier parent non configuré : indisponible, jamais "absent"', async () => {
   await avecDossierParent(null, async () => {
     let appele = false
-    const res = await chercherDossierBien('2155', { lister: async () => { appele = true; return [] } })
+    const res = await chercherDossierBien('2155', {
+      lister: async () => { appele = true; return { candidats: [], correspondances: [] } },
+    })
     assert.equal(res.etat, 'indisponible')
     assert.equal(res.raison, 'config_absente')
     assert.equal(appele, false, 'aucun appel Google sans dossier parent configuré')

@@ -216,11 +216,21 @@ export default function ChangerNumeroBienModal({
                 {!driveEnCours && drive?.etat === 'absent' && (
                   <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>{TEXTE_DRIVE_ABSENT}</Ligne>
                 )}
-                {!driveEnCours && drive?.etat === 'multiple' && (
+                {!driveEnCours && drive?.etat === 'ambigu' && (
                   <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
-                    Plusieurs dossiers Drive commencent par ce numéro
-                    {drive.dossiers?.length ? ` (${drive.dossiers.map((d) => d.nom).join(', ')})` : ''}.
-                    Les transferts de médias pourraient partir dans le mauvais dossier.
+                    {drive.raison === 'candidat_non_conforme' ? (
+                      <>
+                        Aucun dossier Drive ne porte exactement ce numéro, mais «{' '}
+                        {drive.dossiers?.[0]?.nom} » le contient : le transfert des médias le prendrait
+                        pour le dossier du bien.
+                      </>
+                    ) : (
+                      <>
+                        Plusieurs dossiers Drive contiennent ce numéro
+                        {drive.dossiers?.length ? ` (${drive.dossiers.map((d) => d.nom).join(', ')})` : ''}.
+                        Le transfert des médias cible le premier trouvé, sans garantie que ce soit le bon.
+                      </>
+                    )}
                   </Ligne>
                 )}
                 {!driveEnCours && drive?.etat === 'indisponible' && (

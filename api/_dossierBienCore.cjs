@@ -11,14 +11,19 @@
 // transfert est SILENCIEUSE.
 //
 // Trois états distincts, tous NON BLOQUANTS pour la renumérotation :
-//   - `trouve`        : dossier identifié, on rend son nom exact et son lien ;
+//   - `trouve`        : dossier identifié sans ambiguïté, on rend son nom exact
+//                       et son lien ;
 //   - `absent`        : la recherche a abouti et ne trouve rien ;
 //   - `indisponible`  : la recherche n'a pas pu être faite (dossier parent non
 //                       configuré, compte technique sans accès, panne Google).
 //                       On ne dit JAMAIS « absent » dans ce cas.
-// `multiple` est un quatrième cas, rare : plusieurs dossiers commencent par ce
-// numéro. Non bloquant lui aussi, mais signalé, car Make en choisirait un au
-// hasard (search `contains`, limit 1).
+//
+// `ambigu` est un quatrième cas, non bloquant lui aussi : plusieurs dossiers
+// CONTIENNENT ce numéro, ou le seul qui le contient ne respecte pas la
+// convention de nommage. Il existe parce que Make cherche en `contains` avec
+// `limit 1` : dès qu'il a plus d'un candidat, ou un candidat qui n'est pas le
+// bon dossier, il peut déposer les médias au mauvais endroit. Répondre « trouvé »
+// (vert) ou « absent » dans ces cas donnerait un signal faux.
 //
 // Aucune écriture : ni création, ni renommage, ni upload. Le POC d'upload direct
 // reste cantonné à `/api/drive-poc`.
@@ -55,21 +60,26 @@ async function chercherDossierBien(numeroBien, { lister = listPropertyFolders } 
   }
 
   try {
-    const dossiers = await lister({ parentFolderId, propertyNumber: numeroBien })
+    const { candidats, correspondances } = await lister({ parentFolderId, propertyNumber: numeroBien })
 
-    if (dossiers.length === 0) {
+    if (candidats.length === 0) {
       return { etat: 'absent', dossier: null }
     }
-    if (dossiers.length > 1) {
-      return {
-        etat: 'multiple',
-        dossier: null,
-        dossiers: dossiers.map((d) => ({ id: d.id, nom: d.name, url: folderUrl(d.id) })),
-      }
+
+    // Un seul candidat ET c'est le bon : Make ne peut pas se tromper de cible.
+    if (candidats.length === 1 && correspondances.length === 1) {
+      const dossier = correspondances[0]
+      return { etat: 'trouve', dossier: { id: dossier.id, nom: dossier.name, url: folderUrl(dossier.id) } }
     }
 
-    const dossier = dossiers[0]
-    return { etat: 'trouve', dossier: { id: dossier.id, nom: dossier.name, url: folderUrl(dossier.id) } }
+    return {
+      etat: 'ambigu',
+      dossier: null,
+      // `candidat_non_conforme` : rien ne porte le numéro selon la convention,
+      // mais un dossier le contient et Make le prendrait quand même.
+      raison: correspondances.length === 0 ? 'candidat_non_conforme' : 'plusieurs_candidats',
+      dossiers: candidats.map((d) => ({ id: d.id, nom: d.name, url: folderUrl(d.id) })),
+    }
   } catch (error) {
     // Panne, quota, dossier parent inaccessible au compte technique : on ne sait
     // pas si le dossier existe. Le dire est le seul comportement honnête.

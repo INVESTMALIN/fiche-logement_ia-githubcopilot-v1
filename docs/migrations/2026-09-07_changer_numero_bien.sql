@@ -92,11 +92,14 @@ BEGIN
 
   -- 3. SÉRIALISATION — deux renumérotations concurrentes vers le MÊME numéro
   -- s'attendent ici. Le verrou est libéré à la fin de la transaction.
+  -- La clé est en minuscules, comme le contrôle de collision ci-dessous : sans
+  -- ça « PAR-2189 » et « par-2189 » prendraient deux verrous différents et
+  -- passeraient tous les deux.
   -- Limite assumée : la CRÉATION d'une fiche ne prend pas ce verrou (elle n'a
   -- qu'une alerte de doublon non bloquante, cf. check_fiche_existante). Ce
   -- verrou protège donc les renumérotations entre elles, pas la course avec une
   -- création simultanée — périmètre inchangé sur ce point.
-  PERFORM pg_advisory_xact_lock(hashtext('fiches.logement_numero_bien:' || v_nouveau));
+  PERFORM pg_advisory_xact_lock(hashtext('fiches.logement_numero_bien:' || lower(v_nouveau)));
 
   SELECT btrim(f.logement_numero_bien),
          (f.loomky_property_id   IS NOT NULL
@@ -121,11 +124,24 @@ BEGIN
   -- 4. COLLISION — sous le verrou, donc fiable. Pas de contournement dans cette
   -- version : on rend de quoi identifier la fiche qui bloque (l'appelant est
   -- admin ou super_admin, il a déjà accès en lecture à toutes les fiches).
+  --
+  -- Comparaison INSENSIBLE À LA CASSE. Le format autorise des préfixes
+  -- alphabétiques (« PAR-2189 ») ; or le rapprochement du dossier Google Drive
+  -- est, lui, insensible à la casse. « PAR-2189 » et « par-2189 » résoudraient
+  -- donc le MÊME dossier Drive tout en passant pour deux biens distincts, et les
+  -- deux fiches se partageraient dossier Drive et médias. On refuse la variante
+  -- de casse d'un numéro déjà pris.
+  -- La comparaison avec le numéro ACTUEL (étape précédente) reste exacte, elle :
+  -- corriger la casse du numéro de SA PROPRE fiche est un changement légitime.
+  -- Asymétrie assumée : `check_fiche_existante` (alerte de doublon à la
+  -- création) compare toujours exactement. L'aligner changerait le comportement
+  -- d'un autre parcours, hors périmètre ici — le refus vient alors du serveur,
+  -- avec la fiche en conflit affichée.
   SELECT f.id, f.nom, f.statut, pr.prenom AS coordinateur_prenom, pr.nom AS coordinateur_nom
     INTO v_conflit
   FROM fiches f
   LEFT JOIN profiles pr ON pr.id = f.user_id
-  WHERE btrim(f.logement_numero_bien) = v_nouveau
+  WHERE lower(btrim(f.logement_numero_bien)) = lower(v_nouveau)
     AND f.id <> p_fiche_id
   ORDER BY f.updated_at DESC
   LIMIT 1;
