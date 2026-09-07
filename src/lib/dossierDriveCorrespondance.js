@@ -74,10 +74,32 @@ function segmentsDuDossier(nomDossier) {
     }
 }
 
-/** Au moins un mot significatif en commun, comparé en mots ENTIERS. */
-function partagentUnMot(attendu, segment) {
-  const motsSegment = new Set(normaliserPourComparaison(segment).split(' ').filter(Boolean))
+function motsDuSegment(segment) {
+  return new Set(normaliserPourComparaison(segment).split(' ').filter(Boolean))
+}
+
+/**
+ * PROPRIÉTAIRE : au moins un mot significatif en commun.
+ * Les deux côtés ne portent pas la même chose — la fiche a « ZINOUN », le
+ * dossier « Mustapha ZINOUN » ; la fiche a « BERNARD / SCI PALAZZO IMMO », le
+ * dossier peut n'avoir que « BERNARD ». Exiger tous les mots casserait ces cas.
+ */
+function proprietaireCorrespond(attendu, segment) {
+  const motsSegment = motsDuSegment(segment)
   return motsSignificatifs(attendu).some((mot) => motsSegment.has(mot))
+}
+
+/**
+ * VILLE : TOUS les mots identifiants doivent s'y retrouver.
+ * Un seul mot commun suffirait sinon à confondre deux villes différentes, et la
+ * France en est pleine : « Saint-Malo » et « Saint Brieuc » partagent « saint »,
+ * « La Celle-Saint-Cloud » et « Saint-Cyprien » aussi. Une ville est une valeur
+ * unique dont les mots forment un tout, contrairement au nom du propriétaire.
+ */
+function villeCorrespondAuSegment(attendue, segment) {
+  const motsSegment = motsDuSegment(segment)
+  const mots = motsSignificatifs(attendue)
+  return mots.length > 0 && mots.every((mot) => motsSegment.has(mot))
 }
 
 /**
@@ -100,39 +122,47 @@ export function evaluerCorrespondanceDossier({ nomDossier, proprietaireNom, vill
   const nomAttendu = normaliserPourComparaison(proprietaireNom)
   const villeAttendue = normaliserPourComparaison(ville)
 
-  // Rien à comparer côté fiche : on ne conclut pas.
-  if (!nomAttendu && !villeAttendue) {
-    return { etat: 'incertain', motif: 'FICHE_SANS_REFERENCE', villeDuDossier }
+  // Ce qui est réellement COMPARABLE : il faut la donnée des deux côtés. Le
+  // segment propriétaire existe toujours ; le segment ville, non.
+  const nomComparable = !!nomAttendu
+  const villeComparable = !!villeAttendue && aUneVille
+
+  // Rien de comparable : on ne conclut pas. On distingue les deux causes, elles
+  // ne se corrigent pas au même endroit.
+  if (!nomComparable && !villeComparable) {
+    return {
+      etat: 'incertain',
+      motif: (!nomAttendu && !villeAttendue) ? 'FICHE_SANS_REFERENCE' : 'DOSSIER_SANS_VILLE',
+      villeDuDossier,
+    }
   }
 
   // Chaque référence contre SON segment.
-  const nomCorrespond = !!nomAttendu && partagentUnMot(proprietaireNom, segments.proprietaire)
-  const villeCorrespond = !!villeAttendue && aUneVille && partagentUnMot(ville, villeDuDossier)
+  const nomCorrespond = nomComparable && proprietaireCorrespond(proprietaireNom, segments.proprietaire)
+  const villeCorrespond = villeComparable && villeCorrespondAuSegment(ville, villeDuDossier)
 
-  if (nomCorrespond && villeCorrespond) {
+  // Une information comparable qui CONTREDIT suffit à écarter le dossier.
+  if (nomComparable && !nomCorrespond) {
+    return {
+      etat: 'autre_bien',
+      motif: villeCorrespond ? 'PROPRIETAIRE_DIFFERENT' : 'AUCUNE_CORRESPONDANCE',
+      villeDuDossier,
+    }
+  }
+  if (villeComparable && !villeCorrespond) {
+    return { etat: 'autre_bien', motif: 'VILLE_DIFFERENTE', villeDuDossier }
+  }
+
+  // Le vert exige les DEUX : un propriétaire seul ne distingue pas ses deux
+  // biens, une ville seule ne distingue pas deux propriétaires de la même ville.
+  // Avec une seule information concordante, on demande une vérification.
+  if (nomComparable && villeComparable) {
     return { etat: 'correspond', motif: null, villeDuDossier }
   }
 
-  // Une seule des deux informations est vérifiable côté fiche : on ne peut pas
-  // exiger l'autre.
-  if (!nomAttendu || !villeAttendue) {
-    return nomCorrespond || villeCorrespond
-      ? { etat: 'correspond', motif: null, villeDuDossier }
-      : { etat: 'autre_bien', motif: 'AUCUNE_CORRESPONDANCE', villeDuDossier }
+  return {
+    etat: 'incertain',
+    motif: villeComparable ? 'FICHE_SANS_PROPRIETAIRE' : 'DOSSIER_SANS_VILLE',
+    villeDuDossier,
   }
-
-  // Le dossier ne porte aucune ville : impossible de contredire sur ce point.
-  // Le propriétaire correspond → on demande une vérification, on n'accuse pas.
-  if (nomCorrespond && !aUneVille) {
-    return { etat: 'incertain', motif: 'DOSSIER_SANS_VILLE', villeDuDossier }
-  }
-
-  if (nomCorrespond && !villeCorrespond) {
-    return { etat: 'autre_bien', motif: 'VILLE_DIFFERENTE', villeDuDossier }
-  }
-  if (!nomCorrespond && villeCorrespond) {
-    return { etat: 'autre_bien', motif: 'PROPRIETAIRE_DIFFERENT', villeDuDossier }
-  }
-
-  return { etat: 'autre_bien', motif: 'AUCUNE_CORRESPONDANCE', villeDuDossier }
 }

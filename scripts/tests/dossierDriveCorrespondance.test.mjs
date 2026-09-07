@@ -151,15 +151,50 @@ test('un nom de famille court reste comparable', () => {
   assert.equal(contredit.etat, 'autre_bien')
 })
 
-test('fiche partiellement renseignee : la seule information disponible tranche', () => {
-  // Ville connue, proprietaire absent de la fiche : on ne peut pas exiger le nom.
-  const correspond = evaluerCorrespondanceDossier({
+test('villes composees : un mot commun ne suffit pas', () => {
+  // La France est pleine de « Saint- » : un seul mot partage confondrait deux
+  // villes differentes, et donnerait un vert au dossier d'un autre logement.
+  const r = evaluerCorrespondanceDossier({
+    nomDossier: '2150. Louis LEPLAT - Saint Brieuc',
+    proprietaireNom: 'LEPLAT',
+    ville: 'Saint-Malo',
+  })
+  assert.equal(r.etat, 'autre_bien')
+  assert.equal(r.motif, 'VILLE_DIFFERENTE')
+})
+
+test('villes composees : tous les mots identifiants presents = correspondance', () => {
+  // Les mots de liaison (« sur », « le ») ne sont pas exiges.
+  const r = evaluerCorrespondanceDossier({
+    nomDossier: '2173. Mustapha ZINOUN - Hermanville sur Mer',
+    proprietaireNom: 'ZINOUN',
+    ville: 'Hermanville-sur-Mer,',
+  })
+  assert.equal(r.etat, 'correspond')
+})
+
+test('le vert exige le proprietaire ET la ville, jamais une seule des deux', () => {
+  // Ville seule concordante : ne distingue pas deux proprietaires d'une meme
+  // ville. On demande une verification plutot que d'affirmer.
+  const villeSeule = evaluerCorrespondanceDossier({
     nomDossier: '2150. Louis LEPLAT - Nantes', proprietaireNom: '', ville: 'Nantes',
   })
-  assert.equal(correspond.etat, 'correspond')
+  assert.equal(villeSeule.etat, 'incertain')
+  assert.equal(villeSeule.motif, 'FICHE_SANS_PROPRIETAIRE')
 
+  // Mais une information comparable qui CONTREDIT reste rouge.
   const contredit = evaluerCorrespondanceDossier({
     nomDossier: '2150. Louis LEPLAT - Nantes', proprietaireNom: '', ville: 'Lyon',
   })
   assert.equal(contredit.etat, 'autre_bien')
+})
+
+test('rien de comparable : on n accuse pas', () => {
+  // Fiche sans proprietaire ET dossier sans ville : aucune des deux references
+  // n'est verifiable, dire « autre logement » serait une affirmation gratuite.
+  const r = evaluerCorrespondanceDossier({
+    nomDossier: '7756. Julien Test V2', proprietaireNom: '', ville: 'Nantes',
+  })
+  assert.equal(r.etat, 'incertain')
+  assert.equal(r.motif, 'DOSSIER_SANS_VILLE')
 })
