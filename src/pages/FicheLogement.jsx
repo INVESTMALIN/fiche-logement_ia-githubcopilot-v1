@@ -416,11 +416,6 @@ export default function FicheLogement() {
             <ChangerNumeroBienModal
               ficheId={getField('id')}
               numeroActuel={getField('section_logement.numero_bien')}
-              proprietaireNom={getField('section_proprietaire.nom')}
-              /* Malgré son préfixe, cette adresse est celle DU BIEN : c'est elle
-                 qui part comme `address.city` du logement Loomky, et c'est elle
-                 qu'on retrouve dans le nom du dossier Drive. */
-              villeBien={getField('section_proprietaire.adresse.ville')}
               sauvegardeEnCours={saveStatus.saving}
               modificationsEnAttente={aDesModificationsEnAttente}
               enregistrer={handleSave}

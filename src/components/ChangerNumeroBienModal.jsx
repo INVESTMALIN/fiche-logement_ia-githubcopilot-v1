@@ -11,15 +11,17 @@
 // SQL `changer_numero_bien` refait le contrôle de rôle et celui de collision,
 // sous verrou, et refuse une confirmation partie d'un numéro périmé.
 //
-// Le contrôle Drive ne bloque JAMAIS la modification, même en rouge : le
-// nommage des dossiers n'est pas assez régulier pour qu'une comparaison
-// automatique interdise une opération légitime. Il alerte, l'administrateur
-// tranche.
+// Le contrôle Drive ne bloque JAMAIS la modification et n'affirme jamais qu'un
+// dossier est celui de ce logement : il montre ce que la recherche a trouvé —
+// nom exact et lien — et l'administrateur vérifie. Comparer automatiquement le
+// nom du dossier au propriétaire et à la ville de la fiche a été tenté puis
+// retiré : sur des chaînes libres, la comparaison produisait des verts
+// trompeurs, et un vert trompeur envoie les photos dans le dossier d'un autre
+// bien sans que personne ne regarde.
 
 import { useEffect, useState } from 'react'
-import { AlertTriangle, CheckCircle2, ExternalLink, HelpCircle, Loader2, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ExternalLink, FolderOpen, HelpCircle, Loader2, XCircle } from 'lucide-react'
 import { evaluerChangementNumero, normaliserNumeroBien } from '../lib/numeroBien'
-import { evaluerCorrespondanceDossier } from '../lib/dossierDriveCorrespondance'
 import { changerNumeroBien, verifierCollisionNumero, verifierDossierDrive } from '../services/numeroBienService'
 
 // À préparer AVANT de changer le numéro : rien de tout cela n'est automatique.
@@ -70,8 +72,6 @@ function LienDossier({ dossier }) {
 export default function ChangerNumeroBienModal({
   ficheId,
   numeroActuel,
-  proprietaireNom,
-  villeBien,
   sauvegardeEnCours = false,
   modificationsEnAttente,
   enregistrer,
@@ -99,17 +99,6 @@ export default function ChangerNumeroBienModal({
   // La forme et « différent de l'actuel » se jugent sans les vérifications
   // distantes : c'est ce qui décide si on lance ces vérifications.
   const formeUtilisable = !evaluation.erreur || evaluation.erreur.startsWith('COLLISION')
-
-  // Le dossier trouvé décrit-il bien CE logement ? Trouver un dossier au bon
-  // numéro ne suffit pas : sur une erreur de numéro, on tomberait sur le dossier
-  // d'un autre bien, et un vert le ferait passer pour le bon.
-  const correspondance = drive?.etat === 'trouve'
-    ? evaluerCorrespondanceDossier({
-      nomDossier: drive.dossier?.nom,
-      proprietaireNom,
-      ville: villeBien,
-    })
-    : null
 
   // Vérifications à la frappe, débouncées. Les deux partent en parallèle :
   // aucune ne dépend de l'autre, et le dossier Drive ne bloque jamais.
@@ -228,7 +217,8 @@ export default function ChangerNumeroBienModal({
                   </Ligne>
                 )}
 
-                {/* Dossier Drive : informatif, jamais bloquant. */}
+                {/* Dossier Drive : informatif, jamais bloquant. Quatre états,
+                    décidés par le seul nombre de dossiers trouvés. */}
                 {driveEnCours && (
                   <Ligne ton="neutre" icone={<Loader2 className="w-4 h-4 animate-spin" />}>
                     Recherche du dossier Drive du bien {numero}…
@@ -237,72 +227,40 @@ export default function ChangerNumeroBienModal({
 
                 {!driveEnCours && drive?.etat === 'absent' && (
                   <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
-                    Aucun dossier Drive ne porte le numéro {numero}. Le dossier du nouveau bien reste à créer
-                    pour que les photos puissent être synchronisées.
+                    Le dossier Drive du nouveau bien reste à créer pour permettre la synchronisation
+                    des photos.
                   </Ligne>
                 )}
 
-                {!driveEnCours && drive?.etat === 'trouve' && correspondance?.etat === 'correspond' && (
-                  <Ligne ton="ok" icone={<CheckCircle2 className="w-4 h-4" />}>
-                    Dossier Drive « {drive.dossier?.nom} » : il correspond bien à ce logement.{' '}
-                    <LienDossier dossier={drive.dossier} />
+                {/* Un seul dossier : on montre son nom exact et son lien, sans
+                    dire qu'il correspond — c'est l'administrateur qui le lit. */}
+                {!driveEnCours && drive?.etat === 'trouve' && drive.dossiers?.[0] && (
+                  <Ligne ton="neutre" icone={<FolderOpen className="w-4 h-4" />}>
+                    Dossier Drive trouvé : « {drive.dossiers[0].nom} ». Vérifiez qu'il correspond bien
+                    à ce logement avant de continuer. <LienDossier dossier={drive.dossiers[0]} />
                   </Ligne>
                 )}
 
-                {!driveEnCours && drive?.etat === 'trouve' && correspondance?.etat === 'autre_bien' && (
-                  <Ligne ton="ko" icone={<XCircle className="w-4 h-4" />}>
-                    <p className="font-semibold">
-                      Le dossier « {drive.dossier?.nom} » porte ce numéro mais correspond à un autre logement.
-                    </p>
-                    <p className="mt-1">
-                      {correspondance.motif === 'VILLE_DIFFERENTE' && (
-                        correspondance.nomVerifie
-                          ? `Même propriétaire, mais la ville du dossier n'est pas celle de cette fiche${villeBien ? ` (${villeBien})` : ''}.`
-                          : `La ville du dossier n'est pas celle de cette fiche${villeBien ? ` (${villeBien})` : ''}.`
-                      )}
-                      {correspondance.motif === 'PROPRIETAIRE_DIFFERENT'
-                        && `La ville correspond, mais pas le propriétaire de cette fiche${proprietaireNom ? ` (${proprietaireNom})` : ''}.`}
-                      {correspondance.motif === 'AUCUNE_CORRESPONDANCE'
-                        && 'Ni le propriétaire ni la ville de cette fiche ne se retrouvent dans le nom du dossier.'}
-                    </p>
-                    <p className="mt-1">
-                      Vérifiez le numéro saisi avant de continuer : les photos partiraient dans ce dossier.{' '}
-                      <LienDossier dossier={drive.dossier} />
-                    </p>
-                  </Ligne>
-                )}
-
-                {!driveEnCours && drive?.etat === 'trouve' && correspondance?.etat === 'incertain' && (
+                {!driveEnCours && drive?.etat === 'ambigu' && drive.dossiers?.length > 0 && (
                   <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
-                    Dossier Drive « {drive.dossier?.nom} » trouvé, mais impossible de confirmer qu'il correspond
-                    à ce logement. Vérifiez-le avant de continuer.{' '}
-                    <LienDossier dossier={drive.dossier} />
-                  </Ligne>
-                )}
-
-                {!driveEnCours && drive?.etat === 'ambigu' && (
-                  <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
-                    {drive.raison === 'candidat_non_conforme' ? (
-                      <>
-                        Aucun dossier Drive ne porte exactement ce numéro, mais «{' '}
-                        {drive.dossiers?.[0]?.nom} » le contient : c'est ce dossier que recevrait le
-                        transfert des photos. Vérifiez-le manuellement avant de continuer.
-                      </>
-                    ) : (
-                      <>
-                        Plusieurs dossiers Drive contiennent ce numéro
-                        {drive.dossiers?.length ? ` (${drive.dossiers.map((d) => d.nom).join(', ')})` : ''}.
-                        Vérifiez manuellement lequel correspond à ce logement avant de continuer : le
-                        transfert des photos cible le premier trouvé.
-                      </>
-                    )}
+                    <p>
+                      Plusieurs dossiers Drive contiennent le numéro {numero}. Vérifiez manuellement
+                      lequel correspond à ce logement avant de continuer.
+                    </p>
+                    <ul className="mt-1 space-y-1">
+                      {drive.dossiers.map((dossier) => (
+                        <li key={dossier.id}>
+                          « {dossier.nom} » <LienDossier dossier={dossier} />
+                        </li>
+                      ))}
+                    </ul>
                   </Ligne>
                 )}
 
                 {!driveEnCours && drive?.etat === 'indisponible' && (
-                  <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
-                    {drive.message || 'Vérification du dossier Drive indisponible.'} Vérifiez manuellement le
-                    dossier du bien {numero} avant de continuer.
+                  <Ligne ton="neutre" icone={<HelpCircle className="w-4 h-4" />}>
+                    <p>La vérification du dossier Drive n'a pas pu être effectuée.</p>
+                    {drive.message && <p className="mt-1">{drive.message}</p>}
                   </Ligne>
                 )}
               </div>

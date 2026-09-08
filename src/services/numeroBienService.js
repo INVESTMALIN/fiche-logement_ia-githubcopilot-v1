@@ -52,16 +52,19 @@ export async function verifierCollisionNumero(numero, ficheIdCourante = null) {
 }
 
 /**
- * Le dossier Drive du bien existe-t-il ? Lecture seule, jamais bloquante.
- * Trois états rendus par le serveur : `trouve`, `absent`, `indisponible`
- * (+ `multiple`, rare). Une panne réseau est un `indisponible` : on ne dit
- * jamais « absent » quand on n'a pas pu regarder.
+ * Le ou les dossiers Drive portant ce numéro. Lecture seule, jamais bloquante.
+ * Quatre états rendus par le serveur : `absent`, `trouve` (un seul dossier),
+ * `ambigu` (plusieurs) et `indisponible`. Une panne réseau est un
+ * `indisponible` : on ne dit jamais « absent » quand on n'a pas pu regarder.
  *
- * @returns {Promise<{etat: string, dossier: object|null, dossiers?: object[], message?: string, raison?: string}>}
+ * Aucun jugement sur le contenu : les noms exacts et les liens remontent tels
+ * quels, c'est l'administrateur qui vérifie que le dossier est le bon.
+ *
+ * @returns {Promise<{etat: string, dossiers: object[], message?: string, raison?: string}>}
  */
 export async function verifierDossierDrive(numero) {
   const valeur = normaliserNumeroBien(numero)
-  if (!valeur) return { etat: 'indisponible', dossier: null, raison: 'numero_absent' }
+  if (!valeur) return { etat: 'indisponible', dossiers: [], raison: 'numero_absent' }
 
   try {
     const { data: sessionData } = await supabase.auth.getSession()
@@ -69,9 +72,9 @@ export async function verifierDossierDrive(numero) {
     if (!accessToken) {
       return {
         etat: 'indisponible',
-        dossier: null,
+        dossiers: [],
         raison: 'session',
-        message: 'Vérification impossible : votre session a expiré.',
+        message: 'Votre session a expiré.',
       }
     }
 
@@ -85,19 +88,19 @@ export async function verifierDossierDrive(numero) {
     if (!response.ok || !data?.success) {
       return {
         etat: 'indisponible',
-        dossier: null,
+        dossiers: [],
         raison: 'serveur',
-        message: data?.error || `Vérification impossible (erreur ${response.status}).`,
+        message: data?.error || `Le serveur a répondu une erreur ${response.status}.`,
       }
     }
 
-    return data
+    return { ...data, dossiers: data.dossiers || [] }
   } catch (error) {
     return {
       etat: 'indisponible',
-      dossier: null,
+      dossiers: [],
       raison: 'reseau',
-      message: error.message || 'Vérification impossible : le serveur est injoignable.',
+      message: error.message || 'Le serveur est injoignable.',
     }
   }
 }
