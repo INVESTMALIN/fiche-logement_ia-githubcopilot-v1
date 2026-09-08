@@ -118,7 +118,17 @@ async function chercherLignes(token: string, numero: string): Promise<Ligne[]> {
     throw new Error(`Monday HTTP ${response.status}`)
   }
 
-  const items = data.data?.items_page_by_column_values?.items || []
+  // Une réponse 200 dont la forme n'est pas celle attendue n'est PAS une liste
+  // vide. La replier sur `[]` ferait dire à l'écran « le bien n'existe pas dans
+  // Monday » alors que personne n'a rien constaté, et le contrôle côté
+  // navigateur ne pourrait plus rattraper le coup : il recevrait une réponse
+  // réussie et parfaitement lisible. On lève, l'appelant répondra
+  // « vérification impossible ».
+  const items = data.data?.items_page_by_column_values?.items
+  if (!Array.isArray(items)) {
+    throw new Error('Monday: réponse sans items_page_by_column_values exploitable')
+  }
+
   return items.map((item: { id: string; name: string }) => ({ id: item.id, nom: item.name }))
 }
 
