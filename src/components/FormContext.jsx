@@ -2331,7 +2331,7 @@ export function FormProvider({ children }) {
   //
   // `nom` n'est volontairement PAS régénéré : la fonction SQL ne le touche pas,
   // le régénérer ici ferait diverger l'écran de la base.
-  const appliquerNumeroBienChange = useCallback((nouveauNumero) => {
+  const appliquerNumeroBienChange = useCallback((nouveauNumero, nouveauNom) => {
     // Le drapeau doit tomber AVANT le changement d'état : sinon l'effet
     // d'autosave se rejoue sur le nouveau `formData`, voit un changement
     // utilisateur encore en attente (l'administrateur a modifié un champ moins
@@ -2344,6 +2344,15 @@ export function FormProvider({ children }) {
     isUserChangeRef.current = false
     setFormData(prev => ({
       ...prev,
+      // Nom réécrit par la même fonction SQL quand l'ancien numéro y figurait
+      // une fois et une seule. Sans cette reprise, l'onglet garderait l'ancien
+      // nom en mémoire et le prochain enregistrement l'écrirait par-dessus
+      // celui que la base vient de poser (`mapFormDataToSupabase` envoie `nom`
+      // à chaque sauvegarde).
+      // Le test porte sur la valeur reçue, pas sur un drapeau : une version
+      // antérieure de la fonction SQL n'en rend aucune, et il ne faut pas
+      // écraser le nom courant avec `undefined`.
+      ...(nouveauNom ? { nom: nouveauNom } : {}),
       section_logement: { ...(prev.section_logement || {}), numero_bien: nouveauNumero },
       // Remis à zéro par la même fonction SQL : la fiche n'est plus rattachée au
       // compte Loomky de l'ancienne conciergerie.

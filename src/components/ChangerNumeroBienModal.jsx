@@ -488,6 +488,17 @@ export default function ChangerNumeroBienModal({
                   <span>Relancez la synchronisation Loomky avec le token de la nouvelle conciergerie.</span>
                 </li>
               )}
+              {/* Le nom suit le numéro quand l'ancien y figurait une fois et une
+                  seule. Sinon il est conservé tel quel et c'est à relire.
+                  Test sur `!== true` et non sur `=== false` : une version
+                  antérieure de la fonction SQL ne rend pas ce drapeau, et dans
+                  ce cas le nom n'a effectivement pas été modifié. */}
+              {resultat?.nom_modifie !== true && (
+                <li className="flex gap-2">
+                  <span aria-hidden="true">•</span>
+                  <span>Le nom de la fiche n'a pas été modifié. Pensez à le vérifier.</span>
+                </li>
+              )}
             </ul>
 
             <div className="flex justify-end">
