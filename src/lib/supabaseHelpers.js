@@ -2602,7 +2602,15 @@ export const mapSupabaseToFormData = (supabaseData) => {
 }
 
 // 💾 Sauvegarder une fiche
-export const saveFiche = async (formData, userId = null) => {
+/**
+ * @param {object} formData
+ * @param {string|null} userId
+ * @param {{nomSaisiParUtilisateur?: boolean}} [options] - dit que l'utilisateur
+ *   a REELLEMENT tapé dans le champ « Nom de la fiche » (FicheForm, étape
+ *   Propriétaire) depuis le chargement. Sans ça, le nom n'est pas réécrit par
+ *   un enregistrement ordinaire — voir le commentaire dans la branche UPDATE.
+ */
+export const saveFiche = async (formData, userId = null, options = {}) => {
   try {
     console.log('🔍 [saveFiche] Début - formData.user_id:', formData.user_id)
     console.log('🔍 [saveFiche] userId passé en param:', userId)
@@ -2634,6 +2642,34 @@ export const saveFiche = async (formData, userId = null) => {
       // alors que les marqueurs Loomky et Monday, eux, resteraient nettoyés.
       delete supabaseData.logement_numero_bien
 
+      // 🔒 Le nom n'est réécrit que si l'utilisateur l'a VRAIMENT saisi.
+      // `changer_numero_bien` réécrit `nom` quand l'ancien numéro y figurait une
+      // fois et une seule. L'onglet qui a lancé la renumérotation reprend le
+      // nouveau nom, mais LES AUTRES ne le voient pas : une fiche ouverte
+      // ailleurs garde l'ancien nom en mémoire et le réécrirait par-dessus au
+      // premier enregistrement, laissant la fiche avec le nouveau numéro et
+      // l'ancien nom. Le cas est silencieux dans les deux sens :
+      //   - fiche au nom automatique : `generateFicheName` recalcule
+      //     « Bien <ancien numéro> » dès qu'un champ change, l'ancien numéro
+      //     étant toujours en mémoire dans cet onglet ;
+      //   - fiche au nom personnalisé : le nom chargé part tel quel à chaque
+      //     enregistrement.
+      // On ne peut pas retirer `nom` du payload en toutes circonstances : le
+      // champ « Nom de la fiche » de FicheForm (étape Propriétaire) permet un
+      // renommage manuel, et c'est une saisie délibérée qu'il faut conserver.
+      // On distingue donc les deux : un nom TAPÉ part, un nom simplement
+      // transporté par l'état local ne part pas.
+      // Aucune exception, y compris pour le libellé provisoire « Nouvelle
+      // fiche » : un nom qui ne contient pas l'ancien numéro est conservé tel
+      // quel, c'est la règle du parcours. Une substitution automatique de ce
+      // libellé a été tentée puis retirée — sur une fiche renumérotée depuis le
+      // chargement, elle écrivait « Bien <ancien numéro> », et la condition qui
+      // devait l'en empêcher gardait le nom alors que la péremption portait sur
+      // le numéro. Le champ « Nom de la fiche » reste là pour ces cas.
+      if (!options.nomSaisiParUtilisateur) {
+        delete supabaseData.nom
+      }
+
       // UPDATE
       result = await safeSupabaseQuery(
         supabase
@@ -2643,6 +2679,7 @@ export const saveFiche = async (formData, userId = null) => {
           .select()
           .single()
       )
+
     } else {
       // INSERT
       result = await safeSupabaseQuery(

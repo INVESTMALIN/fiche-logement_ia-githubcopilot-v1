@@ -89,3 +89,48 @@ test('enregistrement ordinaire : le numéro de bien est exclu du payload', async
   assert.equal(miseAJour.payload.logement_surface, 42)
   assert.equal(miseAJour.payload.logement_typologie, 'T2')
 })
+
+test('création : le nom part bien en base', async () => {
+  appels.length = 0
+  await saveFiche(ficheDeTest(null), 'user-1')
+  const insertion = appels.find((a) => a.op === 'insert')
+  assert.equal(insertion.payload.nom, 'Bien 2189')
+})
+
+test('enregistrement ordinaire : le nom est exclu du payload', async () => {
+  // `changer_numero_bien` réécrit le nom en même temps que le numéro. Un onglet
+  // ouvert AVANT la renumérotation garde l'ancien nom en mémoire : le laisser
+  // dans le payload d'UPDATE le ferait restaurer en silence, et la fiche
+  // porterait le nouveau numéro avec l'ancien nom.
+  appels.length = 0
+  await saveFiche(ficheDeTest('fiche-1'))
+  const miseAJour = appels.find((a) => a.op === 'update')
+  assert.equal(
+    'nom' in miseAJour.payload,
+    false,
+    "un nom simplement transporté par l'état local ne doit pas être réécrit"
+  )
+})
+
+test('nom provisoire : conservé comme tout nom, une seule écriture', async () => {
+  // Aucune exception pour « Nouvelle fiche » : un nom qui ne contient pas
+  // l'ancien numéro est conservé. Une substitution automatique de ce libellé a
+  // été tentée puis retirée, elle écrivait « Bien <ancien numéro> » sur une
+  // fiche renumérotée depuis le chargement.
+  appels.length = 0
+  const fiche = { ...ficheDeTest('fiche-1'), nom: 'Nouvelle fiche' }
+  await saveFiche(fiche)
+
+  const misesAJour = appels.filter((a) => a.op === 'update')
+  assert.equal(misesAJour.length, 1, 'un enregistrement ordinaire fait UNE écriture')
+  assert.equal('nom' in misesAJour[0].payload, false)
+})
+
+test('renommage explicite : le nom saisi part bien en base', async () => {
+  // Le champ « Nom de la fiche » (FicheForm, étape Propriétaire) permet un
+  // renommage manuel : une saisie délibérée doit être enregistrée.
+  appels.length = 0
+  await saveFiche(ficheDeTest('fiche-1'), null, { nomSaisiParUtilisateur: true })
+  const miseAJour = appels.find((a) => a.op === 'update')
+  assert.equal(miseAJour.payload.nom, 'Bien 2189')
+})

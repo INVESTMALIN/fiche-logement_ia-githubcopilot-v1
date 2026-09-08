@@ -1392,6 +1392,11 @@ export function FormProvider({ children }) {
   // Flag pour distinguer changements utilisateur vs serveur
   const isUserChangeRef = useRef(false)
   const lastSaveRef = useRef(0)
+  // L'utilisateur a-t-il tapé dans le champ « Nom de la fiche » depuis le
+  // chargement ? Seule une saisie délibérée autorise `saveFiche` à réécrire
+  // `nom` : le nom simplement transporté par l'état local d'un onglet ouvert
+  // avant une renumérotation écraserait celui posé par `changer_numero_bien`.
+  const nomSaisiParUtilisateurRef = useRef(false)
 
   const capitalize = (str) => {
     if (!str) return "";
@@ -1529,6 +1534,10 @@ export function FormProvider({ children }) {
     setFormData(initialFormData)
     setCurrentStep(0)
     setHasManuallyNamedFiche(false)
+    // Le marqueur de saisie du nom vit dans le provider, qui survit aux
+    // changements de route : une saisie abandonnée sur une fiche autoriserait
+    // sinon l'écriture du nom de la SUIVANTE, jamais touché par personne.
+    nomSaisiParUtilisateurRef.current = false
     setSaveStatus({ saving: false, saved: false, error: null })
   }, [])
 
@@ -1588,6 +1597,10 @@ export function FormProvider({ children }) {
 
         if (result.success) {
           setFicheLoadError(null);
+          // Même raison qu'au reset : l'état chargé remplace tout, une saisie
+          // de nom laissée en plan sur une autre fiche ne doit pas la suivre.
+          nomSaisiParUtilisateurRef.current = false;
+
           if (result.data.nom === "Nouvelle fiche" || generateFicheName(result.data) === result.data.nom) {
             setHasManuallyNamedFiche(false);
           } else {
@@ -1749,6 +1762,8 @@ export function FormProvider({ children }) {
 
       if (fieldPath === 'nom') {
         setHasManuallyNamedFiche(value !== "Nouvelle fiche");
+        // Saisie délibérée : ce nom-là a le droit de partir en base.
+        nomSaisiParUtilisateurRef.current = true;
       } else if (!hasManuallyNamedFiche) {
         const generatedName = generateFicheName(newData);
         if (generatedName !== "Nouvelle fiche") {
@@ -2072,9 +2087,14 @@ export function FormProvider({ children }) {
       // Capture l'état AVANT save pour détecter la transition Brouillon → Complété
       const wasCompleteBeforeSave = formData.statut === 'Complété'
 
-      const result = await saveFiche(dataToSave, user.id);
+      const result = await saveFiche(dataToSave, user.id, {
+        nomSaisiParUtilisateur: nomSaisiParUtilisateurRef.current
+      });
 
       if (result.success) {
+        // Le nom saisi est parti : les enregistrements suivants n'ont plus à le
+        // réécrire tant que l'utilisateur n'y retouche pas.
+        nomSaisiParUtilisateurRef.current = false;
         setFormData(result.data);
         setSaveStatus({ saving: false, saved: true, error: null });
         setTimeout(() => {
@@ -2146,9 +2166,12 @@ export function FormProvider({ children }) {
       const wasCompleteBeforeSave = formData.statut === 'Complété'
 
       const updatedData = { ...formData, statut: newStatut };
-      const result = await saveFiche(updatedData);
+      const result = await saveFiche(updatedData, null, {
+        nomSaisiParUtilisateur: nomSaisiParUtilisateurRef.current
+      });
 
       if (result.success) {
+        nomSaisiParUtilisateurRef.current = false;
         setFormData(result.data);
         // Si finalisation (statut = Complété), créer la checklist ménage
         if (newStatut === 'Complété') {
@@ -2331,7 +2354,14 @@ export function FormProvider({ children }) {
   //
   // `nom` n'est volontairement PAS régénéré : la fonction SQL ne le touche pas,
   // le régénérer ici ferait diverger l'écran de la base.
-  const appliquerNumeroBienChange = useCallback((nouveauNumero) => {
+  // Prend le résultat COMPLET de `changer_numero_bien` : il faut pouvoir
+  // distinguer « la fonction n'a pas rendu de nom » (version SQL antérieure au
+  // déploiement de la migration) de « la fonction a rendu NULL » (fiche sans
+  // nom). Un test de véracité confondrait les deux et laisserait l'écran
+  // afficher un nom que la base ne porte pas.
+  const appliquerNumeroBienChange = useCallback((resultat) => {
+    const nouveauNumero = resultat?.nouveau_numero
+    const nomRendu = !!resultat && Object.prototype.hasOwnProperty.call(resultat, 'nom')
     // Le drapeau doit tomber AVANT le changement d'état : sinon l'effet
     // d'autosave se rejoue sur le nouveau `formData`, voit un changement
     // utilisateur encore en attente (l'administrateur a modifié un champ moins
@@ -2342,8 +2372,21 @@ export function FormProvider({ children }) {
     // L'autosave normal n'est pas perturbé : le drapeau se relève au prochain
     // updateField / updateSection, et le bouton « Enregistrer » reste dispo.
     isUserChangeRef.current = false
+    // Le nom qui vient d'être appliqué est celui de la BASE : il n'a pas à
+    // repartir en écriture, et une saisie antérieure non enregistrée vient
+    // d'être remplacée.
+    nomSaisiParUtilisateurRef.current = false
     setFormData(prev => ({
       ...prev,
+      // Nom réécrit par la même fonction SQL quand l'ancien numéro y figurait
+      // une fois et une seule. Sans cette reprise, l'onglet garderait l'ancien
+      // nom en mémoire et le prochain enregistrement l'écrirait par-dessus
+      // celui que la base vient de poser (`mapFormDataToSupabase` envoie `nom`
+      // à chaque sauvegarde).
+      // Présence de la clé, pas véracité de la valeur : une version antérieure
+      // de la fonction SQL n'en rend aucune et le nom courant doit être
+      // préservé, alors qu'un `nom` rendu à NULL doit bien être appliqué.
+      ...(nomRendu ? { nom: resultat.nom } : {}),
       section_logement: { ...(prev.section_logement || {}), numero_bien: nouveauNumero },
       // Remis à zéro par la même fonction SQL : la fiche n'est plus rattachée au
       // compte Loomky de l'ancienne conciergerie.
