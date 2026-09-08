@@ -53,9 +53,11 @@ export async function verifierCollisionNumero(numero, ficheIdCourante = null) {
 
 /**
  * Le ou les dossiers Drive portant ce numéro. Lecture seule, jamais bloquante.
- * Quatre états rendus par le serveur : `absent`, `trouve` (un seul dossier),
- * `ambigu` (plusieurs) et `indisponible`. Une panne réseau est un
- * `indisponible` : on ne dit jamais « absent » quand on n'a pas pu regarder.
+ * Cinq états rendus par le serveur : `absent`, `trouve` (un seul dossier, nommé
+ * selon la convention), `hors_convention` (un seul, qui contient le numéro sans
+ * commencer par « {numero}. »), `ambigu` (plusieurs) et `indisponible`. Une
+ * panne réseau est un `indisponible` : on ne dit jamais « absent » quand on n'a
+ * pas pu regarder.
  *
  * Aucun jugement sur le contenu : les noms exacts et les liens remontent tels
  * quels, c'est l'administrateur qui vérifie que le dossier est le bon.

@@ -1,6 +1,6 @@
 // scripts/tests/dossierBien.test.mjs
 //
-// Vérification du dossier Drive d'un bien : les quatre états rendus au client.
+// Vérification du dossier Drive d'un bien : les cinq états rendus au client.
 // Exécution : npm test   (node --test, aucune dépendance, aucun appel réseau)
 
 import test from 'node:test'
@@ -27,9 +27,9 @@ function avecDossierParent(valeur, fn) {
   })
 }
 
-// Convention Drive « {numero}. {Nom Propriétaire} - {Ville} ». La vérification
-// du parcours administrateur ne s'en sert PAS — elle montre tous les dossiers
-// remontés et laisse l'administrateur juger. Ce rapprochement reste la garde du
+// Convention Drive « {numero}. {Nom Propriétaire} - {Ville} ». Le rapprochement
+// se fait sur le PRÉFIXE du nom, jamais sur une ressemblance : c'est ce qui
+// sépare l'état `trouve` de l'état `hors_convention`, et c'est aussi la garde du
 // POC d'upload direct (`_drivePocCore.cjs`), qui lui doit refuser une cible.
 test('rapprochement du dossier : préfixe « {numero}. », pas "contains"', () => {
   assert.equal(matchesPropertyFolder('2155. Sebastien VIAL - Vichy', '2155'), true)
@@ -59,9 +59,9 @@ test('numéro exploitable par la recherche Drive', () => {
   assert.equal(estNumeroExploitable('2290\\'), false, 'aucun antislash dans la requête Drive')
 })
 
-// `lister` rend la même forme que listPropertyFolders. Seuls les `candidats`
-// comptent pour ce parcours : c'est ce que remonte la requête `contains`, donc
-// ce que le scénario Make peut attraper.
+// `lister` rend la même forme que listPropertyFolders : `candidats` = ce que la
+// requête `contains` remonte, donc ce que le scénario Make peut attraper ;
+// `correspondances` = ceux dont le nom commence par « {numero}. ».
 function resultatDrive(candidats, numero = '2155') {
   return async () => ({
     candidats,
@@ -69,7 +69,7 @@ function resultatDrive(candidats, numero = '2155') {
   })
 }
 
-// ── Les quatre états rendus au client ──────────────────────────────────────
+// ── Les cinq états rendus au client ────────────────────────────────────────
 
 test('état 1 — aucun dossier : absent, aucune erreur', async () => {
   await avecDossierParent(PARENT, async () => {
@@ -91,20 +91,32 @@ test('état 2 — un seul dossier : trouve, avec son nom exact et son lien', asy
   })
 })
 
-test('état 2 — un dossier hors convention : rendu tel quel, sans être écarté', async () => {
+test('état 3 — un seul dossier hors convention : état distinct, jamais "trouve"', async () => {
   // « 2155-TEST-COPIE. » n'est pas le dossier du bien 2155, mais Make le
-  // trouverait quand même. On rend son nom exact : c'est lisible à l'œil nu et
-  // l'écran demande de le vérifier. Rien ici ne prétend qu'il correspond.
+  // trouverait quand même et y déposerait les médias. Il est rendu avec son nom
+  // exact, sous un état à lui, pour que l'écran puisse alerter.
   await avecDossierParent(PARENT, async () => {
     const res = await chercherDossierBien('2155', {
       lister: resultatDrive([{ id: 'b', name: '2155-TEST-COPIE. Sebastien VIAL - Vichy' }]),
     })
-    assert.equal(res.etat, 'trouve')
+    assert.equal(res.etat, 'hors_convention')
+    assert.equal(res.dossiers.length, 1)
     assert.equal(res.dossiers[0].nom, '2155-TEST-COPIE. Sebastien VIAL - Vichy')
+    assert.equal(res.dossiers[0].url, 'https://drive.google.com/drive/folders/b')
   })
 })
 
-test('état 3 — plusieurs dossiers : ambigu, avec tous les noms', async () => {
+test('état 3 — un seul dossier sans le point : hors convention lui aussi', async () => {
+  await avecDossierParent(PARENT, async () => {
+    const res = await chercherDossierBien('2155', {
+      lister: resultatDrive([{ id: 'a', name: '2155 Archive' }]),
+    })
+    assert.equal(res.etat, 'hors_convention')
+    assert.equal(res.dossiers[0].nom, '2155 Archive')
+  })
+})
+
+test('état 4 — plusieurs dossiers : ambigu, avec tous les noms', async () => {
   await avecDossierParent(PARENT, async () => {
     const res = await chercherDossierBien('2155', {
       lister: resultatDrive([
@@ -117,7 +129,7 @@ test('état 3 — plusieurs dossiers : ambigu, avec tous les noms', async () => 
   })
 })
 
-test('état 3 — bon dossier + leurre : ambigu, les deux sont montrés', async () => {
+test('état 4 — bon dossier + leurre : ambigu, les deux sont montrés', async () => {
   // Make cherche en `contains` avec limit 1 : il peut attraper le leurre et y
   // déposer les médias. Cacher le leurre laisserait ce risque invisible.
   await avecDossierParent(PARENT, async () => {
@@ -132,7 +144,7 @@ test('état 3 — bon dossier + leurre : ambigu, les deux sont montrés', async 
   })
 })
 
-test('état 4 — panne Google : indisponible, jamais "absent"', async () => {
+test('état 5 — panne Google : indisponible, jamais "absent"', async () => {
   await avecDossierParent(PARENT, async () => {
     const res = await chercherDossierBien('2155', {
       lister: async () => { throw new Error('Erreur Google Drive (503).') },
@@ -144,7 +156,7 @@ test('état 4 — panne Google : indisponible, jamais "absent"', async () => {
   })
 })
 
-test('état 4 — dossier parent non configuré : indisponible, jamais "absent"', async () => {
+test('état 5 — dossier parent non configuré : indisponible, jamais "absent"', async () => {
   await avecDossierParent(null, async () => {
     let appele = false
     const res = await chercherDossierBien('2155', {

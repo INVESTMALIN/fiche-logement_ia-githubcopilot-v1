@@ -18,19 +18,23 @@
 // (« Saint-Pierre » validait « Saint-Pierre-des-Corps », « LE GALL » validait
 // « LE GOFF »), et un vert trompeur est le pire résultat possible ici.
 //
-// Quatre états, tous NON BLOQUANTS pour la renumérotation :
-//   - `absent`        : la recherche a abouti et ne trouve rien ;
-//   - `trouve`        : un seul dossier, rendu avec son nom exact et son lien ;
-//   - `ambigu`        : plusieurs dossiers contiennent ce numéro. Make cherche en
-//                       `contains` avec `limit 1` : il peut déposer les médias
-//                       dans n'importe lequel, on les montre donc tous ;
-//   - `indisponible`  : la recherche n'a pas pu être faite (dossier parent non
-//                       configuré, compte technique sans accès, panne Google).
-//                       On ne dit JAMAIS « absent » dans ce cas.
+// Cinq états, tous NON BLOQUANTS pour la renumérotation :
+//   - `absent`         : la recherche a abouti et ne trouve rien ;
+//   - `trouve`         : un seul dossier, dont le nom commence par « {numero}. » ;
+//   - `hors_convention`: un seul dossier, qui CONTIENT le numéro sans commencer
+//                        par « {numero}. » — « 2155-TEST-COPIE. Dupont » pour le
+//                        bien 2155. Make le trouverait quand même et y déposerait
+//                        les médias, il mérite donc son propre signal ;
+//   - `ambigu`         : plusieurs dossiers contiennent ce numéro. Make cherche en
+//                        `contains` avec `limit 1` : il peut déposer les médias
+//                        dans n'importe lequel, on les montre donc tous ;
+//   - `indisponible`   : la recherche n'a pas pu être faite (dossier parent non
+//                        configuré, compte technique sans accès, panne Google).
+//                        On ne dit JAMAIS « absent » dans ce cas.
 //
-// L'état ne dépend que du NOMBRE de dossiers trouvés. Le nom exact est affiché
-// tel quel : un dossier « 2155-TEST-COPIE. Dupont » remonté pour le numéro 2155
-// se voit à l'œil nu, et c'est ce que l'administrateur doit vérifier.
+// L'état ne dépend que du nombre de dossiers trouvés et du PRÉFIXE de leur nom :
+// des faits vérifiables, pas des ressemblances. Le nom exact est toujours rendu,
+// c'est lui que l'administrateur vérifie.
 //
 // Aucune écriture : ni création, ni renommage, ni upload. Le POC d'upload direct
 // reste cantonné à `/api/drive-poc`.
@@ -68,14 +72,16 @@ async function chercherDossierBien(numeroBien, { lister = listPropertyFolders } 
 
   try {
     // `candidats` = ce que la requête Drive `contains` remonte, donc exactement
-    // ce que voit le scénario Make. C'est le seul ensemble qui compte ici : un
-    // dossier écarté par la convention de nommage reste un dossier que Make peut
-    // attraper, il doit donc rester visible.
-    const { candidats } = await lister({ parentFolderId, propertyNumber: numeroBien })
+    // ce que voit le scénario Make. Aucun n'est écarté : un dossier hors
+    // convention reste un dossier que Make peut attraper, il doit rester visible.
+    // `correspondances` = ceux dont le nom commence par « {numero}. ».
+    const { candidats, correspondances } = await lister({ parentFolderId, propertyNumber: numeroBien })
     const dossiers = candidats.map((d) => ({ id: d.id, nom: d.name, url: folderUrl(d.id) }))
 
     if (dossiers.length === 0) return { etat: 'absent', dossiers }
-    if (dossiers.length === 1) return { etat: 'trouve', dossiers }
+    if (dossiers.length === 1) {
+      return { etat: correspondances.length === 1 ? 'trouve' : 'hors_convention', dossiers }
+    }
     return { etat: 'ambigu', dossiers }
   } catch (error) {
     // Panne, quota, dossier parent inaccessible au compte technique : on ne sait

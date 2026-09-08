@@ -217,8 +217,9 @@ export default function ChangerNumeroBienModal({
                   </Ligne>
                 )}
 
-                {/* Dossier Drive : informatif, jamais bloquant. Quatre états,
-                    décidés par le seul nombre de dossiers trouvés. */}
+                {/* Dossier Drive : informatif, jamais bloquant. Cinq états,
+                    décidés par le nombre de dossiers trouvés et le préfixe de
+                    leur nom. */}
                 {driveEnCours && (
                   <Ligne ton="neutre" icone={<Loader2 className="w-4 h-4 animate-spin" />}>
                     Recherche du dossier Drive du bien {numero}…
@@ -238,6 +239,18 @@ export default function ChangerNumeroBienModal({
                   <Ligne ton="neutre" icone={<FolderOpen className="w-4 h-4" />}>
                     Dossier Drive trouvé : « {drive.dossiers[0].nom} ». Vérifiez qu'il correspond bien
                     à ce logement avant de continuer. <LienDossier dossier={drive.dossiers[0]} />
+                  </Ligne>
+                )}
+
+                {/* Un dossier qui contient le numéro sans commencer par
+                    « {numero}. » : Make le trouverait quand même. La distinction
+                    porte sur le PRÉFIXE du nom, un fait vérifiable — rien n'est
+                    comparé au propriétaire ni à la ville. */}
+                {!driveEnCours && drive?.etat === 'hors_convention' && drive.dossiers?.[0] && (
+                  <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
+                    Un dossier Drive contient ce numéro, mais son nom ne respecte pas la convention
+                    attendue : « {drive.dossiers[0].nom} ». Vérifiez manuellement qu'il s'agit du bon
+                    dossier avant de continuer. <LienDossier dossier={drive.dossiers[0]} />
                   </Ligne>
                 )}
 
