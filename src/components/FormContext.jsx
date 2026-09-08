@@ -1534,6 +1534,10 @@ export function FormProvider({ children }) {
     setFormData(initialFormData)
     setCurrentStep(0)
     setHasManuallyNamedFiche(false)
+    // Le marqueur de saisie du nom vit dans le provider, qui survit aux
+    // changements de route : une saisie abandonnée sur une fiche autoriserait
+    // sinon l'écriture du nom de la SUIVANTE, jamais touché par personne.
+    nomSaisiParUtilisateurRef.current = false
     setSaveStatus({ saving: false, saved: false, error: null })
   }, [])
 
@@ -1593,6 +1597,10 @@ export function FormProvider({ children }) {
 
         if (result.success) {
           setFicheLoadError(null);
+          // Même raison qu'au reset : l'état chargé remplace tout, une saisie
+          // de nom laissée en plan sur une autre fiche ne doit pas la suivre.
+          nomSaisiParUtilisateurRef.current = false;
+
           if (result.data.nom === "Nouvelle fiche" || generateFicheName(result.data) === result.data.nom) {
             setHasManuallyNamedFiche(false);
           } else {
@@ -2346,7 +2354,14 @@ export function FormProvider({ children }) {
   //
   // `nom` n'est volontairement PAS régénéré : la fonction SQL ne le touche pas,
   // le régénérer ici ferait diverger l'écran de la base.
-  const appliquerNumeroBienChange = useCallback((nouveauNumero, nouveauNom) => {
+  // Prend le résultat COMPLET de `changer_numero_bien` : il faut pouvoir
+  // distinguer « la fonction n'a pas rendu de nom » (version SQL antérieure au
+  // déploiement de la migration) de « la fonction a rendu NULL » (fiche sans
+  // nom). Un test de véracité confondrait les deux et laisserait l'écran
+  // afficher un nom que la base ne porte pas.
+  const appliquerNumeroBienChange = useCallback((resultat) => {
+    const nouveauNumero = resultat?.nouveau_numero
+    const nomRendu = !!resultat && Object.prototype.hasOwnProperty.call(resultat, 'nom')
     // Le drapeau doit tomber AVANT le changement d'état : sinon l'effet
     // d'autosave se rejoue sur le nouveau `formData`, voit un changement
     // utilisateur encore en attente (l'administrateur a modifié un champ moins
@@ -2368,10 +2383,10 @@ export function FormProvider({ children }) {
       // nom en mémoire et le prochain enregistrement l'écrirait par-dessus
       // celui que la base vient de poser (`mapFormDataToSupabase` envoie `nom`
       // à chaque sauvegarde).
-      // Le test porte sur la valeur reçue, pas sur un drapeau : une version
-      // antérieure de la fonction SQL n'en rend aucune, et il ne faut pas
-      // écraser le nom courant avec `undefined`.
-      ...(nouveauNom ? { nom: nouveauNom } : {}),
+      // Présence de la clé, pas véracité de la valeur : une version antérieure
+      // de la fonction SQL n'en rend aucune et le nom courant doit être
+      // préservé, alors qu'un `nom` rendu à NULL doit bien être appliqué.
+      ...(nomRendu ? { nom: resultat.nom } : {}),
       section_logement: { ...(prev.section_logement || {}), numero_bien: nouveauNumero },
       // Remis à zéro par la même fonction SQL : la fiche n'est plus rattachée au
       // compte Loomky de l'ancienne conciergerie.

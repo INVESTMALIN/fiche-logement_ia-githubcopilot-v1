@@ -329,17 +329,29 @@ $fn$;
 -- d'envoyer `nom`. Seul un `super_admin` a l'UPDATE sur `fiches`, mais c'est
 -- justement un rôle qui renumérote.
 --
--- ⚠️ LIMITE CONNUE, NON FERMÉE PAR CETTE PR. La protection est en JavaScript :
--- un onglet chargé AVANT le déploiement continue d'exécuter l'ancien
--- `saveFiche` et envoie encore son `nom` périmé. Déployer le front d'abord ne
--- recharge pas les onglets déjà ouverts. La fenêtre résiduelle demande la
--- conjonction : onglet chargé avant le déploiement, encore ouvert après cette
--- migration, sur une fiche renumérotée entre-temps, puis enregistré. Deux
--- parades possibles, l'une opérationnelle (laisser passer une nuit entre le
--- déploiement du front et cette migration, le temps que les onglets soient
--- rechargés), l'autre technique (verrouiller `nom` en base et faire passer le
--- renommage manuel par une fonction dédiée, comme le numéro depuis #92) —
--- arbitrage en attente.
+-- ⚠️ LIMITE CONNUE, RISQUE ACCEPTÉ (arbitrage Julien, 2026-09-08).
+-- La protection est en JavaScript : un onglet chargé AVANT le déploiement
+-- continue d'exécuter l'ancien `saveFiche` et envoie encore son `nom` périmé.
+-- Déployer le front d'abord ne recharge pas les onglets déjà ouverts. La
+-- fenêtre résiduelle demande la conjonction : onglet chargé avant le
+-- déploiement, encore ouvert après cette migration, sur une fiche renumérotée
+-- entre-temps, puis enregistré.
+--
+-- Décision : on ne ferme PAS ce cas côté serveur. Verrouiller `nom` en base par
+-- un trigger et faire passer le renommage manuel par une fonction dédiée — le
+-- schéma retenu pour le numéro en #92 — serait disproportionné : ça toucherait
+-- la modification manuelle du nom, qui est une fonctionnalité existante du
+-- formulaire (FicheForm, étape Propriétaire).
+--
+-- Ce qui borne le risque : le NUMÉRO, lui, reste protégé en base par le trigger
+-- `fiches_protege_numero_bien`. Un ancien onglet ne peut donc restaurer qu'un
+-- ancien nom d'AFFICHAGE, ponctuellement, sans toucher au numéro ni aux
+-- intégrations (Loomky, Monday, Drive, dossiers de médias), et le nom reste
+-- modifiable à la main pour le corriger.
+--
+-- Parade opérationnelle si le besoin s'en fait sentir : laisser passer une nuit
+-- entre le déploiement du front et cette migration, le temps que les onglets
+-- ouverts soient rechargés.
 --
 -- Dans l'autre sens il ne se passe rien de fâcheux : le front déployé appelle
 -- l'ancienne fonction, qui ne rend ni `nom` ni `nom_modifie`. Le nom n'est pas

@@ -420,7 +420,7 @@ export default function FicheLogement() {
               modificationsEnAttente={aDesModificationsEnAttente}
               enregistrer={handleSave}
               onClose={() => setModaleNumeroOuverte(false)}
-              onSuccess={(resultat) => appliquerNumeroBienChange(resultat.nouveau_numero, resultat.nom)}
+              onSuccess={(resultat) => appliquerNumeroBienChange(resultat)}
             />
           )}
         </div>
