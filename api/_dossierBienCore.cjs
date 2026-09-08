@@ -10,20 +10,31 @@
 // et comme la réponse au webhook est envoyée avant ce travail, l'absence de
 // transfert est SILENCIEUSE.
 //
-// Trois états distincts, tous NON BLOQUANTS pour la renumérotation :
-//   - `trouve`        : dossier identifié sans ambiguïté, on rend son nom exact
-//                       et son lien ;
-//   - `absent`        : la recherche a abouti et ne trouve rien ;
-//   - `indisponible`  : la recherche n'a pas pu être faite (dossier parent non
-//                       configuré, compte technique sans accès, panne Google).
-//                       On ne dit JAMAIS « absent » dans ce cas.
+// On rend des FAITS, jamais un jugement : les dossiers que la recherche remonte,
+// avec leur nom exact et leur lien. C'est l'administrateur qui dit si le dossier
+// est le bon. Comparer automatiquement le nom du dossier au propriétaire et à la
+// ville de la fiche a été tenté puis retiré : sur des chaînes libres saisies dans
+// deux outils différents, la comparaison produisait des verts trompeurs
+// (« Saint-Pierre » validait « Saint-Pierre-des-Corps », « LE GALL » validait
+// « LE GOFF »), et un vert trompeur est le pire résultat possible ici.
 //
-// `ambigu` est un quatrième cas, non bloquant lui aussi : plusieurs dossiers
-// CONTIENNENT ce numéro, ou le seul qui le contient ne respecte pas la
-// convention de nommage. Il existe parce que Make cherche en `contains` avec
-// `limit 1` : dès qu'il a plus d'un candidat, ou un candidat qui n'est pas le
-// bon dossier, il peut déposer les médias au mauvais endroit. Répondre « trouvé »
-// (vert) ou « absent » dans ces cas donnerait un signal faux.
+// Cinq états, tous NON BLOQUANTS pour la renumérotation :
+//   - `absent`         : la recherche a abouti et ne trouve rien ;
+//   - `trouve`         : un seul dossier, dont le nom commence par « {numero}. » ;
+//   - `hors_convention`: un seul dossier, qui CONTIENT le numéro sans commencer
+//                        par « {numero}. » — « 2155-TEST-COPIE. Dupont » pour le
+//                        bien 2155. Make le trouverait quand même et y déposerait
+//                        les médias, il mérite donc son propre signal ;
+//   - `ambigu`         : plusieurs dossiers contiennent ce numéro. Make cherche en
+//                        `contains` avec `limit 1` : il peut déposer les médias
+//                        dans n'importe lequel, on les montre donc tous ;
+//   - `indisponible`   : la recherche n'a pas pu être faite (dossier parent non
+//                        configuré, compte technique sans accès, panne Google).
+//                        On ne dit JAMAIS « absent » dans ce cas.
+//
+// L'état ne dépend que du nombre de dossiers trouvés et du PRÉFIXE de leur nom :
+// des faits vérifiables, pas des ressemblances. Le nom exact est toujours rendu,
+// c'est lui que l'administrateur vérifie.
 //
 // Aucune écriture : ni création, ni renommage, ni upload. Le POC d'upload direct
 // reste cantonné à `/api/drive-poc`.
@@ -46,7 +57,7 @@ const estNumeroExploitable = isPropertyNumberSafe
  * @param {{lister?: Function}} [deps] - `lister` n'est là que pour les tests
  *   (scripts/tests/dossierBien.test.mjs) : les quatre états se prouvent hors
  *   ligne, sans compte technique Google ni réseau.
- * @returns {Promise<{etat: string, dossier: object|null, dossiers?: object[], message?: string, raison?: string}>}
+ * @returns {Promise<{etat: string, dossiers: object[], message?: string, raison?: string}>}
  */
 async function chercherDossierBien(numeroBien, { lister = listPropertyFolders } = {}) {
   const parentFolderId = process.env[PARENT_FOLDER_ENV]
@@ -54,32 +65,24 @@ async function chercherDossierBien(numeroBien, { lister = listPropertyFolders } 
     return {
       etat: 'indisponible',
       raison: 'config_absente',
-      dossier: null,
-      message: "Vérification impossible : le dossier Drive des propriétaires n'est pas configuré sur ce serveur.",
+      dossiers: [],
+      message: "Le dossier Drive des propriétaires n'est pas configuré sur ce serveur.",
     }
   }
 
   try {
+    // `candidats` = ce que la requête Drive `contains` remonte, donc exactement
+    // ce que voit le scénario Make. Aucun n'est écarté : un dossier hors
+    // convention reste un dossier que Make peut attraper, il doit rester visible.
+    // `correspondances` = ceux dont le nom commence par « {numero}. ».
     const { candidats, correspondances } = await lister({ parentFolderId, propertyNumber: numeroBien })
+    const dossiers = candidats.map((d) => ({ id: d.id, nom: d.name, url: folderUrl(d.id) }))
 
-    if (candidats.length === 0) {
-      return { etat: 'absent', dossier: null }
+    if (dossiers.length === 0) return { etat: 'absent', dossiers }
+    if (dossiers.length === 1) {
+      return { etat: correspondances.length === 1 ? 'trouve' : 'hors_convention', dossiers }
     }
-
-    // Un seul candidat ET c'est le bon : Make ne peut pas se tromper de cible.
-    if (candidats.length === 1 && correspondances.length === 1) {
-      const dossier = correspondances[0]
-      return { etat: 'trouve', dossier: { id: dossier.id, nom: dossier.name, url: folderUrl(dossier.id) } }
-    }
-
-    return {
-      etat: 'ambigu',
-      dossier: null,
-      // `candidat_non_conforme` : rien ne porte le numéro selon la convention,
-      // mais un dossier le contient et Make le prendrait quand même.
-      raison: correspondances.length === 0 ? 'candidat_non_conforme' : 'plusieurs_candidats',
-      dossiers: candidats.map((d) => ({ id: d.id, nom: d.name, url: folderUrl(d.id) })),
-    }
+    return { etat: 'ambigu', dossiers }
   } catch (error) {
     // Panne, quota, dossier parent inaccessible au compte technique : on ne sait
     // pas si le dossier existe. Le dire est le seul comportement honnête.
@@ -87,8 +90,8 @@ async function chercherDossierBien(numeroBien, { lister = listPropertyFolders } 
     return {
       etat: 'indisponible',
       raison: 'erreur_google',
-      dossier: null,
-      message: "Vérification impossible : le Drive n'a pas répondu correctement.",
+      dossiers: [],
+      message: "Le Drive n'a pas répondu correctement.",
     }
   }
 }

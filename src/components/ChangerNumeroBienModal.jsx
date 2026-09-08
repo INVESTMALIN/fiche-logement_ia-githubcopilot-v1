@@ -5,37 +5,39 @@
 //
 //   Étape 1 : saisie, contrôle de collision avec les autres fiches, et
 //             recherche LECTURE SEULE du dossier Drive du nouveau numéro.
-//   Étape 2 : récapitulatif, checklist de ce qui reste à refaire à la main,
-//             et confirmation explicite.
+//   Étape 2 : récapitulatif, rappels avant / après, et confirmation explicite.
 //
 // Les contrôles affichés ici sont un CONFORT, pas une garantie : la fonction
 // SQL `changer_numero_bien` refait le contrôle de rôle et celui de collision,
-// sous verrou. L'état du dossier Drive n'est jamais bloquant.
+// sous verrou, et refuse une confirmation partie d'un numéro périmé.
+//
+// Le contrôle Drive ne bloque JAMAIS la modification et n'affirme jamais qu'un
+// dossier est celui de ce logement : il montre ce que la recherche a trouvé —
+// nom exact et lien — et l'administrateur vérifie. Comparer automatiquement le
+// nom du dossier au propriétaire et à la ville de la fiche a été tenté puis
+// retiré : sur des chaînes libres, la comparaison produisait des verts
+// trompeurs, et un vert trompeur envoie les photos dans le dossier d'un autre
+// bien sans que personne ne regarde.
 
 import { useEffect, useState } from 'react'
-import { AlertTriangle, CheckCircle2, ExternalLink, HelpCircle, Loader2, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ExternalLink, FolderOpen, HelpCircle, Loader2, XCircle } from 'lucide-react'
 import { evaluerChangementNumero, normaliserNumeroBien } from '../lib/numeroBien'
 import { changerNumeroBien, verifierCollisionNumero, verifierDossierDrive } from '../services/numeroBienService'
 
-const TEXTE_DRIVE_ABSENT =
-  "Aucun dossier Drive trouvé pour ce numéro. La modification reste possible, mais aucun média "
-  + "ne pourra être transféré vers Drive tant que le dossier n'aura pas été créé."
+// À préparer AVANT de changer le numéro : rien de tout cela n'est automatique.
+const AVANT_LE_CHANGEMENT = [
+  'Le bien avec le nouveau numéro doit être créé dans Monday.',
+  'Le dossier Drive du nouveau bien doit être créé pour permettre la synchronisation des photos.',
+  'Si la nouvelle conciergerie utilise Loomky, la création du compte doit être refaite depuis Monday.',
+]
 
-// Ce que la renumérotation ne fait PAS et qui reste à la charge de
-// l'administrateur. Ordre repris du cadrage métier.
-const CHECKLIST = [
-  { id: 'monday', texte: "L'item du nouveau numéro doit déjà exister dans Monday." },
-  { id: 'loomky-token', texte: 'Le token Loomky de la nouvelle conciergerie devra être utilisé.' },
-  { id: 'pdf', texte: 'Les PDF logement et ménage devront être régénérés.' },
-  { id: 'annonces', texte: 'Les annonces devront être régénérées puis validées pour repartir vers le nouvel item Monday.' },
-  { id: 'guide', texte: "Le guide d'accès devra être recréé." },
-  {
-    id: 'loomky-sync',
-    texte: 'La synchronisation Loomky devra être relancée : elle repart de zéro sur cette fiche.',
-    note: "Le logement et les checklists de l'ancien compte Loomky restent en place, rien n'est supprimé à "
-      + "distance. Limitation connue : si ce propriétaire existe déjà chez Loomky (même email), le registre "
-      + "partagé renverra son identifiant dans l'ANCIEN compte et l'association échouera. À traiter à la main.",
-  },
+// À refaire APRÈS le changement. Même liste sur les deux écrans : ce qui est
+// annoncé avant est exactement ce qui est rappelé après.
+const APRES_LE_CHANGEMENT = [
+  'Régénérer les PDF logement et ménage.',
+  'Régénérer les annonces Airbnb et Booking, le cas échéant.',
+  "Régénérer le guide d'accès, si besoin.",
+  'Relancer la synchronisation des photos vers Drive.',
 ]
 
 function Ligne({ ton, icone, children }) {
@@ -50,6 +52,20 @@ function Ligne({ ton, icone, children }) {
       <span className="flex-shrink-0 mt-0.5">{icone}</span>
       <div className="min-w-0">{children}</div>
     </div>
+  )
+}
+
+function LienDossier({ dossier }) {
+  if (!dossier?.url) return null
+  return (
+    <a
+      href={dossier.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="underline inline-flex items-center gap-1"
+    >
+      ouvrir le dossier <ExternalLink className="w-3 h-3" />
+    </a>
   )
 }
 
@@ -171,7 +187,7 @@ export default function ChangerNumeroBienModal({
 
             {formeUtilisable && (
               <div className="space-y-3 mb-5">
-                {/* Collision : bloquante. */}
+                {/* Collision entre fiches : bloquante. */}
                 {collisionEnCours && (
                   <Ligne ton="neutre" icone={<Loader2 className="w-4 h-4 animate-spin" />}>
                     Recherche d'une autre fiche portant le numéro {numero}…
@@ -201,49 +217,63 @@ export default function ChangerNumeroBienModal({
                   </Ligne>
                 )}
 
-                {/* Dossier Drive : informatif, jamais bloquant. */}
+                {/* Dossier Drive : informatif, jamais bloquant. Cinq états,
+                    décidés par le nombre de dossiers trouvés et le préfixe de
+                    leur nom. */}
                 {driveEnCours && (
                   <Ligne ton="neutre" icone={<Loader2 className="w-4 h-4 animate-spin" />}>
                     Recherche du dossier Drive du bien {numero}…
                   </Ligne>
                 )}
-                {!driveEnCours && drive?.etat === 'trouve' && (
-                  <Ligne ton="ok" icone={<CheckCircle2 className="w-4 h-4" />}>
-                    Dossier Drive trouvé : <strong>{drive.dossier?.nom}</strong>
-                    {drive.dossier?.url && (
-                      <>
-                        {' '}
-                        <a href={drive.dossier.url} target="_blank" rel="noopener noreferrer" className="underline inline-flex items-center gap-1">
-                          ouvrir <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </>
-                    )}
-                  </Ligne>
-                )}
+
                 {!driveEnCours && drive?.etat === 'absent' && (
-                  <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>{TEXTE_DRIVE_ABSENT}</Ligne>
-                )}
-                {!driveEnCours && drive?.etat === 'ambigu' && (
                   <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
-                    {drive.raison === 'candidat_non_conforme' ? (
-                      <>
-                        Aucun dossier Drive ne porte exactement ce numéro, mais «{' '}
-                        {drive.dossiers?.[0]?.nom} » le contient : le transfert des médias le prendrait
-                        pour le dossier du bien.
-                      </>
-                    ) : (
-                      <>
-                        Plusieurs dossiers Drive contiennent ce numéro
-                        {drive.dossiers?.length ? ` (${drive.dossiers.map((d) => d.nom).join(', ')})` : ''}.
-                        Le transfert des médias cible le premier trouvé, sans garantie que ce soit le bon.
-                      </>
-                    )}
+                    Le dossier Drive du nouveau bien reste à créer pour permettre la synchronisation
+                    des photos.
                   </Ligne>
                 )}
+
+                {/* Un seul dossier : on montre son nom exact et son lien, sans
+                    dire qu'il correspond — c'est l'administrateur qui le lit. */}
+                {!driveEnCours && drive?.etat === 'trouve' && drive.dossiers?.[0] && (
+                  <Ligne ton="neutre" icone={<FolderOpen className="w-4 h-4" />}>
+                    Dossier Drive trouvé : « {drive.dossiers[0].nom} ». Vérifiez qu'il correspond bien
+                    à ce logement avant de continuer. <LienDossier dossier={drive.dossiers[0]} />
+                  </Ligne>
+                )}
+
+                {/* Un dossier qui contient le numéro sans commencer par
+                    « {numero}. » : Make le trouverait quand même. La distinction
+                    porte sur le PRÉFIXE du nom, un fait vérifiable — rien n'est
+                    comparé au propriétaire ni à la ville. */}
+                {!driveEnCours && drive?.etat === 'hors_convention' && drive.dossiers?.[0] && (
+                  <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
+                    Un dossier Drive contient ce numéro, mais son nom ne respecte pas la convention
+                    attendue : « {drive.dossiers[0].nom} ». Vérifiez manuellement qu'il s'agit du bon
+                    dossier avant de continuer. <LienDossier dossier={drive.dossiers[0]} />
+                  </Ligne>
+                )}
+
+                {!driveEnCours && drive?.etat === 'ambigu' && drive.dossiers?.length > 0 && (
+                  <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
+                    <p>
+                      Plusieurs dossiers Drive contiennent le numéro {numero}. Vérifiez manuellement
+                      lequel correspond à ce logement avant de continuer.
+                    </p>
+                    <ul className="mt-1 space-y-1">
+                      {drive.dossiers.map((dossier) => (
+                        <li key={dossier.id}>
+                          « {dossier.nom} » <LienDossier dossier={dossier} />
+                        </li>
+                      ))}
+                    </ul>
+                  </Ligne>
+                )}
+
                 {!driveEnCours && drive?.etat === 'indisponible' && (
                   <Ligne ton="neutre" icone={<HelpCircle className="w-4 h-4" />}>
-                    {drive.message || 'Vérification du dossier Drive indisponible.'} On ne peut pas dire s'il existe
-                    ou non : la modification reste possible.
+                    <p>La vérification du dossier Drive n'a pas pu être effectuée.</p>
+                    {drive.message && <p className="mt-1">{drive.message}</p>}
                   </Ligne>
                 )}
               </div>
@@ -279,15 +309,22 @@ export default function ChangerNumeroBienModal({
               <p className="text-xl font-bold text-gray-900">{numero}</p>
             </div>
 
-            <p className="text-sm font-semibold text-gray-900 mb-2">Ce qui reste à faire à la main :</p>
+            <p className="text-sm font-semibold text-gray-900 mb-2">À vérifier avant de continuer :</p>
             <ul className="mb-4 space-y-2">
-              {CHECKLIST.map((item) => (
-                <li key={item.id} className="text-sm text-gray-700 flex gap-2">
+              {AVANT_LE_CHANGEMENT.map((texte) => (
+                <li key={texte} className="text-sm text-gray-700 flex gap-2">
                   <span aria-hidden="true">•</span>
-                  <span>
-                    {item.texte}
-                    {item.note && <span className="block text-xs text-orange-700 mt-0.5">{item.note}</span>}
-                  </span>
+                  <span>{texte}</span>
+                </li>
+              ))}
+            </ul>
+
+            <p className="text-sm font-semibold text-gray-900 mb-2">Après le changement, vous devrez :</p>
+            <ul className="mb-4 space-y-2">
+              {APRES_LE_CHANGEMENT.map((texte) => (
+                <li key={texte} className="text-sm text-gray-700 flex gap-2">
+                  <span aria-hidden="true">•</span>
+                  <span>{texte}</span>
                 </li>
               ))}
             </ul>
@@ -302,7 +339,7 @@ export default function ChangerNumeroBienModal({
                 checked={checklistLue}
                 onChange={(e) => setChecklistLue(e.target.checked)}
               />
-              <span>J'ai lu cette liste et je confirme le changement de numéro.</span>
+              <span>J'ai compris les actions à effectuer après le changement.</span>
             </label>
 
             {erreur && (
@@ -369,23 +406,32 @@ export default function ChangerNumeroBienModal({
             <h3 className="text-lg font-semibold mb-4 text-green-800 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" /> Numéro modifié
             </h3>
-            <p className="text-sm text-gray-700 mb-3">
-              La fiche porte maintenant le numéro <strong>{resultat?.nouveau_numero}</strong> (ancien numéro :{' '}
-              {resultat?.ancien_numero || '(vide)'}).
-            </p>
-            <ul className="text-sm text-gray-700 space-y-1 mb-5 list-disc list-inside">
-              <li>
-                {resultat?.loomky_reinitialise
-                  ? 'Synchronisation Loomky remise à zéro : le parcours est à relancer avec le token de la nouvelle conciergerie.'
-                  : "Aucune synchronisation Loomky n'était en place sur cette fiche."}
-              </li>
-              <li>
-                {resultat?.annonces_invalidees > 0
-                  ? `${resultat.annonces_invalidees} annonce(s) ne sont plus marquées « synchronisé sur Monday » : à revalider pour repartir vers le nouvel item.`
-                  : 'Aucune annonce validée à invalider.'}
-              </li>
-              <li>PDF logement et ménage, guide d'accès : à régénérer à la main.</li>
+
+            <div className="mb-5 p-4 bg-gray-50 border border-gray-200 rounded">
+              <p className="text-sm text-gray-600">Ancien numéro</p>
+              <p className="text-xl font-bold text-gray-900">{resultat?.ancien_numero || '(vide)'}</p>
+              <p className="text-sm text-gray-600 mt-3">Nouveau numéro</p>
+              <p className="text-xl font-bold text-gray-900">{resultat?.nouveau_numero}</p>
+            </div>
+
+            <p className="text-sm font-semibold text-gray-900 mb-2">Actions à effectuer maintenant :</p>
+            <ul className="text-sm text-gray-700 space-y-2 mb-5">
+              {APRES_LE_CHANGEMENT.map((texte) => (
+                <li key={texte} className="flex gap-2">
+                  <span aria-hidden="true">•</span>
+                  <span>{texte}</span>
+                </li>
+              ))}
+              {/* Uniquement si la fiche était réellement synchronisée : sur une
+                  fiche qui ne l'était pas, parler de Loomky n'apporte rien. */}
+              {resultat?.loomky_reinitialise && (
+                <li className="flex gap-2">
+                  <span aria-hidden="true">•</span>
+                  <span>Relancez la synchronisation Loomky avec le token de la nouvelle conciergerie.</span>
+                </li>
+              )}
             </ul>
+
             <div className="flex justify-end">
               <button onClick={onClose} className="px-4 py-2 rounded text-white font-medium bg-gray-900 hover:bg-gray-800">
                 Fermer
