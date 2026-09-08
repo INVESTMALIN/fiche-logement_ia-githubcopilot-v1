@@ -6,6 +6,10 @@ import { computeGrilleStats, proprietyFromGrilleNote } from './avisGrilleHelpers
 // FicheAvis.generateLocalId — mêmes garanties, dupliqué ici pour éviter une
 // dépendance circulaire (FicheAvis → FormContext → supabaseHelpers).
 // Sert au backfill des contacts pré-PR-30 (saisis dans #29, sans _localId).
+// Libellé posé à la création tant que le numéro de bien n'est pas saisi.
+// `generateFicheName` (FormContext) le remplace dès qu'un numéro existe.
+const NOM_PROVISOIRE = 'Nouvelle fiche'
+
 const generateContactLocalId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
@@ -36,7 +40,7 @@ export const mapFormDataToSupabase = (formData) => {
   const securiteDangers = formData.section_avis?.securite_dangers || []
 
   return {
-    nom: formData.nom || 'Nouvelle fiche',
+    nom: formData.nom || NOM_PROVISOIRE,
     statut: formData.statut || 'Brouillon',
 
     // Section Propriétaire
@@ -2661,10 +2665,19 @@ export const saveFiche = async (formData, userId = null, options = {}) => {
       // transporté par l'état local ne part pas.
       // Exception : tant que la base porte encore le libellé provisoire
       // « Nouvelle fiche », le nom automatique doit pouvoir s'y substituer —
-      // c'est un comportement existant du formulaire. Il ne peut rien défaire :
-      // un libellé sans numéro n'est jamais réécrit par `changer_numero_bien`,
-      // donc il n'y a aucun renommage à protéger sur ces fiches.
-      if (!options.nomSaisiParUtilisateur && !options.nomEnBaseEstProvisoire) {
+      // c'est un comportement existant du formulaire.
+      // Elle ne peut PAS voyager dans le payload principal : `nomEnBaseProvisoire`
+      // décrit la base telle qu'elle était au CHARGEMENT, et un onglet resté
+      // ouvert écrirait « Bien <ancien numéro> » sur une fiche renumérotée
+      // entre-temps. La substitution part donc dans une écriture séparée, sous
+      // compare-and-swap sur la valeur réelle du moment.
+      const nomGenere = supabaseData.nom
+      const substitutionProvisoire = !options.nomSaisiParUtilisateur
+        && !!options.nomEnBaseEstProvisoire
+        && !!nomGenere
+        && nomGenere !== NOM_PROVISOIRE
+
+      if (!options.nomSaisiParUtilisateur) {
         delete supabaseData.nom
       }
 
@@ -2677,6 +2690,33 @@ export const saveFiche = async (formData, userId = null, options = {}) => {
           .select()
           .single()
       )
+
+      // Compare-and-swap : le `.eq('nom', ...)` fait porter la condition à la
+      // base elle-même. Si le nom a changé depuis le chargement, la requête ne
+      // touche AUCUNE ligne — rien n'est écrasé, aucune erreur n'est levée, et
+      // l'enregistrement principal reste acquis. Écriture séparée exprès : la
+      // même condition posée sur l'UPDATE principal ferait échouer tout le
+      // reste de la sauvegarde.
+      if (!result.error && substitutionProvisoire) {
+        const substitution = await safeSupabaseQuery(
+          supabase
+            .from('fiches')
+            .update({ nom: nomGenere })
+            .eq('id', formData.id)
+            .eq('nom', NOM_PROVISOIRE)
+            .select('nom')
+            .maybeSingle()
+        )
+
+        if (substitution.error) {
+          // Le nom reste provisoire, tout le reste est enregistré.
+          console.warn('[saveFiche] substitution du nom provisoire ignoree :', substitution.error.message)
+        } else if (substitution.data) {
+          // La ligne rendue par l'UPDATE principal ne porte pas ce nom : il a
+          // été écrit après. On aligne, sinon l'écran repasserait au provisoire.
+          result.data.nom = substitution.data.nom
+        }
+      }
     } else {
       // INSERT
       result = await safeSupabaseQuery(

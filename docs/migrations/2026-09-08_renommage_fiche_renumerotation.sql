@@ -349,9 +349,12 @@ $fn$;
 -- intégrations (Loomky, Monday, Drive, dossiers de médias), et le nom reste
 -- modifiable à la main pour le corriger.
 --
--- Parade opérationnelle si le besoin s'en fait sentir : laisser passer une nuit
--- entre le déploiement du front et cette migration, le temps que les onglets
--- ouverts soient rechargés.
+-- Atténuation opérationnelle, PAS une fermeture : laisser du temps entre le
+-- déploiement du front et cette migration réduit le nombre d'onglets antérieurs
+-- encore actifs, sans garantir qu'il n'en reste aucun. Un onglet peut rester
+-- ouvert plusieurs jours, une machine en veille le conserve, et rien côté
+-- serveur ne force son rechargement. Le risque est réduit, pas supprimé —
+-- c'est bien un risque accepté, pas un risque éliminé.
 --
 -- Dans l'autre sens il ne se passe rien de fâcheux : le front déployé appelle
 -- l'ancienne fonction, qui ne rend ni `nom` ni `nom_modifie`. Le nom n'est pas

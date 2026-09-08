@@ -27,12 +27,16 @@ function dataUrl(source) {
 // travailler.
 const SOURCE_CLIENT_ESPION = `
 export const appels = []
+// Les filtres sont mémorisés : c'est eux qui portent le compare-and-swap du
+// nom provisoire, un test qui ne regarderait que le payload ne prouverait rien.
 function chainable(op, payload) {
-  appels.push({ op, payload })
+  const appel = { op, payload, filtres: [] }
+  appels.push(appel)
   const chaine = {
-    eq: () => chaine,
+    eq: (colonne, valeur) => { appel.filtres.push([colonne, valeur]); return chaine },
     select: () => chaine,
     single: () => Promise.resolve({ data: { id: 'fiche-1', logement_numero_bien: 'EN-BASE' }, error: null }),
+    maybeSingle: () => Promise.resolve({ data: { nom: payload.nom }, error: null }),
     then: (resoudre) => Promise.resolve({ data: { id: 'fiche-1' }, error: null }).then(resoudre),
   }
   return chaine
@@ -112,15 +116,40 @@ test('enregistrement ordinaire : le nom est exclu du payload', async () => {
   )
 })
 
-test('nom encore provisoire en base : le nom généré part bien', async () => {
+test('nom encore provisoire en base : substitution sous compare-and-swap', async () => {
   // Comportement existant du formulaire : tant que la base porte « Nouvelle
-  // fiche », le nom automatique doit pouvoir s'y substituer. Aucun renommage à
-  // protéger sur ces fiches — un libellé sans numéro n'est jamais réécrit par
-  // `changer_numero_bien`.
+  // fiche », le nom automatique doit pouvoir s'y substituer.
+  // Mais l'information « la base est provisoire » date du CHARGEMENT. Elle ne
+  // peut donc pas voyager dans le payload principal : un onglet resté ouvert
+  // écrirait « Bien <ancien numéro> » sur une fiche renumérotée entre-temps.
+  // La substitution part dans une écriture séparée, conditionnée en base.
   appels.length = 0
   await saveFiche(ficheDeTest('fiche-1'), null, { nomEnBaseEstProvisoire: true })
-  const miseAJour = appels.find((a) => a.op === 'update')
-  assert.equal(miseAJour.payload.nom, 'Bien 2189')
+
+  const misesAJour = appels.filter((a) => a.op === 'update')
+  assert.equal(misesAJour.length, 2, 'une écriture principale, puis la substitution du nom')
+
+  assert.equal(
+    'nom' in misesAJour[0].payload,
+    false,
+    "l'enregistrement principal ne porte jamais un nom automatique"
+  )
+
+  assert.deepEqual(misesAJour[1].payload, { nom: 'Bien 2189' })
+  assert.ok(
+    misesAJour[1].filtres.some(([colonne, valeur]) => colonne === 'nom' && valeur === 'Nouvelle fiche'),
+    'la substitution doit être conditionnée à la valeur réelle en base'
+  )
+})
+
+test('nom provisoire : aucune substitution si le nom généré vaut déjà le provisoire', async () => {
+  // Fiche sans numéro : `generateFicheName` ne produit rien de mieux que le
+  // libellé provisoire. Écrire « Nouvelle fiche » par-dessus « Nouvelle fiche »
+  // n'apporte rien et ferait une écriture de plus à chaque sauvegarde.
+  appels.length = 0
+  const fiche = { ...ficheDeTest('fiche-1'), nom: 'Nouvelle fiche' }
+  await saveFiche(fiche, null, { nomEnBaseEstProvisoire: true })
+  assert.equal(appels.filter((a) => a.op === 'update').length, 1)
 })
 
 test('renommage explicite : le nom saisi part bien en base', async () => {
