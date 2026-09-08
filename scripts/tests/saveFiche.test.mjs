@@ -112,6 +112,17 @@ test('enregistrement ordinaire : le nom est exclu du payload', async () => {
   )
 })
 
+test('nom encore provisoire en base : le nom généré part bien', async () => {
+  // Comportement existant du formulaire : tant que la base porte « Nouvelle
+  // fiche », le nom automatique doit pouvoir s'y substituer. Aucun renommage à
+  // protéger sur ces fiches — un libellé sans numéro n'est jamais réécrit par
+  // `changer_numero_bien`.
+  appels.length = 0
+  await saveFiche(ficheDeTest('fiche-1'), null, { nomEnBaseEstProvisoire: true })
+  const miseAJour = appels.find((a) => a.op === 'update')
+  assert.equal(miseAJour.payload.nom, 'Bien 2189')
+})
+
 test('renommage explicite : le nom saisi part bien en base', async () => {
   // Le champ « Nom de la fiche » (FicheForm, étape Propriétaire) permet un
   // renommage manuel : une saisie délibérée doit être enregistrée.

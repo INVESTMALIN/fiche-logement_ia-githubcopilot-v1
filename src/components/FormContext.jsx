@@ -1397,6 +1397,12 @@ export function FormProvider({ children }) {
   // `nom` : le nom simplement transporté par l'état local d'un onglet ouvert
   // avant une renumérotation écraserait celui posé par `changer_numero_bien`.
   const nomSaisiParUtilisateurRef = useRef(false)
+  // Dernier nom CONNU EN BASE. Sert à laisser passer le seul nom automatique
+  // qui a encore quelque chose à écrire : celui qui remplace le libellé
+  // provisoire « Nouvelle fiche ». Ce cas ne peut pas défaire une
+  // renumérotation — un libellé sans numéro n'est jamais réécrit par
+  // `changer_numero_bien`, il n'y a donc rien à protéger dessus.
+  const nomEnBaseRef = useRef(null)
 
   const capitalize = (str) => {
     if (!str) return "";
@@ -1538,6 +1544,7 @@ export function FormProvider({ children }) {
     // changements de route : une saisie abandonnée sur une fiche autoriserait
     // sinon l'écriture du nom de la SUIVANTE, jamais touché par personne.
     nomSaisiParUtilisateurRef.current = false
+    nomEnBaseRef.current = null
     setSaveStatus({ saving: false, saved: false, error: null })
   }, [])
 
@@ -1600,6 +1607,7 @@ export function FormProvider({ children }) {
           // Même raison qu'au reset : l'état chargé remplace tout, une saisie
           // de nom laissée en plan sur une autre fiche ne doit pas la suivre.
           nomSaisiParUtilisateurRef.current = false;
+          nomEnBaseRef.current = result.data.nom;
 
           if (result.data.nom === "Nouvelle fiche" || generateFicheName(result.data) === result.data.nom) {
             setHasManuallyNamedFiche(false);
@@ -2088,13 +2096,15 @@ export function FormProvider({ children }) {
       const wasCompleteBeforeSave = formData.statut === 'Complété'
 
       const result = await saveFiche(dataToSave, user.id, {
-        nomSaisiParUtilisateur: nomSaisiParUtilisateurRef.current
+        nomSaisiParUtilisateur: nomSaisiParUtilisateurRef.current,
+        nomEnBaseEstProvisoire: nomEnBaseRef.current === "Nouvelle fiche"
       });
 
       if (result.success) {
         // Le nom saisi est parti : les enregistrements suivants n'ont plus à le
         // réécrire tant que l'utilisateur n'y retouche pas.
         nomSaisiParUtilisateurRef.current = false;
+        nomEnBaseRef.current = result.data.nom;
         setFormData(result.data);
         setSaveStatus({ saving: false, saved: true, error: null });
         setTimeout(() => {
@@ -2167,11 +2177,13 @@ export function FormProvider({ children }) {
 
       const updatedData = { ...formData, statut: newStatut };
       const result = await saveFiche(updatedData, null, {
-        nomSaisiParUtilisateur: nomSaisiParUtilisateurRef.current
+        nomSaisiParUtilisateur: nomSaisiParUtilisateurRef.current,
+        nomEnBaseEstProvisoire: nomEnBaseRef.current === "Nouvelle fiche"
       });
 
       if (result.success) {
         nomSaisiParUtilisateurRef.current = false;
+        nomEnBaseRef.current = result.data.nom;
         setFormData(result.data);
         // Si finalisation (statut = Complété), créer la checklist ménage
         if (newStatut === 'Complété') {
@@ -2376,6 +2388,7 @@ export function FormProvider({ children }) {
     // repartir en écriture, et une saisie antérieure non enregistrée vient
     // d'être remplacée.
     nomSaisiParUtilisateurRef.current = false
+    if (nomRendu) nomEnBaseRef.current = resultat.nom
     setFormData(prev => ({
       ...prev,
       // Nom réécrit par la même fonction SQL quand l'ancien numéro y figurait

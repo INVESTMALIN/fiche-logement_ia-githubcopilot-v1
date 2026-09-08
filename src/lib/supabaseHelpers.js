@@ -2659,7 +2659,12 @@ export const saveFiche = async (formData, userId = null, options = {}) => {
       // renommage manuel, et c'est une saisie délibérée qu'il faut conserver.
       // On distingue donc les deux : un nom TAPÉ part, un nom simplement
       // transporté par l'état local ne part pas.
-      if (!options.nomSaisiParUtilisateur) {
+      // Exception : tant que la base porte encore le libellé provisoire
+      // « Nouvelle fiche », le nom automatique doit pouvoir s'y substituer —
+      // c'est un comportement existant du formulaire. Il ne peut rien défaire :
+      // un libellé sans numéro n'est jamais réécrit par `changer_numero_bien`,
+      // donc il n'y a aucun renommage à protéger sur ces fiches.
+      if (!options.nomSaisiParUtilisateur && !options.nomEnBaseEstProvisoire) {
         delete supabaseData.nom
       }
 
