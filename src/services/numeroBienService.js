@@ -8,6 +8,7 @@
 
 import { supabase } from '../lib/supabaseClient'
 import { normaliserNumeroBien } from '../lib/numeroBien'
+import { evaluerReponseMonday } from '../lib/verificationMonday'
 
 const MESSAGES_ERREUR = {
   NUMERO_INVALIDE: 'Numéro de bien invalide : attendu un numéro sans espace ni texte autour, 50 caractères maximum.',
@@ -104,6 +105,43 @@ export async function verifierDossierDrive(numero) {
       raison: 'reseau',
       message: error.message || 'Le serveur est injoignable.',
     }
+  }
+}
+
+/**
+ * Le bien existe-t-il déjà dans Monday ? Lecture seule, jamais bloquante.
+ *
+ * Passe par l'Edge Function `monday-bien` : le token Monday est un secret
+ * serveur, il ne doit jamais atteindre le navigateur. La fonction ne fait
+ * qu'une lecture — elle n'écrit ni dans Monday, ni dans Supabase, ni dans la
+ * fiche.
+ *
+ * Toute défaillance donne `indisponible`, jamais `absent` : annoncer à tort
+ * qu'un bien n'existe pas ferait créer un doublon.
+ *
+ * @returns {Promise<{etat: 'trouve'|'absent'|'multiple'|'indisponible',
+ *                    lignes: Array<{id: string, nom: string}>}>}
+ */
+export async function verifierBienMonday(numero) {
+  const valeur = normaliserNumeroBien(numero)
+  if (!valeur) return { etat: 'indisponible', lignes: [] }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('monday-bien', {
+      body: { numeroBien: valeur },
+    })
+
+    if (error) {
+      // `invoke` ne rend pas le corps des réponses en erreur : l'écran affiche
+      // de toute façon un message unique, la cause reste dans la console.
+      console.error('verifierBienMonday : vérification impossible', error)
+      return { etat: 'indisponible', lignes: [] }
+    }
+
+    return evaluerReponseMonday(data)
+  } catch (err) {
+    console.error('verifierBienMonday : appel impossible', err)
+    return { etat: 'indisponible', lignes: [] }
   }
 }
 
