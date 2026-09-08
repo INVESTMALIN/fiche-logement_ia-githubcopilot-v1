@@ -3,8 +3,9 @@
 // Parcours administrateur en DEUX étapes pour changer le numéro d'une fiche
 // existante (logement qui change de conciergerie).
 //
-//   Étape 1 : saisie, contrôle de collision avec les autres fiches, et
-//             recherche LECTURE SEULE du dossier Drive du nouveau numéro.
+//   Étape 1 : saisie, contrôle de collision avec les autres fiches, et deux
+//             recherches LECTURE SEULE sur le nouveau numéro — le bien dans
+//             Monday, le dossier dans Drive.
 //   Étape 2 : récapitulatif, rappels avant / après, et confirmation explicite.
 //
 // Les contrôles affichés ici sont un CONFORT, pas une garantie : la fonction
@@ -22,7 +23,12 @@
 import { useEffect, useState } from 'react'
 import { AlertTriangle, CheckCircle2, ExternalLink, FolderOpen, HelpCircle, Loader2, XCircle } from 'lucide-react'
 import { evaluerChangementNumero, normaliserNumeroBien } from '../lib/numeroBien'
-import { changerNumeroBien, verifierCollisionNumero, verifierDossierDrive } from '../services/numeroBienService'
+import {
+  changerNumeroBien,
+  verifierBienMonday,
+  verifierCollisionNumero,
+  verifierDossierDrive,
+} from '../services/numeroBienService'
 
 // À préparer AVANT de changer le numéro : rien de tout cela n'est automatique.
 const AVANT_LE_CHANGEMENT = [
@@ -84,6 +90,8 @@ export default function ChangerNumeroBienModal({
   const [collisionEnCours, setCollisionEnCours] = useState(false)
   const [drive, setDrive] = useState(null)
   const [driveEnCours, setDriveEnCours] = useState(false)
+  const [monday, setMonday] = useState(null)
+  const [mondayEnCours, setMondayEnCours] = useState(false)
   const [checklistLue, setChecklistLue] = useState(false)
   // Instantané pris au passage à l'étape 2 : une saisie faite moins de 5 s avant
   // n'est pas encore partie en base, et la renumérotation coupe l'autosave en
@@ -100,23 +108,30 @@ export default function ChangerNumeroBienModal({
   // distantes : c'est ce qui décide si on lance ces vérifications.
   const formeUtilisable = !evaluation.erreur || evaluation.erreur.startsWith('COLLISION')
 
-  // Vérifications à la frappe, débouncées. Les deux partent en parallèle :
-  // aucune ne dépend de l'autre, et le dossier Drive ne bloque jamais.
+  // Vérifications à la frappe, débouncées. Les trois partent en parallèle :
+  // aucune ne dépend des autres, et seule la collision entre fiches bloque.
   useEffect(() => {
     if (!formeUtilisable) {
       setCollision({ etat: 'inconnue', fiche: null })
       setDrive(null)
+      setMonday(null)
       return
     }
 
     let actif = true
     setCollisionEnCours(true)
     setDriveEnCours(true)
+    setMondayEnCours(true)
     const minuteur = setTimeout(() => {
       verifierCollisionNumero(numero, ficheId).then((res) => {
         if (!actif) return
         setCollision(res)
         setCollisionEnCours(false)
+      })
+      verifierBienMonday(numero).then((res) => {
+        if (!actif) return
+        setMonday(res)
+        setMondayEnCours(false)
       })
       verifierDossierDrive(numero).then((res) => {
         if (!actif) return
@@ -214,6 +229,49 @@ export default function ChangerNumeroBienModal({
                 {!collisionEnCours && collision.etat === 'inconnue' && (
                   <Ligne ton="neutre" icone={<HelpCircle className="w-4 h-4" />}>
                     {collision.message || 'Vérification des autres fiches indisponible.'} Réessayez avant de continuer.
+                  </Ligne>
+                )}
+
+                {/* Bien dans Monday : informatif, jamais bloquant. La recherche
+                    se fait sur la colonne du numéro, côté serveur — le token
+                    Monday ne descend jamais dans le navigateur. */}
+                {mondayEnCours && (
+                  <Ligne ton="neutre" icone={<Loader2 className="w-4 h-4 animate-spin" />}>
+                    Recherche du bien {numero} dans Monday…
+                  </Ligne>
+                )}
+
+                {!mondayEnCours && monday?.etat === 'trouve' && (
+                  <Ligne ton="ok" icone={<CheckCircle2 className="w-4 h-4" />}>
+                    Le bien {numero} a été trouvé dans Monday : {monday.lignes[0].nom}.
+                  </Ligne>
+                )}
+
+                {!mondayEnCours && monday?.etat === 'absent' && (
+                  <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
+                    Le bien {numero} n'a pas été trouvé dans Monday. Créez-le avant de modifier
+                    le numéro.
+                  </Ligne>
+                )}
+
+                {!mondayEnCours && monday?.etat === 'multiple' && (
+                  <Ligne ton="alerte" icone={<AlertTriangle className="w-4 h-4" />}>
+                    <p>
+                      Plusieurs lignes Monday utilisent le numéro {numero}. Vérifiez-les avant
+                      de continuer.
+                    </p>
+                    <ul className="mt-1 space-y-1">
+                      {monday.lignes.map((ligne) => (
+                        <li key={ligne.id}>{ligne.nom}</li>
+                      ))}
+                    </ul>
+                  </Ligne>
+                )}
+
+                {!mondayEnCours && monday?.etat === 'indisponible' && (
+                  <Ligne ton="neutre" icone={<HelpCircle className="w-4 h-4" />}>
+                    La vérification Monday n'a pas pu être effectuée. Vous pouvez continuer, mais
+                    vérifiez manuellement que le bien existe dans Monday.
                   </Ligne>
                 )}
 
