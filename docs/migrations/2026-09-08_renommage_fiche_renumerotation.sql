@@ -318,16 +318,28 @@ $fn$;
 -- Inverse de la migration du 2026-09-07, et pour une raison précise.
 --
 -- `mapFormDataToSupabase` envoie `nom` à CHAQUE enregistrement. Le front de
--- cette PR le retire du payload d'UPDATE (`saveFiche`), exactement comme il
--- retire déjà `logement_numero_bien` : sans ça, n'importe quel onglet ouvert
--- avant la renumérotation — pas seulement celui qui l'a lancée — réécrirait
--- l'ancien nom par-dessus celui que cette migration vient de poser, au premier
--- champ modifié. La fiche porterait le nouveau numéro avec l'ancien nom.
+-- cette PR ne le laisse partir que si l'utilisateur a réellement tapé dans le
+-- champ « Nom de la fiche » : sans ça, n'importe quel onglet ouvert avant la
+-- renumérotation — pas seulement celui qui l'a lancée — réécrirait l'ancien nom
+-- par-dessus celui que cette migration vient de poser, au premier champ
+-- modifié. La fiche porterait le nouveau numéro avec l'ancien nom.
 --
 -- Appliquer le SQL en premier ouvrirait donc une fenêtre où le renommage peut
 -- être défait sans que personne ne le voie : le front encore en place continue
 -- d'envoyer `nom`. Seul un `super_admin` a l'UPDATE sur `fiches`, mais c'est
 -- justement un rôle qui renumérote.
+--
+-- ⚠️ LIMITE CONNUE, NON FERMÉE PAR CETTE PR. La protection est en JavaScript :
+-- un onglet chargé AVANT le déploiement continue d'exécuter l'ancien
+-- `saveFiche` et envoie encore son `nom` périmé. Déployer le front d'abord ne
+-- recharge pas les onglets déjà ouverts. La fenêtre résiduelle demande la
+-- conjonction : onglet chargé avant le déploiement, encore ouvert après cette
+-- migration, sur une fiche renumérotée entre-temps, puis enregistré. Deux
+-- parades possibles, l'une opérationnelle (laisser passer une nuit entre le
+-- déploiement du front et cette migration, le temps que les onglets soient
+-- rechargés), l'autre technique (verrouiller `nom` en base et faire passer le
+-- renommage manuel par une fonction dédiée, comme le numéro depuis #92) —
+-- arbitrage en attente.
 --
 -- Dans l'autre sens il ne se passe rien de fâcheux : le front déployé appelle
 -- l'ancienne fonction, qui ne rend ni `nom` ni `nom_modifie`. Le nom n'est pas

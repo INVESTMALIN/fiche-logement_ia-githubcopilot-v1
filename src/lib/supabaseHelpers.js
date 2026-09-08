@@ -2602,7 +2602,15 @@ export const mapSupabaseToFormData = (supabaseData) => {
 }
 
 // 💾 Sauvegarder une fiche
-export const saveFiche = async (formData, userId = null) => {
+/**
+ * @param {object} formData
+ * @param {string|null} userId
+ * @param {{nomSaisiParUtilisateur?: boolean}} [options] - `nomSaisiParUtilisateur`
+ *   dit que l'utilisateur a REELLEMENT tapé dans le champ « Nom de la fiche »
+ *   (FicheForm, étape Propriétaire) depuis le chargement. Sans ça, le nom n'est
+ *   pas réécrit — voir le commentaire dans la branche UPDATE.
+ */
+export const saveFiche = async (formData, userId = null, options = {}) => {
   try {
     console.log('🔍 [saveFiche] Début - formData.user_id:', formData.user_id)
     console.log('🔍 [saveFiche] userId passé en param:', userId)
@@ -2634,19 +2642,26 @@ export const saveFiche = async (formData, userId = null) => {
       // alors que les marqueurs Loomky et Monday, eux, resteraient nettoyés.
       delete supabaseData.logement_numero_bien
 
-      // 🔒 Le nom suit le numéro, et pour exactement la même raison.
+      // 🔒 Le nom n'est réécrit que si l'utilisateur l'a VRAIMENT saisi.
       // `changer_numero_bien` réécrit `nom` quand l'ancien numéro y figurait une
       // fois et une seule. L'onglet qui a lancé la renumérotation reprend le
       // nouveau nom, mais LES AUTRES ne le voient pas : une fiche ouverte
       // ailleurs garde l'ancien nom en mémoire et le réécrirait par-dessus au
       // premier enregistrement, laissant la fiche avec le nouveau numéro et
-      // l'ancien nom. Le retirer du payload ferme le cas pour tous les onglets,
-      // quel que soit l'ordre de déploiement.
-      // Aucune perte : rien dans l'interface ne renomme une fiche. `nom` est
-      // posé à la création (`generateFicheName`, puis l'INSERT ci-dessous, qui
-      // le garde) et le numéro étant ensuite verrouillé, la génération
-      // automatique ne peut plus produire de nom différent.
-      delete supabaseData.nom
+      // l'ancien nom. Le cas est silencieux dans les deux sens :
+      //   - fiche au nom automatique : `generateFicheName` recalcule
+      //     « Bien <ancien numéro> » dès qu'un champ change, l'ancien numéro
+      //     étant toujours en mémoire dans cet onglet ;
+      //   - fiche au nom personnalisé : le nom chargé part tel quel à chaque
+      //     enregistrement.
+      // On ne peut pas retirer `nom` du payload en toutes circonstances : le
+      // champ « Nom de la fiche » de FicheForm (étape Propriétaire) permet un
+      // renommage manuel, et c'est une saisie délibérée qu'il faut conserver.
+      // On distingue donc les deux : un nom TAPÉ part, un nom simplement
+      // transporté par l'état local ne part pas.
+      if (!options.nomSaisiParUtilisateur) {
+        delete supabaseData.nom
+      }
 
       // UPDATE
       result = await safeSupabaseQuery(
