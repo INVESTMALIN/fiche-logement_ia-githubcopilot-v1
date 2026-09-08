@@ -219,6 +219,18 @@ BEGIN
   --
   -- `v_ancien <> ''` : sur une fiche sans numéro, il n'y a rien à chercher, et
   -- un motif vide s'accrocherait à des bornes de mot arbitraires.
+  --
+  -- ARBITRAGE MESURÉ (review du 2026-09-08). Une borne plus stricte, excluant
+  -- l'adjacence à TOUS les caractères autorisés dans un numéro (« . », « / »,
+  -- « - »), a été proposée : elle éviterait de réécrire « 2109 » dans un nom qui
+  -- dirait en réalité « 2109.A », un autre bien. Comptée sur les 453 fiches de
+  -- production : la borne actuelle renomme 433 fiches (soit exactement les
+  -- 223 + 210 du relevé), la borne stricte 427. Les 6 perdues sont des noms où
+  -- le numéro touche un tiret sans espace — « DECK-1719 », « LAGARRIGUE-1974 »,
+  -- « 1567- VERNAZZA » — et le cas qu'elle protégerait n'existe pas : aucun nom
+  -- ne porte son numéro suivi ou précédé d'un point ou d'un slash, et aucun
+  -- numéro du parc ne contient de séparateur. Coût réel 6, gain réel 0 : borne
+  -- conservée. À revoir si des numéros à séparateur (« 2290.A ») entrent au parc.
   v_nom_final := v_nom;
 
   IF v_nom IS NOT NULL AND v_ancien <> '' THEN
@@ -305,12 +317,17 @@ $fn$;
 -- ============================================================
 -- Inverse de la migration du 2026-09-07, et pour une raison précise.
 --
--- Le front met à jour son état local avec le nom rendu par la fonction. Tant
--- qu'il ne l'a pas fait, un onglet ouvert garde l'ANCIEN nom en mémoire : un
--- super_admin qui renumérote puis enregistre réécrirait le nom d'avant par
--- dessus celui que cette migration vient de poser (un `admin` n'a pas l'UPDATE
--- sur `fiches`, lui ne risque rien). Appliquer le SQL en premier ouvrirait donc
--- une fenêtre où le renommage peut être défait sans que personne ne le voie.
+-- `mapFormDataToSupabase` envoie `nom` à CHAQUE enregistrement. Le front de
+-- cette PR le retire du payload d'UPDATE (`saveFiche`), exactement comme il
+-- retire déjà `logement_numero_bien` : sans ça, n'importe quel onglet ouvert
+-- avant la renumérotation — pas seulement celui qui l'a lancée — réécrirait
+-- l'ancien nom par-dessus celui que cette migration vient de poser, au premier
+-- champ modifié. La fiche porterait le nouveau numéro avec l'ancien nom.
+--
+-- Appliquer le SQL en premier ouvrirait donc une fenêtre où le renommage peut
+-- être défait sans que personne ne le voie : le front encore en place continue
+-- d'envoyer `nom`. Seul un `super_admin` a l'UPDATE sur `fiches`, mais c'est
+-- justement un rôle qui renumérote.
 --
 -- Dans l'autre sens il ne se passe rien de fâcheux : le front déployé appelle
 -- l'ancienne fonction, qui ne rend ni `nom` ni `nom_modifie`. Le nom n'est pas

@@ -2634,6 +2634,20 @@ export const saveFiche = async (formData, userId = null) => {
       // alors que les marqueurs Loomky et Monday, eux, resteraient nettoyés.
       delete supabaseData.logement_numero_bien
 
+      // 🔒 Le nom suit le numéro, et pour exactement la même raison.
+      // `changer_numero_bien` réécrit `nom` quand l'ancien numéro y figurait une
+      // fois et une seule. L'onglet qui a lancé la renumérotation reprend le
+      // nouveau nom, mais LES AUTRES ne le voient pas : une fiche ouverte
+      // ailleurs garde l'ancien nom en mémoire et le réécrirait par-dessus au
+      // premier enregistrement, laissant la fiche avec le nouveau numéro et
+      // l'ancien nom. Le retirer du payload ferme le cas pour tous les onglets,
+      // quel que soit l'ordre de déploiement.
+      // Aucune perte : rien dans l'interface ne renomme une fiche. `nom` est
+      // posé à la création (`generateFicheName`, puis l'INSERT ci-dessous, qui
+      // le garde) et le numéro étant ensuite verrouillé, la génération
+      // automatique ne peut plus produire de nom différent.
+      delete supabaseData.nom
+
       // UPDATE
       result = await safeSupabaseQuery(
         supabase

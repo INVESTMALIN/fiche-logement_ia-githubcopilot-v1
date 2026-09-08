@@ -89,3 +89,25 @@ test('enregistrement ordinaire : le numéro de bien est exclu du payload', async
   assert.equal(miseAJour.payload.logement_surface, 42)
   assert.equal(miseAJour.payload.logement_typologie, 'T2')
 })
+
+test('création : le nom part bien en base', async () => {
+  appels.length = 0
+  await saveFiche(ficheDeTest(null), 'user-1')
+  const insertion = appels.find((a) => a.op === 'insert')
+  assert.equal(insertion.payload.nom, 'Bien 2189')
+})
+
+test('enregistrement ordinaire : le nom est exclu du payload', async () => {
+  // `changer_numero_bien` réécrit le nom en même temps que le numéro. Un onglet
+  // ouvert AVANT la renumérotation garde l'ancien nom en mémoire : le laisser
+  // dans le payload d'UPDATE le ferait restaurer en silence, et la fiche
+  // porterait le nouveau numéro avec l'ancien nom.
+  appels.length = 0
+  await saveFiche(ficheDeTest('fiche-1'))
+  const miseAJour = appels.find((a) => a.op === 'update')
+  assert.equal(
+    'nom' in miseAJour.payload,
+    false,
+    'le nom ne doit jamais être réécrit par un save : seul changer_numero_bien le modifie'
+  )
+})
