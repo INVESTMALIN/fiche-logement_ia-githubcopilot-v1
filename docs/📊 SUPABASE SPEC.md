@@ -82,7 +82,7 @@ CREATE TABLE fiches (
   -- ... 95 champs média au total
 
   -- 🟦 Sync Monday (15/05/2026) — voir docs/🟦 MONDAY_INTEGRATION.md
-  monday_snapshot JSONB              -- snapshot des 3 champs déjà push à Monday (dirty detection)
+  monday_snapshot JSONB              -- par champ : dernière valeur réellement écrite côté Monday (4 champs) ; écrit uniquement par la RPC fusionner_monday_snapshot (16/09/2026)
 );
 
 -- Table utilisateurs
@@ -149,12 +149,12 @@ export const mapSupabaseToFormData = (supabaseData) => ({
 
 ### **monday-sync** (15/05/2026)
 
-Sync automatique de 3 champs Fiche Logement → Monday board `1272144935` à la finalisation et sur modifications post-finalisation. Token Monday admin-global stocké comme **Edge Secret** (`MONDAY_API_TOKEN`), jamais exposé côté client.
+Sync automatique de 4 champs Fiche Logement → Monday board `1272144935` à la finalisation et sur modifications post-finalisation. Token Monday admin-global stocké comme **Edge Secret** (`MONDAY_API_TOKEN`), jamais exposé côté client.
 
-- **Path** : `supabase/functions/monday-sync/index.ts`
+- **Path** : `supabase/functions/monday-sync/index.ts` (câblage) + `sync.ts` (cœur pur, testé par `npm run test:edge`)
 - **Trigger** : invoqué par le client (`pushToMonday` dans `src/services/mondayService.js`) après chaque save réussi (hook dans `FormContext.handleSave` + `updateStatut`)
-- **Logique** : pattern aligné sur `notify_fiche_alerts` — push si transition Brouillon→Complété OU si l'un des 3 champs surveillés a changé (dirty-detection via `monday_snapshot`)
-- **Best effort** : ne bloque jamais le save Supabase, log les erreurs en console côté client
+- **Logique** : pattern aligné sur `notify_fiche_alerts` — push si transition Brouillon→Complété OU si l'un des 4 champs surveillés a changé (diff calculé côté Edge contre `monday_snapshot` en base). Depuis le 16/09/2026 : une écriture Monday PAR CHAMP, statuts par index, fiche lue et snapshot fusionné sous les RLS de l'appelant (RPC `fusionner_monday_snapshot`, seuls les champs réellement écrits)
+- **Best effort** : ne bloque jamais le save Supabase ; bilan par champ affiché à l'écran (`MondaySyncToast`, champs nommés, jamais de valeur), retry naturel au prochain enregistrement
 
 Doc complète : [`docs/🟦 MONDAY_INTEGRATION.md`](🟦 MONDAY_INTEGRATION.md)
 
