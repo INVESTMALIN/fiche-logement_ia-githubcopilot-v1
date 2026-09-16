@@ -5,10 +5,16 @@
 //
 // Flow :
 //   1. extractMondaySnapshot(formData) — extrait l'état actuel des 4 champs
-//   2. getMondayChangedFields(current, saved) — diff vs snapshot précédent
+//   2. getMondayChangedFields(current, saved) — pré-diff côté onglet, pour ne
+//      pas appeler l'Edge Function quand rien n'a bougé (le diff qui fait foi
+//      est recalculé côté serveur contre le snapshot en base)
 //   3. pushToMonday(...) — appelle l'Edge Function ; ne throw jamais
 //
-// Le hook qui orchestre tout ça est dans FormContext.handleSave (post-save).
+// L'Edge Function écrit UN champ à la fois, rend un résultat par champ
+// (`results: [{ field, status: 'ok'|'error'|'skipped', reason, message }]`)
+// et fusionne elle-même dans `fiches.monday_snapshot` les seuls champs
+// réellement écrits (RPC `fusionner_monday_snapshot`, sous garde du numéro de
+// bien). Le hook qui orchestre est dans FormContext.triggerMondaySync.
 
 import { supabase } from '../lib/supabaseClient'
 
@@ -43,17 +49,21 @@ export function getMondayChangedFields(current, saved) {
  * @param {string} args.ficheId
  * @param {number|string} args.numeroBien
  * @param {Object} args.snapshot — { type_premier_menage, type_premiere_maintenance, airbnb_mot_passe, booking_mot_passe }
- * @param {string[]|null} args.changedFields — null = push complet
+ * @param {boolean} [args.pushAll=false] — true = pousser les 4 champs quel que
+ *   soit le snapshot en base (finalisation initiale)
  * @param {boolean} [args.dryRun=false]
+ * @returns {Promise<Object>} corps de l'Edge Function
+ *   ({ success, itemId, results, snapshot, snapshotPersiste } ou
+ *   { success:false, error, message }), ou { success:false, error:'NETWORK' }.
  */
-export async function pushToMonday({ ficheId, numeroBien, snapshot, changedFields, dryRun = false }) {
+export async function pushToMonday({ ficheId, numeroBien, snapshot, pushAll = false, dryRun = false }) {
   try {
     const { data, error } = await supabase.functions.invoke('monday-sync', {
       body: {
         ficheId,
         numeroBien,
         fields: snapshot,
-        changedFields: changedFields ?? undefined,
+        pushAll,
         dryRun
       }
     })

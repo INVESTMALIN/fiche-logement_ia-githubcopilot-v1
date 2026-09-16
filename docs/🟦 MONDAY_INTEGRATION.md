@@ -2,8 +2,8 @@
 
 **Projet** : Fiche Logement
 **Feature** : Synchronisation automatique de 4 champs Fiche Logement → Monday board `1272144935` (Clients propriétaires > Clients)
-**Status** : 🚧 V1 livrée le 2026-05-15 — en attente du token et de la désactivation du scénario Kevin pour activation prod
-**Dernière mise à jour** : 2026-05-19
+**Status** : ✅ En production depuis mai 2026 — robustesse par champ livrée le 2026-09-16 (écritures indépendantes, statuts par index, snapshot fusionné côté serveur, bilan à l'écran)
+**Dernière mise à jour** : 2026-09-16
 
 ---
 
@@ -34,11 +34,28 @@ Le token Monday est admin-global → l'inliner dans le bundle Vite (préfixe `VI
 
 **Lookup** : par colonne `num_ro` (type `numbers`) du board `1272144935`, valeur source = `section_logement.numero_bien`. API utilisée : `items_page_by_column_values`.
 
-**Normalisation `type_premier_menage`** : front stocke `'Vérification / Inventaire'` (avec espaces autour du slash, cf. `TYPES_PASSAGE` dans [src/lib/avisGrilleHelpers.js](../src/lib/avisGrilleHelpers.js)), Monday attend `'Vérification/Inventaire'`. Strip ` / ` → `/` côté Edge Function (`normalizeTypePremierMenage`).
+### Statuts : envoyés par **index**, pas par libellé (depuis 2026-09-16)
 
-**Normalisation `type_premiere_maintenance`** : les 3 labels `TYPES_MAINTENANCE` sont alignés sur ceux de la colonne Monday `color_mm3ftnef` → valeur envoyée telle quelle, aucune normalisation. Si un mismatch de label apparaît au test E2E (apostrophe typographique `'` vs droite `'`), ajouter une normalisation dédiée côté Edge Function sur le modèle de `normalizeTypePremierMenage`.
+Les deux colonnes status reçoivent `{ "index": N }`, où N est l'**identifiant de label** Monday (clé de `settings_str.labels`, stable même si le label est renommé ou réordonné). Tables dans [supabase/functions/monday-sync/sync.ts](../supabase/functions/monday-sync/sync.ts) (`PREMIER_MENAGE_INDEX`, `MAINTENANCE_INDEX`), lues le 2026-09-16 :
 
-**Whitelist guard `type_premiere_maintenance`** : `buildColumnValues` ne pousse la colonne `color_mm3ftnef` que si la valeur est `null` (vidage intentionnel) ou un des 3 labels `VALID_MAINTENANCE_LABELS`. Une valeur legacy (ancien label `TYPES_PASSAGE` écrit par l'UI Maintenance pré-refonte 14/05) est **omise** — sinon Monday rejette tout le `change_multiple_column_values` (mutation atomique) et les autres champs cessent de se synchroniser. Cleanup DB des valeurs legacy : [migration 2026-05-19](migrations/2026-05-19_cleanup_legacy_maintenance.sql).
+| `statut47` (Premiers Ménages) | | `color_mm3ftnef` (Maintenance) | |
+|---|---|---|---|
+| Classique | 1 | Intervention propriétaire | 0 |
+| Pas nécessaire | 2 | Pas d'intervention | 1 |
+| Remise en état | 3 | Intervention artisan | 2 |
+| Vérification / Inventaire | 4 | | |
+| Approfondi | 6 | | |
+| Fait par Proprio | 7 | | |
+
+(Monday connaît aussi `0 À voir` et `5 À définir`, que la fiche ne produit jamais.)
+
+**Pourquoi l'index.** La panne de septembre 2026 : le label Monday `Vérification/Inventaire` a été renommé en `Vérification/Inventaire/Dépôt consommables/Autres`. L'ancienne fonction envoyait le libellé → Monday refusait → comme les 4 champs partaient dans une seule mutation atomique, **les mots de passe tombaient avec le statut**, sans aucun retour à l'écran (17 fiches jamais synchronisées). L'identifiant `4`, lui, n'a pas bougé.
+
+**Risque résiduel accepté.** Si la colonne est reconstruite côté Monday, les identifiants peuvent changer et un index faux écrirait **la mauvaise valeur sans erreur**. D'où : relire `settings_str` des deux colonnes (query `boards { columns(ids:[…]) { settings_str } }`) avant tout merge qui touche à ces tables, et à chaque changement de configuration signalé côté Monday.
+
+**Valeur non reconnue** (ex. ancien label `TYPES_PASSAGE` dans `avis_type_premiere_maintenance`, fiches pré-refonte 14/05) : le champ est **ignoré** (`status: 'skipped'`, `reason: 'VALEUR_NON_RECONNUE'`) — jamais envoyé, jamais marqué synchronisé, nommé dans le bilan à l'écran avec « re-sélectionnez une valeur ». Le même avertissement n'est pas répété à chaque autosave tant que la valeur fautive n'a pas changé. Cleanup DB historique : [migration 2026-05-19](migrations/2026-05-19_cleanup_legacy_maintenance.sql).
+
+**Vidage** : `null`/vide côté fiche → `{}` pour une colonne status, `""` pour une colonne text. On envoie toujours une valeur pour un champ demandé, sinon un effacement côté fiche ne se propagerait jamais.
 
 ---
 
@@ -47,40 +64,59 @@ Le token Monday est admin-global → l'inliner dans le bundle Vite (préfixe `VI
 ```
 src/
 ├── services/
-│   └── mondayService.js         ← Client : extract/diff snapshot + invoke Edge Function
+│   └── mondayService.js          ← Client : extract snapshot + pré-diff + invoke Edge Function
+├── lib/
+│   └── mondaySyncFeedback.js     ← Réponse Edge → bilan affichable (champs nommés, jamais de valeur) + dédoublonnage
 └── components/
-    └── FormContext.jsx           ← Hook post-save dans handleSave + updateStatut
+    ├── FormContext.jsx           ← triggerMondaySync : file sérialisée par onglet, reflet du snapshot, état du bilan
+    └── MondaySyncToast.jsx       ← Bilan à l'écran, monté dans FicheWizard (visible depuis toute étape)
 
 supabase/
-├── config.toml                   ← Init CLI (premier usage projet)
+├── config.toml
 └── functions/
     └── monday-sync/
-        ├── index.ts              ← Edge Function (Deno) : lookup + update Monday
+        ├── index.ts              ← Câblage : HTTP, secrets, client Supabase authentifié (RLS), appels Monday
+        ├── sync.ts               ← Cœur PUR : diff, traduction par index, une écriture par champ, patch snapshot
+        ├── sync.test.ts          ← Preuves (deno test) : isolation, gardes, secrets — `npm run test:edge`
         └── deno.json
+
+scripts/tests/
+└── mondaySyncFeedback.test.mjs   ← Preuves du bilan (node --test) — `npm test`
 
 docs/
 ├── migrations/
-│   └── 2026-05-15_monday_snapshot_column.sql  ← ALTER TABLE add column
+│   ├── 2026-05-15_monday_snapshot_column.sql            ← ALTER TABLE add column
+│   ├── 2026-09-16_fusionner_monday_snapshot.sql         ← RPC de fusion par clé (SECURITY INVOKER)
+│   └── 2026-09-16_fusionner_monday_snapshot_verification.sql ← scénario en transaction annulée
 └── 🟦 MONDAY_INTEGRATION.md      ← Ce document
 ```
 
-### Flux complet
+### Flux complet (depuis 2026-09-16)
 
 ```
-[FicheFinalisation] User clique "Finaliser"
-   → handleSave() puis finaliserFiche() → updateStatut('Complété')
-      → saveFiche() (commit Supabase normal)
-      → triggerMondaySync(savedData, wasCompleteBeforeSave)
-         → extractMondaySnapshot(savedData)
-         → diff vs savedData.monday_snapshot
-         → si shouldPush :
-            → pushToMonday() → supabase.functions.invoke('monday-sync')
-               → [Edge Function]
-                  → Vérifie MONDAY_API_TOKEN (secret)
-                  → items_page_by_column_values(board, num_ro=numeroBien)
-                  → change_multiple_column_values(item_id, columnValues)
-                  → return {success, itemId, updatedColumns}
-            → si success : UPDATE fiches.monday_snapshot = newSnapshot
+[toute page] save réussi (handleSave / updateStatut) sur une fiche Complété
+   → triggerMondaySync(savedData, wasCompleteBeforeSave)
+      → extractMondaySnapshot(savedData)
+      → pré-diff vs savedData.monday_snapshot (évite un appel inutile ; pas décisif)
+      → mise en FILE (une sync en vol par onglet, la suivante attend la fin)
+         → pushToMonday({ ficheId, numeroBien, snapshot, pushAll })
+            → [Edge Function monday-sync, JWT de l'appelant]
+               1. SELECT id, logement_numero_bien, monday_snapshot FROM fiches WHERE id (sous RLS)
+                  → aucune ligne         → FICHE_INTROUVABLE (rien d'écrit)
+                  → numéro ≠ envoyé      → NUMERO_BIEN_CHANGE (rien d'écrit)
+               2. diff : pushAll ou snapshot NULL → 4 champs ; sinon champs ≠ snapshot EN BASE
+                  valeur non reconnue     → skipped (jamais envoyée)
+                  rien à écrire           → success, results: []
+               3. items_page_by_column_values(board, num_ro=numeroBien)
+                  → 0 item               → chaque champ : error ITEM_NOT_FOUND
+               4. POUR CHAQUE champ : change_column_value(item, colonne, valeur)
+                  → ok / error MONDAY_REFUSE — un refus n'arrête pas les autres
+               5. RPC fusionner_monday_snapshot(fiche, numéro, { seuls les champs ok })
+                  → COALESCE(monday_snapshot,'{}') || patch WHERE id AND logement_numero_bien
+                  → NULL si renuméroté entre-temps → snapshot non persisté
+               → return { success, itemId, results[], snapshot, snapshotPersiste }
+         → reflet de `snapshot` (état EN BASE) dans formData.monday_snapshot
+         → construireFeedbackMonday(reponse) → doitAfficherFeedback (dédoublonnage) → MondaySyncToast
 ```
 
 ### Logique de déclenchement (alignée sur `notify_fiche_alerts`)
@@ -90,19 +126,25 @@ isComplete = (statut === 'Complété')
 wasComplete = (statut avant save === 'Complété')
 
 SI !isComplete                      → skip (rien à pousser)
-SINON SI !wasComplete               → push complet (finalisation initiale)
-SINON SI savedSnapshot existe       → diff → push partiel si changement
-SINON                               → push complet (cas edge : Complété sans snapshot, fiche pré-feature)
+SINON SI !wasComplete               → pushAll (finalisation initiale)
+SINON SI savedSnapshot existe       → pré-diff → appel seulement si un champ a changé
+SINON                               → appel (Complété sans snapshot : l'Edge Function pousse tout, snapshot NULL en base)
 ```
+
+Le diff **qui fait foi** est celui de l'Edge Function, contre le snapshot lu en base à l'instant du sync — pas l'état d'un onglet, qui peut être en retard d'une synchronisation en vol.
 
 ### Garde-fous
 
 - **`numero_bien` invalide** : skip silencieux + warn console (le save Supabase a réussi, l'utilisateur n'est pas bloqué).
-- **Item Monday non trouvé** : Edge Function retourne `ITEM_NOT_FOUND`, le snapshot **n'est PAS mis à jour** → retry naturel au prochain save.
-- **Monday API down / network error** : `pushToMonday` ne throw jamais, retourne `{success: false, error: 'NETWORK', ...}`. Snapshot non mis à jour → retry naturel.
-- **Monday API erreur GraphQL** : `MONDAY_API_ERROR` retourné. Snapshot non mis à jour.
-- **Aucun champ à push** (tous null) : `NO_FIELDS_TO_UPDATE`, sortie immédiate sans appel Monday.
-- **Token serveur manquant** : `UNAUTHORIZED` retourné, log côté Edge Function.
+- **Fiche invisible pour l'appelant (RLS)** : `FICHE_INTROUVABLE`, aucun appel Monday. L'ancienne fonction ne vérifiait pas que la fiche appartenait à l'appelant.
+- **Renumérotation** (double garde) : AVANT d'écrire, le numéro en base doit être celui envoyé (`NUMERO_BIEN_CHANGE`, rien n'est écrit) ; PENDANT le push, le WHERE de la RPC re-vérifie le numéro (`snapshotPersiste: false`, le NULL posé par `changer_numero_bien` n'est pas écrasé).
+- **Isolation des champs** : une mutation par colonne. Un statut refusé → `error` sur ce champ seul, les autres passent et sont marqués synchronisés. Le champ en échec **reste hors du snapshot** → re-poussé au prochain enregistrement.
+- **Item Monday non trouvé** : chaque champ demandé en `error ITEM_NOT_FOUND`, aucune fusion → retry naturel.
+- **Monday API down / network error** : `pushToMonday` ne throw jamais (`{success:false, error:'NETWORK'}`) ; lookup impossible → `error MONDAY_API_ERROR` par champ. Snapshot non mis à jour → retry naturel.
+- **RPC en erreur après des écritures Monday réussies** : les écritures restent, `snapshotPersiste: false`, re-push idempotent au save suivant.
+- **Sérialisation par onglet** : deux autosaves rapprochés ne se doublent plus chez Monday ; la seconde sync re-diffe contre le snapshot fusionné par la première. **Limite acceptée** : deux onglets sur la même fiche ne sont pas sérialisés entre eux (il faudrait un verrou englobant l'appel HTTP Monday) ; le pire cas est un re-push idempotent.
+- **Secrets** : les mots de passe n'apparaissent ni dans les logs Edge (dry-run compris), ni dans les diagnostics par champ (`masquerSecrets`), ni dans le bilan à l'écran (champs nommés, jamais de valeur).
+- **Token serveur manquant** : `UNAUTHORIZED` (500), log côté Edge Function.
 
 ---
 
@@ -124,9 +166,19 @@ Format :
 }
 ```
 
-**Pourquoi minimal+** (1 seule colonne au lieu du pattern Loomky à 5 colonnes) : pas besoin de cache `monday_item_id` (lookup rapide via `num_ro`), pas besoin de `sync_status`/`synced_at` (pas de SLA, l'erreur passe par toast UI). Snapshot suffit pour la dirty-detection.
+Chaque clé mémorise la **dernière valeur réellement écrite côté Monday** pour ce champ. Une clé absente = champ jamais poussé (→ à pousser). Une clé à `null` = vidage poussé.
 
-**⚠️ Anti-race condition** : `monday_snapshot` n'est PAS dans `mapFormDataToSupabase`. Mis à jour SEULEMENT après push réussi via un `supabase.from('fiches').update({ monday_snapshot })` direct dans le hook. Sinon un save normal pré-sync écraserait le snapshot avec la version qui n'a pas encore été poussée.
+**Pourquoi minimal+** (1 seule colonne au lieu du pattern Loomky à 5 colonnes) : pas besoin de cache `monday_item_id` (lookup rapide via `num_ro`), pas besoin de `sync_status`/`synced_at` (pas de SLA, l'erreur passe par le bilan à l'écran). Snapshot suffit pour la dirty-detection.
+
+**⚠️ Anti-race condition** : `monday_snapshot` n'est PAS dans `mapFormDataToSupabase`. Il est écrit **uniquement par la RPC `fusionner_monday_snapshot`**, appelée par l'Edge Function après ses écritures Monday, avec les seuls champs réussis :
+
+```sql
+UPDATE fiches SET monday_snapshot = COALESCE(monday_snapshot,'{}') || p_patch
+ WHERE id = p_fiche_id AND logement_numero_bien = p_numero_bien
+RETURNING monday_snapshot;   -- NULL si aucune ligne (RLS, renumérotation)
+```
+
+Fusion **par clé, sous le verrou de ligne** : les clés hors patch restent telles qu'elles sont en base à cet instant (pas telles qu'un onglet les connaissait), donc un succès enregistré par une autre synchronisation n'est jamais effacé. `SECURITY INVOKER`, `search_path` figé, EXECUTE pour `authenticated` seulement. Migration : [2026-09-16](migrations/2026-09-16_fusionner_monday_snapshot.sql) ; preuve : [scénario en transaction annulée](migrations/2026-09-16_fusionner_monday_snapshot_verification.sql) (17 contrôles, dont RLS et garde du numéro).
 
 ---
 
@@ -152,7 +204,15 @@ npx supabase secrets set MONDAY_API_TOKEN=eyJ...
 npx supabase functions deploy monday-sync
 ```
 
-L'Edge Function est ensuite invoquable depuis le client via `supabase.functions.invoke('monday-sync', { body })`. Auth automatique via le JWT Supabase de l'utilisateur connecté.
+L'Edge Function est ensuite invoquable depuis le client via `supabase.functions.invoke('monday-sync', { body })`. Auth automatique via le JWT Supabase de l'utilisateur connecté — JWT que la fonction rejoue vers PostgREST (client `anon` + header `Authorization`) pour lire la fiche et fusionner le snapshot **sous les RLS de l'appelant**. Pas de `service_role`.
+
+### Ordre de livraison d'une évolution (impératif)
+
+1. **Migration SQL** (si la PR en porte une) — ex. [2026-09-16 RPC de fusion](migrations/2026-09-16_fusionner_monday_snapshot.sql), après avoir joué son [scénario de vérification](migrations/2026-09-16_fusionner_monday_snapshot_verification.sql) (transaction annulée, lecture du rapport dans le message d'erreur).
+2. **Edge Function** — `npx supabase functions deploy monday-sync` (ou l'outil de déploiement MCP Supabase, fichiers `index.ts`, `sync.ts`, `deno.json`).
+3. **Merge de la PR** → déploiement Vercel du front.
+
+Compatibilité vérifiée le 2026-09-16 : nouvelle Edge Function + ancien front fonctionne (l'ancien front ignore `results`, ne persiste un snapshot que sur `success:true`, l'Edge l'a déjà fusionné) ; l'inverse (nouveau front + ancienne Edge) ne casse rien mais ne persiste plus de snapshot → re-push idempotent à chaque save jusqu'au déploiement.
 
 ### Mise à jour du secret
 
@@ -180,18 +240,30 @@ await pushToMonday({
 })
 ```
 
-L'Edge Function loggue le payload `columnValuesToSend` qu'elle aurait envoyé et retourne `{success: true, itemId: 'DRY_RUN', updatedColumns, dryRun: true}`. Aucun call Monday.
+L'Edge Function lit la fiche (RLS + garde du numéro), calcule le plan et s'arrête **avant** tout appel Monday et toute écriture en base. Elle loggue les champs et colonnes visés (jamais les valeurs) et retourne `{ success, itemId: 'DRY_RUN', results: [...], snapshot, snapshotPersiste: false, dryRun: true }`. Limite : le dry-run ne prouve ni l'acceptation d'une valeur par Monday, ni l'isolation d'un refus — ça, ce sont les tests `deno test` (espions) et le test live.
 
 Logs : `npx supabase functions logs monday-sync` (ou Dashboard → Functions → monday-sync → Logs).
 
-### Scénarios à valider
+### Tests automatisés
 
-1. **Dry-run** sur fiche test → log payload, aucune écriture Monday
-2. **Push initial** (Brouillon → Complété, numero_bien connu) → 4 colonnes mises à jour côté Monday, normalisation `Vérification/Inventaire` correcte
-2bis. **Maintenance** : sélection d'un des 3 labels `TYPES_MAINTENANCE` → colonne `color_mm3ftnef` mise à jour ; vérifier qu'aucun mismatch de label (apostrophe) ne fait échouer le push
-3. **Push partiel** (modif `type_premier_menage` sur fiche déjà Complété) → seule la colonne status est touchée
-4. **ITEM_NOT_FOUND** (numero_bien inexistant dans Monday) → save Supabase OK, snapshot DB pas mis à jour, warn console
-5. **Concurrence** : confirmer désactivation du scénario Kevin avant activation prod
+```bash
+npm test            # bilan à l'écran : champs nommés, jamais de valeur, dédoublonnage
+npm run test:edge   # cœur Edge : isolation d'un refus, diff, gardes, secrets, dry-run
+```
+
+### Test live (item Monday dédié)
+
+Item de test : `Julien Gaichet (TESTS)`, numéro de bien **7755** (fiche Supabase 7755, Complété). Toujours : capturer les 4 colonnes Monday et le `monday_snapshot` avant, valeurs factices reconnaissables, restauration exacte et vérifiée après. Avec un JWT d'utilisateur autorisé par la RLS sur la fiche (jamais la `service_role`, qui ne prouverait pas le chemin de production).
+
+### Scénarios couverts
+
+1. **Isolation** (deno) : statut refusé par Monday → maintenance + 2 mots de passe écrits, patch snapshot = ces 3 clés, le statut reste à re-pousser
+2. **Retry naturel** (deno) : sync suivante avec ce snapshot → seule la colonne status est renvoyée
+3. **Valeur legacy** (deno + node) : `skipped`, jamais envoyée, hors snapshot, avertissement nommé et dédoublonné
+4. **Gardes** (deno) : fiche invisible / numéro périmé → rien d'écrit ; renumérotation pendant le push → snapshot non persisté
+5. **Secrets** (deno + node) : mot de passe renvoyé par Monday dans son erreur → masqué dans la réponse et les logs ; jamais dans le bilan
+6. **RPC** (SQL, transaction annulée) : fusion par clé, garde du numéro, RLS coordinateur, anon refusé, aucune autre colonne touchée
+7. **ITEM_NOT_FOUND** : chaque champ en erreur, aucune fusion, bilan « aucune ligne Monday pour ce numéro de bien »
 
 ---
 
@@ -225,45 +297,44 @@ query ($boardId: ID!, $columnId: String!, $value: String!) {
 }
 ```
 
-### Update multi-colonnes
+### Update d'UNE colonne (depuis 2026-09-16)
 
 ```graphql
-mutation ($boardId: ID!, $itemId: ID!, $columnValues: JSON!) {
-  change_multiple_column_values(
+mutation ($boardId: ID!, $itemId: ID!, $columnId: String!, $value: JSON!) {
+  change_column_value(
     board_id: $boardId,
     item_id: $itemId,
-    column_values: $columnValues
+    column_id: $columnId,
+    value: $value
   ) { id }
 }
 ```
 
-`columnValues` est une **chaîne JSON** (pas un objet) :
-```json
-{
-  "statut47":         { "label": "Classique" },
-  "color_mm3ftnef":   { "label": "Intervention artisan" },
-  "text_mm2q5tw8":    "password_airbnb",
-  "text_mm2qaz6a":    "password_booking"
-}
-```
+`value` est une **chaîne JSON** : `{"index":4}` (status), `{}` (vider un status), `"password_airbnb"` (text), `""` (vider un text). Une mutation **par champ**, en séquence : c'est ce qui isole les champs. `change_multiple_column_values` n'est plus utilisée ici — atomique, elle faisait tomber les 4 champs sur un seul refus.
 
 ### Erreurs courantes
 
-| Code | Cas | Reaction Edge Function |
-|---|---|---|
-| `errors[].extensions.code = 'InvalidColumnIdException'` | column_id inconnu | Bug config, à corriger |
-| 0 items dans `items_page_by_column_values` | `numero_bien` n'existe pas dans le board | `ITEM_NOT_FOUND` (404) |
-| `errors[].extensions.code = 'ColumnValueException'` | Format de valeur invalide (ex: label inconnu pour status) | `MONDAY_API_ERROR` (502) |
-| HTTP 429 | Rate limit | Pas géré en V1 — à monitorer |
+| Cas | Réaction Edge Function |
+|---|---|
+| 0 item dans `items_page_by_column_values` | chaque champ demandé → `error ITEM_NOT_FOUND` ; HTTP 200, `success:false` |
+| `ColumnValueException` sur une colonne (valeur refusée) | ce champ seul → `error MONDAY_REFUSE` (message masqué des mots de passe), les autres continuent |
+| `InvalidColumnIdException` | idem, sur ce champ — bug de config à corriger |
+| Réponse Monday au format legacy `{ error_code, error_message }` (HTTP 200 sans `errors[]`) | traitée comme une erreur (l'ancienne fonction la prenait pour un succès) |
+| Lookup impossible (HTTP 429, réseau, token) | chaque champ → `error MONDAY_API_ERROR` |
+| Fiche invisible (RLS) / numéro périmé | `FICHE_INTROUVABLE` / `NUMERO_BIEN_CHANGE`, rien d'écrit |
+
+Les issues « métier » sortent en **HTTP 200** avec `success:false` : `supabase.functions.invoke` ne livre le corps au front qu'en 2xx, et le front a besoin du détail par champ.
 
 ---
 
 ## 🔄 Évolutions possibles (V2+)
 
 - Cache `monday_item_id` en DB pour éviter le lookup à chaque sync (V1 = re-lookup à chaque fois, simple et rapide)
-- Retry exponentiel côté front si NETWORK error
-- Système de toast unifié pour les feedbacks Monday sync (V1 = console.warn uniquement)
-- Bouton "Force resync Monday" dans FicheFinalisation pour retry manuel après échec
+- Retry exponentiel côté front si NETWORK error (aujourd'hui : retry naturel au prochain enregistrement)
+- Sérialisation inter-onglets des synchronisations (verrou englobant l'appel Monday) — risque résiduel accepté le 2026-09-16
+- Version d'API Monday : `2024-01` est dépassée (Monday sert déjà `2025-10`) ; chantier à part, le parsing d'erreur accepte déjà les deux formats
+- Bouton "Force resync Monday" dans FicheFinalisation pour retry manuel après échec (hors périmètre du fix 2026-09-16, volontairement)
+- Rattrapage des fiches historiques jamais synchronisées (17 fiches « Vérification / Inventaire » au 2026-09-16) : se fera naturellement au prochain enregistrement de chacune ; pas de rattrapage massif pour ne pas écraser des mots de passe corrigés à la main dans Monday
 - Webhook bidirectionnel Monday → Fiche Logement (sync inverse)
 
 ---

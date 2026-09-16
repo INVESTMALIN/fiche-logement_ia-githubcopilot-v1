@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabaseClient'
 import { DEFAULT_COUNTRY_CODE } from '../lib/countries'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
+import { construireFeedbackMonday, doitAfficherFeedback } from '../lib/mondaySyncFeedback'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
 import { validateMondayConstrainedFields } from '../lib/mondayFieldConstraints'
 import {
@@ -1800,11 +1801,62 @@ export function FormProvider({ children }) {
   // Logique alignée avec le pattern du trigger SQL notify_fiche_alerts :
   //   - statut === 'Complété' ET (transition Brouillon→Complété OU au moins
   //     un des 4 champs surveillés a changé vs monday_snapshot)
-  //   - Push partiel possible (changedFields), full sinon (finalisation initiale).
-  //   - Update monday_snapshot en DB + state APRÈS push réussi uniquement.
-  //   - En cas d'échec : log + warn console (toast à brancher si besoin), pas de blocage.
+  //   - Le diff qui fait foi est calculé PAR L'EDGE FUNCTION contre le snapshot
+  //     en base ; le pré-diff ci-dessous évite seulement un appel inutile.
+  //   - L'Edge Function écrit un champ à la fois et fusionne elle-même dans
+  //     `monday_snapshot` les seuls champs réellement écrits (RPC, par clé,
+  //     sous garde du numéro de bien). Ici on ne fait que refléter le snapshot
+  //     rendu dans l'état local et afficher le bilan.
+  //   - SÉRIALISATION : une seule synchronisation en vol par onglet. La
+  //     suivante attend la fin de la précédente, puis l'Edge Function re-diffe
+  //     contre le snapshot fraîchement fusionné. Sans ça, deux autosaves
+  //     rapprochés (mot de passe tapé en deux fois) écrivaient chez Monday dans
+  //     un ordre non maîtrisé et la réponse la plus lente fixait le snapshot.
+  //     Limite acceptée : deux onglets sur la même fiche ne sont pas
+  //     sérialisés entre eux (il faudrait un verrou englobant l'appel Monday) ;
+  //     le pire cas est un re-push idempotent au save suivant.
+  //   - Jamais bloquant pour le save : fire-and-forget, Monday down = bilan
+  //     d'échec à l'écran, la fiche est déjà enregistrée.
+  const mondaySyncQueueRef = useRef(Promise.resolve())
+  // Dernière clé de feedback non-succès affichée : le même avertissement n'est
+  // pas répété à chaque autosave tant que la situation n'a pas changé.
+  const mondaySyncDerniereCleRef = useRef(null)
+  const [mondaySyncFeedback, setMondaySyncFeedback] = useState(null)
+  const clearMondaySyncFeedback = useCallback(() => setMondaySyncFeedback(null), [])
+
+  const executerMondaySync = async ({ ficheId, numeroBien, snapshot, pushAll }) => {
+    const reponse = await pushToMonday({ ficheId, numeroBien, snapshot, pushAll })
+
+    // Reflet local du snapshot tel que fusionné EN BASE (pas tel qu'envoyé) :
+    // il ne contient que les champs réellement écrits côté Monday. Non rendu
+    // (renumérotation en vol, RLS, RPC en erreur) → on ne touche à rien.
+    if (reponse && typeof reponse === 'object' && reponse.snapshot && typeof reponse.snapshot === 'object') {
+      const snapshotFusionne = reponse.snapshot
+      setFormData(prev => (prev?.id === ficheId ? { ...prev, monday_snapshot: snapshotFusionne } : prev))
+    }
+
+    const feedback = construireFeedbackMonday(reponse, snapshot)
+    if (!feedback) {
+      console.log(`[Monday sync] rien à pousser — fiche=${ficheId} numero_bien=${numeroBien}`)
+      return
+    }
+    const bilan = Array.isArray(reponse?.results)
+      ? reponse.results.map(r => `${r.field}:${r.status}`).join(',')
+      : `${reponse?.error || 'UNKNOWN'} — ${reponse?.message || ''}`
+    if (feedback.type === 'succes') {
+      console.log(`[Monday sync] OK — fiche=${ficheId} numero_bien=${numeroBien} item=${reponse?.itemId ?? '-'} ${bilan}`)
+    } else {
+      console.warn(`[Monday sync] ${feedback.type} — fiche=${ficheId} numero_bien=${numeroBien} ${bilan}`)
+    }
+
+    if (doitAfficherFeedback(feedback, mondaySyncDerniereCleRef.current)) {
+      mondaySyncDerniereCleRef.current = feedback.type === 'succes' ? null : feedback.cle
+      setMondaySyncFeedback({ ...feedback, numeroBien, timestamp: Date.now() })
+    }
+  }
+
   const triggerMondaySync = (savedData, wasCompleteBeforeSave) => {
-    if (!savedData) return
+    if (!savedData?.id) return
     const isComplete = savedData.statut === 'Complété'
     if (!isComplete) return
 
@@ -1821,55 +1873,22 @@ export function FormProvider({ children }) {
     const newSnapshot = extractMondaySnapshot(savedData)
     const savedSnapshot = savedData.monday_snapshot
 
-    let changedFields = null  // null = push complet
-    let shouldPush = false
-
-    if (!wasCompleteBeforeSave) {
-      // Finalisation initiale (Brouillon → Complété) : push complet
-      shouldPush = true
-    } else if (savedSnapshot) {
-      // Post-finalisation : on diff
-      changedFields = getMondayChangedFields(newSnapshot, savedSnapshot)
-      shouldPush = Array.isArray(changedFields) && changedFields.length > 0
-    } else {
-      // Cas edge : déjà Complété mais pas de snapshot (fiche pré-feature) → push complet
-      shouldPush = true
+    // Finalisation initiale (Brouillon → Complété) : push complet. Fiche déjà
+    // Complété sans snapshot (pré-feature, ou renumérotée) : l'Edge Function
+    // poussera tout d'elle-même, snapshot NULL en base.
+    const pushAll = !wasCompleteBeforeSave
+    if (!pushAll && savedSnapshot) {
+      // Pré-diff côté onglet : rien de changé → pas d'appel. Ce snapshot local
+      // peut être en retard d'un sync en vol ; au pire l'Edge Function conclut
+      // « rien à pousser » sans appeler Monday.
+      const changedFields = getMondayChangedFields(newSnapshot, savedSnapshot)
+      if (!Array.isArray(changedFields) || changedFields.length === 0) return
     }
 
-    if (!shouldPush) return
-
-    // Fire-and-forget : on ne await pas, le save retourne immédiatement
-    pushToMonday({ ficheId: savedData.id, numeroBien, snapshot: newSnapshot, changedFields })
-      .then(async (mondayResult) => {
-        if (mondayResult?.success) {
-          // Persist le nouveau snapshot pour la prochaine dirty-detection.
-          // ⚠️ Garde sur le numéro de bien : ce push est fire-and-forget, il peut
-          // atterrir APRÈS qu'un administrateur a renuméroté la fiche
-          // (changer_numero_bien vide le snapshot pour forcer un push complet
-          // vers le nouvel item). Sans la garde, on réécrirait le snapshot de
-          // l'ANCIEN item par-dessus ce NULL, et le nouvel item resterait vide.
-          // Le numéro est repris BRUT de la ligne sauvegardée, pas trimmé, pour
-          // matcher exactement ce qui est en base.
-          const { data: majSnapshot, error: updateError } = await supabase
-            .from('fiches')
-            .update({ monday_snapshot: newSnapshot })
-            .eq('id', savedData.id)
-            .eq('logement_numero_bien', savedData.section_logement?.numero_bien)
-            .select('id')
-          if (updateError) {
-            console.warn('[Monday sync] Snapshot DB update failed:', updateError.message)
-          } else if (!majSnapshot || majSnapshot.length === 0) {
-            // Le numéro a changé pendant le push : on laisse le snapshot à NULL,
-            // le prochain enregistrement repoussera tout vers le nouvel item.
-            console.warn(`[Monday sync] Snapshot non persisté : le numéro de bien a changé pendant le push (fiche=${savedData.id}, push sur numero_bien=${numeroBien})`)
-          } else {
-            setFormData(prev => ({ ...prev, monday_snapshot: newSnapshot }))
-            console.log(`[Monday sync] OK — fiche=${savedData.id} numero_bien=${numeroBien} columns=${mondayResult.updatedColumns?.join(',')}`)
-          }
-        } else {
-          console.warn(`[Monday sync] ${mondayResult?.error || 'UNKNOWN'} — ${mondayResult?.message || ''}`)
-        }
-      })
+    // Fire-and-forget, mais SÉRIALISÉ : chaque sync attend la fin du précédent.
+    // La chaîne ne casse jamais (catch sur chaque maillon).
+    mondaySyncQueueRef.current = mondaySyncQueueRef.current
+      .then(() => executerMondaySync({ ficheId: savedData.id, numeroBien, snapshot: newSnapshot, pushAll }))
       .catch(err => {
         console.warn('[Monday sync] Unexpected error:', err)
       })
@@ -2532,6 +2551,12 @@ export function FormProvider({ children }) {
       // 🟦 Toast Monday Contacts Maintenance (consommé par FicheInstructionsMenage)
       mondayContactsToast,
       clearMondayContactsToast,
+
+      // 🟦 Bilan de la sync Monday des 4 champs (consommé par MondaySyncToast,
+      // monté dans FicheWizard). Shape : { type:'succes'|'partiel'|'echec',
+      // titre, message, champsOk, champsEnEchec, cle, numeroBien, timestamp }, ou null.
+      mondaySyncFeedback,
+      clearMondaySyncFeedback,
 
       // 🟦 Sync Monday Contacts — déclenchement manuel (bouton FicheInstructionsMenage
       // post-finalisation). Promise<{ success, pushedCount, failedCount, ... }>.
