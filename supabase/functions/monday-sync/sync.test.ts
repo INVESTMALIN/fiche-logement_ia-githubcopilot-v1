@@ -279,6 +279,20 @@ Deno.test('garde : renumérotation PENDANT le push (RPC rend NULL) → snapshot 
   assertEquals(r.results.filter((x) => x.status === 'ok').length, 4)
 })
 
+Deno.test('garde : numéro stocké avec des espaces → la garde tolère, la RPC reçoit le numéro EXACT de la base', async () => {
+  // mapFormDataToSupabase stocke la saisie brute ; l'onglet, lui, envoie une
+  // valeur trimmée. La pré-vérification compare trimmé/trimmé, mais la RPC
+  // compare à l'exact : il faut lui donner la valeur telle qu'en base, sinon
+  // le snapshot n'avancerait jamais pour cette fiche (re-push à chaque save).
+  const e = espion({ fiche: { numeroBien: ' 7755 ', snapshot: null } })
+  const r = await synchroniser(requete({ numeroBien: '7755' }), e.deps) as SyncResponse
+  assert(r.success)
+  assertEquals(e.lookups, ['7755'])
+  assertEquals(e.fusions.length, 1)
+  assertEquals(e.fusions[0].numeroBien, ' 7755 ')
+  assert(r.snapshotPersiste)
+})
+
 Deno.test('garde : RPC en erreur → écritures Monday conservées, snapshot non persisté, pas d\'exception', async () => {
   const e = espion({ fusion: 'throw' })
   const r = await synchroniser(requete(), e.deps) as SyncResponse

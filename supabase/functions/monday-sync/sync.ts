@@ -355,11 +355,15 @@ export async function synchroniser(req: SyncRequest, deps: Deps): Promise<SyncRe
   // 5. Snapshot : SEULS les champs réellement écrits, fusionnés par clé en
   //    base sous garde du numéro de bien. Un échec ici ne remet pas en cause
   //    les écritures Monday (déjà faites) : au pire un re-push idempotent.
+  //    Le numéro passé à la RPC est celui lu EN BASE (brut, non trimmé) : la
+  //    garde compare à l'exact, et `mapFormDataToSupabase` stocke la saisie
+  //    telle quelle. Avec la valeur trimmée de l'onglet, un numéro stocké avec
+  //    un espace ne matcherait jamais et la fiche re-pousserait à chaque save.
   let snapshot: Record<string, unknown> | null = null
   let snapshotPersiste = false
   if (Object.keys(patch).length > 0) {
     try {
-      snapshot = await deps.fusionnerSnapshot(req.ficheId, numeroBien, patch)
+      snapshot = await deps.fusionnerSnapshot(req.ficheId, fiche.numeroBien ?? numeroBien, patch)
       snapshotPersiste = snapshot !== null
       if (!snapshotPersiste) {
         warn(`${prefixe} snapshot non persisté : numéro de bien changé pendant le push, ou fiche plus visible`)
