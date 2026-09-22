@@ -4,7 +4,15 @@ import { useForm } from './FormContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import { normalizePhotoField } from '../lib/photoHelpers'
+import {
+  VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS,
+  doitCompresserVideoGuide,
+  lireReponseCompression,
+  choisirVideoGuide
+} from '../lib/videoGuideAcces'
 import imageCompression from 'browser-image-compression'
+
+const COMPRESS_VIDEO_URL = 'https://video-compressor-production.up.railway.app/compress-video'
 
 const sanitizeFileName = (fileName) => {
   return fileName
@@ -45,7 +53,12 @@ const PhotoUpload = ({
   multiple = true,     // Plusieurs photos ou une seule
   maxFiles = 10,       // Limite nombre de fichiers
   capture = false,      // Activer capture mobile
-  acceptVideo = false  // Autoriser les vidéos (optionnel)
+  acceptVideo = false,  // Autoriser les vidéos (optionnel)
+  // 🎯 OPT-IN « cible livret » (Guide d'accès uniquement). Les deux props
+  // vont ensemble. Sans elles, les vidéos suivent le chemin historique
+  // (seuil 95 Mo, aucun avertissement) — c'est le cas des 33 autres champs.
+  videoTargetSizeBytes = null,   // Cible de taille en octets : au-dessus, Railway est appelé avec targetSizeBytes
+  videoWarningFieldPath = null   // Champ FormContext où persister l'avertissement (null = rien à signaler)
 }) => {
   const { getField, updateField, handleSave } = useForm()
   const { user } = useAuth()
@@ -231,6 +244,53 @@ const PhotoUpload = ({
     })
   }
 
+  // 🎯 Compression « cible livret » (mode opt-in, Guide d'accès uniquement).
+  // L'original est DÉJÀ sur Supabase : quoi qu'il arrive ici, l'upload est
+  // acquis. On demande à Railway de viser la cible, on contrôle la taille
+  // réellement obtenue, et on tranche avec `choisirVideoGuide` :
+  //   - sous la cible                → compressée, pas d'avertissement
+  //   - encore au-dessus             → la plus légère des deux + « trop lourde »
+  //   - échec / timeout / réponse KO → originale + « compression échouée »
+  const compresserPourLivret = async (file, originalUrl) => {
+    console.log(`🎯 Vidéo ${(file.size / 1024 / 1024).toFixed(1)} Mio > cible ${(videoTargetSizeBytes / 1024 / 1024).toFixed(1)} Mio, compression Railway avec cible...`)
+    setBackendCompressing(true)
+
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS)
+    let compressee = null
+
+    try {
+      const response = await fetch(COMPRESS_VIDEO_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoUrl: originalUrl, targetSizeBytes: videoTargetSizeBytes }),
+        signal: controller.signal
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erreur compression backend (HTTP ${response.status})`)
+      }
+
+      compressee = lireReponseCompression(await response.json())
+      if (!compressee) {
+        throw new Error('Réponse du service de compression invalide')
+      }
+      console.log(`✅ Compression cible terminée: ${(compressee.taille / 1024 / 1024).toFixed(1)} Mio`)
+    } catch (compressionError) {
+      console.error('❌ Compression cible échouée, vidéo originale conservée:', compressionError)
+      compressee = null
+    } finally {
+      clearTimeout(timer)
+      setBackendCompressing(false)
+    }
+
+    return choisirVideoGuide({
+      originale: { url: originalUrl, taille: file.size },
+      compressee,
+      cible: videoTargetSizeBytes
+    })
+  }
+
   // Upload vers Supabase Storage
   const uploadToSupabase = async (files) => {
     // 🚨 VALIDATION CRITIQUE - Numéro de bien obligatoire
@@ -240,6 +300,8 @@ const PhotoUpload = ({
     }
 
     const uploadedUrls = []
+    // Mode cible seulement : undefined = ne pas toucher au champ d'avertissement
+    let videoWarning
 
     try {
       for (const file of files) {
@@ -268,6 +330,10 @@ const PhotoUpload = ({
             console.error('Erreur compression:', error)
             fileToUpload = file // Fallback vers fichier original
           }
+        } else if (isVideo && videoTargetSizeBytes) {
+          // 🎯 Mode cible : jamais de compression navigateur, l'original part
+          // tel quel sur Supabase ; Railway est sollicité après l'upload
+          fileToUpload = file
         } else if (isVideo) {
           // Si vidéo > 95 MB, on SKIP la compression navigateur (backend gérera)
           if (file.size > 95 * 1024 * 1024) {
@@ -304,13 +370,25 @@ const PhotoUpload = ({
           .from('fiche-photos')
           .getPublicUrl(storagePath)
 
+        // 🎯 MODE CIBLE (Guide d'accès) : la cible décide, pas le seuil de 95 MB
+        if (isVideo && videoTargetSizeBytes) {
+          if (doitCompresserVideoGuide(file.size, videoTargetSizeBytes)) {
+            const decision = await compresserPourLivret(file, urlData.publicUrl)
+            uploadedUrls.push(decision.url)
+            videoWarning = decision.avertissement
+          } else {
+            console.log('🎯 Vidéo sous la cible, conservée telle quelle')
+            uploadedUrls.push(urlData.publicUrl)
+            videoWarning = null
+          }
+
         // 🎬 COMPRESSION BACKEND si vidéo > 95 MB
-        if (isVideo && file.size > 95 * 1024 * 1024) {
+        } else if (isVideo && file.size > 95 * 1024 * 1024) {
           console.log('🎬 Vidéo > 95MB, compression backend en cours...')
           setBackendCompressing(true)
 
           try {
-            const response = await fetch('https://video-compressor-production.up.railway.app/compress-video', {
+            const response = await fetch(COMPRESS_VIDEO_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ videoUrl: urlData.publicUrl })
@@ -340,7 +418,7 @@ const PhotoUpload = ({
         }
       }
 
-      return { success: true, urls: uploadedUrls }
+      return { success: true, urls: uploadedUrls, videoWarning }
     } catch (error) {
       return { success: false, error: error.message }
     }
@@ -377,6 +455,12 @@ const PhotoUpload = ({
           updateField(fieldPath, newUrls[0])
         }
 
+        // 🎯 Mode cible : l'avertissement suit la vidéo dans la fiche (persisté
+        // avec elle, effacé si l'upload n'a rien à signaler)
+        if (videoWarningFieldPath && result.videoWarning !== undefined) {
+          updateField(videoWarningFieldPath, result.videoWarning)
+        }
+
         // Reset du input
         event.target.value = ''
       } else {
@@ -387,6 +471,11 @@ const PhotoUpload = ({
     } finally {
       setUploading(false)
     }
+  }
+
+  // 🎯 Mode cible : l'avertissement n'a plus d'objet sans la vidéo qui l'a causé
+  const effacerAvertissementVideo = () => {
+    if (videoWarningFieldPath) updateField(videoWarningFieldPath, null)
   }
 
   // Suppression d'une photo - VERSION FINALE
@@ -419,6 +508,7 @@ const PhotoUpload = ({
       } else {
         updateField(fieldPath, null)
       }
+      effacerAvertissementVideo()
 
       console.log('✅ Photo supprimée du FormContext')
 
@@ -432,6 +522,7 @@ const PhotoUpload = ({
       } else {
         updateField(fieldPath, null)
       }
+      effacerAvertissementVideo()
 
       setError('Photo supprimée (erreur Storage ignorée)')
     }

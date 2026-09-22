@@ -1336,7 +1336,10 @@ const initialFormData = {
 
   section_guide_acces: {
     photos_etapes: [],
-    video_acces: []
+    video_acces: [],
+    // 🎯 Avertissement « cible livret » : null | 'trop_lourde' | 'compression_echouee'
+    // (voir src/lib/videoGuideAcces.js). Persisté avec la fiche, effacé avec la vidéo.
+    video_avertissement: null
   },
 
   section_securite: {

@@ -65,23 +65,55 @@ Système complet d'upload, compression, et gestion du cycle de vie des médias
 Librairie `browser-image-compression`, cible 2 MB, Web Worker.
 Résultat observé : 2.8 MB vers 1.6 MB.
 
-### 2.2 Vidéos, deux niveaux
+### 2.2 Vidéos, chemin historique (33 champs)
 
-**Niveau 1, navigateur (< 95 MB)** : Canvas + MediaRecorder + Web Audio API,
-1600px, VP8 4 Mbps, Opus 128 kbps, sortie `.webm`.
+**Navigateur** : la fonction `compressVideo` de `PhotoUpload` (Canvas + MediaRecorder,
+VP8 4 Mbps, Opus 128 kbps, `.webm`) existe mais est **inatteignable** : elle et
+l'appel backend partagent le même seuil de 95 MB dans les deux sens, donc rien
+entre 0 et 95 MB n'est jamais compressé. Ne pas la ressusciter par erreur.
 
-**Niveau 2, backend Railway (> 95 MB)** :
+**Backend Railway (> 95 MB)** :
 `https://video-compressor-production.up.railway.app/compress-video`,
-FFmpeg libx264 720p 2 Mbps, AAC 128 kbps, preset fast, crf 28, sortie `_compressed.mp4`.
+FFmpeg libx264, largeur bornée à 720 px, crf 32, preset medium, AAC 96 kbps,
+sortie `_compressed.mp4`. Aucune cible de taille : la qualité est fixe. En cas
+d'échec, l'URL originale est conservée.
+
+### 2.2 bis Vidéo du Guide d'accès, « cible livret » (22/09/2026)
+
+Seul `section_guide_acces.video_acces` est concerné. La vidéo est ensuite
+ajoutée à la main dans le livret d'accueil Loomky (limite rapportée
+« 50 Mb/Mo », unité non vérifiée). `FicheGuideAcces` passe à `PhotoUpload` deux
+props opt-in, `videoTargetSizeBytes` et `videoWarningFieldPath` ; sans elles, le
+chemin historique ci-dessus s'applique tel quel.
+
+- **Cible** : constante unique `VIDEO_GUIDE_ACCES_CIBLE_OCTETS` (40 Mio) dans
+  `src/lib/videoGuideAcces.js`. Le déclenchement se base sur elle, pas sur 95 MB.
+- **Service** : `/compress-video` reçoit `targetSizeBytes` (opt-in, sinon
+  comportement historique). Il joue la passe crf 32 d'abord ; si elle dépasse la
+  cible, un encodage 2 passes à débit calculé (720p ≥ 800 kbps, sinon 480p,
+  30 fps max, AAC 64 kbps, marge 7 %). Sous 250 kbps vidéo (≈ 16-17 min pour
+  40 Mio), il renonce et renvoie `targetReached: false`. Réponse enrichie de
+  `targetSizeBytes`, `targetReached`, `strategy` (+ `reason`).
+- **Décision côté app** (`choisirVideoGuide`, testée) : sous la cible → vidéo
+  compressée, rien à signaler ; encore au-dessus → la plus légère des deux +
+  avertissement `trop_lourde` ; échec / timeout (15 min) / réponse invalide →
+  originale + avertissement `compression_echouee`. L'upload n'échoue jamais à
+  cause de la compression.
+- **Persistance** : `section_guide_acces.video_avertissement` ↔ colonne
+  `fiches.guide_acces_video_avertissement` (CHECK sur les deux valeurs), effacé
+  à la suppression de la vidéo ou écrasé par l'upload suivant. Les deux messages
+  sont distincts (le remède n'est pas le même) et ne promettent jamais que la
+  vidéo passera. Migration : `docs/migrations/2026-09-22_guide_acces_video_avertissement.sql`.
 
 ### 2.3 Récapitulatif
 
-| Type | Taille | Méthode | Résolution | Bitrate | Temps |
-|------|--------|---------|------------|---------|-------|
-| Photo | toutes | client | originale | - | < 1s |
-| Vidéo | < 95 MB | aucune | originale | - | 0s |
-| Vidéo | 95-350 MB | client | 1600px | 4 Mbps | 30s-2min |
-| Vidéo | > 95 MB | Railway | 1280p | 2 Mbps | 2-5min |
+| Type | Taille | Méthode | Résolution | Débit | Temps |
+|------|--------|---------|------------|-------|-------|
+| Photo | toutes | client | 1200px | 2 MB max | < 1s |
+| Vidéo (33 champs) | ≤ 95 MB | aucune | originale | - | 0s |
+| Vidéo (33 champs) | > 95 MB | Railway crf 32 | 720 px de large | qualité fixe | 2-5min |
+| Vidéo Guide d'accès | ≤ 40 Mio | aucune | originale | - | 0s |
+| Vidéo Guide d'accès | > 40 Mio | Railway crf 32 puis 2 passes si besoin | 720p / 480p | calculé pour 40 Mio | 1-10min |
 
 **Limites après compression** : photos 20 MB, vidéos 350 MB.
 

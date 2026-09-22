@@ -8,6 +8,7 @@ import PhotoUpload from '../components/PhotoUpload'
 import { Sparkles, Copy, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { generateGuideAccesPDF } from '../lib/generateAssistantPDF'
 import { supabase } from '../lib/supabaseClient'
+import { VIDEO_GUIDE_ACCES_CIBLE_OCTETS, AVERTISSEMENT_VIDEO_GUIDE, formaterMio } from '../lib/videoGuideAcces'
 
 // Helper pour préparer le contexte pour le webhook Guide d'accès
 const prepareGuideAccesContext = (formData) => {
@@ -116,6 +117,12 @@ export default function FicheGuideAcces() {
   // Vérifier si une vidéo est uploadée
   const videoUrl = getField('section_guide_acces.video_acces')?.[0]
   const hasVideo = videoUrl && videoUrl.length > 0
+
+  // 🎯 Avertissement « cible livret », persisté avec la fiche par PhotoUpload
+  // (voir src/lib/videoGuideAcces.js). Affiché tant que la vidéo concernée est là.
+  const avertissementVideo = getField('section_guide_acces.video_avertissement')
+  const videoTropLourde = hasVideo && avertissementVideo === AVERTISSEMENT_VIDEO_GUIDE.TROP_LOURDE
+  const videoCompressionEchouee = hasVideo && avertissementVideo === AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_ECHOUEE
 
   const handleGenererGuide = async () => {
     if (!hasVideo) {
@@ -376,6 +383,11 @@ export default function FicheGuideAcces() {
                       Cette vidéo peut être longue. Filmer en 720p réduira considérablement la taille du fichier et accélérera l'upload.
                     </p>
                     <p className="text-sm text-orange-700">
+                      Au-delà de {formaterMio(VIDEO_GUIDE_ACCES_CIBLE_OCTETS)}, la vidéo est compressée automatiquement
+                      pour tenter de passer sous la limite du livret d'accueil. Ce n'est pas garanti : un avertissement
+                      s'affichera ici si elle risque de ne pas passer.
+                    </p>
+                    <p className="text-sm text-orange-700">
                       Si la vidéo est trop lourde, veuillez la sauvegarder sur le Drive directement.
                     </p>
                   </div>
@@ -388,7 +400,53 @@ export default function FicheGuideAcces() {
                 multiple={true}
                 maxFiles={1}
                 acceptVideo={true}
+                videoTargetSizeBytes={VIDEO_GUIDE_ACCES_CIBLE_OCTETS}
+                videoWarningFieldPath="section_guide_acces.video_avertissement"
               />
+
+              {/* 🎯 Avertissements durables (persistés avec la fiche). Deux messages
+                  distincts : le remède n'est pas le même. Jamais de promesse que
+                  la vidéo passera : elle RISQUE de ne pas passer. */}
+              {videoTropLourde && (
+                <div
+                  data-testid="avertissement-video-trop-lourde"
+                  className="mt-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg"
+                >
+                  <p className="font-semibold text-amber-900 mb-1">
+                    ⚠️ Vidéo trop lourde pour le livret d'accueil
+                  </p>
+                  <p className="text-sm text-amber-800">
+                    Même après compression, cette vidéo dépasse {formaterMio(VIDEO_GUIDE_ACCES_CIBLE_OCTETS)} :
+                    elle risque de ne pas pouvoir être intégrée au livret Loomky. La version la plus légère a été
+                    conservée dans la fiche, la refaire à l'identique n'y changera rien.
+                  </p>
+                  <ul className="text-sm text-amber-800 mt-2 list-disc list-inside space-y-1">
+                    <li>Si c'est encore possible, refaites une vidéo plus adaptée (plus courte, filmée en 720p) et remplacez celle-ci.</li>
+                    <li>Sinon, signalez qu'un traitement manuel du fichier sur le Drive pourra être nécessaire ensuite.</li>
+                  </ul>
+                </div>
+              )}
+
+              {videoCompressionEchouee && (
+                <div
+                  data-testid="avertissement-video-compression-echouee"
+                  className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg"
+                >
+                  <p className="font-semibold text-red-900 mb-1">
+                    ⚠️ Compression impossible pour le moment, vidéo originale conservée
+                  </p>
+                  <p className="text-sm text-red-800">
+                    Le service de compression n'a pas répondu ou a échoué. La vidéo a bien été enregistrée dans la
+                    fiche, mais telle quelle, au-dessus de {formaterMio(VIDEO_GUIDE_ACCES_CIBLE_OCTETS)} : elle risque
+                    de ne pas pouvoir être intégrée au livret Loomky.
+                  </p>
+                  <ul className="text-sm text-red-800 mt-2 list-disc list-inside space-y-1">
+                    <li>Le problème peut être passager : vous pouvez supprimer la vidéo et la réimporter plus tard pour retenter la compression.</li>
+                    <li>Si c'est encore possible, refaites une vidéo plus adaptée (plus courte, filmée en 720p).</li>
+                    <li>Sinon, signalez qu'un traitement manuel du fichier sur le Drive pourra être nécessaire ensuite.</li>
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* ASSISTANT - Guide d'accès */}
