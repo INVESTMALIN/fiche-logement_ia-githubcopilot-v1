@@ -1,5 +1,5 @@
 // src/components/PhotoUpload.jsx
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import { useForm } from './FormContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
@@ -7,9 +7,11 @@ import { normalizePhotoField } from '../lib/photoHelpers'
 import {
   VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS,
   VIDEO_GUIDE_ACCES_POLL_MS,
+  AVERTISSEMENT_VIDEO_GUIDE,
   doitCompresserVideoGuide,
   lireEtatJobCompression,
-  choisirVideoGuide
+  choisirVideoGuide,
+  estMemeFiche
 } from '../lib/videoGuideAcces'
 import imageCompression from 'browser-image-compression'
 
@@ -69,7 +71,7 @@ const PhotoUpload = ({
   videoTargetSizeBytes = null,   // Cible de taille en octets : au-dessus, Railway est appelé avec targetSizeBytes
   videoWarningFieldPath = null   // Champ FormContext où persister l'avertissement (null = rien à signaler)
 }) => {
-  const { getField, updateField, handleSave } = useForm()
+  const { getField, getFieldLive, updateField, handleSave } = useForm()
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [compressing, setCompressing] = useState(false)
@@ -78,11 +80,6 @@ const PhotoUpload = ({
 
   // Récupérer les photos actuelles (normalise les cas string JSON / URL unique)
   const currentPhotos = normalizePhotoField(getField(fieldPath))
-  // 🎯 Mode cible : la compression dure (jusqu'à 20 min) pendant que le
-  // formulaire vit. Ce miroir donne la valeur COURANTE du champ à un traitement
-  // asynchrone lancé depuis un rendu antérieur (fermeture de `getField` figée).
-  const currentPhotosRef = useRef(currentPhotos)
-  currentPhotosRef.current = currentPhotos
   // Génération du path pour Supabase Storage
   const generateStoragePath = (fileName) => {
     const timestamp = Date.now()
@@ -403,13 +400,18 @@ const PhotoUpload = ({
         // L'original est publié dans la fiche DÈS qu'il est sur Supabase (et
         // donc sauvegardé par l'autosave) : si la compression dure, si l'onglet
         // se ferme ou si le coordinateur finalise entre-temps, la vidéo n'est
-        // jamais perdue. La compressée remplace l'original à la fin, si le
-        // champ la contient encore.
+        // jamais perdue. Pendant le job, l'avertissement provisoire
+        // « compression en cours » est lui aussi persisté : s'il survit à un
+        // rechargement, la session a été interrompue et le coordinateur le voit.
+        // La compressée remplace l'original à la fin, si le champ la contient
+        // encore et si c'est toujours la même fiche qui est chargée.
         if (isVideo && videoTargetSizeBytes) {
-          publierVideoGuide(urlData.publicUrl)
-          if (doitCompresserVideoGuide(file.size, videoTargetSizeBytes)) {
+          const aCompresser = doitCompresserVideoGuide(file.size, videoTargetSizeBytes)
+          const ficheDepart = identiteFicheLive()
+          publierVideoGuide(urlData.publicUrl, aCompresser ? AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_EN_COURS : null)
+          if (aCompresser) {
             const decision = await compresserPourLivret(file, urlData.publicUrl)
-            remplacerVideoGuide(urlData.publicUrl, decision)
+            remplacerVideoGuide(urlData.publicUrl, decision, ficheDepart)
           } else {
             console.log('🎯 Vidéo sous la cible, conservée telle quelle')
           }
@@ -457,19 +459,32 @@ const PhotoUpload = ({
     }
   }
 
-  // 🎯 Mode cible : ajoute l'original au champ et efface l'avertissement
-  // précédent (un nouvel upload repart de zéro).
-  const publierVideoGuide = (originalUrl) => {
-    const actuelles = currentPhotosRef.current
+  // 🎯 Mode cible : identité de la fiche chargée MAINTENANT dans le provider
+  // (qui survit aux changements de route), lue hors de toute fermeture figée.
+  const identiteFicheLive = () => ({
+    id: getFieldLive('id') || null,
+    numeroBien: getFieldLive('section_logement.numero_bien') || null
+  })
+
+  // 🎯 Mode cible : ajoute l'original au champ et pose l'avertissement de
+  // départ (provisoire « en cours » si un job part, sinon rien : un nouvel
+  // upload repart de zéro).
+  const publierVideoGuide = (originalUrl, avertissementDepart) => {
+    const actuelles = normalizePhotoField(getFieldLive(fieldPath))
     updateField(fieldPath, multiple ? [...actuelles, originalUrl] : originalUrl)
-    if (videoWarningFieldPath) updateField(videoWarningFieldPath, null)
+    if (videoWarningFieldPath) updateField(videoWarningFieldPath, avertissementDepart)
   }
 
   // 🎯 Mode cible : à la fin de la compression, remplace l'original par la
-  // vidéo retenue et pose l'avertissement — sauf si le coordinateur a supprimé
-  // la vidéo entre-temps (le résultat n'a alors plus d'objet).
-  const remplacerVideoGuide = (originalUrl, decision) => {
-    const actuelles = currentPhotosRef.current
+  // vidéo retenue et pose l'avertissement final — sauf si une AUTRE fiche a
+  // été chargée entre-temps, ou si le coordinateur a supprimé la vidéo (le
+  // résultat n'a alors plus d'objet : on n'écrit rien).
+  const remplacerVideoGuide = (originalUrl, decision, ficheDepart) => {
+    if (!estMemeFiche(ficheDepart, identiteFicheLive())) {
+      console.log('🎯 Une autre fiche est chargée depuis le départ de la compression, résultat ignoré')
+      return
+    }
+    const actuelles = normalizePhotoField(getFieldLive(fieldPath))
     if (!actuelles.includes(originalUrl)) {
       console.log('🎯 Vidéo supprimée pendant la compression, résultat ignoré')
       return

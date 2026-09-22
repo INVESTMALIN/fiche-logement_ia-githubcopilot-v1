@@ -17,6 +17,7 @@ const {
   lireReponseCompression,
   lireEtatJobCompression,
   choisirVideoGuide,
+  estMemeFiche,
   formaterMio,
 } = await chargerModule('../../src/lib/videoGuideAcces.js')
 
@@ -126,9 +127,26 @@ test('cas 3 : échec (réseau, timeout, réponse invalide) → originale, averti
   assert.deepEqual(r, { url: originale.url, taille: originale.taille, avertissement: AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_ECHOUEE })
 })
 
-test('les deux avertissements sont distincts : le remède n\'est pas le même', () => {
-  assert.notEqual(AVERTISSEMENT_VIDEO_GUIDE.TROP_LOURDE, AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_ECHOUEE)
+test('les trois états sont distincts : en cours (provisoire), trop lourde, échec', () => {
+  const valeurs = Object.values(AVERTISSEMENT_VIDEO_GUIDE)
+  assert.equal(new Set(valeurs).size, 3)
+  assert.deepEqual([...valeurs].sort(), ['compression_echouee', 'compression_en_cours', 'trop_lourde'])
   assert.ok(Object.isFrozen(AVERTISSEMENT_VIDEO_GUIDE))
+  // choisirVideoGuide ne rend jamais l'état provisoire : il est posé au départ
+  // du job, jamais à l'arrivée.
+  for (const compressee of [null, { url: 'https://s/c.mp4', taille: 10 * MIO }, { url: 'https://s/c.mp4', taille: 60 * MIO }]) {
+    assert.notEqual(choisirVideoGuide({ originale, compressee }).avertissement, AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_EN_COURS)
+  }
+})
+
+test('estMemeFiche : id quand il existe des deux côtés, sinon numéro de bien', () => {
+  assert.equal(estMemeFiche({ id: 'A', numeroBien: '1' }, { id: 'A', numeroBien: '1' }), true)
+  assert.equal(estMemeFiche({ id: 'A', numeroBien: '1' }, { id: 'B', numeroBien: '1' }), false, 'doublon de numéro : les ids priment')
+  // Fiche créée par l'autosave PENDANT le job : id null au départ, connu à l'arrivée
+  assert.equal(estMemeFiche({ id: null, numeroBien: '9999' }, { id: 'nouveau', numeroBien: '9999' }), true)
+  assert.equal(estMemeFiche({ id: null, numeroBien: '9999' }, { id: 'autre', numeroBien: '1234' }), false)
+  assert.equal(estMemeFiche({ id: '', numeroBien: '' }, { id: '', numeroBien: '' }), false, 'sans identité, on n\'écrit pas')
+  assert.equal(estMemeFiche(undefined, { id: 'A', numeroBien: '1' }), false)
 })
 
 test('la cible est passée à choisirVideoGuide (paramétrable, défaut = constante)', () => {

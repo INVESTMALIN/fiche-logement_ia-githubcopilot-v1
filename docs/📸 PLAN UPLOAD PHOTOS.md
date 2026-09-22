@@ -107,11 +107,21 @@ chemin historique ci-dessus s'applique tel quel.
   avertissement `trop_lourde` ; échec / délai (20 min) / job perdu (404) /
   réponse invalide → originale + avertissement `compression_echouee`. L'upload
   n'échoue jamais à cause de la compression.
+- **Publication immédiate** : l'original est ajouté au champ dès qu'il est sur
+  Supabase (donc persisté par l'autosave), avec l'avertissement provisoire
+  `compression_en_cours` si un job part. À la fin du job, la vidéo retenue
+  remplace l'original et l'avertissement final est posé — seulement si la même
+  fiche est toujours chargée (`estMemeFiche`, le FormProvider survit aux
+  changements de route) et si la vidéo n'a pas été supprimée entre-temps.
+  Fermer l'onglet, finaliser ou changer de fiche pendant le job ne perd donc
+  rien ; un `compression_en_cours` qui survit à un rechargement signale une
+  session interrompue, avec le remède affiché (réimporter).
 - **Persistance** : `section_guide_acces.video_avertissement` ↔ colonne
-  `fiches.guide_acces_video_avertissement` (CHECK sur les deux valeurs), effacé
-  à la suppression de la vidéo ou écrasé par l'upload suivant. Les deux messages
+  `fiches.guide_acces_video_avertissement` (CHECK sur les trois valeurs), effacé
+  à la suppression de la vidéo ou écrasé par l'upload suivant. Les messages
   sont distincts (le remède n'est pas le même) et ne promettent jamais que la
-  vidéo passera. Migration : `docs/migrations/2026-09-22_guide_acces_video_avertissement.sql`.
+  vidéo passera. Migrations : `docs/migrations/2026-09-22_guide_acces_video_avertissement.sql`
+  puis `…_en_cours.sql`.
 
 ### 2.3 Récapitulatif
 

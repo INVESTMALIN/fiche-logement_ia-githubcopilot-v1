@@ -121,6 +121,7 @@ export default function FicheGuideAcces() {
   // 🎯 Avertissement « cible livret », persisté avec la fiche par PhotoUpload
   // (voir src/lib/videoGuideAcces.js). Affiché tant que la vidéo concernée est là.
   const avertissementVideo = getField('section_guide_acces.video_avertissement')
+  const videoCompressionEnCours = hasVideo && avertissementVideo === AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_EN_COURS
   const videoTropLourde = hasVideo && avertissementVideo === AVERTISSEMENT_VIDEO_GUIDE.TROP_LOURDE
   const videoCompressionEchouee = hasVideo && avertissementVideo === AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_ECHOUEE
 
@@ -404,9 +405,33 @@ export default function FicheGuideAcces() {
                 videoWarningFieldPath="section_guide_acces.video_avertissement"
               />
 
-              {/* 🎯 Avertissements durables (persistés avec la fiche). Deux messages
-                  distincts : le remède n'est pas le même. Jamais de promesse que
-                  la vidéo passera : elle RISQUE de ne pas passer. */}
+              {/* 🎯 Avertissements durables (persistés avec la fiche). Trois états :
+                  « en cours » est provisoire et ne survit à un rechargement que si
+                  la session a été interrompue ; « trop lourde » et « échec » sont
+                  finaux et distincts, le remède n'est pas le même. Jamais de
+                  promesse que la vidéo passera : elle RISQUE de ne pas passer. */}
+              {videoCompressionEnCours && (
+                <div
+                  data-testid="avertissement-video-compression-en-cours"
+                  className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg"
+                >
+                  <p className="font-semibold text-blue-900 mb-1">
+                    ⏳ Compression pour le livret d'accueil en cours
+                  </p>
+                  <p className="text-sm text-blue-800">
+                    La vidéo est déjà enregistrée dans la fiche, telle quelle (au-dessus de {formaterMio(VIDEO_GUIDE_ACCES_CIBLE_OCTETS)}).
+                    Laissez cette page ouverte jusqu'à la fin de la compression : le résultat remplacera la vidéo
+                    et ce message.
+                  </p>
+                  <p className="text-sm text-blue-800 mt-2">
+                    Si ce message est encore là après un rechargement de la page, la compression a été interrompue :
+                    la vidéo risque alors de ne pas pouvoir être intégrée au livret Loomky. Supprimez-la et
+                    réimportez-la pour relancer la compression, refaites une vidéo plus adaptée si c'est encore
+                    possible, ou signalez qu'un traitement manuel du fichier sur le Drive pourra être nécessaire.
+                  </p>
+                </div>
+              )}
+
               {videoTropLourde && (
                 <div
                   data-testid="avertissement-video-trop-lourde"

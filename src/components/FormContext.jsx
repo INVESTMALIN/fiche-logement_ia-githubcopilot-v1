@@ -1785,9 +1785,20 @@ export function FormProvider({ children }) {
     return formData[sectionName] || {}
   }
 
-  const getField = (fieldPath) => {
+  const getField = (fieldPath) => lireChemin(formData, fieldPath)
+
+  // Valeur COURANTE d'un champ, pour un traitement asynchrone lancé depuis un
+  // rendu antérieur (sa fermeture sur `getField` est figée) ou depuis un
+  // composant déjà démonté. Le provider vit au-dessus des routes : entre le
+  // départ et la fin d'un traitement long, une AUTRE fiche peut être chargée
+  // ici — l'appelant compare l'identité de la fiche avant d'écrire.
+  const formDataRef = useRef(formData)
+  formDataRef.current = formData
+  const getFieldLive = useCallback((fieldPath) => lireChemin(formDataRef.current, fieldPath), [])
+
+  function lireChemin(source, fieldPath) {
     const keys = fieldPath.split('.')
-    let current = formData
+    let current = source
 
     for (const key of keys) {
       if (current && typeof current === 'object' && key in current) {
@@ -2524,6 +2535,7 @@ export function FormProvider({ children }) {
       updateField,
       getSection,
       getField,
+      getFieldLive,
       resetForm,
 
       handleSave,

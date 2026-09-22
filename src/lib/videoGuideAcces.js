@@ -31,6 +31,12 @@ export const VIDEO_GUIDE_ACCES_POLL_MS = 10 * 1000
 // Valeurs persistées dans `section_guide_acces.video_avertissement`
 // (colonne fiches.guide_acces_video_avertissement). null = rien à signaler.
 export const AVERTISSEMENT_VIDEO_GUIDE = Object.freeze({
+  // Posé DÈS que l'original est dans la fiche et qu'un job de compression part.
+  // Remplacé par l'un des deux états finaux à la fin du job. S'il survit à un
+  // rechargement, c'est que la session a été interrompue (onglet fermé, mobile
+  // en veille) : la vidéo est enregistrée telle quelle, au-dessus de la cible,
+  // et le coordinateur doit en être averti durablement.
+  COMPRESSION_EN_COURS: 'compression_en_cours',
   // Compressée (ou originale plus légère) mais toujours au-dessus de la cible :
   // intrinsèque à la vidéo, refaire à l'identique n'y changera rien.
   TROP_LOURDE: 'trop_lourde',
@@ -102,6 +108,18 @@ export function choisirVideoGuide({ originale, compressee, cible = VIDEO_GUIDE_A
     taille: retenue.taille,
     avertissement: retenue.taille > cible ? AVERTISSEMENT_VIDEO_GUIDE.TROP_LOURDE : null
   }
+}
+
+/**
+ * Un résultat de compression ne s'applique qu'à la fiche qui l'a lancé : le
+ * FormProvider survit aux changements de route, une autre fiche peut avoir
+ * été chargée entre-temps. L'identité est l'id de la fiche quand il existe
+ * des deux côtés ; sinon (fiche créée par l'autosave PENDANT le job, id null
+ * au départ) le numéro de bien, obligatoire pour uploader et verrouillé ensuite.
+ */
+export function estMemeFiche(depart, arrivee) {
+  if (depart?.id && arrivee?.id) return depart.id === arrivee.id
+  return Boolean(depart?.numeroBien) && depart.numeroBien === arrivee?.numeroBien
 }
 
 /** Affichage humain d'une taille en Mio (ex. 41943040 → "40 Mio"). */
