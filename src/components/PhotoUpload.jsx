@@ -1,5 +1,5 @@
 // src/components/PhotoUpload.jsx
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { useForm } from './FormContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
@@ -78,6 +78,11 @@ const PhotoUpload = ({
 
   // Récupérer les photos actuelles (normalise les cas string JSON / URL unique)
   const currentPhotos = normalizePhotoField(getField(fieldPath))
+  // 🎯 Mode cible : la compression dure (jusqu'à 20 min) pendant que le
+  // formulaire vit. Ce miroir donne la valeur COURANTE du champ à un traitement
+  // asynchrone lancé depuis un rendu antérieur (fermeture de `getField` figée).
+  const currentPhotosRef = useRef(currentPhotos)
+  currentPhotosRef.current = currentPhotos
   // Génération du path pour Supabase Storage
   const generateStoragePath = (fileName) => {
     const timestamp = Date.now()
@@ -326,8 +331,6 @@ const PhotoUpload = ({
     }
 
     const uploadedUrls = []
-    // Mode cible seulement : undefined = ne pas toucher au champ d'avertissement
-    let videoWarning
 
     try {
       for (const file of files) {
@@ -396,17 +399,21 @@ const PhotoUpload = ({
           .from('fiche-photos')
           .getPublicUrl(storagePath)
 
-        // 🎯 MODE CIBLE (Guide d'accès) : la cible décide, pas le seuil de 95 MB
+        // 🎯 MODE CIBLE (Guide d'accès) : la cible décide, pas le seuil de 95 MB.
+        // L'original est publié dans la fiche DÈS qu'il est sur Supabase (et
+        // donc sauvegardé par l'autosave) : si la compression dure, si l'onglet
+        // se ferme ou si le coordinateur finalise entre-temps, la vidéo n'est
+        // jamais perdue. La compressée remplace l'original à la fin, si le
+        // champ la contient encore.
         if (isVideo && videoTargetSizeBytes) {
+          publierVideoGuide(urlData.publicUrl)
           if (doitCompresserVideoGuide(file.size, videoTargetSizeBytes)) {
             const decision = await compresserPourLivret(file, urlData.publicUrl)
-            uploadedUrls.push(decision.url)
-            videoWarning = decision.avertissement
+            remplacerVideoGuide(urlData.publicUrl, decision)
           } else {
             console.log('🎯 Vidéo sous la cible, conservée telle quelle')
-            uploadedUrls.push(urlData.publicUrl)
-            videoWarning = null
           }
+          // Rien à retourner : le champ est déjà à jour
 
         // 🎬 COMPRESSION BACKEND si vidéo > 95 MB
         } else if (isVideo && file.size > 95 * 1024 * 1024) {
@@ -444,10 +451,35 @@ const PhotoUpload = ({
         }
       }
 
-      return { success: true, urls: uploadedUrls, videoWarning }
+      return { success: true, urls: uploadedUrls }
     } catch (error) {
       return { success: false, error: error.message }
     }
+  }
+
+  // 🎯 Mode cible : ajoute l'original au champ et efface l'avertissement
+  // précédent (un nouvel upload repart de zéro).
+  const publierVideoGuide = (originalUrl) => {
+    const actuelles = currentPhotosRef.current
+    updateField(fieldPath, multiple ? [...actuelles, originalUrl] : originalUrl)
+    if (videoWarningFieldPath) updateField(videoWarningFieldPath, null)
+  }
+
+  // 🎯 Mode cible : à la fin de la compression, remplace l'original par la
+  // vidéo retenue et pose l'avertissement — sauf si le coordinateur a supprimé
+  // la vidéo entre-temps (le résultat n'a alors plus d'objet).
+  const remplacerVideoGuide = (originalUrl, decision) => {
+    const actuelles = currentPhotosRef.current
+    if (!actuelles.includes(originalUrl)) {
+      console.log('🎯 Vidéo supprimée pendant la compression, résultat ignoré')
+      return
+    }
+    if (decision.url !== originalUrl) {
+      updateField(fieldPath, multiple
+        ? actuelles.map(u => (u === originalUrl ? decision.url : u))
+        : decision.url)
+    }
+    if (videoWarningFieldPath) updateField(videoWarningFieldPath, decision.avertissement)
   }
 
   // Gestion du changement de fichier
@@ -474,17 +506,16 @@ const PhotoUpload = ({
 
         const newUrls = result.urls
 
-        if (multiple) {
-          const updatedPhotos = [...safeCurrentPhotos, ...newUrls]
-          updateField(fieldPath, updatedPhotos)
-        } else {
-          updateField(fieldPath, newUrls[0])
-        }
-
-        // 🎯 Mode cible : l'avertissement suit la vidéo dans la fiche (persisté
-        // avec elle, effacé si l'upload n'a rien à signaler)
-        if (videoWarningFieldPath && result.videoWarning !== undefined) {
-          updateField(videoWarningFieldPath, result.videoWarning)
+        // 🎯 Mode cible : le champ a déjà été mis à jour pendant l'upload
+        // (publierVideoGuide / remplacerVideoGuide), newUrls est vide — ne pas
+        // réécrire le champ avec une valeur d'avant l'upload.
+        if (newUrls.length > 0) {
+          if (multiple) {
+            const updatedPhotos = [...safeCurrentPhotos, ...newUrls]
+            updateField(fieldPath, updatedPhotos)
+          } else {
+            updateField(fieldPath, newUrls[0])
+          }
         }
 
         // Reset du input
