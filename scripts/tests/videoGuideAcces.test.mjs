@@ -10,9 +10,12 @@ import { chargerModule } from './_chargerModule.mjs'
 
 const {
   VIDEO_GUIDE_ACCES_CIBLE_OCTETS,
+  VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS,
+  VIDEO_GUIDE_ACCES_POLL_MS,
   AVERTISSEMENT_VIDEO_GUIDE,
   doitCompresserVideoGuide,
   lireReponseCompression,
+  lireEtatJobCompression,
   choisirVideoGuide,
   formaterMio,
 } = await chargerModule('../../src/lib/videoGuideAcces.js')
@@ -61,6 +64,31 @@ test('lireReponseCompression : réponse invalide → null (traitée comme un éc
   ]) {
     assert.equal(lireReponseCompression(mauvaise), null, `devrait rejeter ${JSON.stringify(mauvaise)}`)
   }
+})
+
+test('lireEtatJobCompression : running / done validé / failed avec message', () => {
+  assert.deepEqual(lireEtatJobCompression({ jobId: 'j', status: 'running' }), { etat: 'running' })
+  assert.deepEqual(
+    lireEtatJobCompression({ jobId: 'j', status: 'done', result: { compressedUrl: 'https://s/c.mp4', compressedSize: 10 } }),
+    { etat: 'done', compressee: { url: 'https://s/c.mp4', taille: 10 } }
+  )
+  assert.deepEqual(lireEtatJobCompression({ jobId: 'j', status: 'failed', error: 'Failed to download: 400' }),
+    { etat: 'failed', erreur: 'Failed to download: 400' })
+})
+
+test('lireEtatJobCompression : tout ce qui n\'est pas exploitable est un échec, jamais une exception', () => {
+  for (const mauvaise of [null, undefined, 'x', 42, {}, { status: 'bizarre' }, { status: 'failed' },
+    { status: 'done' }, { status: 'done', result: {} }, { status: 'done', result: { compressedUrl: 'https://s/c.mp4' } }]) {
+    const r = lireEtatJobCompression(mauvaise)
+    assert.equal(r.etat, 'failed', `devrait échouer : ${JSON.stringify(mauvaise)}`)
+    assert.ok(typeof r.erreur === 'string' && r.erreur.length > 0, 'un message d\'erreur non vide')
+  }
+})
+
+test('le polling est borné : délai global et cadence cohérents', () => {
+  assert.ok(VIDEO_GUIDE_ACCES_POLL_MS >= 5_000 && VIDEO_GUIDE_ACCES_POLL_MS <= 30_000)
+  assert.ok(VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS >= 10 * 60_000, 'au moins 10 min : 3 encodages possibles')
+  assert.ok(VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS / VIDEO_GUIDE_ACCES_POLL_MS >= 30, 'assez d\'itérations')
 })
 
 const originale = { url: 'https://s/orig.mp4', taille: 90 * MIO }

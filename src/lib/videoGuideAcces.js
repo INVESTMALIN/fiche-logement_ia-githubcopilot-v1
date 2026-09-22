@@ -20,7 +20,13 @@ export const VIDEO_GUIDE_ACCES_CIBLE_OCTETS = 40 * 1024 * 1024
 // (passe CRF + éventuel encodage 2 passes). Passé ce délai, la vidéo originale
 // est conservée avec l'avertissement « échec ». Les autres champs n'ont aucun
 // délai aujourd'hui : celui-ci ne les concerne pas.
-export const VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS = 15 * 60 * 1000
+//
+// La compression du guide passe par un JOB (POST /compress-video/jobs puis GET
+// de son état toutes les VIDEO_GUIDE_ACCES_POLL_MS) : une requête synchrone est
+// coupée à 300 s côté service et Railway plafonne à 15 min, ce qu'une vidéo
+// longue en 3 encodages peut dépasser. Le délai ci-dessous borne le polling.
+export const VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS = 20 * 60 * 1000
+export const VIDEO_GUIDE_ACCES_POLL_MS = 10 * 1000
 
 // Valeurs persistées dans `section_guide_acces.video_avertissement`
 // (colonne fiches.guide_acces_video_avertissement). null = rien à signaler.
@@ -52,6 +58,27 @@ export function lireReponseCompression(reponse) {
   if (typeof compressedUrl !== 'string' || !/^https?:\/\//.test(compressedUrl)) return null
   if (typeof compressedSize !== 'number' || !Number.isFinite(compressedSize) || compressedSize < 0) return null
   return { url: compressedUrl, taille: compressedSize }
+}
+
+/**
+ * Lit l'état d'un job (GET /compress-video/jobs/:id).
+ * Retourne :
+ *   { etat: 'running' }
+ *   { etat: 'done', compressee: { url, taille } }   (résultat validé par lireReponseCompression)
+ *   { etat: 'failed', erreur }                      (échec côté service, OU réponse inexploitable,
+ *                                                    OU résultat « done » invalide)
+ */
+export function lireEtatJobCompression(reponse) {
+  if (!reponse || typeof reponse !== 'object') return { etat: 'failed', erreur: 'Réponse du job invalide' }
+  if (reponse.status === 'running') return { etat: 'running' }
+  if (reponse.status === 'done') {
+    const compressee = lireReponseCompression(reponse.result)
+    return compressee ? { etat: 'done', compressee } : { etat: 'failed', erreur: 'Résultat du job invalide' }
+  }
+  if (reponse.status === 'failed') {
+    return { etat: 'failed', erreur: typeof reponse.error === 'string' && reponse.error ? reponse.error : 'Compression échouée' }
+  }
+  return { etat: 'failed', erreur: `Statut de job inconnu : ${String(reponse.status)}` }
 }
 
 /**

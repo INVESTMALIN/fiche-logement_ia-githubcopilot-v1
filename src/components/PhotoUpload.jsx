@@ -6,13 +6,22 @@ import { supabase } from '../lib/supabaseClient'
 import { normalizePhotoField } from '../lib/photoHelpers'
 import {
   VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS,
+  VIDEO_GUIDE_ACCES_POLL_MS,
   doitCompresserVideoGuide,
-  lireReponseCompression,
+  lireEtatJobCompression,
   choisirVideoGuide
 } from '../lib/videoGuideAcces'
 import imageCompression from 'browser-image-compression'
 
 const COMPRESS_VIDEO_URL = 'https://video-compressor-production.up.railway.app/compress-video'
+// Mode cible : compression asynchrone (job + polling), voir videoGuideAcces.js
+const COMPRESS_VIDEO_JOBS_URL = `${COMPRESS_VIDEO_URL}/jobs`
+
+const attendre = (ms, signal) => new Promise((resolve, reject) => {
+  if (signal?.aborted) return reject(new DOMException('Aborted', 'AbortError'))
+  const t = setTimeout(resolve, ms)
+  signal?.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Aborted', 'AbortError')) }, { once: true })
+})
 
 const sanitizeFileName = (fileName) => {
   return fileName
@@ -246,11 +255,13 @@ const PhotoUpload = ({
 
   // 🎯 Compression « cible livret » (mode opt-in, Guide d'accès uniquement).
   // L'original est DÉJÀ sur Supabase : quoi qu'il arrive ici, l'upload est
-  // acquis. On demande à Railway de viser la cible, on contrôle la taille
-  // réellement obtenue, et on tranche avec `choisirVideoGuide` :
+  // acquis. On demande à Railway de viser la cible (job asynchrone interrogé
+  // toutes les VIDEO_GUIDE_ACCES_POLL_MS : une requête synchrone est coupée à
+  // 300 s côté service), on contrôle la taille réellement obtenue, et on tranche
+  // avec `choisirVideoGuide` :
   //   - sous la cible                → compressée, pas d'avertissement
   //   - encore au-dessus             → la plus légère des deux + « trop lourde »
-  //   - échec / timeout / réponse KO → originale + « compression échouée »
+  //   - échec / délai / réponse KO   → originale + « compression échouée »
   const compresserPourLivret = async (file, originalUrl) => {
     console.log(`🎯 Vidéo ${(file.size / 1024 / 1024).toFixed(1)} Mio > cible ${(videoTargetSizeBytes / 1024 / 1024).toFixed(1)} Mio, compression Railway avec cible...`)
     setBackendCompressing(true)
@@ -260,20 +271,35 @@ const PhotoUpload = ({
     let compressee = null
 
     try {
-      const response = await fetch(COMPRESS_VIDEO_URL, {
+      // 1. Création du job (réponse immédiate)
+      const creation = await fetch(COMPRESS_VIDEO_JOBS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoUrl: originalUrl, targetSizeBytes: videoTargetSizeBytes }),
         signal: controller.signal
       })
-
-      if (!response.ok) {
-        throw new Error(`Erreur compression backend (HTTP ${response.status})`)
+      if (!creation.ok) {
+        throw new Error(`Erreur création du job de compression (HTTP ${creation.status})`)
       }
+      const { jobId } = await creation.json()
+      if (typeof jobId !== 'string' || !jobId) {
+        throw new Error('Réponse du service de compression invalide (jobId absent)')
+      }
+      console.log(`🧾 Job de compression ${jobId} créé, attente...`)
 
-      compressee = lireReponseCompression(await response.json())
-      if (!compressee) {
-        throw new Error('Réponse du service de compression invalide')
+      // 2. Polling jusqu'à done / failed, borné par le délai global (abort)
+      for (;;) {
+        await attendre(VIDEO_GUIDE_ACCES_POLL_MS, controller.signal)
+        const etatResponse = await fetch(`${COMPRESS_VIDEO_JOBS_URL}/${encodeURIComponent(jobId)}`, { signal: controller.signal })
+        if (!etatResponse.ok) {
+          // 404 = job perdu (service redémarré, ou purgé) : on ne saura jamais
+          throw new Error(`Erreur suivi du job de compression (HTTP ${etatResponse.status})`)
+        }
+        const etat = lireEtatJobCompression(await etatResponse.json())
+        if (etat.etat === 'running') continue
+        if (etat.etat === 'failed') throw new Error(etat.erreur)
+        compressee = etat.compressee
+        break
       }
       console.log(`✅ Compression cible terminée: ${(compressee.taille / 1024 / 1024).toFixed(1)} Mio`)
     } catch (compressionError) {
