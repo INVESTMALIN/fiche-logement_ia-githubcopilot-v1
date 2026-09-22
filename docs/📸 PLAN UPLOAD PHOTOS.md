@@ -88,17 +88,25 @@ chemin historique ci-dessus s'applique tel quel.
 
 - **Cible** : constante unique `VIDEO_GUIDE_ACCES_CIBLE_OCTETS` (40 Mio) dans
   `src/lib/videoGuideAcces.js`. Le déclenchement se base sur elle, pas sur 95 MB.
-- **Service** : `/compress-video` reçoit `targetSizeBytes` (opt-in, sinon
+- **Service** : le service reçoit `targetSizeBytes` (opt-in, sinon
   comportement historique). Il joue la passe crf 32 d'abord ; si elle dépasse la
   cible, un encodage 2 passes à débit calculé (720p ≥ 800 kbps, sinon 480p,
   30 fps max, AAC 64 kbps, marge 7 %). Sous 250 kbps vidéo (≈ 16-17 min pour
   40 Mio), il renonce et renvoie `targetReached: false`. Réponse enrichie de
   `targetSizeBytes`, `targetReached`, `strategy` (+ `reason`).
+- **Transport asynchrone** : l'app crée un job (`POST /compress-video/jobs` →
+  202 `{ jobId }`) puis interroge `GET /compress-video/jobs/:id` toutes les 10 s
+  (`running` / `done` + `result` / `failed` + `error`), borné par
+  `VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS` (20 min). Pourquoi : la requête
+  synchrone `/compress-video` est coupée à 300 s côté service (`requestTimeout`
+  par défaut de Node, constaté le 22/09/2026 : une compression de 7 min revenait
+  en échec alors que le service finissait le travail) et Railway plafonne à
+  15 min. Le chemin historique des 33 autres champs reste sur l'appel synchrone.
 - **Décision côté app** (`choisirVideoGuide`, testée) : sous la cible → vidéo
   compressée, rien à signaler ; encore au-dessus → la plus légère des deux +
-  avertissement `trop_lourde` ; échec / timeout (15 min) / réponse invalide →
-  originale + avertissement `compression_echouee`. L'upload n'échoue jamais à
-  cause de la compression.
+  avertissement `trop_lourde` ; échec / délai (20 min) / job perdu (404) /
+  réponse invalide → originale + avertissement `compression_echouee`. L'upload
+  n'échoue jamais à cause de la compression.
 - **Persistance** : `section_guide_acces.video_avertissement` ↔ colonne
   `fiches.guide_acces_video_avertissement` (CHECK sur les deux valeurs), effacé
   à la suppression de la vidéo ou écrasé par l'upload suivant. Les deux messages
