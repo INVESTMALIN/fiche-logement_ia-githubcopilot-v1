@@ -9,6 +9,8 @@ import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { construireFeedbackMonday, doitAfficherFeedback } from '../lib/mondaySyncFeedback'
 import { creerRegistreEnvois } from '../lib/videoGuideAcces'
+import { fusionnerApresSauvegarde, creerCollecteursModifications, delaiAvantAutosave } from '../lib/fusionSauvegarde'
+import { orchestrerSyncContacts } from '../lib/syncContacts'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
 import { validateMondayConstrainedFields } from '../lib/mondayFieldConstraints'
 import {
@@ -1357,6 +1359,9 @@ export function FormProvider({ children }) {
   const { user, loading: authLoading } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState(initialFormData)
+  // Tenue à jour à chaque rendu, juste après la déclaration de l'état :
+  // c'est la seule lecture fiable de « l'état courant » depuis une fonction
+  // asynchrone (voir `formDataRef` plus bas).
   const [saveStatus, setSaveStatus] = useState({
     saving: false,
     saved: false,
@@ -1396,6 +1401,16 @@ export function FormProvider({ children }) {
 
   // Flag pour distinguer changements utilisateur vs serveur
   const isUserChangeRef = useRef(false)
+  // Chemins modifiés PENDANT une sauvegarde en vol. Sa réponse porte l'état
+  // envoyé au départ : sans ces chemins, elle écraserait tout ce qui a bougé
+  // depuis (une frappe, une photo supprimée, un traitement asynchrone).
+  const collecteursRef = useRef(null)
+  if (collecteursRef.current === null) collecteursRef.current = creerCollecteursModifications()
+  // État courant lisible hors rendu : la fermeture d'une fonction asynchrone
+  // (comme `handleSave` après son await) voit l'état du rendu où elle a été
+  // créée, pas les saisies arrivées depuis.
+  const formDataRef = useRef(formData)
+  formDataRef.current = formData
   const lastSaveRef = useRef(0)
   // L'utilisateur a-t-il tapé dans le champ « Nom de la fiche » depuis le
   // chargement ? Seule une saisie délibérée autorise `saveFiche` à réécrire
@@ -1723,6 +1738,9 @@ export function FormProvider({ children }) {
 
   const updateSection = (sectionName, newData) => {
     isUserChangeRef.current = true
+    // Une sauvegarde est peut-être en vol : sa réponse ne doit pas réécrire
+    // cette section par-dessus ce qui vient d'être saisi.
+    collecteursRef.current.noter(sectionName)
 
     setFormData(prev => {
       const updatedData = {
@@ -1746,6 +1764,8 @@ export function FormProvider({ children }) {
 
   const updateField = (fieldPath, value) => {
     isUserChangeRef.current = true
+    // Idem : ce champ ne doit pas être écrasé par une réponse partie avant.
+    collecteursRef.current.noter(fieldPath)
 
     setFormData(prev => {
       const newData = { ...prev }
@@ -1793,8 +1813,7 @@ export function FormProvider({ children }) {
   // composant déjà démonté. Le provider vit au-dessus des routes : entre le
   // départ et la fin d'un traitement long, une AUTRE fiche peut être chargée
   // ici — l'appelant compare l'identité de la fiche avant d'écrire.
-  const formDataRef = useRef(formData)
-  formDataRef.current = formData
+  // `formDataRef` est déclarée avec les autres refs, plus haut.
   const getFieldLive = useCallback((fieldPath) => lireChemin(formDataRef.current, fieldPath), [])
 
   function lireChemin(source, fieldPath) {
@@ -2037,19 +2056,23 @@ export function FormProvider({ children }) {
       return { success: false, error: 'NOT_FINALIZED', message: 'La fiche doit être finalisée pour synchroniser manuellement' }
     }
 
-    // 1. Save d'abord pour s'assurer que les contacts en cours d'édition
-    //    sont bien dans la DB (l'Edge Function les cherche par _localId).
-    const saveResult = await handleSave()
-    if (!saveResult.success) {
-      return {
-        success: false,
-        error: 'SAVE_FAILED',
-        message: saveResult.error || 'Échec de la sauvegarde avant sync'
+    // Sauvegarder d'abord (l'Edge Function retrouve les contacts par _localId),
+    // ne pousser que si TOUT est enregistré, et rendre visible le moindre
+    // échec : l'appelant (bouton « Synchroniser » de FicheInstructionsMenage)
+    // ignore la valeur de retour et s'en remet au toast.
+    // L'enchaînement lui-même est dans `orchestrerSyncContacts`, testé hors
+    // navigateur — cette fonction exige une fiche finalisée, et la fiche de
+    // démo ne doit jamais l'être.
+    return await orchestrerSyncContacts({
+      sauvegarder: (etatImpose) => handleSave(etatImpose || {}),
+      lireEtatCourant: () => formDataRef.current,
+      pousser: _pushContactsCore,
+      signalerEchec: (error, message) => {
+        setMondayContactsToast({ type: 'error', message, timestamp: Date.now() })
+        console.warn(`[Monday contacts] ${error} — ${message}`)
+        return { success: false, error, message }
       }
-    }
-
-    // 2. Push sur la base des données fraîchement persistées.
-    return await _pushContactsCore(saveResult.data)
+    })
   }
 
   const handleSave = async (customData = {}) => {
@@ -2099,6 +2122,10 @@ export function FormProvider({ children }) {
 
     setSaveStatus({ saving: true, saved: false, error: null });
 
+    // À partir d'ici, tout `updateField` / `updateSection` est noté : la
+    // réponse ne doit pas réécrire par-dessus ce qui aura bougé entre-temps.
+    const cheminsModifiesPendantSave = collecteursRef.current.ouvrir()
+
     try {
       const dataToSave = formData.id
         ? {
@@ -2128,12 +2155,34 @@ export function FormProvider({ children }) {
       if (result.success) {
         // Le nom saisi est parti : les enregistrements suivants n'ont plus à le
         // réécrire tant que l'utilisateur n'y retouche pas.
-        nomSaisiParUtilisateurRef.current = false;
-        setFormData(result.data);
-        setSaveStatus({ saving: false, saved: true, error: null });
-        setTimeout(() => {
-          setSaveStatus(prev => ({ ...prev, saved: false }))
-        }, 3000)
+        // SAUF s'il a été retouché PENDANT cet envoi : ce renommage-là n'est
+        // pas encore parti, et `saveFiche` retire `nom` de tout UPDATE dont le
+        // marqueur est retombé. Baisser le marqueur ici afficherait un nouveau
+        // nom que plus aucune sauvegarde n'écrirait, perdu au rechargement.
+        if (!cheminsModifiesPendantSave.has('nom')) {
+          nomSaisiParUtilisateurRef.current = false;
+        }
+        // La réponse fait foi (id créé, updated_at, snapshots), SAUF pour les
+        // champs modifiés pendant l'envoi : ceux-là sont repris de l'état
+        // courant. `prev` est l'état le plus à jour, y compris si React a
+        // groupé plusieurs mises à jour entre-temps.
+        collecteursRef.current.fermer(cheminsModifiesPendantSave);
+        setFormData(prev => fusionnerApresSauvegarde(prev, result.data, cheminsModifiesPendantSave));
+
+        // Ce qui a été modifié pendant l'envoi est de nouveau à l'écran, mais
+        // n'est PAS en base : cette sauvegarde-là portait l'état d'avant.
+        // Annoncer « Sauvegardé avec succès » ici serait un mensonge, et le
+        // coordinateur qui ferme l'onglet en confiance perdrait sa saisie.
+        // On ne dit donc rien, et c'est l'autosave — déjà armé par
+        // `updateField`, et qui reporte au lieu d'abandonner — qui persiste
+        // ces champs quelques secondes plus tard.
+        const toutEstPersiste = cheminsModifiesPendantSave.size === 0;
+        setSaveStatus({ saving: false, saved: toutEstPersiste, error: null });
+        if (toutEstPersiste) {
+          setTimeout(() => {
+            setSaveStatus(prev => ({ ...prev, saved: false }))
+          }, 3000)
+        }
 
         // 🟦 Sync Monday — best effort, fire-and-forget, ne bloque jamais le save
         triggerMondaySync(result.data, wasCompleteBeforeSave)
@@ -2143,7 +2192,11 @@ export function FormProvider({ children }) {
         // Brouillon → Complété (cf. updateStatut). Post-finalisation = bouton
         // manuel "Synchroniser" dans FicheInstructionsMenage.
 
-        return { success: true, data: result.data };
+        // `modificationsEnAttente` : des champs ont bougé pendant cet envoi et
+        // ne sont donc PAS dans `result.data`. Ils partiront par l'autosave.
+        // Un appelant qui exploite ces données (push Monday…) doit le savoir :
+        // pousser un état partiel omettrait silencieusement la dernière saisie.
+        return { success: true, data: result.data, modificationsEnAttente: !toutEstPersiste };
       } else {
         // Filet pour un échec non anticipé : on remonte la RAISON RÉELLE (message
         // Postgres porté par result.error, cf. saveFiche/safeSupabaseQuery) plutôt
@@ -2161,6 +2214,11 @@ export function FormProvider({ children }) {
       const errorMessage = error.message || 'Erreur de connexion';
       setSaveStatus({ saving: false, saved: false, error: errorMessage });
       return { success: false, error: errorMessage };
+    } finally {
+      // Échec, erreur réseau ou sortie anticipée : le collecteur ne doit pas
+      // rester ouvert, sinon il noterait indéfiniment. Idempotent : le chemin
+      // nominal l'a déjà fermé avant de fusionner.
+      collecteursRef.current.fermer(cheminsModifiesPendantSave);
     }
   };
 
@@ -2175,16 +2233,14 @@ export function FormProvider({ children }) {
     // Ne rien faire si déjà en train de sauvegarder
     if (saveStatus.saving) return
 
-    // Anti-spam : minimum 1.5s entre deux sauvegardes
-    const now = Date.now()
-    if (now - lastSaveRef.current < 1500) return
-
-    // Debounce de 5 secondes
+    // Debounce de 5 s, augmenté du reliquat d'anti-spam s'il y en a un.
+    // L'anti-spam reporte, il n'abandonne jamais (cf. `delaiAvantAutosave`) :
+    // un abandon sec laissait la dernière modification en mémoire seulement.
     const timeout = setTimeout(async () => {
       isUserChangeRef.current = false // Reset le flag avant de sauvegarder
       lastSaveRef.current = Date.now()
       await handleSave()
-    }, 5000)
+    }, delaiAvantAutosave(Date.now(), lastSaveRef.current))
 
     return () => clearTimeout(timeout)
   }, [formData, user?.id, saveStatus.saving, handleSave])
