@@ -164,6 +164,16 @@ export function creerRegistreEnvois() {
 
   const memeGroupe = (a, b) => a.fieldPath === b.fieldPath && estMemeFiche(a.fiche, b.fiche)
 
+  // Un envoi PLUS RÉCENT a-t-il pris la main sur le même champ et la même
+  // fiche ? Si oui, celui-ci ne peut plus rien écrire — et n'a donc plus rien
+  // à faire attendre.
+  const estSupplante = (e) => {
+    for (const autre of envois.values()) {
+      if (autre !== e && !autre.annule && memeGroupe(autre, e) && autre.seq > e.seq) return true
+    }
+    return false
+  }
+
   // Ne garder, par groupe, que les envois encore en vol et le plus récent :
   // un envoi terminé qu'un plus récent a déjà supplanté ne peut plus ni
   // écrire ni servir de référence à personne.
@@ -209,10 +219,20 @@ export function creerRegistreEnvois() {
       return annules
     },
 
-    /** Un envoi de CETTE fiche est-il encore en vol ? (finalisation) */
+    /**
+     * Un envoi de CETTE fiche est-il encore en vol ET susceptible d'écrire ?
+     * (finalisation)
+     *
+     * Un envoi supplanté est exclu : `estDernier` lui a déjà retiré le droit
+     * d'écrire, il n'a donc plus rien à protéger. Le compter bloquerait la
+     * finalisation jusqu'à ce qu'il se résolve — ce qui peut durer très
+     * longtemps sur un envoi qui traîne — alors que la vidéo du dernier envoi
+     * est déjà en place. Les deux prédicats s'appuient exprès sur la MÊME
+     * notion : ce qui ne peut plus écrire ne fait plus attendre.
+     */
     aDesEnvoisEnVol(ficheCourante) {
       for (const e of envois.values()) {
-        if (e.enVol && !e.annule && estMemeFiche(e.fiche, ficheCourante)) return true
+        if (e.enVol && !e.annule && !estSupplante(e) && estMemeFiche(e.fiche, ficheCourante)) return true
       }
       return false
     },
@@ -221,10 +241,7 @@ export function creerRegistreEnvois() {
     estDernier(cle) {
       const e = envois.get(cle)
       if (!e || e.annule) return false
-      for (const autre of envois.values()) {
-        if (autre !== e && !autre.annule && memeGroupe(autre, e) && autre.seq > e.seq) return false
-      }
-      return true
+      return !estSupplante(e)
     },
 
     /** Pour les tests : taille du registre, qui ne doit pas croître sans fin. */

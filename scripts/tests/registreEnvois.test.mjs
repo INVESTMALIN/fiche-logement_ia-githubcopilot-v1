@@ -90,6 +90,69 @@ test('envois concurrents : ordre d\'arrivée défavorable (le 1er finit après l
   assert.equal(r.aDesEnvoisEnVol(A), false)
 })
 
+test('un envoi supplanté ne bloque plus la finalisation', () => {
+  // Deux envois concurrents. Le second publie et se termine ; le premier
+  // traîne (réseau mobile) mais n'a plus le droit d'écrire. Le compter comme
+  // bloquant retiendrait la finalisation jusqu'à ce qu'il se résolve, alors
+  // que la vidéo du second est déjà en place.
+  const r = creerRegistreEnvois()
+  r.declarer('a1', A, GUIDE)
+  r.declarer('a2', A, GUIDE)
+
+  assert.equal(r.aDesEnvoisEnVol(A), true, 'le plus récent est encore en vol : il bloque')
+
+  r.terminer('a2')
+  assert.equal(r.aDesEnvoisEnVol(A), false, 'a1 est supplanté : il ne fait plus attendre')
+  assert.equal(r.estDernier('a1'), false, 'et il ne peut effectivement plus écrire')
+
+  // Sa résolution tardive ne réveille rien.
+  r.terminer('a1')
+  assert.equal(r.aDesEnvoisEnVol(A), false)
+})
+
+test('le dernier envoi actif continue de bloquer, même avec des supplantés en vol', () => {
+  const r = creerRegistreEnvois()
+  r.declarer('a1', A, GUIDE)   // traîne
+  r.declarer('a2', A, GUIDE)   // traîne aussi
+  r.declarer('a3', A, GUIDE)   // le plus récent, en vol
+
+  assert.equal(r.aDesEnvoisEnVol(A), true, 'a3 est en vol : la finalisation reste bloquée')
+  assert.equal(r.estDernier('a3'), true)
+  assert.equal(r.estDernier('a1'), false)
+  assert.equal(r.estDernier('a2'), false)
+
+  // Tant que a3 n'est pas terminé, le blocage tient, quoi que fassent les autres.
+  r.terminer('a1')
+  assert.equal(r.aDesEnvoisEnVol(A), true)
+  r.terminer('a3')
+  assert.equal(r.aDesEnvoisEnVol(A), false, 'a2 reste en vol mais est supplanté')
+})
+
+test('les deux prédicats s\'accordent : ce qui bloque est exactement ce qui peut écrire', () => {
+  // L'incohérence corrigée ici : un envoi pouvait bloquer sans pouvoir écrire.
+  const r = creerRegistreEnvois()
+  const cles = ['a1', 'a2', 'b1', 'e1']
+  r.declarer('a1', A, GUIDE)
+  r.declarer('a2', A, GUIDE)
+  r.declarer('b1', B, GUIDE)
+  r.declarer('e1', A, AUTRE_CHAMP)
+  r.terminer('a2')
+
+  for (const fiche of [A, B]) {
+    const bloquants = cles.filter(c => r.estDernier(c))
+    // Un envoi qui bloque pour une fiche doit être l'un des « derniers ».
+    if (r.aDesEnvoisEnVol(fiche)) {
+      assert.ok(bloquants.length > 0, `${JSON.stringify(fiche)} bloque sans aucun envoi capable d'écrire`)
+    }
+  }
+  // a1 ne peut plus écrire, et à lui seul il ne bloque plus rien.
+  assert.equal(r.estDernier('a1'), false)
+  r.terminer('b1')
+  r.terminer('e1')
+  assert.equal(r.aDesEnvoisEnVol(A), false, 'seul a1 reste en vol, supplanté : plus de blocage')
+  assert.equal(r.aDesEnvoisEnVol(B), false)
+})
+
 test('suppression pendant l\'envoi : la finalisation est libérée immédiatement', () => {
   // Le défaut du round 5 : l'entrée restait en vol jusqu'à la fin du job,
   // bloquant la finalisation jusqu'à 20 minutes pour une vidéo supprimée.
@@ -178,8 +241,11 @@ test('les envois encore en vol ne sont jamais purgés', () => {
     r.declarer(`a_bis${i}`, A, GUIDE)
     r.terminer(`a_bis${i}`)
   }
-  assert.equal(r.aDesEnvoisEnVol(A), true, 'l\'envoi long bloque toujours')
-  assert.equal(r.estDernier('a1'), false, 'mais il est périmé, il n\'écrira pas')
+  // Il reste dans le registre — c'est l'objet de ce test — mais il ne fait
+  // plus attendre personne : dix envois l'ont supplanté, il ne peut plus
+  // écrire, donc il n'a plus rien à protéger.
+  assert.equal(r.estDernier('a1'), false, 'périmé : il n\'écrira pas')
+  assert.equal(r.aDesEnvoisEnVol(A), false, 'et il ne bloque donc pas la finalisation')
   assert.equal(r.taille(), 2, 'l\'envoi en vol + le dernier terminé')
 })
 
