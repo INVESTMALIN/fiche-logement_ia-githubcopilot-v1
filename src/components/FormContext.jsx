@@ -8,6 +8,7 @@ import { DEFAULT_COUNTRY_CODE } from '../lib/countries'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { construireFeedbackMonday, doitAfficherFeedback } from '../lib/mondaySyncFeedback'
+import { fusionnerApresSauvegarde, creerCollecteursModifications } from '../lib/fusionSauvegarde'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
 import { validateMondayConstrainedFields } from '../lib/mondayFieldConstraints'
 import {
@@ -1392,6 +1393,11 @@ export function FormProvider({ children }) {
 
   // Flag pour distinguer changements utilisateur vs serveur
   const isUserChangeRef = useRef(false)
+  // Chemins modifiés PENDANT une sauvegarde en vol. Sa réponse porte l'état
+  // envoyé au départ : sans ces chemins, elle écraserait tout ce qui a bougé
+  // depuis (une frappe, une photo supprimée, un traitement asynchrone).
+  const collecteursRef = useRef(null)
+  if (collecteursRef.current === null) collecteursRef.current = creerCollecteursModifications()
   const lastSaveRef = useRef(0)
   // L'utilisateur a-t-il tapé dans le champ « Nom de la fiche » depuis le
   // chargement ? Seule une saisie délibérée autorise `saveFiche` à réécrire
@@ -1719,6 +1725,9 @@ export function FormProvider({ children }) {
 
   const updateSection = (sectionName, newData) => {
     isUserChangeRef.current = true
+    // Une sauvegarde est peut-être en vol : sa réponse ne doit pas réécrire
+    // cette section par-dessus ce qui vient d'être saisi.
+    collecteursRef.current.noter(sectionName)
 
     setFormData(prev => {
       const updatedData = {
@@ -1742,6 +1751,8 @@ export function FormProvider({ children }) {
 
   const updateField = (fieldPath, value) => {
     isUserChangeRef.current = true
+    // Idem : ce champ ne doit pas être écrasé par une réponse partie avant.
+    collecteursRef.current.noter(fieldPath)
 
     setFormData(prev => {
       const newData = { ...prev }
@@ -2084,6 +2095,10 @@ export function FormProvider({ children }) {
 
     setSaveStatus({ saving: true, saved: false, error: null });
 
+    // À partir d'ici, tout `updateField` / `updateSection` est noté : la
+    // réponse ne doit pas réécrire par-dessus ce qui aura bougé entre-temps.
+    const cheminsModifiesPendantSave = collecteursRef.current.ouvrir()
+
     try {
       const dataToSave = formData.id
         ? {
@@ -2114,7 +2129,12 @@ export function FormProvider({ children }) {
         // Le nom saisi est parti : les enregistrements suivants n'ont plus à le
         // réécrire tant que l'utilisateur n'y retouche pas.
         nomSaisiParUtilisateurRef.current = false;
-        setFormData(result.data);
+        // La réponse fait foi (id créé, updated_at, snapshots), SAUF pour les
+        // champs modifiés pendant l'envoi : ceux-là sont repris de l'état
+        // courant. `prev` est l'état le plus à jour, y compris si React a
+        // groupé plusieurs mises à jour entre-temps.
+        collecteursRef.current.fermer(cheminsModifiesPendantSave);
+        setFormData(prev => fusionnerApresSauvegarde(prev, result.data, cheminsModifiesPendantSave));
         setSaveStatus({ saving: false, saved: true, error: null });
         setTimeout(() => {
           setSaveStatus(prev => ({ ...prev, saved: false }))
@@ -2146,6 +2166,11 @@ export function FormProvider({ children }) {
       const errorMessage = error.message || 'Erreur de connexion';
       setSaveStatus({ saving: false, saved: false, error: errorMessage });
       return { success: false, error: errorMessage };
+    } finally {
+      // Échec, erreur réseau ou sortie anticipée : le collecteur ne doit pas
+      // rester ouvert, sinon il noterait indéfiniment. Idempotent : le chemin
+      // nominal l'a déjà fermé avant de fusionner.
+      collecteursRef.current.fermer(cheminsModifiesPendantSave);
     }
   };
 
