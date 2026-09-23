@@ -18,6 +18,7 @@ const {
   lireEtatJobCompression,
   choisirVideoGuide,
   estMemeFiche,
+  publicationVideoGuide,
   formaterMio,
 } = await chargerModule('../../src/lib/videoGuideAcces.js')
 
@@ -153,6 +154,37 @@ test('la cible est passée à choisirVideoGuide (paramétrable, défaut = consta
   const compressee = { url: 'https://s/c.mp4', taille: 45 * MIO }
   assert.equal(choisirVideoGuide({ originale, compressee }).avertissement, AVERTISSEMENT_VIDEO_GUIDE.TROP_LOURDE)
   assert.equal(choisirVideoGuide({ originale, compressee, cible: 50 * MIO }).avertissement, null)
+})
+
+test('publicationVideoGuide : un champ borné à 1 ne contient jamais deux URLs', () => {
+  const p = (actuelles, url) => publicationVideoGuide({ actuelles, url, multiple: true, maxFiles: 1 })
+
+  assert.deepEqual(p([], 'https://s/a.mp4'), ['https://s/a.mp4'])
+  // Deux envois concurrents : la plus RÉCENTE gagne, l'ancienne est évincée.
+  assert.deepEqual(p(['https://s/a.mp4'], 'https://s/b.mp4'), ['https://s/b.mp4'])
+  // Même un champ déjà incohérent (cas hérité) est ramené à la limite.
+  assert.deepEqual(p(['https://s/a.mp4', 'https://s/b.mp4'], 'https://s/c.mp4'), ['https://s/c.mp4'])
+})
+
+test('publicationVideoGuide : un champ multi-photos garde son comportement d\'ajout', () => {
+  assert.deepEqual(
+    publicationVideoGuide({ actuelles: ['1', '2'], url: '3', multiple: true, maxFiles: 25 }),
+    ['1', '2', '3']
+  )
+  // maxFiles absent ou absurde : on n'invente pas de limite.
+  assert.deepEqual(publicationVideoGuide({ actuelles: ['1'], url: '2', multiple: true, maxFiles: 0 }), ['1', '2'])
+  assert.deepEqual(publicationVideoGuide({ actuelles: ['1'], url: '2', multiple: true }), ['1', '2'])
+})
+
+test('publicationVideoGuide : champ simple (multiple=false) → la valeur, pas un tableau', () => {
+  assert.equal(publicationVideoGuide({ actuelles: ['https://s/a.mp4'], url: 'https://s/b.mp4', multiple: false, maxFiles: 1 }), 'https://s/b.mp4')
+})
+
+test('publicationVideoGuide : valeur de champ inattendue → jamais d\'exception', () => {
+  for (const actuelles of [null, undefined, 'https://s/a.mp4', 42, {}]) {
+    const r = publicationVideoGuide({ actuelles, url: 'https://s/b.mp4', multiple: true, maxFiles: 1 })
+    assert.deepEqual(r, ['https://s/b.mp4'], `actuelles=${JSON.stringify(actuelles)}`)
+  }
 })
 
 test('formaterMio', () => {

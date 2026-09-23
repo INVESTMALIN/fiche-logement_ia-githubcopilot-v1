@@ -2376,9 +2376,25 @@ export function FormProvider({ children }) {
   // libres. Une ref, donc aucun rendu déclenché, comme ci-dessus.
   const mediasEnVolRef = useRef(new Map())
 
-  const declarerMediaEnVol = useCallback((cle, fiche) => {
+  // Dernier envoi LANCÉ par champ. Deux envois peuvent se chevaucher sur un
+  // même champ (il paraît vide pendant l'envoi, donc on peut réimporter après
+  // être revenu sur la section) : seul le plus récent a le droit de publier,
+  // sinon le champ finirait avec deux URLs, ou avec la vidéo de l'envoi le
+  // plus lent plutôt que celle réellement choisie en dernier. Conservé même
+  // après la fin de l'envoi : un envoi plus ancien qui se termine APRÈS ne
+  // doit pas pouvoir écraser le plus récent.
+  const dernierEnvoiParChampRef = useRef(new Map())
+
+  const declarerMediaEnVol = useCallback((cle, fiche, fieldPath) => {
     mediasEnVolRef.current.set(cle, fiche)
+    if (fieldPath) dernierEnvoiParChampRef.current.set(fieldPath, cle)
   }, [])
+
+  // Cet envoi est-il toujours le dernier lancé pour ce champ ?
+  const estDernierEnvoi = useCallback(
+    (cle, fieldPath) => dernierEnvoiParChampRef.current.get(fieldPath) === cle,
+    []
+  )
 
   const terminerMediaEnVol = useCallback((cle) => {
     mediasEnVolRef.current.delete(cle)
@@ -2593,6 +2609,7 @@ export function FormProvider({ children }) {
       declarerMediaEnVol,
       terminerMediaEnVol,
       aDesMediasEnVol,
+      estDernierEnvoi,
 
       // 🆕 AJOUT FONCTIONS DUPLICATE
       duplicateAlert,

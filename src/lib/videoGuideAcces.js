@@ -122,6 +122,21 @@ export function estMemeFiche(depart, arrivee) {
   return Boolean(depart?.numeroBien) && depart.numeroBien === arrivee?.numeroBien
 }
 
+/**
+ * Valeur à écrire dans le champ quand un envoi publie son URL.
+ *
+ * Le champ du Guide d'accès est `multiple` mais borné à UNE vidéo. Pendant un
+ * envoi, il paraît vide (rien n'est encore publié) : le coordinateur peut
+ * quitter la section, revenir et réimporter. Deux publications qui ajoutent
+ * laisseraient deux URLs, alors que la page n'en lit qu'une (`video_acces[0]`).
+ * La borne est donc appliquée ICI, à l'écriture, et garde les plus RÉCENTES.
+ */
+export function publicationVideoGuide({ actuelles, url, multiple, maxFiles }) {
+  if (!multiple) return url
+  const suivantes = [...(Array.isArray(actuelles) ? actuelles : []), url]
+  return Number.isInteger(maxFiles) && maxFiles > 0 ? suivantes.slice(-maxFiles) : suivantes
+}
+
 /** Affichage humain d'une taille en Mio (ex. 41943040 → "40 Mio"). */
 export function formaterMio(octets) {
   const mio = octets / 1024 / 1024

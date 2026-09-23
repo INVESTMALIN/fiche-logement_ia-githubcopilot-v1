@@ -11,7 +11,8 @@ import {
   doitCompresserVideoGuide,
   lireEtatJobCompression,
   choisirVideoGuide,
-  estMemeFiche
+  estMemeFiche,
+  publicationVideoGuide
 } from '../lib/videoGuideAcces'
 import imageCompression from 'browser-image-compression'
 
@@ -71,7 +72,7 @@ const PhotoUpload = ({
   videoTargetSizeBytes = null,   // Cible de taille en octets : au-dessus, Railway est appelé avec targetSizeBytes
   videoWarningFieldPath = null   // Champ FormContext où persister l'avertissement (null = rien à signaler)
 }) => {
-  const { getField, getFieldLive, updateField, handleSave, declarerMediaEnVol, terminerMediaEnVol } = useForm()
+  const { getField, getFieldLive, updateField, handleSave, declarerMediaEnVol, terminerMediaEnVol, estDernierEnvoi } = useForm()
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [compressing, setCompressing] = useState(false)
@@ -324,7 +325,9 @@ const PhotoUpload = ({
   // FICHIER, capturée avant le moindre await. L'upload Supabase dure déjà
   // plusieurs minutes sur une grosse vidéo : la relire après coup désignerait
   // la fiche ouverte entre-temps, et on écrirait l'URL de A dans B.
-  const uploadToSupabase = async (files, ficheDepart) => {
+  // `cleMediaEnVol` (mode cible) : identifie cet envoi face aux envois
+  // concurrents sur le même champ.
+  const uploadToSupabase = async (files, ficheDepart, cleMediaEnVol) => {
     // 🚨 VALIDATION CRITIQUE - Numéro de bien obligatoire
     const numeroBien = getField('section_logement.numero_bien')
     if (!numeroBien || numeroBien.trim() === '') {
@@ -411,20 +414,26 @@ const PhotoUpload = ({
         // encore et si c'est toujours la même fiche qui est chargée.
         if (isVideo && videoTargetSizeBytes) {
           const aCompresser = doitCompresserVideoGuide(file.size, videoTargetSizeBytes)
-          const publiee = publierVideoGuide(
+          const publication = publierVideoGuide(
             urlData.publicUrl,
             aCompresser ? AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_EN_COURS : null,
-            ficheDepart
+            ficheDepart,
+            cleMediaEnVol
           )
-          if (!publiee) {
+          if (publication === 'autre-fiche') {
             // Une autre fiche est ouverte depuis le choix du fichier : publier
             // ici écrirait la vidéo dans la MAUVAISE fiche. On ne touche à rien
             // et on le dit, plutôt que d'échouer en silence.
             throw new Error('Une autre fiche a été ouverte pendant l\'envoi : la vidéo n\'a pas été ajoutée. Rouvrez la fiche d\'origine et réimportez-la.')
           }
+          if (publication === 'envoi-remplace') {
+            // Envoi périmé : ni publication, ni compression, ni avertissement.
+            // Le champ appartient désormais à l'envoi le plus récent.
+            continue
+          }
           if (aCompresser) {
             const decision = await compresserPourLivret(file, urlData.publicUrl)
-            remplacerVideoGuide(urlData.publicUrl, decision, ficheDepart)
+            remplacerVideoGuide(urlData.publicUrl, decision, ficheDepart, cleMediaEnVol)
           } else {
             console.log('🎯 Vidéo sous la cible, conservée telle quelle')
           }
@@ -481,26 +490,43 @@ const PhotoUpload = ({
 
   // 🎯 Mode cible : ajoute l'original au champ et pose l'avertissement de
   // départ (provisoire « en cours » si un job part, sinon rien : un nouvel
-  // upload repart de zéro). N'écrit QUE si la fiche chargée est toujours celle
-  // d'où l'upload est parti. Retourne false sinon, sans rien toucher.
-  const publierVideoGuide = (originalUrl, avertissementDepart, ficheDepart) => {
+  // upload repart de zéro).
+  //
+  // Deux refus possibles, pour deux raisons différentes :
+  //   'autre-fiche'    → une AUTRE fiche est chargée : publier écrirait la
+  //                      vidéo au mauvais endroit. L'appelant le signale.
+  //   'envoi-remplace' → un envoi PLUS RÉCENT a été lancé sur ce champ depuis :
+  //                      celui-ci est périmé, il se tait. Ce n'est pas une
+  //                      erreur pour le coordinateur, c'est son dernier choix
+  //                      qui gagne.
+  // Et même quand la publication a lieu, `publicationVideoGuide` borne le
+  // champ à `maxFiles` : il ne peut jamais contenir deux vidéos.
+  const publierVideoGuide = (originalUrl, avertissementDepart, ficheDepart, cleEnvoi) => {
     if (!estMemeFiche(ficheDepart, identiteFicheLive())) {
       console.log('🎯 Une autre fiche est chargée depuis le début de l\'envoi, vidéo non publiée')
-      return false
+      return 'autre-fiche'
+    }
+    if (cleEnvoi && !estDernierEnvoi(cleEnvoi, fieldPath)) {
+      console.log('🎯 Un envoi plus récent a été lancé sur ce champ, vidéo non publiée')
+      return 'envoi-remplace'
     }
     const actuelles = normalizePhotoField(getFieldLive(fieldPath))
-    updateField(fieldPath, multiple ? [...actuelles, originalUrl] : originalUrl)
+    updateField(fieldPath, publicationVideoGuide({ actuelles, url: originalUrl, multiple, maxFiles }))
     if (videoWarningFieldPath) updateField(videoWarningFieldPath, avertissementDepart)
-    return true
+    return 'publie'
   }
 
   // 🎯 Mode cible : à la fin de la compression, remplace l'original par la
   // vidéo retenue et pose l'avertissement final — sauf si une AUTRE fiche a
   // été chargée entre-temps, ou si le coordinateur a supprimé la vidéo (le
   // résultat n'a alors plus d'objet : on n'écrit rien).
-  const remplacerVideoGuide = (originalUrl, decision, ficheDepart) => {
+  const remplacerVideoGuide = (originalUrl, decision, ficheDepart, cleEnvoi) => {
     if (!estMemeFiche(ficheDepart, identiteFicheLive())) {
       console.log('🎯 Une autre fiche est chargée depuis le départ de la compression, résultat ignoré')
+      return
+    }
+    if (cleEnvoi && !estDernierEnvoi(cleEnvoi, fieldPath)) {
+      console.log('🎯 Un envoi plus récent a été lancé sur ce champ, résultat de compression ignoré')
       return
     }
     const actuelles = normalizePhotoField(getFieldLive(fieldPath))
@@ -538,14 +564,18 @@ const PhotoUpload = ({
     // référence encore rien : sans ce signal, une finalisation lancée dans
     // cette fenêtre partirait sans la vidéo (automatisation à un seul coup).
     // Seule la finalisation le consulte.
-    const cleMediaEnVol = videoTargetSizeBytes ? `${fieldPath}#${Date.now()}` : null
-    if (cleMediaEnVol) declarerMediaEnVol(cleMediaEnVol, ficheDepart)
+    // La clé identifie CET envoi : elle sert aussi à savoir, au moment de
+    // publier, s'il est toujours le dernier lancé sur ce champ.
+    const cleMediaEnVol = videoTargetSizeBytes
+      ? `${fieldPath}#${Date.now()}#${Math.random().toString(36).slice(2, 8)}`
+      : null
+    if (cleMediaEnVol) declarerMediaEnVol(cleMediaEnVol, ficheDepart, fieldPath)
 
     setUploading(true)
     setError(null)
 
     try {
-      const result = await uploadToSupabase(files, ficheDepart)
+      const result = await uploadToSupabase(files, ficheDepart, cleMediaEnVol)
 
       if (result.success) {
         // FORCER currentPhotos à être un array
