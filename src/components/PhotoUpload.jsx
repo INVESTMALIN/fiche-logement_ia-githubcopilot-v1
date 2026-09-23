@@ -71,7 +71,7 @@ const PhotoUpload = ({
   videoTargetSizeBytes = null,   // Cible de taille en octets : au-dessus, Railway est appelé avec targetSizeBytes
   videoWarningFieldPath = null   // Champ FormContext où persister l'avertissement (null = rien à signaler)
 }) => {
-  const { getField, getFieldLive, updateField, handleSave } = useForm()
+  const { getField, getFieldLive, updateField, handleSave, declarerMediaEnVol, terminerMediaEnVol } = useForm()
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [compressing, setCompressing] = useState(false)
@@ -533,6 +533,14 @@ const PhotoUpload = ({
     // peut durer pendant que le coordinateur ouvre une autre fiche.
     const ficheDepart = identiteFicheLive()
 
+    // 🎯 Mode cible : signaler au provider qu'un média est en vol, AVANT le
+    // premier await. Entre ici et la publication de l'URL, la fiche ne
+    // référence encore rien : sans ce signal, une finalisation lancée dans
+    // cette fenêtre partirait sans la vidéo (automatisation à un seul coup).
+    // Seule la finalisation le consulte.
+    const cleMediaEnVol = videoTargetSizeBytes ? `${fieldPath}#${Date.now()}` : null
+    if (cleMediaEnVol) declarerMediaEnVol(cleMediaEnVol, ficheDepart)
+
     setUploading(true)
     setError(null)
 
@@ -565,6 +573,9 @@ const PhotoUpload = ({
     } catch (err) {
       setError('Erreur lors de l\'upload: ' + err.message)
     } finally {
+      // Succès, échec ou abandon : le média n'est plus en vol. Sans ce
+      // `finally`, une erreur d'envoi bloquerait la finalisation pour de bon.
+      if (cleMediaEnVol) terminerMediaEnVol(cleMediaEnVol)
       setUploading(false)
     }
   }

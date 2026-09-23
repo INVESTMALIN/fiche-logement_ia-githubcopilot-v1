@@ -945,6 +945,20 @@ const getFieldValue = (formData, fieldPath) => {
 // FONCTION PRINCIPALE DE VALIDATION
 // ========================================
 
+/**
+ * Erreur de finalisation pour un média du Guide d'accès encore EN VOL (envoi
+ * vers Storage en cours). Elle ne peut pas être déduite de `formData` : à cet
+ * instant, la fiche ne référence encore rien. C'est le registre du
+ * FormContext (`aDesMediasEnVol`) qui le sait, et la page de finalisation qui
+ * ajoute cette erreur au lot. Le message vit ici, avec celui de l'état
+ * persistant `compression_en_cours`, pour que les deux ne divergent pas.
+ */
+export const erreurMediaGuideEnVol = () => ({
+    section: 'guide_acces',
+    field: 'section_guide_acces.video_acces',
+    message: 'L\'envoi de la vidéo du Guide d\'accès est encore en cours : attendez qu\'il se termine avant de finaliser, sinon la vidéo ne partira pas sur le Drive.'
+})
+
 export const validateRequiredFields = (formData) => {
     const errors = {}
 

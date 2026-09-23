@@ -32,7 +32,7 @@ async function chargerValidationConfig() {
   return import(dataUrl(source))
 }
 
-const { validateRequiredFields, SPECIAL_VALIDATIONS } = await chargerValidationConfig()
+const { validateRequiredFields, SPECIAL_VALIDATIONS, erreurMediaGuideEnVol } = await chargerValidationConfig()
 
 // Erreurs remontées pour la section Guide d'accès uniquement : le reste de la
 // fiche de test est volontairement vide, donc plein d'autres erreurs.
@@ -62,6 +62,26 @@ test('états finaux et absence d\'avertissement : la finalisation n\'est pas blo
 test('une fiche sans section guide_acces ne lève rien', () => {
   assert.deepEqual(validateRequiredFields({}).guide_acces || [], [])
   assert.deepEqual(SPECIAL_VALIDATIONS.validateVideoGuideCompression({}), [])
+})
+
+test('média en vol : erreur dédiée, même section, message distinct de l\'état persistant', () => {
+  const enVol = erreurMediaGuideEnVol()
+  const enCours = SPECIAL_VALIDATIONS.validateVideoGuideCompression({
+    section_guide_acces: { video_avertissement: 'compression_en_cours' }
+  })[0]
+
+  assert.equal(enVol.section, 'guide_acces', 'même section que l\'état persistant')
+  assert.equal(enVol.field, enCours.field)
+  assert.match(enVol.message, /envoi .* en cours/i)
+  assert.match(enVol.message, /Drive/, 'le message dit ce qu\'on risque de perdre')
+  assert.notEqual(enVol.message, enCours.message, 'envoi en cours ≠ compression en cours')
+})
+
+test('un média en vol ne se déduit PAS de formData : c\'est le registre qui le sait', () => {
+  // Pendant l'envoi, la fiche ne référence encore rien : aucune validation
+  // basée sur formData ne peut voir le média. D'où l'ajout au clic.
+  const errors = validateRequiredFields({ section_guide_acces: { video_acces: [], video_avertissement: null } })
+  assert.deepEqual(errors.guide_acces || [], [])
 })
 
 test('le blocage vient bien de la validation de finalisation (câblage)', () => {

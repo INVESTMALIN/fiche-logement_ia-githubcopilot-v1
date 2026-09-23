@@ -10,7 +10,7 @@ import MiniDashboard from '../components/MiniDashboard'
 import AnnonceAgentPanel from '../components/annonce/AnnonceAgentPanel'
 import { CheckCircle, RefreshCw, AlertCircle, Loader2, FileText, FileEdit, Ban, AlertTriangle, ExternalLink, CheckCircle2, Pause, XCircle } from 'lucide-react'
 import { supabase } from '../lib/supabaseClient'
-import { validateRequiredFields } from '../lib/validationConfig'
+import { validateRequiredFields, erreurMediaGuideEnVol } from '../lib/validationConfig'
 import { normalizePhotoField } from '../lib/photoHelpers'
 import { createChecklistsOnLoomky, normalizeFormDataToFiche, enrichPropertyOnLoomky, logLoomkyEvent, addChecklistPhotoModels } from '../services/loomkyService'
 
@@ -32,12 +32,23 @@ export default function FicheFinalisation() {
     handleSave,
     saveStatus,
     handleLoad,
-    finaliserFiche
+    finaliserFiche,
+    aDesMediasEnVol
   } = useForm()
 
   const handleFinaliser = async () => {
     // 1. Valider les champs obligatoires
     const errors = validateRequiredFields(formData)
+
+    // 1 bis. Un média du Guide d'accès est-il encore en cours d'envoi ?
+    // Invisible dans `formData` (la fiche ne référence encore rien), donc lu
+    // au clic dans le registre du FormContext, qui survit aux changements de
+    // page. Sans ce contrôle, la finalisation lancerait l'automatisation à un
+    // seul coup sans la vidéo, et l'URL n'arriverait qu'après coup.
+    if (aDesMediasEnVol()) {
+      const erreur = erreurMediaGuideEnVol()
+      errors[erreur.section] = [...(errors[erreur.section] || []), { field: erreur.field, message: erreur.message }]
+    }
 
     // 2. Si erreurs détectées, bloquer et afficher
     if (Object.keys(errors).length > 0) {

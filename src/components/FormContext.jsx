@@ -8,6 +8,7 @@ import { DEFAULT_COUNTRY_CODE } from '../lib/countries'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { construireFeedbackMonday, doitAfficherFeedback } from '../lib/mondaySyncFeedback'
+import { estMemeFiche } from '../lib/videoGuideAcces'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
 import { validateMondayConstrainedFields } from '../lib/mondayFieldConstraints'
 import {
@@ -2363,6 +2364,37 @@ export function FormProvider({ children }) {
   // une ref, pour que taper dans un champ ne provoque pas de rendu.
   const aDesModificationsEnAttente = useCallback(() => isUserChangeRef.current, [])
 
+  // 🎯 Médias encore en vol (envoi vers Storage, puis compression) déclarés par
+  // PhotoUpload en mode « cible livret ». Le registre vit ICI, pas dans le
+  // composant : l'envoi survit au démontage de PhotoUpload (changement de
+  // section ou de page), alors que le composant, lui, disparaît.
+  //
+  // Tant qu'un média de LA FICHE COURANTE est en vol, son URL n'est pas encore
+  // dans la fiche : finaliser à cet instant lancerait l'automatisation à un
+  // seul coup (migration vers le Drive) sans ce média. Seule la FINALISATION
+  // consulte ce registre — navigation, enregistrement et autosave restent
+  // libres. Une ref, donc aucun rendu déclenché, comme ci-dessus.
+  const mediasEnVolRef = useRef(new Map())
+
+  const declarerMediaEnVol = useCallback((cle, fiche) => {
+    mediasEnVolRef.current.set(cle, fiche)
+  }, [])
+
+  const terminerMediaEnVol = useCallback((cle) => {
+    mediasEnVolRef.current.delete(cle)
+  }, [])
+
+  // `estMemeFiche` : un envoi lancé depuis une AUTRE fiche ne doit pas bloquer
+  // la finalisation de celle qu'on regarde.
+  const aDesMediasEnVol = useCallback(() => {
+    if (mediasEnVolRef.current.size === 0) return false
+    const courante = {
+      id: formDataRef.current?.id || null,
+      numeroBien: formDataRef.current?.section_logement?.numero_bien || null
+    }
+    return [...mediasEnVolRef.current.values()].some(fiche => estMemeFiche(fiche, courante))
+  }, [])
+
   const getFormDataPreview = () => {
     return {
       currentSection: getCurrentSection(),
@@ -2555,6 +2587,12 @@ export function FormProvider({ children }) {
       // déjà faite en base par la fonction SQL, sans redéclencher l'autosave.
       appliquerNumeroBienChange,
       aDesModificationsEnAttente,
+
+      // 🎯 Médias en vol (mode « cible livret ») : déclarés par PhotoUpload,
+      // consultés par la seule finalisation.
+      declarerMediaEnVol,
+      terminerMediaEnVol,
+      aDesMediasEnVol,
 
       // 🆕 AJOUT FONCTIONS DUPLICATE
       duplicateAlert,
