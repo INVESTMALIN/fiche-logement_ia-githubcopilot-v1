@@ -9,6 +9,7 @@ import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { construireFeedbackMonday, doitAfficherFeedback } from '../lib/mondaySyncFeedback'
 import { fusionnerApresSauvegarde, creerCollecteursModifications, delaiAvantAutosave } from '../lib/fusionSauvegarde'
+import { orchestrerSyncContacts } from '../lib/syncContacts'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
 import { validateMondayConstrainedFields } from '../lib/mondayFieldConstraints'
 import {
@@ -2041,42 +2042,22 @@ export function FormProvider({ children }) {
       return { success: false, error: 'NOT_FINALIZED', message: 'La fiche doit être finalisée pour synchroniser manuellement' }
     }
 
-    // 1. Save d'abord pour s'assurer que les contacts en cours d'édition
-    //    sont bien dans la DB (l'Edge Function les cherche par _localId).
-    let saveResult = await handleSave()
-    if (!saveResult.success) {
-      return {
-        success: false,
-        error: 'SAVE_FAILED',
-        message: saveResult.error || 'Échec de la sauvegarde avant sync'
+    // Sauvegarder d'abord (l'Edge Function retrouve les contacts par _localId),
+    // ne pousser que si TOUT est enregistré, et rendre visible le moindre
+    // échec : l'appelant (bouton « Synchroniser » de FicheInstructionsMenage)
+    // ignore la valeur de retour et s'en remet au toast.
+    // L'enchaînement lui-même est dans `orchestrerSyncContacts`, testé hors
+    // navigateur — cette fonction exige une fiche finalisée, et la fiche de
+    // démo ne doit jamais l'être.
+    return await orchestrerSyncContacts({
+      sauvegarder: (etatCourant) => handleSave(etatCourant || {}),
+      pousser: _pushContactsCore,
+      signalerEchec: (error, message) => {
+        setMondayContactsToast({ type: 'error', message, timestamp: Date.now() })
+        console.warn(`[Monday contacts] ${error} — ${message}`)
+        return { success: false, error, message }
       }
-    }
-
-    // 1 bis. Une saisie arrivée pendant l'envoi n'est pas dans `saveResult.data`
-    //    et n'est pas encore en base. Pousser maintenant omettrait ce contact
-    //    en silence, et les autosaves suivants ne synchronisent pas les
-    //    contacts. On retente une fois, puis on renonce plutôt que de pousser
-    //    un état partiel en annonçant un succès.
-    if (saveResult.modificationsEnAttente) {
-      saveResult = await handleSave()
-      if (!saveResult.success) {
-        return {
-          success: false,
-          error: 'SAVE_FAILED',
-          message: saveResult.error || 'Échec de la sauvegarde avant sync'
-        }
-      }
-      if (saveResult.modificationsEnAttente) {
-        return {
-          success: false,
-          error: 'SAVE_INCOMPLETE',
-          message: 'Des modifications sont encore en cours d\'enregistrement. Patientez quelques secondes puis relancez la synchronisation.'
-        }
-      }
-    }
-
-    // 2. Push sur la base des données fraîchement persistées.
-    return await _pushContactsCore(saveResult.data)
+    })
   }
 
   // `estRelance` : sauvegarde déclenchée par `handleSave` lui-même, parce que
@@ -2186,12 +2167,14 @@ export function FormProvider({ children }) {
         // Une seule relance automatique : si des modifications arrivent encore
         // pendant celle-ci, l'autosave (déjà armé par `updateField`) prend le
         // relais, et le succès n'est pas annoncé pour autant.
+        // État tel qu'il est vraiment à l'écran : la réponse, plus les champs
+        // touchés pendant l'envoi. Calculé ici, pas relu plus tard : la
+        // fermeture de cette fonction voit le `formData` d'avant les saisies,
+        // et un appelant ne peut pas savoir si React a déjà re-rendu.
+        const etatFusionne = fusionnerApresSauvegarde(formDataRef.current, result.data, cheminsModifiesPendantSave);
+
         if (cheminsModifiesPendantSave.size > 0 && !estRelance) {
           console.log('💾 Modifications arrivées pendant la sauvegarde : relance immédiate', [...cheminsModifiesPendantSave]);
-          // La relance doit porter l'état FUSIONNÉ : la fermeture de cette
-          // fonction voit encore le `formData` d'avant les saisies. On le lui
-          // passe donc explicitement, via `customData`.
-          const etatFusionne = fusionnerApresSauvegarde(formDataRef.current, result.data, cheminsModifiesPendantSave);
           return await handleSave({ ...etatFusionne, ...customData }, { estRelance: true });
         }
 
@@ -2215,7 +2198,14 @@ export function FormProvider({ children }) {
         // ne sont donc PAS dans `result.data`. Ils partiront par l'autosave.
         // Un appelant qui exploite ces données (push Monday…) doit le savoir :
         // pousser un état partiel omettrait silencieusement la dernière saisie.
-        return { success: true, data: result.data, modificationsEnAttente: !toutEstPersiste };
+        // `etatCourant` lui donne de quoi relancer une sauvegarde à jour, sans
+        // dépendre du moment où React aura appliqué la fusion.
+        return {
+          success: true,
+          data: result.data,
+          modificationsEnAttente: !toutEstPersiste,
+          etatCourant: etatFusionne
+        };
       } else {
         // Filet pour un échec non anticipé : on remonte la RAISON RÉELLE (message
         // Postgres porté par result.error, cf. saveFiche/safeSupabaseQuery) plutôt
