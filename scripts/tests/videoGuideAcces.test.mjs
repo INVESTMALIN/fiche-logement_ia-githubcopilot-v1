@@ -18,6 +18,7 @@ const {
   lireEtatJobCompression,
   choisirVideoGuide,
   estMemeFiche,
+  creerSessionFiche,
   publicationVideoGuide,
   formaterMio,
 } = await chargerModule('../../src/lib/videoGuideAcces.js')
@@ -138,6 +139,49 @@ test('les trois états sont distincts : en cours (provisoire), trop lourde, éch
   for (const compressee of [null, { url: 'https://s/c.mp4', taille: 10 * MIO }, { url: 'https://s/c.mp4', taille: 60 * MIO }]) {
     assert.notEqual(choisirVideoGuide({ originale, compressee }).avertissement, AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_EN_COURS)
   }
+})
+
+test('session : la même fiche qui reçoit son id en cours de traitement reste la même', () => {
+  // L'autosave crée la ligne PENDANT le traitement : l'id apparaît, mais rien
+  // n'a été rechargé ni réinitialisé, donc la session ne bouge pas.
+  const session = creerSessionFiche()
+  const avant = { session, id: null, numeroBien: '9999' }
+  const apres = { session, id: 'cree-par-autosave', numeroBien: '9999' }
+  assert.equal(estMemeFiche(avant, apres), true)
+})
+
+test('session : deux fiches au MÊME numéro de bien ne sont plus confondues', () => {
+  // Le trou que la session ferme : les doublons de numéro sont autorisés, et
+  // le repli par numéro laissait écrire la vidéo de A dans B.
+  const depart = { session: creerSessionFiche(), id: null, numeroBien: '2189' }
+  const autreFiche = { session: creerSessionFiche(), id: 'fiche-B', numeroBien: '2189' }
+  assert.equal(estMemeFiche(depart, autreFiche), false)
+
+  // Y compris quand les deux sont encore sans id.
+  const autreSansId = { session: creerSessionFiche(), id: null, numeroBien: '2189' }
+  assert.equal(estMemeFiche(depart, autreSansId), false)
+})
+
+test('session : après une réinitialisation, plus rien n\'est écrit dans le formulaire vide', () => {
+  const depart = { session: creerSessionFiche(), id: 'fiche-A', numeroBien: '2189' }
+  const apresReset = { session: creerSessionFiche(), id: null, numeroBien: null }
+  assert.equal(estMemeFiche(depart, apresReset), false)
+})
+
+test('session : elle fait autorité, même si un seul côté en porte une', () => {
+  const session = creerSessionFiche()
+  // Un côté sans session ne peut pas être « la même fiche » : on refuse
+  // plutôt que de retomber sur un repli qui confondrait des doublons.
+  assert.equal(estMemeFiche({ session, id: 'A', numeroBien: '1' }, { id: 'A', numeroBien: '1' }), false)
+  assert.equal(estMemeFiche({ id: 'A', numeroBien: '1' }, { session, id: 'A', numeroBien: '1' }), false)
+  assert.equal(estMemeFiche({ session }, { session }), true)
+})
+
+test('creerSessionFiche : deux sessions ne sont jamais égales', () => {
+  const sessions = new Set()
+  for (let i = 0; i < 200; i++) sessions.add(creerSessionFiche())
+  assert.equal(sessions.size, 200)
+  assert.ok([...sessions].every(s => typeof s === 'string' && s.length > 0))
 })
 
 test('estMemeFiche : id quand il existe des deux côtés, sinon numéro de bien', () => {

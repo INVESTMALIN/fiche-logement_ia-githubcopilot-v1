@@ -72,7 +72,7 @@ const PhotoUpload = ({
   videoTargetSizeBytes = null,   // Cible de taille en octets : au-dessus, Railway est appelé avec targetSizeBytes
   videoWarningFieldPath = null   // Champ FormContext où persister l'avertissement (null = rien à signaler)
 }) => {
-  const { getField, getFieldLive, updateField, handleSave, declarerMediaEnVol, terminerMediaEnVol, annulerMediasEnVol, estDernierEnvoi } = useForm()
+  const { getField, getFieldLive, updateField, handleSave, declarerMediaEnVol, terminerMediaEnVol, annulerMediasEnVol, estDernierEnvoi, lireSessionFiche } = useForm()
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [compressing, setCompressing] = useState(false)
@@ -484,6 +484,9 @@ const PhotoUpload = ({
   // 🎯 Mode cible : identité de la fiche chargée MAINTENANT dans le provider
   // (qui survit aux changements de route), lue hors de toute fermeture figée.
   const identiteFicheLive = () => ({
+    // La session distingue deux fiches au même numéro de bien, et ne change
+    // pas quand la fiche reçoit son id en cours de traitement.
+    session: lireSessionFiche(),
     id: getFieldLive('id') || null,
     numeroBien: getFieldLive('section_logement.numero_bien') || null
   })

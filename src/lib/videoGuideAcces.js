@@ -118,8 +118,29 @@ export function choisirVideoGuide({ originale, compressee, cible = VIDEO_GUIDE_A
  * au départ) le numéro de bien, obligatoire pour uploader et verrouillé ensuite.
  */
 export function estMemeFiche(depart, arrivee) {
+  // Identité de SESSION : posée au chargement d'une fiche et renouvelée à
+  // chaque chargement ou réinitialisation. Elle seule distingue deux fiches
+  // qui portent le même numéro de bien — le repli ci-dessous les confondrait,
+  // et les doublons de numéro sont autorisés dans ce parcours. Elle ne change
+  // pas quand la fiche reçoit son id en cours de route : c'est la même fiche.
+  if (depart?.session || arrivee?.session) return depart?.session === arrivee?.session
+
+  // Repli, pour un appelant qui ne fournit pas de session : id si les deux
+  // existent, sinon numéro de bien.
   if (depart?.id && arrivee?.id) return depart.id === arrivee.id
   return Boolean(depart?.numeroBien) && depart.numeroBien === arrivee?.numeroBien
+}
+
+/**
+ * Identifiant de session de fiche : unique, opaque, sans rapport avec le
+ * contenu du formulaire. Le FormContext en pose un au chargement d'une fiche
+ * et en repose un neuf à chaque chargement ou réinitialisation.
+ */
+export function creerSessionFiche() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `fiche-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 /**

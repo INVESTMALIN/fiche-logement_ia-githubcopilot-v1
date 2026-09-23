@@ -8,7 +8,7 @@ import { DEFAULT_COUNTRY_CODE } from '../lib/countries'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { construireFeedbackMonday, doitAfficherFeedback } from '../lib/mondaySyncFeedback'
-import { creerRegistreEnvois } from '../lib/videoGuideAcces'
+import { creerRegistreEnvois, creerSessionFiche } from '../lib/videoGuideAcces'
 import { fusionnerApresSauvegarde, creerCollecteursModifications, delaiAvantAutosave } from '../lib/fusionSauvegarde'
 import { orchestrerSyncContacts } from '../lib/syncContacts'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
@@ -1411,6 +1411,11 @@ export function FormProvider({ children }) {
   // créée, pas les saisies arrivées depuis.
   const formDataRef = useRef(formData)
   formDataRef.current = formData
+  // Identité de la fiche AFFICHÉE, indépendante de son contenu : deux fiches
+  // au même numéro de bien (les doublons sont permis) ont deux sessions.
+  // Renouvelée au chargement d'une fiche et à la réinitialisation, jamais
+  // quand la fiche reçoit son id en cours de route — c'est la même fiche.
+  const sessionFicheRef = useRef(creerSessionFiche())
   const lastSaveRef = useRef(0)
   // L'utilisateur a-t-il tapé dans le champ « Nom de la fiche » depuis le
   // chargement ? Seule une saisie délibérée autorise `saveFiche` à réécrire
@@ -1551,6 +1556,9 @@ export function FormProvider({ children }) {
 
   // DÉPLACER resetForm AVANT useEffect
   const resetForm = useCallback(() => {
+    // Formulaire vidé : on repart sur une session neuve, pour la même raison
+    // qu'au chargement d'une fiche.
+    sessionFicheRef.current = creerSessionFiche()
     setFormData(initialFormData)
     setCurrentStep(0)
     setHasManuallyNamedFiche(false)
@@ -1568,6 +1576,10 @@ export function FormProvider({ children }) {
       const result = await loadFiche(ficheId)
 
       if (result.success) {
+        // Nouvelle fiche à l'écran, donc nouvelle session : un traitement
+        // encore en vol sur la précédente ne doit pas écrire ici, même si les
+        // deux fiches portent le même numéro de bien (les doublons sont permis).
+        sessionFicheRef.current = creerSessionFiche()
         setFormData(result.data)
         setCurrentStep(0)
         setSaveStatus({ saving: false, saved: true, error: null });
@@ -2437,6 +2449,7 @@ export function FormProvider({ children }) {
   if (registreEnvoisRef.current === null) registreEnvoisRef.current = creerRegistreEnvois()
 
   const ficheCouranteRef = useCallback(() => ({
+    session: sessionFicheRef.current,
     id: formDataRef.current?.id || null,
     numeroBien: formDataRef.current?.section_logement?.numero_bien || null
   }), [])
@@ -2639,6 +2652,9 @@ export function FormProvider({ children }) {
       getSection,
       getField,
       getFieldLive,
+      // Identité de la fiche affichée, pour un traitement asynchrone qui
+      // devra vérifier, à son retour, qu'il écrit bien dans la bonne.
+      lireSessionFiche: () => sessionFicheRef.current,
       resetForm,
 
       handleSave,
