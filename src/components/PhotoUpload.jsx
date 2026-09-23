@@ -320,7 +320,11 @@ const PhotoUpload = ({
   }
 
   // Upload vers Supabase Storage
-  const uploadToSupabase = async (files) => {
+  // `ficheDepart` (mode cible) : identité de la fiche AU MOMENT DU CHOIX DU
+  // FICHIER, capturée avant le moindre await. L'upload Supabase dure déjà
+  // plusieurs minutes sur une grosse vidéo : la relire après coup désignerait
+  // la fiche ouverte entre-temps, et on écrirait l'URL de A dans B.
+  const uploadToSupabase = async (files, ficheDepart) => {
     // 🚨 VALIDATION CRITIQUE - Numéro de bien obligatoire
     const numeroBien = getField('section_logement.numero_bien')
     if (!numeroBien || numeroBien.trim() === '') {
@@ -407,8 +411,17 @@ const PhotoUpload = ({
         // encore et si c'est toujours la même fiche qui est chargée.
         if (isVideo && videoTargetSizeBytes) {
           const aCompresser = doitCompresserVideoGuide(file.size, videoTargetSizeBytes)
-          const ficheDepart = identiteFicheLive()
-          publierVideoGuide(urlData.publicUrl, aCompresser ? AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_EN_COURS : null)
+          const publiee = publierVideoGuide(
+            urlData.publicUrl,
+            aCompresser ? AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_EN_COURS : null,
+            ficheDepart
+          )
+          if (!publiee) {
+            // Une autre fiche est ouverte depuis le choix du fichier : publier
+            // ici écrirait la vidéo dans la MAUVAISE fiche. On ne touche à rien
+            // et on le dit, plutôt que d'échouer en silence.
+            throw new Error('Une autre fiche a été ouverte pendant l\'envoi : la vidéo n\'a pas été ajoutée. Rouvrez la fiche d\'origine et réimportez-la.')
+          }
           if (aCompresser) {
             const decision = await compresserPourLivret(file, urlData.publicUrl)
             remplacerVideoGuide(urlData.publicUrl, decision, ficheDepart)
@@ -468,11 +481,17 @@ const PhotoUpload = ({
 
   // 🎯 Mode cible : ajoute l'original au champ et pose l'avertissement de
   // départ (provisoire « en cours » si un job part, sinon rien : un nouvel
-  // upload repart de zéro).
-  const publierVideoGuide = (originalUrl, avertissementDepart) => {
+  // upload repart de zéro). N'écrit QUE si la fiche chargée est toujours celle
+  // d'où l'upload est parti. Retourne false sinon, sans rien toucher.
+  const publierVideoGuide = (originalUrl, avertissementDepart, ficheDepart) => {
+    if (!estMemeFiche(ficheDepart, identiteFicheLive())) {
+      console.log('🎯 Une autre fiche est chargée depuis le début de l\'envoi, vidéo non publiée')
+      return false
+    }
     const actuelles = normalizePhotoField(getFieldLive(fieldPath))
     updateField(fieldPath, multiple ? [...actuelles, originalUrl] : originalUrl)
     if (videoWarningFieldPath) updateField(videoWarningFieldPath, avertissementDepart)
+    return true
   }
 
   // 🎯 Mode cible : à la fin de la compression, remplace l'original par la
@@ -509,11 +528,16 @@ const PhotoUpload = ({
       return
     }
 
+    // 🎯 Mode cible : identité de la fiche AVANT tout traitement asynchrone.
+    // Tout ce qui suit (compression navigateur, upload Supabase, job Railway)
+    // peut durer pendant que le coordinateur ouvre une autre fiche.
+    const ficheDepart = identiteFicheLive()
+
     setUploading(true)
     setError(null)
 
     try {
-      const result = await uploadToSupabase(files)
+      const result = await uploadToSupabase(files, ficheDepart)
 
       if (result.success) {
         // FORCER currentPhotos à être un array
