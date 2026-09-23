@@ -21,6 +21,7 @@ import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 import { TYPES_PASSAGE, TYPES_MAINTENANCE } from '../lib/avisGrilleHelpers'
 import { pickContactsToPush } from '../services/mondayContactsService'
+import { libelleToastContacts } from '../lib/syncContacts'
 import { buildConsommablesRecap } from '../lib/consommablesRecap'
 
 // Liste fermée des activités de maintenance (libellés métier figés, alignés
@@ -841,17 +842,22 @@ export default function FicheInstructionsMenage() {
         >
           <span className="text-xl leading-none" aria-hidden="true">⚠️</span>
           <div className="flex-1 text-sm text-gray-800">
+            {/* Libellé partagé (src/lib/syncContacts.js) : un message
+                explicite décrit un échec AVANT le push, où aucun contact n'a
+                été tenté — le décompte « X/Y contacts » y serait faux. */}
             <p className="font-semibold text-red-700 mb-1">
-              Sync Monday partielle
+              {libelleToastContacts(mondayContactsToast).titre}
             </p>
             <p className="text-gray-700">
-              {mondayContactsToast.failedCount === mondayContactsToast.total
-                ? `${mondayContactsToast.failedCount} contact${mondayContactsToast.failedCount > 1 ? 's' : ''} n'${mondayContactsToast.failedCount > 1 ? 'ont' : 'a'} pas pu être remonté${mondayContactsToast.failedCount > 1 ? 's' : ''} vers Monday.`
-                : `${mondayContactsToast.failedCount}/${mondayContactsToast.total} contacts n'ont pas pu être remontés vers Monday.`}
-              {' '}
-              <span className="text-gray-600">
-                Réessayez en sauvegardant à nouveau la fiche.
-              </span>
+              {libelleToastContacts(mondayContactsToast).texte}
+              {libelleToastContacts(mondayContactsToast).avecRelance && (
+                <>
+                  {' '}
+                  <span className="text-gray-600">
+                    Réessayez en sauvegardant à nouveau la fiche.
+                  </span>
+                </>
+              )}
             </p>
           </div>
           <button
