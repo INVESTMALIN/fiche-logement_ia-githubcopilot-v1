@@ -22,24 +22,27 @@ export const MESSAGE_SAVE_INCOMPLETE =
 
 /**
  * @param {object} p
- * @param {(etat?: object) => Promise<{success, data, modificationsEnAttente, etatCourant, error}>} p.sauvegarder
- *        Appelé SANS argument la première fois. Au second essai, il reçoit
- *        l'état courant rendu par le premier : la fermeture de l'appelant,
- *        elle, porte encore le formulaire d'avant les dernières saisies.
+ * @param {(etat?: object) => Promise<{success, data, modificationsEnAttente, error}>} p.sauvegarder
+ *        Appelé SANS argument la première fois ; au second essai, avec l'état
+ *        à imposer.
+ * @param {() => object} p.lireEtatCourant
+ *        Lu au dernier moment, juste avant le second essai : c'est la seule
+ *        lecture à jour. La fermeture de l'appelant, elle, porte encore le
+ *        formulaire d'avant les dernières saisies, et la réécrirait par-dessus
+ *        ce qui vient d'être enregistré.
  * @param {(data: object) => Promise<object>} p.pousser
  * @param {(error: string, message: string) => object} p.signalerEchec
  *        Pose le message visible et rend le résultat d'échec.
  */
-export async function orchestrerSyncContacts({ sauvegarder, pousser, signalerEchec }) {
+export async function orchestrerSyncContacts({ sauvegarder, lireEtatCourant, pousser, signalerEchec }) {
   let save = await sauvegarder()
   if (!save?.success) {
     return signalerEchec('SAVE_FAILED', save?.error || MESSAGE_SAVE_FAILED)
   }
 
   if (save.modificationsEnAttente) {
-    // Second essai avec l'état courant, jamais un `sauvegarder()` nu : celui-ci
-    // réécrirait des valeurs périmées par-dessus ce qui vient d'être enregistré.
-    save = await sauvegarder(save.etatCourant)
+    // UN seul second essai, avec l'état courant. Jamais un `sauvegarder()` nu.
+    save = await sauvegarder(lireEtatCourant())
     if (!save?.success) {
       return signalerEchec('SAVE_FAILED', save?.error || MESSAGE_SAVE_FAILED)
     }

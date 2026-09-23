@@ -23,11 +23,13 @@ const {
 } = await chargerModule('../../src/lib/syncContacts.js')
 
 // Harnais : enregistre les arguments de chaque appel.
-function harnais(reponsesSauvegarde) {
-  const journal = { sauvegardes: [], pousses: [], echecs: [] }
+function harnais(reponsesSauvegarde, etatCourant = { v: 'à jour' }) {
+  const journal = { sauvegardes: [], pousses: [], echecs: [], lecturesEtat: 0 }
   let i = 0
   return {
     journal,
+    // Lu au dernier moment : le journal compte les lectures pour le prouver.
+    lireEtatCourant: () => { journal.lecturesEtat += 1; return etatCourant },
     sauvegarder: async (etat) => {
       journal.sauvegardes.push(etat)
       return reponsesSauvegarde[Math.min(i++, reponsesSauvegarde.length - 1)]
@@ -56,13 +58,13 @@ test('cas nominal : une sauvegarde, puis le push avec ses données', async () =>
 })
 
 test('modification pendant l\'envoi : le second essai reçoit l\'ÉTAT COURANT', async () => {
-  // Le défaut du round 5 : un `sauvegarder()` nu réutilisait le formulaire
-  // figé dans la fermeture de l'appelant et réécrivait des valeurs périmées.
+  // Un `sauvegarder()` nu réutiliserait le formulaire figé dans la fermeture
+  // de l'appelant et réécrirait des valeurs périmées.
   const etatCourant = { id: 'f1', contacts: ['a', 'b'], marqueur: 'à jour' }
   const h = harnais([
-    { success: true, data: { id: 'f1', contacts: ['a'] }, modificationsEnAttente: true, etatCourant },
+    { success: true, data: { id: 'f1', contacts: ['a'] }, modificationsEnAttente: true },
     { success: true, data: etatCourant }
-  ])
+  ], etatCourant)
 
   const res = await orchestrerSyncContacts(h)
 
@@ -71,6 +73,31 @@ test('modification pendant l\'envoi : le second essai reçoit l\'ÉTAT COURANT',
   assert.deepEqual(h.journal.sauvegardes[1], etatCourant, 'le second essai porte l\'état courant')
   assert.deepEqual(h.journal.pousses, [etatCourant], 'et c\'est cet état qui est poussé')
   assert.equal(res.success, true)
+})
+
+test('l\'état courant est lu AU MOMENT du second essai, pas avant', async () => {
+  // Lu trop tôt, il manquerait les saisies arrivées pendant le premier envoi.
+  const h = harnais([
+    { success: true, data: {}, modificationsEnAttente: true },
+    { success: true, data: {} }
+  ])
+  const lecturesAvant = []
+  const sauvegarderOrigine = h.sauvegarder
+  h.sauvegarder = async (etat) => {
+    lecturesAvant.push(h.journal.lecturesEtat)
+    return sauvegarderOrigine(etat)
+  }
+
+  await orchestrerSyncContacts(h)
+
+  assert.deepEqual(lecturesAvant, [0, 1], 'aucune lecture avant le 1er essai, une seule avant le 2e')
+  assert.equal(h.journal.lecturesEtat, 1, 'l\'état n\'est lu qu\'une fois, au moment utile')
+})
+
+test('cas nominal : l\'état courant n\'est jamais lu', async () => {
+  const h = harnais([OK])
+  await orchestrerSyncContacts(h)
+  assert.equal(h.journal.lecturesEtat, 0)
 })
 
 test('sauvegarde en échec : aucun push, message visible', async () => {
@@ -93,7 +120,7 @@ test('sauvegarde en échec sans raison : message par défaut, jamais vide', asyn
 
 test('second essai en échec : aucun push, message visible', async () => {
   const h = harnais([
-    { success: true, data: {}, modificationsEnAttente: true, etatCourant: { id: 'f1' } },
+    { success: true, data: {}, modificationsEnAttente: true },
     { success: false, error: 'Timeout' }
   ])
   const res = await orchestrerSyncContacts(h)
@@ -106,8 +133,8 @@ test('second essai en échec : aucun push, message visible', async () => {
 
 test('toujours incomplet après le second essai : on renonce, on ne pousse pas', async () => {
   const h = harnais([
-    { success: true, data: {}, modificationsEnAttente: true, etatCourant: { v: 1 } },
-    { success: true, data: {}, modificationsEnAttente: true, etatCourant: { v: 2 } }
+    { success: true, data: {}, modificationsEnAttente: true },
+    { success: true, data: {}, modificationsEnAttente: true }
   ])
   const res = await orchestrerSyncContacts(h)
 

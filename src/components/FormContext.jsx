@@ -2050,7 +2050,8 @@ export function FormProvider({ children }) {
     // navigateur — cette fonction exige une fiche finalisée, et la fiche de
     // démo ne doit jamais l'être.
     return await orchestrerSyncContacts({
-      sauvegarder: (etatCourant) => handleSave(etatCourant || {}),
+      sauvegarder: (etatImpose) => handleSave(etatImpose || {}),
+      lireEtatCourant: () => formDataRef.current,
       pousser: _pushContactsCore,
       signalerEchec: (error, message) => {
         setMondayContactsToast({ type: 'error', message, timestamp: Date.now() })
@@ -2060,10 +2061,7 @@ export function FormProvider({ children }) {
     })
   }
 
-  // `estRelance` : sauvegarde déclenchée par `handleSave` lui-même, parce que
-  // des modifications sont arrivées pendant l'envoi précédent. Elle ne se
-  // relance pas à son tour — une seule relance automatique, jamais de cascade.
-  const handleSave = async (customData = {}, { estRelance = false } = {}) => {
+  const handleSave = async (customData = {}) => {
 
     // DEBUG
     console.log('🔍 [SAVE] Début save - user_id:', user.id)
@@ -2160,24 +2158,10 @@ export function FormProvider({ children }) {
         // Ce qui a été modifié pendant l'envoi est de nouveau à l'écran, mais
         // n'est PAS en base : cette sauvegarde-là portait l'état d'avant.
         // Annoncer « Sauvegardé avec succès » ici serait un mensonge, et le
-        // coordinateur qui ferme l'onglet en confiance perdrait sa saisie
-        // avant l'autosave. On repart donc immédiatement, en gardant
-        // l'indicateur « Sauvegarde… » à l'écran.
-        //
-        // Une seule relance automatique : si des modifications arrivent encore
-        // pendant celle-ci, l'autosave (déjà armé par `updateField`) prend le
-        // relais, et le succès n'est pas annoncé pour autant.
-        // État tel qu'il est vraiment à l'écran : la réponse, plus les champs
-        // touchés pendant l'envoi. Calculé ici, pas relu plus tard : la
-        // fermeture de cette fonction voit le `formData` d'avant les saisies,
-        // et un appelant ne peut pas savoir si React a déjà re-rendu.
-        const etatFusionne = fusionnerApresSauvegarde(formDataRef.current, result.data, cheminsModifiesPendantSave);
-
-        if (cheminsModifiesPendantSave.size > 0 && !estRelance) {
-          console.log('💾 Modifications arrivées pendant la sauvegarde : relance immédiate', [...cheminsModifiesPendantSave]);
-          return await handleSave({ ...etatFusionne, ...customData }, { estRelance: true });
-        }
-
+        // coordinateur qui ferme l'onglet en confiance perdrait sa saisie.
+        // On ne dit donc rien, et c'est l'autosave — déjà armé par
+        // `updateField`, et qui reporte au lieu d'abandonner — qui persiste
+        // ces champs quelques secondes plus tard.
         const toutEstPersiste = cheminsModifiesPendantSave.size === 0;
         setSaveStatus({ saving: false, saved: toutEstPersiste, error: null });
         if (toutEstPersiste) {
@@ -2198,14 +2182,7 @@ export function FormProvider({ children }) {
         // ne sont donc PAS dans `result.data`. Ils partiront par l'autosave.
         // Un appelant qui exploite ces données (push Monday…) doit le savoir :
         // pousser un état partiel omettrait silencieusement la dernière saisie.
-        // `etatCourant` lui donne de quoi relancer une sauvegarde à jour, sans
-        // dépendre du moment où React aura appliqué la fusion.
-        return {
-          success: true,
-          data: result.data,
-          modificationsEnAttente: !toutEstPersiste,
-          etatCourant: etatFusionne
-        };
+        return { success: true, data: result.data, modificationsEnAttente: !toutEstPersiste };
       } else {
         // Filet pour un échec non anticipé : on remonte la RAISON RÉELLE (message
         // Postgres porté par result.error, cf. saveFiche/safeSupabaseQuery) plutôt
