@@ -2043,12 +2043,35 @@ export function FormProvider({ children }) {
 
     // 1. Save d'abord pour s'assurer que les contacts en cours d'édition
     //    sont bien dans la DB (l'Edge Function les cherche par _localId).
-    const saveResult = await handleSave()
+    let saveResult = await handleSave()
     if (!saveResult.success) {
       return {
         success: false,
         error: 'SAVE_FAILED',
         message: saveResult.error || 'Échec de la sauvegarde avant sync'
+      }
+    }
+
+    // 1 bis. Une saisie arrivée pendant l'envoi n'est pas dans `saveResult.data`
+    //    et n'est pas encore en base. Pousser maintenant omettrait ce contact
+    //    en silence, et les autosaves suivants ne synchronisent pas les
+    //    contacts. On retente une fois, puis on renonce plutôt que de pousser
+    //    un état partiel en annonçant un succès.
+    if (saveResult.modificationsEnAttente) {
+      saveResult = await handleSave()
+      if (!saveResult.success) {
+        return {
+          success: false,
+          error: 'SAVE_FAILED',
+          message: saveResult.error || 'Échec de la sauvegarde avant sync'
+        }
+      }
+      if (saveResult.modificationsEnAttente) {
+        return {
+          success: false,
+          error: 'SAVE_INCOMPLETE',
+          message: 'Des modifications sont encore en cours d\'enregistrement. Patientez quelques secondes puis relancez la synchronisation.'
+        }
       }
     }
 
@@ -2188,7 +2211,11 @@ export function FormProvider({ children }) {
         // Brouillon → Complété (cf. updateStatut). Post-finalisation = bouton
         // manuel "Synchroniser" dans FicheInstructionsMenage.
 
-        return { success: true, data: result.data };
+        // `modificationsEnAttente` : des champs ont bougé pendant cet envoi et
+        // ne sont donc PAS dans `result.data`. Ils partiront par l'autosave.
+        // Un appelant qui exploite ces données (push Monday…) doit le savoir :
+        // pousser un état partiel omettrait silencieusement la dernière saisie.
+        return { success: true, data: result.data, modificationsEnAttente: !toutEstPersiste };
       } else {
         // Filet pour un échec non anticipé : on remonte la RAISON RÉELLE (message
         // Postgres porté par result.error, cf. saveFiche/safeSupabaseQuery) plutôt
