@@ -1354,6 +1354,9 @@ export function FormProvider({ children }) {
   const { user, loading: authLoading } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState(initialFormData)
+  // Tenue à jour à chaque rendu, juste après la déclaration de l'état :
+  // c'est la seule lecture fiable de « l'état courant » depuis une fonction
+  // asynchrone (voir `formDataRef` plus bas).
   const [saveStatus, setSaveStatus] = useState({
     saving: false,
     saved: false,
@@ -1398,6 +1401,11 @@ export function FormProvider({ children }) {
   // depuis (une frappe, une photo supprimée, un traitement asynchrone).
   const collecteursRef = useRef(null)
   if (collecteursRef.current === null) collecteursRef.current = creerCollecteursModifications()
+  // État courant lisible hors rendu : la fermeture d'une fonction asynchrone
+  // (comme `handleSave` après son await) voit l'état du rendu où elle a été
+  // créée, pas les saisies arrivées depuis.
+  const formDataRef = useRef(formData)
+  formDataRef.current = formData
   const lastSaveRef = useRef(0)
   // L'utilisateur a-t-il tapé dans le champ « Nom de la fiche » depuis le
   // chargement ? Seule une saisie délibérée autorise `saveFiche` à réécrire
@@ -2048,7 +2056,10 @@ export function FormProvider({ children }) {
     return await _pushContactsCore(saveResult.data)
   }
 
-  const handleSave = async (customData = {}) => {
+  // `estRelance` : sauvegarde déclenchée par `handleSave` lui-même, parce que
+  // des modifications sont arrivées pendant l'envoi précédent. Elle ne se
+  // relance pas à son tour — une seule relance automatique, jamais de cascade.
+  const handleSave = async (customData = {}, { estRelance = false } = {}) => {
 
     // DEBUG
     console.log('🔍 [SAVE] Début save - user_id:', user.id)
@@ -2141,10 +2152,33 @@ export function FormProvider({ children }) {
         // groupé plusieurs mises à jour entre-temps.
         collecteursRef.current.fermer(cheminsModifiesPendantSave);
         setFormData(prev => fusionnerApresSauvegarde(prev, result.data, cheminsModifiesPendantSave));
-        setSaveStatus({ saving: false, saved: true, error: null });
-        setTimeout(() => {
-          setSaveStatus(prev => ({ ...prev, saved: false }))
-        }, 3000)
+
+        // Ce qui a été modifié pendant l'envoi est de nouveau à l'écran, mais
+        // n'est PAS en base : cette sauvegarde-là portait l'état d'avant.
+        // Annoncer « Sauvegardé avec succès » ici serait un mensonge, et le
+        // coordinateur qui ferme l'onglet en confiance perdrait sa saisie
+        // avant l'autosave. On repart donc immédiatement, en gardant
+        // l'indicateur « Sauvegarde… » à l'écran.
+        //
+        // Une seule relance automatique : si des modifications arrivent encore
+        // pendant celle-ci, l'autosave (déjà armé par `updateField`) prend le
+        // relais, et le succès n'est pas annoncé pour autant.
+        if (cheminsModifiesPendantSave.size > 0 && !estRelance) {
+          console.log('💾 Modifications arrivées pendant la sauvegarde : relance immédiate', [...cheminsModifiesPendantSave]);
+          // La relance doit porter l'état FUSIONNÉ : la fermeture de cette
+          // fonction voit encore le `formData` d'avant les saisies. On le lui
+          // passe donc explicitement, via `customData`.
+          const etatFusionne = fusionnerApresSauvegarde(formDataRef.current, result.data, cheminsModifiesPendantSave);
+          return await handleSave({ ...etatFusionne, ...customData }, { estRelance: true });
+        }
+
+        const toutEstPersiste = cheminsModifiesPendantSave.size === 0;
+        setSaveStatus({ saving: false, saved: toutEstPersiste, error: null });
+        if (toutEstPersiste) {
+          setTimeout(() => {
+            setSaveStatus(prev => ({ ...prev, saved: false }))
+          }, 3000)
+        }
 
         // 🟦 Sync Monday — best effort, fire-and-forget, ne bloque jamais le save
         triggerMondaySync(result.data, wasCompleteBeforeSave)
