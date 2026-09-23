@@ -99,6 +99,29 @@ export function fusionnerApresSauvegarde(local, distant, cheminsModifies) {
   return fusion
 }
 
+// Autosave : debounce nominal, et écart minimal entre deux sauvegardes.
+export const AUTOSAVE_DEBOUNCE_MS = 5000
+export const AUTOSAVE_ECART_MINIMAL_MS = 1500
+
+/**
+ * Délai avant la prochaine sauvegarde automatique.
+ *
+ * L'anti-spam REPORTE, il n'annule pas. L'effet d'autosave ne se rejoue que
+ * si son état d'entrée change ; il est aussi réveillé par la FIN d'une
+ * sauvegarde. S'il abandonnait à ce moment-là parce que la précédente date de
+ * moins de 1,5 s, et que plus aucune frappe ne venait le relancer, la
+ * dernière modification restait en mémoire seulement — perdue à la fermeture
+ * de l'onglet. On rend donc toujours un délai, jamais « rien ».
+ */
+export function delaiAvantAutosave(maintenant, dernierSave) {
+  const depuis = maintenant - dernierSave
+  if (!Number.isFinite(depuis)) return AUTOSAVE_DEBOUNCE_MS
+  // Borné des deux côtés : une horloge qui recule, ou un `dernierSave` dans
+  // le futur, ne doit pas repousser la sauvegarde de plusieurs minutes.
+  const reliquat = Math.min(AUTOSAVE_ECART_MINIMAL_MS, Math.max(0, AUTOSAVE_ECART_MINIMAL_MS - depuis))
+  return AUTOSAVE_DEBOUNCE_MS + reliquat
+}
+
 /**
  * Collecteurs de chemins : une sauvegarde en vol = un collecteur. Plusieurs
  * peuvent coexister (autosave et clic « Enregistrer » qui se chevauchent) ;

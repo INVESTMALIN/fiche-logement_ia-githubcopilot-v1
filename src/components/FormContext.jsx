@@ -8,7 +8,7 @@ import { DEFAULT_COUNTRY_CODE } from '../lib/countries'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { construireFeedbackMonday, doitAfficherFeedback } from '../lib/mondaySyncFeedback'
-import { fusionnerApresSauvegarde, creerCollecteursModifications } from '../lib/fusionSauvegarde'
+import { fusionnerApresSauvegarde, creerCollecteursModifications, delaiAvantAutosave } from '../lib/fusionSauvegarde'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
 import { validateMondayConstrainedFields } from '../lib/mondayFieldConstraints'
 import {
@@ -2225,16 +2225,14 @@ export function FormProvider({ children }) {
     // Ne rien faire si déjà en train de sauvegarder
     if (saveStatus.saving) return
 
-    // Anti-spam : minimum 1.5s entre deux sauvegardes
-    const now = Date.now()
-    if (now - lastSaveRef.current < 1500) return
-
-    // Debounce de 5 secondes
+    // Debounce de 5 s, augmenté du reliquat d'anti-spam s'il y en a un.
+    // L'anti-spam reporte, il n'abandonne jamais (cf. `delaiAvantAutosave`) :
+    // un abandon sec laissait la dernière modification en mémoire seulement.
     const timeout = setTimeout(async () => {
       isUserChangeRef.current = false // Reset le flag avant de sauvegarder
       lastSaveRef.current = Date.now()
       await handleSave()
-    }, 5000)
+    }, delaiAvantAutosave(Date.now(), lastSaveRef.current))
 
     return () => clearTimeout(timeout)
   }, [formData, user?.id, saveStatus.saving, handleSave])

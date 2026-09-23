@@ -14,6 +14,9 @@ const {
   fusionnerApresSauvegarde,
   creerCollecteursModifications,
   CHEMINS_NON_FUSIONNABLES,
+  delaiAvantAutosave,
+  AUTOSAVE_DEBOUNCE_MS,
+  AUTOSAVE_ECART_MINIMAL_MS,
   lireChemin,
   ecrireChemin,
 } = await chargerModule('../../src/lib/fusionSauvegarde.js')
@@ -160,6 +163,28 @@ test('lireChemin / ecrireChemin : profondeur, absence, tableaux', () => {
   // Le chemin est créé s'il n'existe pas, sans écraser les frères
   const cree = ecrireChemin({ garde: 1 }, 'x.y', 'v')
   assert.deepEqual(cree, { garde: 1, x: { y: 'v' } })
+})
+
+test('autosave : l\'anti-spam reporte, il n\'abandonne jamais', () => {
+  // Cas nominal : la dernière sauvegarde est ancienne, debounce habituel.
+  assert.equal(delaiAvantAutosave(100_000, 0), AUTOSAVE_DEBOUNCE_MS)
+  assert.equal(delaiAvantAutosave(100_000, 100_000 - AUTOSAVE_ECART_MINIMAL_MS), AUTOSAVE_DEBOUNCE_MS)
+
+  // Sauvegarde toute récente : on ajoute le reliquat, on ne rend jamais rien.
+  // C'est le cas où l'effet est réveillé par la FIN d'une sauvegarde, sans
+  // frappe derrière pour le relancer : abandonner perdait la modification.
+  assert.equal(delaiAvantAutosave(100_000, 99_000), AUTOSAVE_DEBOUNCE_MS + 500)
+  assert.equal(delaiAvantAutosave(100_000, 100_000), AUTOSAVE_DEBOUNCE_MS + AUTOSAVE_ECART_MINIMAL_MS)
+
+  // Horloge incohérente (dernier save « dans le futur ») : pas de délai négatif.
+  assert.equal(delaiAvantAutosave(100_000, 200_000), AUTOSAVE_DEBOUNCE_MS + AUTOSAVE_ECART_MINIMAL_MS)
+  assert.equal(delaiAvantAutosave(100_000, NaN), AUTOSAVE_DEBOUNCE_MS)
+
+  // Un délai est toujours rendu, et toujours exploitable par setTimeout.
+  for (const dernier of [0, 99_000, 100_000, 200_000, NaN, undefined]) {
+    const d = delaiAvantAutosave(100_000, dernier)
+    assert.ok(Number.isFinite(d) && d >= AUTOSAVE_DEBOUNCE_MS, `délai invalide pour ${String(dernier)} : ${d}`)
+  }
 })
 
 test('collecteurs : sans sauvegarde en vol, rien n\'est noté', () => {
