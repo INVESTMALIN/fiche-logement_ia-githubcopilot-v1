@@ -2128,7 +2128,13 @@ export function FormProvider({ children }) {
       if (result.success) {
         // Le nom saisi est parti : les enregistrements suivants n'ont plus à le
         // réécrire tant que l'utilisateur n'y retouche pas.
-        nomSaisiParUtilisateurRef.current = false;
+        // SAUF s'il a été retouché PENDANT cet envoi : ce renommage-là n'est
+        // pas encore parti, et `saveFiche` retire `nom` de tout UPDATE dont le
+        // marqueur est retombé. Baisser le marqueur ici afficherait un nouveau
+        // nom que plus aucune sauvegarde n'écrirait, perdu au rechargement.
+        if (!cheminsModifiesPendantSave.has('nom')) {
+          nomSaisiParUtilisateurRef.current = false;
+        }
         // La réponse fait foi (id créé, updated_at, snapshots), SAUF pour les
         // champs modifiés pendant l'envoi : ceux-là sont repris de l'état
         // courant. `prev` est l'état le plus à jour, y compris si React a

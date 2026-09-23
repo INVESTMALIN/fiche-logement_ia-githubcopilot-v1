@@ -13,6 +13,7 @@ import { chargerModule } from './_chargerModule.mjs'
 const {
   fusionnerApresSauvegarde,
   creerCollecteursModifications,
+  CHEMINS_NON_FUSIONNABLES,
   lireChemin,
   ecrireChemin,
 } = await chargerModule('../../src/lib/fusionSauvegarde.js')
@@ -110,6 +111,39 @@ test('réponse inexploitable : on la rend telle quelle, sans exception', () => {
   // État local absent : on ne peut rien réappliquer, la réponse fait foi.
   const distant = { nom: 'distant' }
   assert.equal(fusionnerApresSauvegarde(null, distant, ['nom']), distant)
+})
+
+test('numéro de bien : la base fait foi, même modifié pendant la création', () => {
+  // Il est pose à la création puis verrouillé : saveFiche le retire de tout
+  // UPDATE. Garder la saisie afficherait un numéro qui n'atteindra jamais la
+  // base, et les uploads viseraient un dossier Storage inexistant.
+  const local = { section_logement: { numero_bien: '9999', surface: 42 } }
+  const distant = { id: 'cree', section_logement: { numero_bien: '2189', surface: 30 } }
+
+  const fusion = fusionnerApresSauvegarde(local, distant, ['section_logement.numero_bien', 'section_logement.surface'])
+
+  assert.equal(fusion.section_logement.numero_bien, '2189', 'le numéro de la base est réimposé')
+  assert.equal(fusion.section_logement.surface, 42, 'les autres champs de la section sont bien fusionnés')
+  assert.deepEqual(CHEMINS_NON_FUSIONNABLES, ['section_logement.numero_bien'])
+})
+
+test('numéro de bien : une section entière réappliquée ne le ramène pas non plus', () => {
+  // updateSection('section_logement') réapplique toute la section : le numéro
+  // local partirait avec elle sans la réimposition finale.
+  const local = { section_logement: { numero_bien: '9999', surface: 42 } }
+  const distant = { id: 'f1', section_logement: { numero_bien: '2189', surface: 30 } }
+
+  const fusion = fusionnerApresSauvegarde(local, distant, ['section_logement'])
+  assert.equal(fusion.section_logement.numero_bien, '2189')
+  assert.equal(fusion.section_logement.surface, 42)
+})
+
+test('numéro de bien identique des deux côtés : aucune réécriture inutile', () => {
+  const local = { section_logement: { numero_bien: '2189', surface: 42 } }
+  const distant = { section_logement: { numero_bien: '2189', surface: 30 } }
+  const fusion = fusionnerApresSauvegarde(local, distant, ['section_logement.surface'])
+  assert.equal(fusion.section_logement.numero_bien, '2189')
+  assert.equal(fusion.section_logement.surface, 42)
 })
 
 test('lireChemin / ecrireChemin : profondeur, absence, tableaux', () => {

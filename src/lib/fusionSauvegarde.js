@@ -13,6 +13,18 @@
 //
 // Aucun import : ce module est chargeable tel quel par les tests Node.
 
+/**
+ * Chemins que la fusion ne doit JAMAIS réappliquer depuis l'état local.
+ *
+ * Le numéro de bien est posé à la création puis verrouillé : `saveFiche` le
+ * retire de tout UPDATE, et seule la fonction SQL `changer_numero_bien` peut
+ * le modifier. Conserver une saisie faite pendant la création afficherait donc
+ * un numéro qui n'atteindra jamais la base — et les uploads suivants
+ * viseraient un dossier Storage qui ne correspond à rien. Sur ce champ, la
+ * valeur de la base fait foi, même si elle contredit l'écran.
+ */
+export const CHEMINS_NON_FUSIONNABLES = Object.freeze(['section_logement.numero_bien'])
+
 /** Lit une valeur à un chemin pointé, sans jamais lever. */
 export function lireChemin(source, chemin) {
   const cles = String(chemin).split('.')
@@ -73,6 +85,17 @@ export function fusionnerApresSauvegarde(local, distant, cheminsModifies) {
     if (valeurLocale === undefined) continue
     fusion = ecrireChemin(fusion, chemin, valeurLocale)
   }
+
+  // Les champs verrouillés sont réimposés depuis la réponse, APRÈS la fusion :
+  // cela couvre aussi bien une modification directe du champ qu'une section
+  // entière réappliquée par-dessus (`updateSection`), qui l'emporterait avec elle.
+  for (const chemin of CHEMINS_NON_FUSIONNABLES) {
+    const valeurDistante = lireChemin(distant, chemin)
+    if (valeurDistante === undefined) continue
+    if (lireChemin(fusion, chemin) === valeurDistante) continue
+    fusion = ecrireChemin(fusion, chemin, valeurDistante)
+  }
+
   return fusion
 }
 
