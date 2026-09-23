@@ -137,6 +137,103 @@ export function publicationVideoGuide({ actuelles, url, multiple, maxFiles }) {
   return Number.isInteger(maxFiles) && maxFiles > 0 ? suivantes.slice(-maxFiles) : suivantes
 }
 
+/**
+ * Registre des envois de médias « cible livret ».
+ *
+ * Il vit dans le FormContext, pas dans PhotoUpload : un envoi (Storage, puis
+ * compression) survit au démontage du composant — changement de section, de
+ * page, voire de fiche. Deux questions lui sont posées, et deux seulement :
+ *
+ *  1. `aDesEnvoisEnVol(ficheCourante)` — la FINALISATION uniquement. Tant
+ *     qu'un envoi de cette fiche est en vol, son URL n'est pas encore dans la
+ *     fiche : finaliser lancerait l'automatisation à un seul coup sans lui.
+ *  2. `estDernier(cle)` — à la publication et au remplacement. Le champ
+ *     paraît vide pendant l'envoi, donc un second envoi peut partir : seul le
+ *     plus récent du MÊME champ ET de la MÊME fiche a le droit d'écrire.
+ *
+ * L'identité de fiche est celle d'`estMemeFiche`, partout : un envoi lancé
+ * depuis une autre fiche ne bloque rien et ne périme rien ici.
+ *
+ * Les entrées terminées sont conservées juste ce qu'il faut : un envoi plus
+ * ancien qui se termine APRÈS un plus récent doit pouvoir constater qu'il est
+ * périmé. Au-delà, elles sont purgées (une seule entrée terminée par groupe).
+ */
+export function creerRegistreEnvois() {
+  const envois = new Map()
+  let compteur = 0
+
+  const memeGroupe = (a, b) => a.fieldPath === b.fieldPath && estMemeFiche(a.fiche, b.fiche)
+
+  // Ne garder, par groupe, que les envois encore en vol et le plus récent :
+  // un envoi terminé qu'un plus récent a déjà supplanté ne peut plus ni
+  // écrire ni servir de référence à personne.
+  const purger = () => {
+    for (const [cle, e] of envois) {
+      if (e.enVol) continue
+      const supplante = [...envois.values()].some(a => a !== e && memeGroupe(a, e) && a.seq > e.seq)
+      if (supplante) envois.delete(cle)
+    }
+  }
+
+  return {
+    /** Un envoi démarre. À appeler avant le premier await. */
+    declarer(cle, fiche, fieldPath) {
+      envois.set(cle, { fiche, fieldPath, seq: ++compteur, enVol: true, annule: false })
+      purger()
+      return cle
+    },
+
+    /** L'envoi est fini (succès, échec ou abandon) : il ne bloque plus rien. */
+    terminer(cle) {
+      const e = envois.get(cle)
+      if (e) e.enVol = false
+      purger()
+    },
+
+    /**
+     * La vidéo de ce champ vient d'être supprimée (ou va être remplacée) :
+     * les envois encore en vol de ce champ, pour cette fiche, n'ont plus
+     * d'objet. Ils cessent immédiatement de bloquer la finalisation et
+     * perdent le droit d'écrire, sans attendre la fin de leur traitement.
+     */
+    annulerChamp(fieldPath, fiche) {
+      let annules = 0
+      for (const e of envois.values()) {
+        if (e.enVol && memeGroupe(e, { fieldPath, fiche })) {
+          e.enVol = false
+          e.annule = true
+          annules += 1
+        }
+      }
+      purger()
+      return annules
+    },
+
+    /** Un envoi de CETTE fiche est-il encore en vol ? (finalisation) */
+    aDesEnvoisEnVol(ficheCourante) {
+      for (const e of envois.values()) {
+        if (e.enVol && !e.annule && estMemeFiche(e.fiche, ficheCourante)) return true
+      }
+      return false
+    },
+
+    /** Cet envoi est-il toujours le plus récent de son champ et de sa fiche ? */
+    estDernier(cle) {
+      const e = envois.get(cle)
+      if (!e || e.annule) return false
+      for (const autre of envois.values()) {
+        if (autre !== e && !autre.annule && memeGroupe(autre, e) && autre.seq > e.seq) return false
+      }
+      return true
+    },
+
+    /** Pour les tests : taille du registre, qui ne doit pas croître sans fin. */
+    taille() {
+      return envois.size
+    }
+  }
+}
+
 /** Affichage humain d'une taille en Mio (ex. 41943040 → "40 Mio"). */
 export function formaterMio(octets) {
   const mio = octets / 1024 / 1024

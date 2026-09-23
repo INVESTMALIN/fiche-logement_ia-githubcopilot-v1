@@ -72,7 +72,7 @@ const PhotoUpload = ({
   videoTargetSizeBytes = null,   // Cible de taille en octets : au-dessus, Railway est appelé avec targetSizeBytes
   videoWarningFieldPath = null   // Champ FormContext où persister l'avertissement (null = rien à signaler)
 }) => {
-  const { getField, getFieldLive, updateField, handleSave, declarerMediaEnVol, terminerMediaEnVol, estDernierEnvoi } = useForm()
+  const { getField, getFieldLive, updateField, handleSave, declarerMediaEnVol, terminerMediaEnVol, annulerMediasEnVol, estDernierEnvoi } = useForm()
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [compressing, setCompressing] = useState(false)
@@ -506,7 +506,7 @@ const PhotoUpload = ({
       console.log('🎯 Une autre fiche est chargée depuis le début de l\'envoi, vidéo non publiée')
       return 'autre-fiche'
     }
-    if (cleEnvoi && !estDernierEnvoi(cleEnvoi, fieldPath)) {
+    if (cleEnvoi && !estDernierEnvoi(cleEnvoi)) {
       console.log('🎯 Un envoi plus récent a été lancé sur ce champ, vidéo non publiée')
       return 'envoi-remplace'
     }
@@ -525,7 +525,7 @@ const PhotoUpload = ({
       console.log('🎯 Une autre fiche est chargée depuis le départ de la compression, résultat ignoré')
       return
     }
-    if (cleEnvoi && !estDernierEnvoi(cleEnvoi, fieldPath)) {
+    if (cleEnvoi && !estDernierEnvoi(cleEnvoi)) {
       console.log('🎯 Un envoi plus récent a été lancé sur ce champ, résultat de compression ignoré')
       return
     }
@@ -610,9 +610,19 @@ const PhotoUpload = ({
     }
   }
 
-  // 🎯 Mode cible : l'avertissement n'a plus d'objet sans la vidéo qui l'a causé
+  // 🎯 Mode cible : la vidéo supprimée emporte tout ce qui la concernait.
+  // L'avertissement n'a plus d'objet, et un envoi encore en vol non plus :
+  // sans cette annulation, il continuerait de bloquer la finalisation
+  // jusqu'au bout de sa compression (20 min au pire) pour une vidéo qui n'est
+  // plus là. Son résultat, lui, était déjà écarté (l'URL d'origine n'est plus
+  // dans le champ), mais on le lui retire aussi explicitement.
   const effacerAvertissementVideo = () => {
+    if (!videoTargetSizeBytes && !videoWarningFieldPath) return
     if (videoWarningFieldPath) updateField(videoWarningFieldPath, null)
+    if (videoTargetSizeBytes) {
+      const annules = annulerMediasEnVol(fieldPath, identiteFicheLive())
+      if (annules) console.log(`🎯 ${annules} envoi(s) en vol annulé(s) : la vidéo a été supprimée`)
+    }
   }
 
   // Suppression d'une photo - VERSION FINALE

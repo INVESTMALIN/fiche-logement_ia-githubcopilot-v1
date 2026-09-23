@@ -8,7 +8,7 @@ import { DEFAULT_COUNTRY_CODE } from '../lib/countries'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { construireFeedbackMonday, doitAfficherFeedback } from '../lib/mondaySyncFeedback'
-import { estMemeFiche } from '../lib/videoGuideAcces'
+import { creerRegistreEnvois } from '../lib/videoGuideAcces'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
 import { validateMondayConstrainedFields } from '../lib/mondayFieldConstraints'
 import {
@@ -2374,42 +2374,41 @@ export function FormProvider({ children }) {
   // seul coup (migration vers le Drive) sans ce média. Seule la FINALISATION
   // consulte ce registre — navigation, enregistrement et autosave restent
   // libres. Une ref, donc aucun rendu déclenché, comme ci-dessus.
-  const mediasEnVolRef = useRef(new Map())
+  // Le registre lui-même est une fabrique pure (src/lib/videoGuideAcces.js),
+  // testée hors navigateur : isolation entre fiches et entre champs, envois
+  // concurrents, suppression pendant l'envoi, réussite, échec, purge.
+  const registreEnvoisRef = useRef(null)
+  if (registreEnvoisRef.current === null) registreEnvoisRef.current = creerRegistreEnvois()
 
-  // Dernier envoi LANCÉ par champ. Deux envois peuvent se chevaucher sur un
-  // même champ (il paraît vide pendant l'envoi, donc on peut réimporter après
-  // être revenu sur la section) : seul le plus récent a le droit de publier,
-  // sinon le champ finirait avec deux URLs, ou avec la vidéo de l'envoi le
-  // plus lent plutôt que celle réellement choisie en dernier. Conservé même
-  // après la fin de l'envoi : un envoi plus ancien qui se termine APRÈS ne
-  // doit pas pouvoir écraser le plus récent.
-  const dernierEnvoiParChampRef = useRef(new Map())
+  const ficheCouranteRef = useCallback(() => ({
+    id: formDataRef.current?.id || null,
+    numeroBien: formDataRef.current?.section_logement?.numero_bien || null
+  }), [])
 
   const declarerMediaEnVol = useCallback((cle, fiche, fieldPath) => {
-    mediasEnVolRef.current.set(cle, fiche)
-    if (fieldPath) dernierEnvoiParChampRef.current.set(fieldPath, cle)
+    registreEnvoisRef.current.declarer(cle, fiche, fieldPath)
   }, [])
-
-  // Cet envoi est-il toujours le dernier lancé pour ce champ ?
-  const estDernierEnvoi = useCallback(
-    (cle, fieldPath) => dernierEnvoiParChampRef.current.get(fieldPath) === cle,
-    []
-  )
 
   const terminerMediaEnVol = useCallback((cle) => {
-    mediasEnVolRef.current.delete(cle)
+    registreEnvoisRef.current.terminer(cle)
   }, [])
 
-  // `estMemeFiche` : un envoi lancé depuis une AUTRE fiche ne doit pas bloquer
-  // la finalisation de celle qu'on regarde.
-  const aDesMediasEnVol = useCallback(() => {
-    if (mediasEnVolRef.current.size === 0) return false
-    const courante = {
-      id: formDataRef.current?.id || null,
-      numeroBien: formDataRef.current?.section_logement?.numero_bien || null
-    }
-    return [...mediasEnVolRef.current.values()].some(fiche => estMemeFiche(fiche, courante))
-  }, [])
+  // La vidéo du champ vient d'être supprimée : les envois encore en vol pour
+  // ce champ et cette fiche n'ont plus d'objet. Ils cessent immédiatement de
+  // bloquer la finalisation, sans attendre la fin de leur compression.
+  const annulerMediasEnVol = useCallback((fieldPath, fiche) => {
+    return registreEnvoisRef.current.annulerChamp(fieldPath, fiche || ficheCouranteRef())
+  }, [ficheCouranteRef])
+
+  // Cet envoi est-il toujours le plus récent de son champ ET de sa fiche ?
+  const estDernierEnvoi = useCallback((cle) => registreEnvoisRef.current.estDernier(cle), [])
+
+  // Un envoi de LA FICHE COURANTE est-il encore en vol ? Seule la
+  // finalisation pose la question.
+  const aDesMediasEnVol = useCallback(
+    () => registreEnvoisRef.current.aDesEnvoisEnVol(ficheCouranteRef()),
+    [ficheCouranteRef]
+  )
 
   const getFormDataPreview = () => {
     return {
@@ -2608,6 +2607,7 @@ export function FormProvider({ children }) {
       // consultés par la seule finalisation.
       declarerMediaEnVol,
       terminerMediaEnVol,
+      annulerMediasEnVol,
       aDesMediasEnVol,
       estDernierEnvoi,
 
