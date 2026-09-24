@@ -10,6 +10,7 @@ import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import MondayParamsAlert from '../components/MondayParamsAlert'
 import MondaySyncToast from '../components/MondaySyncToast'
+import VideoGuideEnvoiBanner from '../components/VideoGuideEnvoiBanner'
 import FicheReglementation from './FicheReglementation'
 import FicheExigences from './FicheExigences'
 import FicheAvis from './FicheAvis'
@@ -136,6 +137,7 @@ export default function FicheWizard() {
   return (
     <>
       <MondayParamsAlert />
+      <VideoGuideEnvoiBanner />
       <MondaySyncToast />
       {steps[currentStep]}
     </>

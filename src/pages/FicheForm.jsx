@@ -6,6 +6,7 @@ import Button from '../components/Button'
 import { useNavigate } from 'react-router-dom';
 import { isOptionalPhoneValid } from '../lib/phoneHelpers'
 import { COUNTRY_OPTIONS } from '../lib/countries'
+import { peutQuitterFiche } from '../lib/videoGuideAcces'
 
 /**
  * Téléphone propriétaire : champ optionnel, accepté dans n'importe quel
@@ -32,7 +33,8 @@ export default function FicheForm() {
     updateField,
     handleSave,
     saveStatus,
-    resetForm
+    resetForm,
+    phaseVideoGuide
   } = useForm()
 
   const handleInputChange = (fieldPath, value) => {
@@ -50,6 +52,8 @@ export default function FicheForm() {
   }
 
   const handleCancel = () => {
+    // Quitter la fiche pendant l'envoi de la vidéo du Guide d'accès : on demande.
+    if (!peutQuitterFiche(phaseVideoGuide, (message) => window.confirm(message))) return
     resetForm();
     navigate('/');
   };

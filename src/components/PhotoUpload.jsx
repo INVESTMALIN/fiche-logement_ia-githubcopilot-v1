@@ -72,7 +72,7 @@ const PhotoUpload = ({
   videoTargetSizeBytes = null,   // Cible de taille en octets : au-dessus, Railway est appelé avec targetSizeBytes
   videoWarningFieldPath = null   // Champ FormContext où persister l'avertissement (null = rien à signaler)
 }) => {
-  const { getField, getFieldLive, updateField, handleSave, declarerMediaEnVol, terminerMediaEnVol, annulerMediasEnVol, estDernierEnvoi, lireSessionFiche } = useForm()
+  const { getField, getFieldLive, updateField, handleSave, declarerMediaEnVol, signalerPreparationMedia, terminerMediaEnVol, annulerMediasEnVol, estDernierEnvoi, lireSessionFiche } = useForm()
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [compressing, setCompressing] = useState(false)
@@ -432,6 +432,8 @@ const PhotoUpload = ({
             continue
           }
           if (aCompresser) {
+            // L'original est publié : l'indicateur global passe en « Préparation »
+            if (cleMediaEnVol) signalerPreparationMedia(cleMediaEnVol)
             const decision = await compresserPourLivret(file, urlData.publicUrl)
             remplacerVideoGuide(urlData.publicUrl, decision, ficheDepart, cleMediaEnVol)
           } else {
