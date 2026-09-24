@@ -2,17 +2,21 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Menu, X, LayoutDashboard } from 'lucide-react'
 import { useForm } from '../components/FormContext'
+import { peutQuitterFiche } from '../lib/videoGuideAcces'
 
 export default function SidebarMenu() {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
-  const { currentStep, sections, goTo } = useForm()
+  const { currentStep, sections, goTo, phaseVideoGuide } = useForm()
 
   const isActive = (index) => index === currentStep
 
   const handleClick = (sectionName, index) => {
     // Si c'est "Mes fiches", on navigue vers la home
     if (sectionName === "Mes fiches") {
+      // Quitter la fiche pendant l'envoi de la vidéo du Guide d'accès : on
+      // demande. Changer de section, plus bas, reste libre.
+      if (!peutQuitterFiche(phaseVideoGuide, (message) => window.confirm(message))) return
       navigate('/')
       setOpen(false)
       return

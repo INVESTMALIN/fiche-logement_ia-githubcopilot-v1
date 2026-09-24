@@ -2439,14 +2439,21 @@ export function FormProvider({ children }) {
   //
   // Tant qu'un média de LA FICHE COURANTE est en vol, son URL n'est pas encore
   // dans la fiche : finaliser à cet instant lancerait l'automatisation à un
-  // seul coup (migration vers le Drive) sans ce média. Seule la FINALISATION
-  // consulte ce registre — navigation, enregistrement et autosave restent
-  // libres. Une ref, donc aucun rendu déclenché, comme ci-dessus.
+  // seul coup (migration vers le Drive) sans ce média. La FINALISATION le
+  // consulte pour bloquer ; l'indicateur global pour prévenir (bandeau,
+  // avertissement de fermeture, confirmation des sorties de la fiche).
+  // Navigation entre sections, enregistrement et autosave restent libres.
   // Le registre lui-même est une fabrique pure (src/lib/videoGuideAcces.js),
   // testée hors navigateur : isolation entre fiches et entre champs, envois
   // concurrents, suppression pendant l'envoi, réussite, échec, purge.
   const registreEnvoisRef = useRef(null)
   if (registreEnvoisRef.current === null) registreEnvoisRef.current = creerRegistreEnvois()
+
+  // Le registre est une ref : ce compteur est le seul état. Chaque mutation
+  // (déclaration, préparation, fin, annulation) le fait avancer, ce qui
+  // redemande un rendu — l'indicateur global de la vidéo en dépend.
+  const [, setVersionEnvois] = useState(0)
+  const signalerChangementEnvois = useCallback(() => setVersionEnvois(v => v + 1), [])
 
   const ficheCouranteRef = useCallback(() => ({
     session: sessionFicheRef.current,
@@ -2456,18 +2463,29 @@ export function FormProvider({ children }) {
 
   const declarerMediaEnVol = useCallback((cle, fiche, fieldPath) => {
     registreEnvoisRef.current.declarer(cle, fiche, fieldPath)
-  }, [])
+    signalerChangementEnvois()
+  }, [signalerChangementEnvois])
+
+  // L'original est publié, sa compression démarre : l'indicateur global passe
+  // de « Envoi » à « Préparation ».
+  const signalerPreparationMedia = useCallback((cle) => {
+    registreEnvoisRef.current.passerEnPreparation(cle)
+    signalerChangementEnvois()
+  }, [signalerChangementEnvois])
 
   const terminerMediaEnVol = useCallback((cle) => {
     registreEnvoisRef.current.terminer(cle)
-  }, [])
+    signalerChangementEnvois()
+  }, [signalerChangementEnvois])
 
   // La vidéo du champ vient d'être supprimée : les envois encore en vol pour
   // ce champ et cette fiche n'ont plus d'objet. Ils cessent immédiatement de
   // bloquer la finalisation, sans attendre la fin de leur compression.
   const annulerMediasEnVol = useCallback((fieldPath, fiche) => {
-    return registreEnvoisRef.current.annulerChamp(fieldPath, fiche || ficheCouranteRef())
-  }, [ficheCouranteRef])
+    const annules = registreEnvoisRef.current.annulerChamp(fieldPath, fiche || ficheCouranteRef())
+    signalerChangementEnvois()
+    return annules
+  }, [ficheCouranteRef, signalerChangementEnvois])
 
   // Cet envoi est-il toujours le plus récent de son champ ET de sa fiche ?
   const estDernierEnvoi = useCallback((cle) => registreEnvoisRef.current.estDernier(cle), [])
@@ -2478,6 +2496,11 @@ export function FormProvider({ children }) {
     () => registreEnvoisRef.current.aDesEnvoisEnVol(ficheCouranteRef()),
     [ficheCouranteRef]
   )
+
+  // Phase de l'envoi de LA FICHE AFFICHÉE (`envoi`, `preparation` ou null),
+  // relue à chaque rendu : indicateur global, avertissement de fermeture et
+  // confirmation des sorties de la fiche. Même prédicat que la finalisation.
+  const phaseVideoGuide = registreEnvoisRef.current.phaseEnVol(ficheCouranteRef())
 
   const getFormDataPreview = () => {
     return {
@@ -2676,12 +2699,14 @@ export function FormProvider({ children }) {
       aDesModificationsEnAttente,
 
       // 🎯 Médias en vol (mode « cible livret ») : déclarés par PhotoUpload,
-      // consultés par la seule finalisation.
+      // consultés par la finalisation et par l'indicateur global.
       declarerMediaEnVol,
+      signalerPreparationMedia,
       terminerMediaEnVol,
       annulerMediasEnVol,
       aDesMediasEnVol,
       estDernierEnvoi,
+      phaseVideoGuide,
 
       // 🆕 AJOUT FONCTIONS DUPLICATE
       duplicateAlert,

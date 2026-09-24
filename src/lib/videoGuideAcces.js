@@ -164,16 +164,49 @@ export function publicationVideoGuide({ actuelles, url, multiple, maxFiles }) {
 }
 
 /**
+ * Phases d'un envoi « cible livret », telles que l'indicateur global les
+ * annonce : le téléversement de l'original vers Supabase, puis sa
+ * compression par Railway quand il dépasse la cible.
+ */
+export const PHASE_VIDEO_GUIDE = Object.freeze({
+  ENVOI: 'envoi',
+  PREPARATION: 'preparation'
+})
+
+/** Texte de l'indicateur global, par phase. */
+export const MESSAGE_VIDEO_GUIDE_EN_COURS = Object.freeze({
+  [PHASE_VIDEO_GUIDE.ENVOI]: "Envoi de la vidéo en cours. Ne fermez pas la Fiche Logement. Vous pouvez continuer à remplir les autres sections pendant l'envoi.",
+  [PHASE_VIDEO_GUIDE.PREPARATION]: 'Préparation de la vidéo en cours. Ne fermez pas la Fiche Logement. Vous pouvez continuer à remplir les autres sections pendant le traitement.'
+})
+
+export const MESSAGE_QUITTER_FICHE_VIDEO_EN_COURS =
+  "Une vidéo est en cours d'envoi ou de préparation. Si vous quittez cette fiche, vous devrez peut-être supprimer puis réimporter la vidéo. Voulez-vous vraiment quitter ?"
+
+/**
+ * Sortie de la fiche par un bouton de l'appli (« Mes fiches », « Annuler ») :
+ * l'avertissement natif du navigateur ne la voit pas, elle ne décharge pas la
+ * page. Elle réinitialise pourtant le formulaire, et l'envoi en vol n'a plus
+ * de fiche où écrire. `confirmer` n'est appelé que si un envoi est en cours.
+ */
+export function peutQuitterFiche(phase, confirmer) {
+  if (!phase) return true
+  return Boolean(confirmer(MESSAGE_QUITTER_FICHE_VIDEO_EN_COURS))
+}
+
+/**
  * Registre des envois de médias « cible livret ».
  *
  * Il vit dans le FormContext, pas dans PhotoUpload : un envoi (Storage, puis
  * compression) survit au démontage du composant — changement de section, de
- * page, voire de fiche. Deux questions lui sont posées, et deux seulement :
+ * page, voire de fiche. Trois questions lui sont posées :
  *
- *  1. `aDesEnvoisEnVol(ficheCourante)` — la FINALISATION uniquement. Tant
- *     qu'un envoi de cette fiche est en vol, son URL n'est pas encore dans la
- *     fiche : finaliser lancerait l'automatisation à un seul coup sans lui.
- *  2. `estDernier(cle)` — à la publication et au remplacement. Le champ
+ *  1. `aDesEnvoisEnVol(ficheCourante)` — la FINALISATION. Tant qu'un envoi
+ *     de cette fiche est en vol, son URL n'est pas encore dans la fiche :
+ *     finaliser lancerait l'automatisation à un seul coup sans lui.
+ *  2. `phaseEnVol(ficheCourante)` — l'INDICATEUR GLOBAL et l'avertissement
+ *     de fermeture. Même prédicat que la finalisation : l'indicateur est
+ *     affiché exactement quand elle attend.
+ *  3. `estDernier(cle)` — à la publication et au remplacement. Le champ
  *     paraît vide pendant l'envoi, donc un second envoi peut partir : seul le
  *     plus récent du MÊME champ ET de la MÊME fiche a le droit d'écrire.
  *
@@ -200,6 +233,12 @@ export function creerRegistreEnvois() {
     return false
   }
 
+  // Un envoi de CETTE fiche encore en vol ET susceptible d'écrire. Un envoi
+  // supplanté est exclu : `estDernier` lui a déjà retiré le droit d'écrire,
+  // il n'a donc plus rien à protéger ni à faire attendre.
+  const estActif = (e, ficheCourante) =>
+    e.enVol && !e.annule && !estSupplante(e) && estMemeFiche(e.fiche, ficheCourante)
+
   // Ne garder, par groupe, que les envois encore en vol et le plus récent :
   // un envoi terminé qu'un plus récent a déjà supplanté ne peut plus ni
   // écrire ni servir de référence à personne.
@@ -214,9 +253,15 @@ export function creerRegistreEnvois() {
   return {
     /** Un envoi démarre. À appeler avant le premier await. */
     declarer(cle, fiche, fieldPath) {
-      envois.set(cle, { fiche, fieldPath, seq: ++compteur, enVol: true, annule: false })
+      envois.set(cle, { fiche, fieldPath, seq: ++compteur, enVol: true, annule: false, phase: PHASE_VIDEO_GUIDE.ENVOI })
       purger()
       return cle
+    },
+
+    /** L'original est sur Supabase, sa compression démarre. */
+    passerEnPreparation(cle) {
+      const e = envois.get(cle)
+      if (e && e.enVol) e.phase = PHASE_VIDEO_GUIDE.PREPARATION
     },
 
     /** L'envoi est fini (succès, échec ou abandon) : il ne bloque plus rien. */
@@ -258,9 +303,26 @@ export function creerRegistreEnvois() {
      */
     aDesEnvoisEnVol(ficheCourante) {
       for (const e of envois.values()) {
-        if (e.enVol && !e.annule && !estSupplante(e) && estMemeFiche(e.fiche, ficheCourante)) return true
+        if (estActif(e, ficheCourante)) return true
       }
       return false
+    },
+
+    /**
+     * Phase de l'envoi actif de CETTE fiche : `envoi`, `preparation`, ou
+     * null s'il n'y en a pas. (indicateur global, avertissement de fermeture)
+     *
+     * Même prédicat qu'`aDesEnvoisEnVol`. S'il y en avait plusieurs, un envoi
+     * encore en téléversement l'emporte : c'est le plus fragile.
+     */
+    phaseEnVol(ficheCourante) {
+      let phase = null
+      for (const e of envois.values()) {
+        if (!estActif(e, ficheCourante)) continue
+        if (e.phase === PHASE_VIDEO_GUIDE.ENVOI) return e.phase
+        phase = e.phase
+      }
+      return phase
     },
 
     /** Cet envoi est-il toujours le plus récent de son champ et de sa fiche ? */
