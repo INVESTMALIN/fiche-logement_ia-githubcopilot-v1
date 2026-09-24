@@ -48,6 +48,22 @@ test('isolation entre fiches : un envoi sur A ne bloque pas la finalisation de B
   assert.equal(r.aDesEnvoisEnVol(B), false)
 })
 
+test('retour sur une fiche enregistrée : son envoi en vol la bloque toujours', () => {
+  // Même scénario vu du registre : la session de A a changé au rechargement,
+  // pas son id. Si le registre ne retrouvait pas l'envoi, la finalisation
+  // passerait pendant le traitement.
+  const r = creerRegistreEnvois()
+  const departA = { session: 'session-A-1', id: 'fiche-A', numeroBien: '1111' }
+  r.declarer('a1', departA, GUIDE)
+
+  const pendantB = { session: 'session-B-1', id: 'fiche-B', numeroBien: '2222' }
+  assert.equal(r.aDesEnvoisEnVol(pendantB), false, "B ne porte pas l'envoi de A")
+
+  const retourSurA = { session: 'session-A-2', id: 'fiche-A', numeroBien: '1111' }
+  assert.equal(r.aDesEnvoisEnVol(retourSurA), true)
+  assert.equal(r.estDernier('a1'), true, "A garde le droit d'écrire son résultat")
+})
+
 test('isolation entre fiches : un envoi sur B ne périme pas le résultat de A', () => {
   // Le défaut du round 5 : la clé était le champ seul, donc B écrasait A.
   const r = creerRegistreEnvois()

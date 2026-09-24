@@ -113,21 +113,26 @@ export function choisirVideoGuide({ originale, compressee, cible = VIDEO_GUIDE_A
 /**
  * Un résultat de compression ne s'applique qu'à la fiche qui l'a lancé : le
  * FormProvider survit aux changements de route, une autre fiche peut avoir
- * été chargée entre-temps. L'identité est l'id de la fiche quand il existe
- * des deux côtés ; sinon (fiche créée par l'autosave PENDANT le job, id null
- * au départ) le numéro de bien, obligatoire pour uploader et verrouillé ensuite.
+ * été chargée entre-temps.
+ *
+ * Trois identités, de la plus forte à la plus faible : l'id permanent, la
+ * session de fiche, le numéro de bien.
  */
 export function estMemeFiche(depart, arrivee) {
-  // Identité de SESSION : posée au chargement d'une fiche et renouvelée à
-  // chaque chargement ou réinitialisation. Elle seule distingue deux fiches
-  // qui portent le même numéro de bien — le repli ci-dessous les confondrait,
-  // et les doublons de numéro sont autorisés dans ce parcours. Elle ne change
-  // pas quand la fiche reçoit son id en cours de route : c'est la même fiche.
+  // ID PERMANENT d'abord : il survit au rechargement de la fiche. Revenir sur
+  // une fiche enregistrée pendant un traitement lui donne une session neuve,
+  // mais c'est bien la même fiche, et son résultat doit s'y appliquer.
+  if (depart?.id && arrivee?.id) return depart.id === arrivee.id
+
+  // Identité de SESSION ensuite, quand l'id manque d'au moins un côté : posée
+  // au chargement d'une fiche et renouvelée à chaque chargement ou
+  // réinitialisation. Elle seule distingue deux fiches PAS ENCORE CRÉÉES qui
+  // portent le même numéro de bien — le repli ci-dessous les confondrait, et
+  // les doublons de numéro sont autorisés dans ce parcours. Elle ne change pas
+  // quand la fiche reçoit son id en cours de route : c'est la même fiche.
   if (depart?.session || arrivee?.session) return depart?.session === arrivee?.session
 
-  // Repli, pour un appelant qui ne fournit pas de session : id si les deux
-  // existent, sinon numéro de bien.
-  if (depart?.id && arrivee?.id) return depart.id === arrivee.id
+  // Numéro de bien en dernier recours, pour un appelant sans session ni id.
   return Boolean(depart?.numeroBien) && depart.numeroBien === arrivee?.numeroBien
 }
 

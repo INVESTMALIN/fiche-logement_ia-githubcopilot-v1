@@ -168,12 +168,32 @@ test('session : après une réinitialisation, plus rien n\'est écrit dans le fo
   assert.equal(estMemeFiche(depart, apresReset), false)
 })
 
-test('session : elle fait autorité, même si un seul côté en porte une', () => {
+test("retour sur une fiche ENREGISTRÉE pendant la compression : le résultat s'applique", () => {
+  // Compression lancée sur A, ouverture d'une autre fiche, puis retour sur A
+  // avant la fin du job : `handleLoad` repose une session neuve, mais l'id de
+  // A n'a pas bougé. Sans la priorité à l'id, A resterait bloquée en
+  // « compression en cours » jusqu'à suppression et réimport de la vidéo.
+  const depart = { session: creerSessionFiche(), id: 'fiche-A', numeroBien: '2189' }
+
+  const pendantLAutreFiche = { session: creerSessionFiche(), id: 'fiche-B', numeroBien: '4242' }
+  assert.equal(estMemeFiche(depart, pendantLAutreFiche), false, "tant que B est ouverte, rien ne s'applique")
+
+  const retourSurA = { session: creerSessionFiche(), id: 'fiche-A', numeroBien: '2189' }
+  assert.equal(estMemeFiche(depart, retourSurA), true)
+})
+
+test('ordre des identités : id permanent, puis session, puis numéro de bien', () => {
   const session = creerSessionFiche()
-  // Un côté sans session ne peut pas être « la même fiche » : on refuse
-  // plutôt que de retomber sur un repli qui confondrait des doublons.
-  assert.equal(estMemeFiche({ session, id: 'A', numeroBien: '1' }, { id: 'A', numeroBien: '1' }), false)
-  assert.equal(estMemeFiche({ id: 'A', numeroBien: '1' }, { session, id: 'A', numeroBien: '1' }), false)
+
+  // Deux ids présents : ils tranchent seuls, la session ne les contredit pas.
+  assert.equal(estMemeFiche({ session, id: 'A', numeroBien: '1' }, { session: creerSessionFiche(), id: 'A', numeroBien: '1' }), true)
+  assert.equal(estMemeFiche({ session, id: 'A', numeroBien: '1' }, { session, id: 'B', numeroBien: '1' }), false)
+
+  // Id manquant d'au moins un côté : la session tranche, et un côté qui n'en
+  // porte pas ne peut pas être « la même fiche » — on refuse plutôt que de
+  // retomber sur un repli qui confondrait des doublons de numéro.
+  assert.equal(estMemeFiche({ session, id: null, numeroBien: '1' }, { id: null, numeroBien: '1' }), false)
+  assert.equal(estMemeFiche({ id: null, numeroBien: '1' }, { session, id: null, numeroBien: '1' }), false)
   assert.equal(estMemeFiche({ session }, { session }), true)
 })
 
