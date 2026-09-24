@@ -8,6 +8,7 @@ import { DEFAULT_COUNTRY_CODE } from '../lib/countries'
 import { createChecklistFromFiche } from '../lib/checklistHelpers'
 import { extractMondaySnapshot, getMondayChangedFields, pushToMonday } from '../services/mondayService'
 import { construireFeedbackMonday, doitAfficherFeedback } from '../lib/mondaySyncFeedback'
+import { creerRegistreEnvois, creerSessionFiche } from '../lib/videoGuideAcces'
 import { fusionnerApresSauvegarde, creerCollecteursModifications, delaiAvantAutosave } from '../lib/fusionSauvegarde'
 import { orchestrerSyncContacts } from '../lib/syncContacts'
 import { pickContactsToPush, pushContactsToMonday } from '../services/mondayContactsService'
@@ -1338,7 +1339,10 @@ const initialFormData = {
 
   section_guide_acces: {
     photos_etapes: [],
-    video_acces: []
+    video_acces: [],
+    // 🎯 Avertissement « cible livret » : null | 'trop_lourde' | 'compression_echouee'
+    // (voir src/lib/videoGuideAcces.js). Persisté avec la fiche, effacé avec la vidéo.
+    video_avertissement: null
   },
 
   section_securite: {
@@ -1407,6 +1411,11 @@ export function FormProvider({ children }) {
   // créée, pas les saisies arrivées depuis.
   const formDataRef = useRef(formData)
   formDataRef.current = formData
+  // Identité de la fiche AFFICHÉE, indépendante de son contenu : deux fiches
+  // au même numéro de bien (les doublons sont permis) ont deux sessions.
+  // Renouvelée au chargement d'une fiche et à la réinitialisation, jamais
+  // quand la fiche reçoit son id en cours de route — c'est la même fiche.
+  const sessionFicheRef = useRef(creerSessionFiche())
   const lastSaveRef = useRef(0)
   // L'utilisateur a-t-il tapé dans le champ « Nom de la fiche » depuis le
   // chargement ? Seule une saisie délibérée autorise `saveFiche` à réécrire
@@ -1547,6 +1556,9 @@ export function FormProvider({ children }) {
 
   // DÉPLACER resetForm AVANT useEffect
   const resetForm = useCallback(() => {
+    // Formulaire vidé : on repart sur une session neuve, pour la même raison
+    // qu'au chargement d'une fiche.
+    sessionFicheRef.current = creerSessionFiche()
     setFormData(initialFormData)
     setCurrentStep(0)
     setHasManuallyNamedFiche(false)
@@ -1564,6 +1576,10 @@ export function FormProvider({ children }) {
       const result = await loadFiche(ficheId)
 
       if (result.success) {
+        // Nouvelle fiche à l'écran, donc nouvelle session : un traitement
+        // encore en vol sur la précédente ne doit pas écrire ici, même si les
+        // deux fiches portent le même numéro de bien (les doublons sont permis).
+        sessionFicheRef.current = creerSessionFiche()
         setFormData(result.data)
         setCurrentStep(0)
         setSaveStatus({ saving: false, saved: true, error: null });
@@ -1802,9 +1818,19 @@ export function FormProvider({ children }) {
     return formData[sectionName] || {}
   }
 
-  const getField = (fieldPath) => {
+  const getField = (fieldPath) => lireChemin(formData, fieldPath)
+
+  // Valeur COURANTE d'un champ, pour un traitement asynchrone lancé depuis un
+  // rendu antérieur (sa fermeture sur `getField` est figée) ou depuis un
+  // composant déjà démonté. Le provider vit au-dessus des routes : entre le
+  // départ et la fin d'un traitement long, une AUTRE fiche peut être chargée
+  // ici — l'appelant compare l'identité de la fiche avant d'écrire.
+  // `formDataRef` est déclarée avec les autres refs, plus haut.
+  const getFieldLive = useCallback((fieldPath) => lireChemin(formDataRef.current, fieldPath), [])
+
+  function lireChemin(source, fieldPath) {
     const keys = fieldPath.split('.')
-    let current = formData
+    let current = source
 
     for (const key of keys) {
       if (current && typeof current === 'object' && key in current) {
@@ -2406,6 +2432,53 @@ export function FormProvider({ children }) {
   // une ref, pour que taper dans un champ ne provoque pas de rendu.
   const aDesModificationsEnAttente = useCallback(() => isUserChangeRef.current, [])
 
+  // 🎯 Médias encore en vol (envoi vers Storage, puis compression) déclarés par
+  // PhotoUpload en mode « cible livret ». Le registre vit ICI, pas dans le
+  // composant : l'envoi survit au démontage de PhotoUpload (changement de
+  // section ou de page), alors que le composant, lui, disparaît.
+  //
+  // Tant qu'un média de LA FICHE COURANTE est en vol, son URL n'est pas encore
+  // dans la fiche : finaliser à cet instant lancerait l'automatisation à un
+  // seul coup (migration vers le Drive) sans ce média. Seule la FINALISATION
+  // consulte ce registre — navigation, enregistrement et autosave restent
+  // libres. Une ref, donc aucun rendu déclenché, comme ci-dessus.
+  // Le registre lui-même est une fabrique pure (src/lib/videoGuideAcces.js),
+  // testée hors navigateur : isolation entre fiches et entre champs, envois
+  // concurrents, suppression pendant l'envoi, réussite, échec, purge.
+  const registreEnvoisRef = useRef(null)
+  if (registreEnvoisRef.current === null) registreEnvoisRef.current = creerRegistreEnvois()
+
+  const ficheCouranteRef = useCallback(() => ({
+    session: sessionFicheRef.current,
+    id: formDataRef.current?.id || null,
+    numeroBien: formDataRef.current?.section_logement?.numero_bien || null
+  }), [])
+
+  const declarerMediaEnVol = useCallback((cle, fiche, fieldPath) => {
+    registreEnvoisRef.current.declarer(cle, fiche, fieldPath)
+  }, [])
+
+  const terminerMediaEnVol = useCallback((cle) => {
+    registreEnvoisRef.current.terminer(cle)
+  }, [])
+
+  // La vidéo du champ vient d'être supprimée : les envois encore en vol pour
+  // ce champ et cette fiche n'ont plus d'objet. Ils cessent immédiatement de
+  // bloquer la finalisation, sans attendre la fin de leur compression.
+  const annulerMediasEnVol = useCallback((fieldPath, fiche) => {
+    return registreEnvoisRef.current.annulerChamp(fieldPath, fiche || ficheCouranteRef())
+  }, [ficheCouranteRef])
+
+  // Cet envoi est-il toujours le plus récent de son champ ET de sa fiche ?
+  const estDernierEnvoi = useCallback((cle) => registreEnvoisRef.current.estDernier(cle), [])
+
+  // Un envoi de LA FICHE COURANTE est-il encore en vol ? Seule la
+  // finalisation pose la question.
+  const aDesMediasEnVol = useCallback(
+    () => registreEnvoisRef.current.aDesEnvoisEnVol(ficheCouranteRef()),
+    [ficheCouranteRef]
+  )
+
   const getFormDataPreview = () => {
     return {
       currentSection: getCurrentSection(),
@@ -2578,6 +2651,10 @@ export function FormProvider({ children }) {
       updateField,
       getSection,
       getField,
+      getFieldLive,
+      // Identité de la fiche affichée, pour un traitement asynchrone qui
+      // devra vérifier, à son retour, qu'il écrit bien dans la bonne.
+      lireSessionFiche: () => sessionFicheRef.current,
       resetForm,
 
       handleSave,
@@ -2597,6 +2674,14 @@ export function FormProvider({ children }) {
       // déjà faite en base par la fonction SQL, sans redéclencher l'autosave.
       appliquerNumeroBienChange,
       aDesModificationsEnAttente,
+
+      // 🎯 Médias en vol (mode « cible livret ») : déclarés par PhotoUpload,
+      // consultés par la seule finalisation.
+      declarerMediaEnVol,
+      terminerMediaEnVol,
+      annulerMediasEnVol,
+      aDesMediasEnVol,
+      estDernierEnvoi,
 
       // 🆕 AJOUT FONCTIONS DUPLICATE
       duplicateAlert,

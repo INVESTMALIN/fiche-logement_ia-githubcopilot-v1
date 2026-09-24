@@ -5,6 +5,7 @@
 
 import { isPhoneE164Normalizable } from './phoneHelpers'
 import { normalizePhotoField } from './photoHelpers'
+import { AVERTISSEMENT_VIDEO_GUIDE } from './videoGuideAcces'
 
 // ========================================
 // CHAMPS OBLIGATOIRES SIMPLES (toujours requis)
@@ -856,6 +857,30 @@ export const SPECIAL_VALIDATIONS = {
         return errors
     },
 
+    // Guide d'accès : la compression de la vidéo doit être terminée avant de
+    // finaliser. Tant que l'état persistant vaut « compression_en_cours », la
+    // fiche référence l'ORIGINAL et le résultat peut encore le remplacer. Or
+    // la finalisation déclenche une automatisation à un seul coup (migration
+    // des médias vers le Drive) : si elle part avant la fin, le Drive reçoit
+    // l'original et la fiche finit par pointer sur une URL remplacée après
+    // coup, donc absente du Drive.
+    //
+    // Ne bloque QUE la finalisation : la navigation, l'enregistrement et
+    // l'autosave restent libres pendant la compression.
+    validateVideoGuideCompression: (formData) => {
+        const errors = []
+
+        if (formData.section_guide_acces?.video_avertissement === AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_EN_COURS) {
+            errors.push({
+                section: 'guide_acces',
+                field: 'section_guide_acces.video_acces',
+                message: 'La compression de la vidéo du Guide d\'accès est encore en cours : attendez qu\'elle se termine (le message disparaît dans la section Guide d\'accès). Si elle a été interrompue, supprimez la vidéo et réimportez-la.'
+            })
+        }
+
+        return errors
+    },
+
     // Validation salon : au moins UN équipement coché
     validateSalon: (formData) => {
         const errors = []
@@ -920,6 +945,20 @@ const getFieldValue = (formData, fieldPath) => {
 // FONCTION PRINCIPALE DE VALIDATION
 // ========================================
 
+/**
+ * Erreur de finalisation pour un média du Guide d'accès encore EN VOL (envoi
+ * vers Storage en cours). Elle ne peut pas être déduite de `formData` : à cet
+ * instant, la fiche ne référence encore rien. C'est le registre du
+ * FormContext (`aDesMediasEnVol`) qui le sait, et la page de finalisation qui
+ * ajoute cette erreur au lot. Le message vit ici, avec celui de l'état
+ * persistant `compression_en_cours`, pour que les deux ne divergent pas.
+ */
+export const erreurMediaGuideEnVol = () => ({
+    section: 'guide_acces',
+    field: 'section_guide_acces.video_acces',
+    message: 'L\'envoi de la vidéo du Guide d\'accès est encore en cours : attendez qu\'il se termine avant de finaliser, sinon la vidéo ne partira pas sur le Drive.'
+})
+
 export const validateRequiredFields = (formData) => {
     const errors = {}
 
@@ -976,8 +1015,9 @@ export const validateRequiredFields = (formData) => {
     const salonErrors = SPECIAL_VALIDATIONS.validateSalon(formData)
     const contactsMaintenanceErrors = SPECIAL_VALIDATIONS.validateContactsMaintenance(formData)
     const facadePhotosErrors = SPECIAL_VALIDATIONS.validateFacadePhotos(formData)
+    const videoGuideErrors = SPECIAL_VALIDATIONS.validateVideoGuideCompression(formData)
         // Fusionner les erreurs spéciales
-        ;[...lingeErrors, ...visiteErrors, ...chambreErrors, ...salleErrors, ...cuisineErrors, ...salonErrors, ...contactsMaintenanceErrors, ...facadePhotosErrors].forEach(error => {
+        ;[...lingeErrors, ...visiteErrors, ...chambreErrors, ...salleErrors, ...cuisineErrors, ...salonErrors, ...contactsMaintenanceErrors, ...facadePhotosErrors, ...videoGuideErrors].forEach(error => {
             if (!errors[error.section]) errors[error.section] = []
             errors[error.section].push({
                 field: error.field,

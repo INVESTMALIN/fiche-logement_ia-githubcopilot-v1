@@ -4,7 +4,27 @@ import { useForm } from './FormContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import { normalizePhotoField } from '../lib/photoHelpers'
+import {
+  VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS,
+  VIDEO_GUIDE_ACCES_POLL_MS,
+  AVERTISSEMENT_VIDEO_GUIDE,
+  doitCompresserVideoGuide,
+  lireEtatJobCompression,
+  choisirVideoGuide,
+  estMemeFiche,
+  publicationVideoGuide
+} from '../lib/videoGuideAcces'
 import imageCompression from 'browser-image-compression'
+
+const COMPRESS_VIDEO_URL = 'https://video-compressor-production.up.railway.app/compress-video'
+// Mode cible : compression asynchrone (job + polling), voir videoGuideAcces.js
+const COMPRESS_VIDEO_JOBS_URL = `${COMPRESS_VIDEO_URL}/jobs`
+
+const attendre = (ms, signal) => new Promise((resolve, reject) => {
+  if (signal?.aborted) return reject(new DOMException('Aborted', 'AbortError'))
+  const t = setTimeout(resolve, ms)
+  signal?.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Aborted', 'AbortError')) }, { once: true })
+})
 
 const sanitizeFileName = (fileName) => {
   return fileName
@@ -45,9 +65,14 @@ const PhotoUpload = ({
   multiple = true,     // Plusieurs photos ou une seule
   maxFiles = 10,       // Limite nombre de fichiers
   capture = false,      // Activer capture mobile
-  acceptVideo = false  // Autoriser les vidéos (optionnel)
+  acceptVideo = false,  // Autoriser les vidéos (optionnel)
+  // 🎯 OPT-IN « cible livret » (Guide d'accès uniquement). Les deux props
+  // vont ensemble. Sans elles, les vidéos suivent le chemin historique
+  // (seuil 95 Mo, aucun avertissement) — c'est le cas des 33 autres champs.
+  videoTargetSizeBytes = null,   // Cible de taille en octets : au-dessus, Railway est appelé avec targetSizeBytes
+  videoWarningFieldPath = null   // Champ FormContext où persister l'avertissement (null = rien à signaler)
 }) => {
-  const { getField, updateField, handleSave } = useForm()
+  const { getField, getFieldLive, updateField, handleSave, declarerMediaEnVol, terminerMediaEnVol, annulerMediasEnVol, estDernierEnvoi, lireSessionFiche } = useForm()
   const { user } = useAuth()
   const [uploading, setUploading] = useState(false)
   const [compressing, setCompressing] = useState(false)
@@ -231,8 +256,78 @@ const PhotoUpload = ({
     })
   }
 
+  // 🎯 Compression « cible livret » (mode opt-in, Guide d'accès uniquement).
+  // L'original est DÉJÀ sur Supabase : quoi qu'il arrive ici, l'upload est
+  // acquis. On demande à Railway de viser la cible (job asynchrone interrogé
+  // toutes les VIDEO_GUIDE_ACCES_POLL_MS : une requête synchrone est coupée à
+  // 300 s côté service), on contrôle la taille réellement obtenue, et on tranche
+  // avec `choisirVideoGuide` :
+  //   - sous la cible                → compressée, pas d'avertissement
+  //   - encore au-dessus             → la plus légère des deux + « trop lourde »
+  //   - échec / délai / réponse KO   → originale + « compression échouée »
+  const compresserPourLivret = async (file, originalUrl) => {
+    console.log(`🎯 Vidéo ${(file.size / 1024 / 1024).toFixed(1)} Mio > cible ${(videoTargetSizeBytes / 1024 / 1024).toFixed(1)} Mio, compression Railway avec cible...`)
+    setBackendCompressing(true)
+
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS)
+    let compressee = null
+
+    try {
+      // 1. Création du job (réponse immédiate)
+      const creation = await fetch(COMPRESS_VIDEO_JOBS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoUrl: originalUrl, targetSizeBytes: videoTargetSizeBytes }),
+        signal: controller.signal
+      })
+      if (!creation.ok) {
+        throw new Error(`Erreur création du job de compression (HTTP ${creation.status})`)
+      }
+      const { jobId } = await creation.json()
+      if (typeof jobId !== 'string' || !jobId) {
+        throw new Error('Réponse du service de compression invalide (jobId absent)')
+      }
+      console.log(`🧾 Job de compression ${jobId} créé, attente...`)
+
+      // 2. Polling jusqu'à done / failed, borné par le délai global (abort)
+      for (;;) {
+        await attendre(VIDEO_GUIDE_ACCES_POLL_MS, controller.signal)
+        const etatResponse = await fetch(`${COMPRESS_VIDEO_JOBS_URL}/${encodeURIComponent(jobId)}`, { signal: controller.signal })
+        if (!etatResponse.ok) {
+          // 404 = job perdu (service redémarré, ou purgé) : on ne saura jamais
+          throw new Error(`Erreur suivi du job de compression (HTTP ${etatResponse.status})`)
+        }
+        const etat = lireEtatJobCompression(await etatResponse.json())
+        if (etat.etat === 'running') continue
+        if (etat.etat === 'failed') throw new Error(etat.erreur)
+        compressee = etat.compressee
+        break
+      }
+      console.log(`✅ Compression cible terminée: ${(compressee.taille / 1024 / 1024).toFixed(1)} Mio`)
+    } catch (compressionError) {
+      console.error('❌ Compression cible échouée, vidéo originale conservée:', compressionError)
+      compressee = null
+    } finally {
+      clearTimeout(timer)
+      setBackendCompressing(false)
+    }
+
+    return choisirVideoGuide({
+      originale: { url: originalUrl, taille: file.size },
+      compressee,
+      cible: videoTargetSizeBytes
+    })
+  }
+
   // Upload vers Supabase Storage
-  const uploadToSupabase = async (files) => {
+  // `ficheDepart` (mode cible) : identité de la fiche AU MOMENT DU CHOIX DU
+  // FICHIER, capturée avant le moindre await. L'upload Supabase dure déjà
+  // plusieurs minutes sur une grosse vidéo : la relire après coup désignerait
+  // la fiche ouverte entre-temps, et on écrirait l'URL de A dans B.
+  // `cleMediaEnVol` (mode cible) : identifie cet envoi face aux envois
+  // concurrents sur le même champ.
+  const uploadToSupabase = async (files, ficheDepart, cleMediaEnVol) => {
     // 🚨 VALIDATION CRITIQUE - Numéro de bien obligatoire
     const numeroBien = getField('section_logement.numero_bien')
     if (!numeroBien || numeroBien.trim() === '') {
@@ -268,6 +363,10 @@ const PhotoUpload = ({
             console.error('Erreur compression:', error)
             fileToUpload = file // Fallback vers fichier original
           }
+        } else if (isVideo && videoTargetSizeBytes) {
+          // 🎯 Mode cible : jamais de compression navigateur, l'original part
+          // tel quel sur Supabase ; Railway est sollicité après l'upload
+          fileToUpload = file
         } else if (isVideo) {
           // Si vidéo > 95 MB, on SKIP la compression navigateur (backend gérera)
           if (file.size > 95 * 1024 * 1024) {
@@ -304,13 +403,49 @@ const PhotoUpload = ({
           .from('fiche-photos')
           .getPublicUrl(storagePath)
 
+        // 🎯 MODE CIBLE (Guide d'accès) : la cible décide, pas le seuil de 95 MB.
+        // L'original est publié dans la fiche DÈS qu'il est sur Supabase (et
+        // donc sauvegardé par l'autosave) : si la compression dure, si l'onglet
+        // se ferme ou si le coordinateur finalise entre-temps, la vidéo n'est
+        // jamais perdue. Pendant le job, l'avertissement provisoire
+        // « compression en cours » est lui aussi persisté : s'il survit à un
+        // rechargement, la session a été interrompue et le coordinateur le voit.
+        // La compressée remplace l'original à la fin, si le champ la contient
+        // encore et si c'est toujours la même fiche qui est chargée.
+        if (isVideo && videoTargetSizeBytes) {
+          const aCompresser = doitCompresserVideoGuide(file.size, videoTargetSizeBytes)
+          const publication = publierVideoGuide(
+            urlData.publicUrl,
+            aCompresser ? AVERTISSEMENT_VIDEO_GUIDE.COMPRESSION_EN_COURS : null,
+            ficheDepart,
+            cleMediaEnVol
+          )
+          if (publication === 'autre-fiche') {
+            // Une autre fiche est ouverte depuis le choix du fichier : publier
+            // ici écrirait la vidéo dans la MAUVAISE fiche. On ne touche à rien
+            // et on le dit, plutôt que d'échouer en silence.
+            throw new Error('Une autre fiche a été ouverte pendant l\'envoi : la vidéo n\'a pas été ajoutée. Rouvrez la fiche d\'origine et réimportez-la.')
+          }
+          if (publication === 'envoi-remplace') {
+            // Envoi périmé : ni publication, ni compression, ni avertissement.
+            // Le champ appartient désormais à l'envoi le plus récent.
+            continue
+          }
+          if (aCompresser) {
+            const decision = await compresserPourLivret(file, urlData.publicUrl)
+            remplacerVideoGuide(urlData.publicUrl, decision, ficheDepart, cleMediaEnVol)
+          } else {
+            console.log('🎯 Vidéo sous la cible, conservée telle quelle')
+          }
+          // Rien à retourner : le champ est déjà à jour
+
         // 🎬 COMPRESSION BACKEND si vidéo > 95 MB
-        if (isVideo && file.size > 95 * 1024 * 1024) {
+        } else if (isVideo && file.size > 95 * 1024 * 1024) {
           console.log('🎬 Vidéo > 95MB, compression backend en cours...')
           setBackendCompressing(true)
 
           try {
-            const response = await fetch('https://video-compressor-production.up.railway.app/compress-video', {
+            const response = await fetch(COMPRESS_VIDEO_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ videoUrl: urlData.publicUrl })
@@ -346,6 +481,70 @@ const PhotoUpload = ({
     }
   }
 
+  // 🎯 Mode cible : identité de la fiche chargée MAINTENANT dans le provider
+  // (qui survit aux changements de route), lue hors de toute fermeture figée.
+  const identiteFicheLive = () => ({
+    // La session distingue deux fiches au même numéro de bien, et ne change
+    // pas quand la fiche reçoit son id en cours de traitement.
+    session: lireSessionFiche(),
+    id: getFieldLive('id') || null,
+    numeroBien: getFieldLive('section_logement.numero_bien') || null
+  })
+
+  // 🎯 Mode cible : ajoute l'original au champ et pose l'avertissement de
+  // départ (provisoire « en cours » si un job part, sinon rien : un nouvel
+  // upload repart de zéro).
+  //
+  // Deux refus possibles, pour deux raisons différentes :
+  //   'autre-fiche'    → une AUTRE fiche est chargée : publier écrirait la
+  //                      vidéo au mauvais endroit. L'appelant le signale.
+  //   'envoi-remplace' → un envoi PLUS RÉCENT a été lancé sur ce champ depuis :
+  //                      celui-ci est périmé, il se tait. Ce n'est pas une
+  //                      erreur pour le coordinateur, c'est son dernier choix
+  //                      qui gagne.
+  // Et même quand la publication a lieu, `publicationVideoGuide` borne le
+  // champ à `maxFiles` : il ne peut jamais contenir deux vidéos.
+  const publierVideoGuide = (originalUrl, avertissementDepart, ficheDepart, cleEnvoi) => {
+    if (!estMemeFiche(ficheDepart, identiteFicheLive())) {
+      console.log('🎯 Une autre fiche est chargée depuis le début de l\'envoi, vidéo non publiée')
+      return 'autre-fiche'
+    }
+    if (cleEnvoi && !estDernierEnvoi(cleEnvoi)) {
+      console.log('🎯 Un envoi plus récent a été lancé sur ce champ, vidéo non publiée')
+      return 'envoi-remplace'
+    }
+    const actuelles = normalizePhotoField(getFieldLive(fieldPath))
+    updateField(fieldPath, publicationVideoGuide({ actuelles, url: originalUrl, multiple, maxFiles }))
+    if (videoWarningFieldPath) updateField(videoWarningFieldPath, avertissementDepart)
+    return 'publie'
+  }
+
+  // 🎯 Mode cible : à la fin de la compression, remplace l'original par la
+  // vidéo retenue et pose l'avertissement final — sauf si une AUTRE fiche a
+  // été chargée entre-temps, ou si le coordinateur a supprimé la vidéo (le
+  // résultat n'a alors plus d'objet : on n'écrit rien).
+  const remplacerVideoGuide = (originalUrl, decision, ficheDepart, cleEnvoi) => {
+    if (!estMemeFiche(ficheDepart, identiteFicheLive())) {
+      console.log('🎯 Une autre fiche est chargée depuis le départ de la compression, résultat ignoré')
+      return
+    }
+    if (cleEnvoi && !estDernierEnvoi(cleEnvoi)) {
+      console.log('🎯 Un envoi plus récent a été lancé sur ce champ, résultat de compression ignoré')
+      return
+    }
+    const actuelles = normalizePhotoField(getFieldLive(fieldPath))
+    if (!actuelles.includes(originalUrl)) {
+      console.log('🎯 Vidéo supprimée pendant la compression, résultat ignoré')
+      return
+    }
+    if (decision.url !== originalUrl) {
+      updateField(fieldPath, multiple
+        ? actuelles.map(u => (u === originalUrl ? decision.url : u))
+        : decision.url)
+    }
+    if (videoWarningFieldPath) updateField(videoWarningFieldPath, decision.avertissement)
+  }
+
   // Gestion du changement de fichier
   const handleFileChange = async (event) => {
     const files = Array.from(event.target.files)
@@ -358,11 +557,28 @@ const PhotoUpload = ({
       return
     }
 
+    // 🎯 Mode cible : identité de la fiche AVANT tout traitement asynchrone.
+    // Tout ce qui suit (compression navigateur, upload Supabase, job Railway)
+    // peut durer pendant que le coordinateur ouvre une autre fiche.
+    const ficheDepart = identiteFicheLive()
+
+    // 🎯 Mode cible : signaler au provider qu'un média est en vol, AVANT le
+    // premier await. Entre ici et la publication de l'URL, la fiche ne
+    // référence encore rien : sans ce signal, une finalisation lancée dans
+    // cette fenêtre partirait sans la vidéo (automatisation à un seul coup).
+    // Seule la finalisation le consulte.
+    // La clé identifie CET envoi : elle sert aussi à savoir, au moment de
+    // publier, s'il est toujours le dernier lancé sur ce champ.
+    const cleMediaEnVol = videoTargetSizeBytes
+      ? `${fieldPath}#${Date.now()}#${Math.random().toString(36).slice(2, 8)}`
+      : null
+    if (cleMediaEnVol) declarerMediaEnVol(cleMediaEnVol, ficheDepart, fieldPath)
+
     setUploading(true)
     setError(null)
 
     try {
-      const result = await uploadToSupabase(files)
+      const result = await uploadToSupabase(files, ficheDepart, cleMediaEnVol)
 
       if (result.success) {
         // FORCER currentPhotos à être un array
@@ -370,11 +586,16 @@ const PhotoUpload = ({
 
         const newUrls = result.urls
 
-        if (multiple) {
-          const updatedPhotos = [...safeCurrentPhotos, ...newUrls]
-          updateField(fieldPath, updatedPhotos)
-        } else {
-          updateField(fieldPath, newUrls[0])
+        // 🎯 Mode cible : le champ a déjà été mis à jour pendant l'upload
+        // (publierVideoGuide / remplacerVideoGuide), newUrls est vide — ne pas
+        // réécrire le champ avec une valeur d'avant l'upload.
+        if (newUrls.length > 0) {
+          if (multiple) {
+            const updatedPhotos = [...safeCurrentPhotos, ...newUrls]
+            updateField(fieldPath, updatedPhotos)
+          } else {
+            updateField(fieldPath, newUrls[0])
+          }
         }
 
         // Reset du input
@@ -385,7 +606,25 @@ const PhotoUpload = ({
     } catch (err) {
       setError('Erreur lors de l\'upload: ' + err.message)
     } finally {
+      // Succès, échec ou abandon : le média n'est plus en vol. Sans ce
+      // `finally`, une erreur d'envoi bloquerait la finalisation pour de bon.
+      if (cleMediaEnVol) terminerMediaEnVol(cleMediaEnVol)
       setUploading(false)
+    }
+  }
+
+  // 🎯 Mode cible : la vidéo supprimée emporte tout ce qui la concernait.
+  // L'avertissement n'a plus d'objet, et un envoi encore en vol non plus :
+  // sans cette annulation, il continuerait de bloquer la finalisation
+  // jusqu'au bout de sa compression (20 min au pire) pour une vidéo qui n'est
+  // plus là. Son résultat, lui, était déjà écarté (l'URL d'origine n'est plus
+  // dans le champ), mais on le lui retire aussi explicitement.
+  const effacerAvertissementVideo = () => {
+    if (!videoTargetSizeBytes && !videoWarningFieldPath) return
+    if (videoWarningFieldPath) updateField(videoWarningFieldPath, null)
+    if (videoTargetSizeBytes) {
+      const annules = annulerMediasEnVol(fieldPath, identiteFicheLive())
+      if (annules) console.log(`🎯 ${annules} envoi(s) en vol annulé(s) : la vidéo a été supprimée`)
     }
   }
 
@@ -419,6 +658,7 @@ const PhotoUpload = ({
       } else {
         updateField(fieldPath, null)
       }
+      effacerAvertissementVideo()
 
       console.log('✅ Photo supprimée du FormContext')
 
@@ -432,6 +672,7 @@ const PhotoUpload = ({
       } else {
         updateField(fieldPath, null)
       }
+      effacerAvertissementVideo()
 
       setError('Photo supprimée (erreur Storage ignorée)')
     }

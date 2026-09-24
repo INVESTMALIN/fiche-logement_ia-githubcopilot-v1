@@ -1253,6 +1253,7 @@ export const mapFormDataToSupabase = (formData) => {
     // Section Guide d'accès
     guide_acces_photos_etapes: formData.section_guide_acces?.photos_etapes || [],
     guide_acces_video_acces: formData.section_guide_acces?.video_acces || [],
+    guide_acces_video_avertissement: formData.section_guide_acces?.video_avertissement || null,
 
     // PDF URLs - Assistants IA
     guide_acces_pdf_url: formData.guide_acces_pdf_url || null,
@@ -2563,6 +2564,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
     section_guide_acces: {
       photos_etapes: supabaseData.guide_acces_photos_etapes || [],
       video_acces: supabaseData.guide_acces_video_acces || [],
+      video_avertissement: supabaseData.guide_acces_video_avertissement || null,
     },
 
     // PDF Guide d'accès
