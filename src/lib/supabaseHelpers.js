@@ -94,6 +94,17 @@ export const mapFormDataToSupabase = (formData) => {
     clefs_igloohome_code_proprietaire: formData.section_clefs?.igloohome?.codeProprietaire || null,
     clefs_igloohome_code_menage: formData.section_clefs?.igloohome?.codeMenage || null,
     clefs_masterlock_code: formData.section_clefs?.masterlock?.code || null,
+    // Boîte à clés de secours (cf. src/lib/clefsSecours.js)
+    clefs_secours: formData.section_clefs?.secours ?? null,
+    clefs_secours_type: formData.section_clefs?.secoursType || null,
+    clefs_secours_emplacement: formData.section_clefs?.secoursEmplacement || null,
+    clefs_secours_emplacement_photo: formData.section_clefs?.secoursEmplacementPhoto || [],
+    clefs_secours_emplacement_emballage: formData.section_clefs?.secoursEmplacementEmballage || null,
+    clefs_secours_emplacement_emballage_photo: formData.section_clefs?.secoursEmplacementEmballagePhoto || [],
+    clefs_secours_ttlock_masterpin_conciergerie: formData.section_clefs?.secoursTtlock?.masterpinConciergerie || null,
+    clefs_secours_ttlock_code_proprietaire: formData.section_clefs?.secoursTtlock?.codeProprietaire || null,
+    clefs_secours_ttlock_code_menage: formData.section_clefs?.secoursTtlock?.codeMenage || null,
+    clefs_secours_masterlock_code: formData.section_clefs?.secoursMasterlock?.code || null,
     clefs_interphone: formData.section_clefs?.interphone ?? null,
     clefs_interphone_details: formData.section_clefs?.interphoneDetails || null,
     clefs_interphone_photo: formData.section_clefs?.interphonePhoto || [],
@@ -1361,6 +1372,20 @@ export const mapSupabaseToFormData = (supabaseData) => {
       },
       masterlock: {
         code: supabaseData.clefs_masterlock_code || ""
+      },
+      secours: supabaseData.clefs_secours ?? null,
+      secoursType: supabaseData.clefs_secours_type || "",
+      secoursEmplacement: supabaseData.clefs_secours_emplacement || "",
+      secoursEmplacementPhoto: supabaseData.clefs_secours_emplacement_photo || [],
+      secoursEmplacementEmballage: supabaseData.clefs_secours_emplacement_emballage || "",
+      secoursEmplacementEmballagePhoto: supabaseData.clefs_secours_emplacement_emballage_photo || [],
+      secoursTtlock: {
+        masterpinConciergerie: supabaseData.clefs_secours_ttlock_masterpin_conciergerie || "",
+        codeProprietaire: supabaseData.clefs_secours_ttlock_code_proprietaire || "",
+        codeMenage: supabaseData.clefs_secours_ttlock_code_menage || ""
+      },
+      secoursMasterlock: {
+        code: supabaseData.clefs_secours_masterlock_code || ""
       },
       interphone: supabaseData.clefs_interphone ?? null,
       interphoneDetails: supabaseData.clefs_interphone_details || "",

@@ -1,6 +1,7 @@
 // src/components/FichePreviewModal.jsx
 import { X, Edit3 } from 'lucide-react'
 import { mapSupabaseToFormData } from '../lib/supabaseHelpers'
+import { LIBELLES_SECOURS, masquerSecoursInactif } from '../lib/clefsSecours'
 
 export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
   if (!isOpen || !fiche) return null
@@ -131,6 +132,7 @@ export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
 
   // Helper pour nettoyer les noms de champs (enlever prefixes, capitaliser)
   const formatFieldName = (fieldName) => {
+    if (LIBELLES_SECOURS[fieldName]) return LIBELLES_SECOURS[fieldName]
     return fieldName
       .replace(/([A-Z])/g, ' $1') // Ajouter espaces avant majuscules
       .replace(/_/g, ' ') // Remplacer _ par espaces
@@ -143,7 +145,9 @@ export default function FichePreviewModal({ fiche, isOpen, onClose, onEdit }) {
     const sections = []
 
     sectionsConfig.forEach(config => {
-      const sectionData = formData[config.key]
+      // Boîte à clés de secours : bloc retiré du rendu tant que la réponse n'est
+      // pas « oui » (photos conservées en base, cf. src/lib/clefsSecours.js)
+      const sectionData = masquerSecoursInactif(config.key, formData[config.key])
       
       if (!sectionData || typeof sectionData !== 'object') return
 

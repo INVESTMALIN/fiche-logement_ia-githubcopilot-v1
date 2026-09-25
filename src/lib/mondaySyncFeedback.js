@@ -4,7 +4,7 @@
 // l'utilisateur. Module PUR, sans import : chargeable tel quel par les tests
 // Node (scripts/tests/_chargerModule.mjs).
 //
-// Règle absolue : on nomme des CHAMPS, jamais des valeurs. Quatre des six
+// Règle absolue : on nomme des CHAMPS, jamais des valeurs. Quatre des sept
 // champs sont des mots de passe ou des emails de propriétaires.
 
 export const MONDAY_FIELD_LABELS = Object.freeze({
@@ -13,12 +13,13 @@ export const MONDAY_FIELD_LABELS = Object.freeze({
   airbnb_mot_passe: 'Mot de passe Airbnb',
   booking_mot_passe: 'Mot de passe Booking',
   airbnb_email: 'Identifiant Airbnb',
-  booking_email: 'Identifiant Booking'
+  booking_email: 'Identifiant Booking',
+  bac_secours: 'BAC secours'
 })
 
 // Champs dont la valeur n'est pas un secret : leur valeur peut entrer dans la
 // clé de déduplication (jamais dans un message affiché pour autant).
-const CHAMPS_NON_SENSIBLES = new Set(['type_premier_menage', 'type_premiere_maintenance'])
+const CHAMPS_NON_SENSIBLES = new Set(['type_premier_menage', 'type_premiere_maintenance', 'bac_secours'])
 
 const libelle = (field) => MONDAY_FIELD_LABELS[field] || field
 

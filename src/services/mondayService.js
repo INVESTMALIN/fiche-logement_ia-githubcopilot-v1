@@ -1,10 +1,10 @@
 // src/services/mondayService.js
 //
-// Sync 6 champs Fiche Logement → Monday (board 1272144935) en best-effort,
+// Sync 7 champs Fiche Logement → Monday (board 1272144935) en best-effort,
 // via l'Edge Function `monday-sync` (token admin Monday gardé côté serveur).
 //
 // Flow :
-//   1. extractMondaySnapshot(formData) — extrait l'état actuel des 6 champs
+//   1. extractMondaySnapshot(formData) — extrait l'état actuel des 7 champs
 //   2. getMondayChangedFields(current, saved) — pré-diff côté onglet, pour ne
 //      pas appeler l'Edge Function quand rien n'a bougé (le diff qui fait foi
 //      est recalculé côté serveur contre le snapshot en base)
@@ -17,11 +17,12 @@
 // bien). Le hook qui orchestre est dans FormContext.triggerMondaySync.
 
 import { supabase } from '../lib/supabaseClient'
+import { valeurMondayBacSecours } from '../lib/clefsSecours'
 
 /**
- * Snapshot opérationnel : exactement les 6 champs qui seront envoyés à Monday.
+ * Snapshot opérationnel : exactement les 7 champs qui seront envoyés à Monday.
  *
- * Les 6 clés sont TOUJOURS présentes (null si vide) : l'Edge Function traite
+ * Les 7 clés sont TOUJOURS présentes (null si vide) : l'Edge Function traite
  * une clé absente comme « non fournie » et ne la pousse pas.
  */
 export function extractMondaySnapshot(formData) {
@@ -33,7 +34,9 @@ export function extractMondaySnapshot(formData) {
     booking_mot_passe: formData?.section_booking?.mot_passe ?? null,
     // Identifiants de connexion propriétaire (colonnes DB airbnb_email / booking_email)
     airbnb_email: formData?.section_airbnb?.email_compte ?? null,
-    booking_email: formData?.section_booking?.email_compte ?? null
+    booking_email: formData?.section_booking?.email_compte ?? null,
+    // Colonne « BAC secours » : type de la boîte de secours si oui, sinon null
+    bac_secours: valeurMondayBacSecours(formData?.section_clefs)
   }
 }
 
@@ -54,8 +57,8 @@ export function getMondayChangedFields(current, saved) {
  * @param {Object} args
  * @param {string} args.ficheId
  * @param {number|string} args.numeroBien
- * @param {Object} args.snapshot — { type_premier_menage, type_premiere_maintenance, airbnb_mot_passe, booking_mot_passe, airbnb_email, booking_email }
- * @param {boolean} [args.pushAll=false] — true = pousser les 6 champs quel que
+ * @param {Object} args.snapshot — { type_premier_menage, type_premiere_maintenance, airbnb_mot_passe, booking_mot_passe, airbnb_email, booking_email, bac_secours }
+ * @param {boolean} [args.pushAll=false] — true = pousser les 7 champs quel que
  *   soit le snapshot en base (finalisation initiale)
  * @param {boolean} [args.dryRun=false]
  * @returns {Promise<Object>} corps de l'Edge Function

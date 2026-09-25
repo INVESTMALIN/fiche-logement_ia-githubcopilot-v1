@@ -80,6 +80,10 @@ export const REQUIRED_FIELDS = {
             message: 'L\'emplacement de la boîte à clés est obligatoire'
         },
         {
+            field: 'section_clefs.secours',
+            message: 'Vous devez indiquer si le logement dispose d\'une boîte à clés de secours'
+        },
+        {
             field: 'section_clefs.interphone',
             message: 'Vous devez indiquer si le logement dispose d\'un interphone'
         },
@@ -318,6 +322,38 @@ export const CONDITIONAL_REQUIRED_FIELDS = {
             field: 'section_clefs.masterlock.code',
             condition: (formData) => formData.section_clefs?.boiteType === 'Masterlock',
             message: 'Le code de la boîte Masterlock est obligatoire'
+        },
+        // Boîte à clés de secours : mêmes règles que la boîte principale,
+        // seulement si la réponse est « oui »
+        {
+            field: 'section_clefs.secoursType',
+            condition: (formData) => formData.section_clefs?.secours === true,
+            message: 'Le type de la boîte à clés de secours est obligatoire'
+        },
+        {
+            field: 'section_clefs.secoursEmplacement',
+            condition: (formData) => formData.section_clefs?.secours === true,
+            message: 'L\'emplacement de la boîte à clés de secours est obligatoire'
+        },
+        {
+            field: 'section_clefs.secoursTtlock.masterpinConciergerie',
+            condition: (formData) => formData.section_clefs?.secours === true && formData.section_clefs?.secoursType === 'TTlock',
+            message: 'Le code Masterpin conciergerie TTlock de la boîte de secours est obligatoire'
+        },
+        {
+            field: 'section_clefs.secoursTtlock.codeProprietaire',
+            condition: (formData) => formData.section_clefs?.secours === true && formData.section_clefs?.secoursType === 'TTlock',
+            message: 'Le code Propriétaire TTlock de la boîte de secours est obligatoire'
+        },
+        {
+            field: 'section_clefs.secoursTtlock.codeMenage',
+            condition: (formData) => formData.section_clefs?.secours === true && formData.section_clefs?.secoursType === 'TTlock',
+            message: 'Le code Ménage TTlock de la boîte de secours est obligatoire'
+        },
+        {
+            field: 'section_clefs.secoursMasterlock.code',
+            condition: (formData) => formData.section_clefs?.secours === true && formData.section_clefs?.secoursType === 'Masterlock',
+            message: 'Le code de la boîte Masterlock de secours est obligatoire'
         }
     ],
 

@@ -5,13 +5,20 @@
 // injecté (`Deps`), ce qui permet de prouver par test l'isolation des champs
 // et le calcul du snapshot sans appeler ni Monday ni la base.
 //
-// Les 6 champs synchronisés (board 1272144935) :
+// Les 7 champs synchronisés (board 1272144935) :
 // - type_premier_menage      → colonne Premiers Ménages (status, `statut47`)
 // - type_premiere_maintenance → colonne Maintenance     (status, `color_mm3ftnef`)
 // - airbnb_mot_passe          → MDP Airbnb Propriétaire (text)
 // - booking_mot_passe         → MDP Booking Propriétaire (text)
 // - airbnb_email              → Identifiant Airbnb Propriétaire (text)
 // - booking_email             → Identifiant Booking Propriétaire (text)
+// - bac_secours               → BAC secours (status, `color_mm7hfdn5`)
+//
+// « BAC secours » reçoit le type de la boîte à clés de SECOURS : 'TTlock' ou
+// 'Masterlock' si la fiche répond oui, sinon null (colonne vidée). La valeur
+// est dérivée côté front (src/lib/clefsSecours.js, valeurMondayBacSecours).
+// La colonne « Boîte à clé » (boîte principale) est remplie À LA MAIN par les
+// coordinateurs : ce sync n'y touche pas.
 //
 // Les identifiants (emails de connexion) sont lus par les automatisations
 // Monday qui composent l'email de bienvenue au propriétaire : colonne vide =
@@ -56,7 +63,8 @@ export const COLUMN_IDS = {
   airbnbPassword: 'text_mm2q5tw8', // text — MDP Airbnb Propriétaire
   bookingPassword: 'text_mm2qaz6a', // text — MDP Booking Propriétaire
   airbnbLogin: 'text_mm2qs0eh',    // text — Identifiant Airbnb Propriétaire
-  bookingLogin: 'text_mm2qg8ar'    // text — Identifiant Booking Propriétaire
+  bookingLogin: 'text_mm2qg8ar',   // text — Identifiant Booking Propriétaire
+  bacSecours: 'color_mm7hfdn5'     // status — BAC secours (type de la boîte de secours)
 } as const
 
 export type FieldKey =
@@ -66,6 +74,7 @@ export type FieldKey =
   | 'booking_mot_passe'
   | 'airbnb_email'
   | 'booking_email'
+  | 'bac_secours'
 
 export const FIELD_KEYS: readonly FieldKey[] = [
   'type_premier_menage',
@@ -73,7 +82,8 @@ export const FIELD_KEYS: readonly FieldKey[] = [
   'airbnb_mot_passe',
   'booking_mot_passe',
   'airbnb_email',
-  'booking_email'
+  'booking_email',
+  'bac_secours'
 ] as const
 
 export const FIELD_COLUMN: Record<FieldKey, string> = {
@@ -82,7 +92,8 @@ export const FIELD_COLUMN: Record<FieldKey, string> = {
   airbnb_mot_passe: COLUMN_IDS.airbnbPassword,
   booking_mot_passe: COLUMN_IDS.bookingPassword,
   airbnb_email: COLUMN_IDS.airbnbLogin,
-  booking_email: COLUMN_IDS.bookingLogin
+  booking_email: COLUMN_IDS.bookingLogin,
+  bac_secours: COLUMN_IDS.bacSecours
 }
 
 // Valeur Fiche Logement (TYPES_PASSAGE, src/lib/avisGrilleHelpers.js) →
@@ -114,14 +125,22 @@ export const MAINTENANCE_INDEX: Readonly<Record<string, number>> = {
   'Intervention artisan': 2
 }
 
+// Type de la boîte à clés de secours → identifiant de label de `color_mm7hfdn5`
+// (colonne « BAC secours », créée le 2026-09-25), lu dans `settings_str.labels`
+// le 2026-09-25 : 0 TTlock · 1 Masterlock.
+export const BAC_SECOURS_INDEX: Readonly<Record<string, number>> = {
+  'TTlock': 0,
+  'Masterlock': 1
+}
+
 // ============================================================
 // Types — requête, résultats, dépendances
 // ============================================================
 // `undefined` = champ NON FOURNI par l'appelant (clé absente de la requête),
 // distinct de `null` = champ fourni et vide. Un champ non fourni n'est jamais
-// poussé : un onglet resté sur un front antérieur n'envoie que les 4 champs
-// historiques, et traiter les identifiants absents comme vides viderait les
-// colonnes Monday correspondantes.
+// poussé : un onglet resté sur un front antérieur n'envoie que les champs
+// qu'il connaît, et traiter les champs absents (identifiants, BAC secours)
+// comme vides viderait les colonnes Monday correspondantes.
 export type SyncFields = Record<FieldKey, string | null | undefined>
 
 export interface SyncRequest {
@@ -234,6 +253,11 @@ export function traduireValeur(field: FieldKey, valeur: string | null): unknown 
     case 'type_premiere_maintenance': {
       if (!valeur) return {}
       const index = MAINTENANCE_INDEX[valeur]
+      return index === undefined ? undefined : { index }
+    }
+    case 'bac_secours': {
+      if (!valeur) return {}
+      const index = BAC_SECOURS_INDEX[valeur]
       return index === undefined ? undefined : { index }
     }
     case 'airbnb_mot_passe':

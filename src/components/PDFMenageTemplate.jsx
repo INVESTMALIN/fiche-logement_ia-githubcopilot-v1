@@ -1,6 +1,7 @@
 // src/components/PDFMenageTemplate.jsx - VERSION 2 CLEAN & PHOTOS GRANDES
 import React from 'react'
 import { getCountryLabel } from '../lib/countries'
+import { LIBELLES_SECOURS, masquerSecoursInactif } from '../lib/clefsSecours'
 
 // 🧹 Section Instructions Ménage — libellés métier.
 // ⚠️ Copie volontaire de PDFTemplate.jsx : les deux templates sont indépendants,
@@ -413,6 +414,7 @@ const PDFMenageTemplate = ({ formData }) => {
 
   // 🔍 Helper pour formater les noms de champs
   const formatFieldName = (fieldName) => {
+    if (LIBELLES_SECOURS[fieldName]) return LIBELLES_SECOURS[fieldName]
     return fieldName
       .replace(/([A-Z])/g, ' $1')
       .replace(/_/g, ' ')
@@ -790,7 +792,9 @@ const PDFMenageTemplate = ({ formData }) => {
       .join(', ')
 
     menageSectionsConfig.forEach(config => {
-      const sectionData = formData[config.key]
+      // Boîte à clés de secours : bloc retiré du rendu tant que la réponse n'est
+      // pas « oui » (photos conservées en base, cf. src/lib/clefsSecours.js)
+      const sectionData = masquerSecoursInactif(config.key, formData[config.key])
 
       if (!sectionData || typeof sectionData !== 'object') return
 
