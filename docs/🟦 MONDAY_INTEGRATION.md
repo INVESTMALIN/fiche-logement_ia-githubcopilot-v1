@@ -1,22 +1,22 @@
-# 🟦 Intégration Monday — Sync automatique 4 champs
+# 🟦 Intégration Monday — Sync automatique 6 champs
 
 **Projet** : Fiche Logement
-**Feature** : Synchronisation automatique de 4 champs Fiche Logement → Monday board `1272144935` (Clients propriétaires > Clients)
-**Status** : ✅ En production depuis mai 2026 — robustesse par champ livrée le 2026-09-16 (écritures indépendantes, statuts par index, snapshot fusionné côté serveur, bilan à l'écran)
-**Dernière mise à jour** : 2026-09-16
+**Feature** : Synchronisation automatique de 6 champs Fiche Logement → Monday board `1272144935` (Clients propriétaires > Clients)
+**Status** : ✅ En production depuis mai 2026 — robustesse par champ livrée le 2026-09-16 (écritures indépendantes, statuts par index, snapshot fusionné côté serveur, bilan à l'écran) — identifiants Airbnb / Booking ajoutés le 2026-09-25
+**Dernière mise à jour** : 2026-09-25
 
 ---
 
 ## 🎯 Vue d'ensemble
 
 ### Objectif
-Remonter automatiquement vers Monday 4 champs remplis dans la Fiche Logement, à la finalisation initiale et à chaque modification post-finalisation. Premier usage d'**Edge Functions Supabase** dans le projet — pose les conventions pour les futures intégrations qui auraient besoin d'un secret côté serveur.
+Remonter automatiquement vers Monday 6 champs remplis dans la Fiche Logement, à la finalisation initiale et à chaque modification post-finalisation. Premier usage d'**Edge Functions Supabase** dans le projet — pose les conventions pour les futures intégrations qui auraient besoin d'un secret côté serveur.
 
 ### Pourquoi pas un appel direct depuis le front ?
 Le token Monday est admin-global → l'inliner dans le bundle Vite (préfixe `VITE_*`) l'exposerait à quiconque inspecte le JS de prod. C'est exactement le problème qu'on vient de corriger avec `VITE_LOOMKY_TOKEN` (commit `58fddff`). On passe donc par une Edge Function : token stocké comme **Edge Secret**, jamais visible côté client.
 
 ### Périmètre
-- **Dans le scope** : push 4 champs (statut Premiers Ménages + statut Maintenance + 2 mots de passe), trigger automatique au save, dirty-detection via snapshot.
+- **Dans le scope** : push 6 champs (statut Premiers Ménages + statut Maintenance + 2 identifiants + 2 mots de passe), trigger automatique au save, dirty-detection via snapshot.
 - **Hors scope** : retry asynchrone, audit log.
 
 > **Note (2026-05-19)** : `type_premiere_maintenance` était initialement hors scope. Ajouté à la sync suite à la validation par Victoria de 3 labels métier dédiés (`Intervention propriétaire`, `Intervention artisan`, `Pas d'intervention`) — cf. `TYPES_MAINTENANCE` dans [src/lib/avisGrilleHelpers.js](../src/lib/avisGrilleHelpers.js).
@@ -31,6 +31,12 @@ Le token Monday est admin-global → l'inliner dans le bundle Vite (préfixe `VI
 | `avis_type_premiere_maintenance` | Maintenance | status | `color_mm3ftnef` |
 | `airbnb_mot_passe` | MDP Airbnb Propriétaire | text | `text_mm2q5tw8` |
 | `booking_mot_passe` | MDP Booking Propriétaire | text | `text_mm2qaz6a` |
+| `airbnb_email` | Identifiant Airbnb Propriétaire | text | `text_mm2qs0eh` |
+| `booking_email` | Identifiant Booking Propriétaire | text | `text_mm2qg8ar` |
+
+> **Identifiants (2026-09-25)** : ces deux colonnes n'étaient écrites par aucune automatisation — elles étaient remplies à la main, une fois sur deux. Or les automatisations Monday qui composent l'email de bienvenue au propriétaire les **lisent** : colonne vide = email client incomplet. Elles suivent exactement le modèle des mots de passe (valeur de la base envoyée telle quelle, vide compris : la base fait foi). Les snapshots antérieurs n'ont pas ces deux clés → la prochaine sauvegarde de chaque fiche Complété les pousse : c'est voulu. Rattrapage de l'existant (cellules Monday vides uniquement) : script one-shot séparé.
+>
+> **Champ non fourni ≠ champ vide** : l'Edge Function ne pousse jamais un champ dont la clé est absente de la requête. Un onglet resté sur un front antérieur n'envoie que les 4 champs historiques ; traiter les identifiants absents comme vides viderait les colonnes Monday.
 
 **Lookup** : par colonne `num_ro` (type `numbers`) du board `1272144935`, valeur source = `section_logement.numero_bien`. API utilisée : `items_page_by_column_values`.
 
@@ -104,7 +110,7 @@ docs/
                1. SELECT id, logement_numero_bien, monday_snapshot FROM fiches WHERE id (sous RLS)
                   → aucune ligne         → FICHE_INTROUVABLE (rien d'écrit)
                   → numéro ≠ envoyé      → NUMERO_BIEN_CHANGE (rien d'écrit)
-               2. diff : pushAll ou snapshot NULL → 4 champs ; sinon champs ≠ snapshot EN BASE
+               2. diff (champs FOURNIS seulement) : pushAll ou snapshot NULL → tous ; sinon champs ≠ snapshot EN BASE
                   valeur non reconnue     → skipped (jamais envoyée)
                   rien à écrire           → success, results: []
                3. items_page_by_column_values(board, num_ro=numeroBien)
@@ -143,7 +149,7 @@ Le diff **qui fait foi** est celui de l'Edge Function, contre le snapshot lu en 
 - **Monday API down / network error** : `pushToMonday` ne throw jamais (`{success:false, error:'NETWORK'}`) ; lookup impossible → `error MONDAY_API_ERROR` par champ. Snapshot non mis à jour → retry naturel.
 - **RPC en erreur après des écritures Monday réussies** : les écritures restent, `snapshotPersiste: false`, re-push idempotent au save suivant.
 - **Sérialisation par onglet** : deux autosaves rapprochés ne se doublent plus chez Monday ; la seconde sync re-diffe contre le snapshot fusionné par la première. **Limite acceptée** : deux onglets sur la même fiche ne sont pas sérialisés entre eux (il faudrait un verrou englobant l'appel HTTP Monday) ; le pire cas est un re-push idempotent.
-- **Secrets** : les mots de passe n'apparaissent ni dans les logs Edge (dry-run compris), ni dans les diagnostics par champ (`masquerSecrets`), ni dans le bilan à l'écran (champs nommés, jamais de valeur).
+- **Secrets** : les mots de passe et les identifiants (emails de propriétaires) n'apparaissent ni dans les logs Edge (dry-run compris), ni dans les diagnostics par champ (`masquerSecrets`), ni dans le bilan à l'écran (champs nommés, jamais de valeur).
 - **Token serveur manquant** : `UNAUTHORIZED` (500), log côté Edge Function.
 
 ---
@@ -162,7 +168,9 @@ Format :
   "type_premier_menage":       "Vérification / Inventaire" | null,
   "type_premiere_maintenance": "Intervention artisan" | null,
   "airbnb_mot_passe":          "..." | null,
-  "booking_mot_passe":         "..." | null
+  "booking_mot_passe":         "..." | null,
+  "airbnb_email":              "..." | null,
+  "booking_email":             "..." | null
 }
 ```
 

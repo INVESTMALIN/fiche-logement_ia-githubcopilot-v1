@@ -1,6 +1,6 @@
 // supabase/functions/monday-sync/index.ts
 //
-// Sync 4 champs Fiche Logement → Monday (board 1272144935), UN champ à la
+// Sync 6 champs Fiche Logement → Monday (board 1272144935), UN champ à la
 // fois. La logique (diff, traduction par index, isolation des champs, calcul
 // du snapshot) vit dans `sync.ts`, pur et testé ; ce fichier ne fait que le
 // câblage : HTTP, secrets, client Supabase authentifié, appels Monday.
@@ -161,6 +161,12 @@ function lireRequete(body: unknown): SyncRequest | string {
   const brut = b.fields as Record<string, unknown>
   const fields = {} as SyncFields
   for (const k of FIELD_KEYS) {
+    // Clé absente = champ non fourni (front antérieur) : reste `undefined`,
+    // `sync.ts` ne le pousse pas. Surtout pas `null`, qui viderait Monday.
+    if (!Object.prototype.hasOwnProperty.call(brut, k)) {
+      fields[k] = undefined
+      continue
+    }
     const v = brut[k]
     if (v !== undefined && v !== null && typeof v !== 'string') return `fields.${k} doit être une chaîne ou null`
     fields[k] = (v as string | null | undefined) ?? null

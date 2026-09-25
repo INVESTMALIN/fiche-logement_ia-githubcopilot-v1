@@ -4,14 +4,16 @@
 // l'utilisateur. Module PUR, sans import : chargeable tel quel par les tests
 // Node (scripts/tests/_chargerModule.mjs).
 //
-// Règle absolue : on nomme des CHAMPS, jamais des valeurs. Deux des quatre
-// champs sont des mots de passe.
+// Règle absolue : on nomme des CHAMPS, jamais des valeurs. Quatre des six
+// champs sont des mots de passe ou des emails de propriétaires.
 
 export const MONDAY_FIELD_LABELS = Object.freeze({
   type_premier_menage: 'Premiers Ménages',
   type_premiere_maintenance: 'Maintenance',
   airbnb_mot_passe: 'Mot de passe Airbnb',
-  booking_mot_passe: 'Mot de passe Booking'
+  booking_mot_passe: 'Mot de passe Booking',
+  airbnb_email: 'Identifiant Airbnb',
+  booking_email: 'Identifiant Booking'
 })
 
 // Champs dont la valeur n'est pas un secret : leur valeur peut entrer dans la
