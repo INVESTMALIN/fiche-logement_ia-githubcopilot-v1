@@ -20,12 +20,16 @@ import { supabase } from '../lib/supabaseClient'
 import { valeurMondayBacSecours } from '../lib/clefsSecours'
 
 /**
- * Snapshot opérationnel : exactement les 7 champs qui seront envoyés à Monday.
+ * Snapshot opérationnel : les champs qui seront envoyés à Monday.
  *
- * Les 7 clés sont TOUJOURS présentes (null si vide) : l'Edge Function traite
- * une clé absente comme « non fournie » et ne la pousse pas.
+ * Les 6 premières clés sont TOUJOURS présentes (null si vide). `bac_secours`
+ * est OMISE tant que la question « boîte à clés de secours ? » n'a pas de
+ * réponse : l'Edge Function traite une clé absente comme « non fournie » et
+ * ne touche pas la colonne (saisie manuelle préservée sur les fiches
+ * antérieures au champ). Réponse « non » → null → colonne vidée.
  */
 export function extractMondaySnapshot(formData) {
+  const bacSecours = valeurMondayBacSecours(formData?.section_clefs)
   return {
     // Section Instructions Ménage (colonnes DB `avis_*` conservées, cf. supabaseHelpers)
     type_premier_menage: formData?.section_instructions_menage?.type_premier_menage ?? null,
@@ -35,8 +39,8 @@ export function extractMondaySnapshot(formData) {
     // Identifiants de connexion propriétaire (colonnes DB airbnb_email / booking_email)
     airbnb_email: formData?.section_airbnb?.email_compte ?? null,
     booking_email: formData?.section_booking?.email_compte ?? null,
-    // Colonne « BAC secours » : type de la boîte de secours si oui, sinon null
-    bac_secours: valeurMondayBacSecours(formData?.section_clefs)
+    // Colonne « BAC secours » : type si oui, null si non, clé absente sans réponse
+    ...(bacSecours === undefined ? {} : { bac_secours: bacSecours })
   }
 }
 

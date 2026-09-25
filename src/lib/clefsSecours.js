@@ -95,10 +95,16 @@ export function masquerSecoursInactif(sectionKey, sectionData) {
 }
 
 /**
- * Valeur de la colonne Monday « BAC secours » : 'TTlock' ou 'Masterlock' si la
- * réponse est oui ET le type reconnu, sinon null (colonne vidée).
+ * Valeur de la colonne Monday « BAC secours » :
+ *   - oui + type reconnu → 'TTlock' | 'Masterlock' ;
+ *   - non (ou oui sans type) → null : la colonne est vidée ;
+ *   - question jamais répondue (null / absente) → `undefined` : le champ n'est
+ *     PAS FOURNI au sync, qui ne touche donc pas la colonne. Toutes les fiches
+ *     antérieures au champ sont dans ce cas : l'équipe peut renseigner la
+ *     colonne à la main pour ces biens sans qu'une sauvegarde l'efface.
  */
 export function valeurMondayBacSecours(section) {
-  if (section?.secours !== true) return null
-  return SECOURS_TYPES.includes(section?.secoursType) ? section.secoursType : null
+  if (section?.secours === true) return SECOURS_TYPES.includes(section?.secoursType) ? section.secoursType : null
+  if (section?.secours === false) return null
+  return undefined
 }

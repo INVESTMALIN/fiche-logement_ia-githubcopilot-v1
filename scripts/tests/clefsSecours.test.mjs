@@ -135,14 +135,56 @@ test('libellés : chaque clé du bloc a un libellé lisible', () => {
 // ------------------------------------------------------------
 // Monday « BAC secours »
 // ------------------------------------------------------------
-test('Monday : oui + TTlock → TTlock ; oui + Masterlock → Masterlock ; non / sans réponse / sans type → null', () => {
+test('Monday : oui + type → le type ; non (ou oui sans type) → null ; jamais répondu → undefined (non fourni)', () => {
   assert.equal(valeurMondayBacSecours({ secours: true, secoursType: 'TTlock' }), 'TTlock')
   assert.equal(valeurMondayBacSecours({ secours: true, secoursType: 'Masterlock' }), 'Masterlock')
   assert.equal(valeurMondayBacSecours({ secours: false, secoursType: 'TTlock' }), null)
-  assert.equal(valeurMondayBacSecours({ secours: null, secoursType: 'TTlock' }), null)
   assert.equal(valeurMondayBacSecours({ secours: true, secoursType: '' }), null)
   assert.equal(valeurMondayBacSecours({ secours: true, secoursType: 'Igloohome' }), null)
-  assert.equal(valeurMondayBacSecours(undefined), null)
+  // Fiches antérieures au champ : la question n'a jamais été posée
+  assert.equal(valeurMondayBacSecours({ secours: null, secoursType: '' }), undefined)
+  assert.equal(valeurMondayBacSecours({}), undefined)
+  assert.equal(valeurMondayBacSecours(undefined), undefined)
+})
+
+// extractMondaySnapshot réel (mondayService.js), client Supabase remplacé par
+// un bouchon : aucune requête réseau.
+const bouchonSupabase = {
+  name: 'bouchon-supabase',
+  setup(b) {
+    b.onResolve({ filter: /supabaseClient$/ }, () => ({ path: 'bouchon', namespace: 'bouchon' }))
+    b.onLoad({ filter: /.*/, namespace: 'bouchon' }, () => ({ contents: 'export const supabase = {}', loader: 'js' }))
+  }
+}
+const resMonday = await build({
+  entryPoints: [fileURLToPath(new URL('../../src/services/mondayService.js', import.meta.url))],
+  bundle: true, format: 'esm', platform: 'neutral', write: false, logLevel: 'silent', plugins: [bouchonSupabase]
+})
+const { extractMondaySnapshot, getMondayChangedFields } =
+  await import(`data:text/javascript;base64,${Buffer.from(resMonday.outputFiles[0].text).toString('base64')}`)
+
+test('snapshot Monday : question jamais répondue → clé bac_secours ABSENTE (jamais poussée, saisie manuelle préservée)', () => {
+  const snap = extractMondaySnapshot({ section_clefs: { secours: null, secoursType: '' } })
+  assert.ok(!('bac_secours' in snap))
+  // Et absente du corps envoyé à l'Edge Function
+  assert.ok(!JSON.stringify({ fields: snap }).includes('bac_secours'))
+  // Fiche chargée d'avant le champ, sans section_clefs.secours du tout
+  assert.ok(!('bac_secours' in extractMondaySnapshot({ section_clefs: {} })))
+  // Les 6 autres clés restent toujours présentes
+  assert.deepEqual(Object.keys(snap).sort(), ['airbnb_email', 'airbnb_mot_passe', 'booking_email', 'booking_mot_passe', 'type_premier_menage', 'type_premiere_maintenance'])
+})
+
+test('snapshot Monday : non → bac_secours null (colonne vidée) ; oui + type → le type', () => {
+  const non = extractMondaySnapshot({ section_clefs: { secours: false, secoursType: '' } })
+  assert.ok('bac_secours' in non)
+  assert.equal(non.bac_secours, null)
+  assert.equal(JSON.parse(JSON.stringify({ fields: non })).fields.bac_secours, null)
+  assert.equal(extractMondaySnapshot({ section_clefs: { secours: true, secoursType: 'Masterlock' } }).bac_secours, 'Masterlock')
+})
+
+test('pré-diff front : fiche sans réponse et snapshot à jour sur les 6 champs → aucun appel Monday', () => {
+  const snap = extractMondaySnapshot({ section_clefs: { secours: null } })
+  assert.deepEqual(getMondayChangedFields(snap, { ...snap }), [])
 })
 
 // ------------------------------------------------------------
