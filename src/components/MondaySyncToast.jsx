@@ -1,14 +1,14 @@
 // src/components/MondaySyncToast.jsx
 //
-// Bilan de la synchronisation Monday des 4 champs (statuts Premiers Ménages /
-// Maintenance, mots de passe Airbnb / Booking) après un enregistrement d'une
+// Bilan de la synchronisation Monday des 6 champs (statuts Premiers Ménages /
+// Maintenance, identifiants et mots de passe Airbnb / Booking) après un enregistrement d'une
 // fiche Complété. Monté UNE fois dans FicheWizard, au-dessus de l'étape
 // courante : la synchronisation part de n'importe quelle page (autosave), le
 // bilan doit donc être visible partout.
 //
 // Trois formes : succès (vert, discret), partiel (orange : une partie est
 // passée, le reste est nommé), échec (rouge). On nomme des champs, jamais des
-// valeurs — deux des quatre champs sont des mots de passe.
+// valeurs — quatre des six champs sont des identifiants ou des mots de passe.
 //
 // Le dédoublonnage (ne pas répéter le même avertissement à chaque autosave) est
 // fait en amont dans FormContext : ce composant affiche ce qu'on lui donne.

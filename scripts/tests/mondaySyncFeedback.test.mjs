@@ -2,7 +2,8 @@
 //
 // Le bilan affiché après une synchronisation Monday nomme les CHAMPS
 // concernés (succès total, partiel, échec) et ne laisse JAMAIS passer une
-// valeur : deux des quatre champs sont des mots de passe.
+// valeur : quatre des six champs sont des mots de passe ou des emails de
+// propriétaires.
 // Exécution : npm test   (node --test, aucune dépendance, aucun appel réseau)
 
 import test from 'node:test'
@@ -175,8 +176,28 @@ test('réponse illisible : échec, jamais d\'exception', () => {
   }
 })
 
-test('les 4 champs ont un libellé lisible', () => {
+test('les 6 champs ont un libellé lisible', () => {
   assert.deepEqual(Object.keys(MONDAY_FIELD_LABELS).sort(), [
-    'airbnb_mot_passe', 'booking_mot_passe', 'type_premier_menage', 'type_premiere_maintenance'
+    'airbnb_email', 'airbnb_mot_passe', 'booking_email', 'booking_mot_passe', 'type_premier_menage', 'type_premiere_maintenance'
   ])
+  assert.equal(MONDAY_FIELD_LABELS.airbnb_email, 'Identifiant Airbnb')
+  assert.equal(MONDAY_FIELD_LABELS.booking_email, 'Identifiant Booking')
+})
+
+test('identifiants : nommés dans le bilan, valeur absente du message ET de la clé de déduplication', () => {
+  const EMAIL_AIRBNB = 'proprio.perso@example.test'
+  const EMAIL_BOOKING = 'bien-7755@letahost.example.test'
+  const valeurs = { ...VALEURS, airbnb_email: EMAIL_AIRBNB, booking_email: EMAIL_BOOKING }
+  const f = construireFeedbackMonday({
+    success: false,
+    results: [
+      { field: 'airbnb_email', status: 'error', reason: 'MONDAY_REFUSE', message: 'invalid •••' },
+      { field: 'booking_email', status: 'ok' }
+    ]
+  }, valeurs)
+  assert.equal(f.type, 'partiel')
+  assert.match(f.message, /Envoyé : Identifiant Booking\. Non synchronisé : Identifiant Airbnb \(refusé par Monday\)\./)
+  const tout = JSON.stringify(f)
+  assert.ok(!tout.includes(EMAIL_AIRBNB), `email Airbnb dans le bilan : ${tout}`)
+  assert.ok(!tout.includes(EMAIL_BOOKING), `email Booking dans le bilan : ${tout}`)
 })

@@ -5,11 +5,18 @@
 // injecté (`Deps`), ce qui permet de prouver par test l'isolation des champs
 // et le calcul du snapshot sans appeler ni Monday ni la base.
 //
-// Les 4 champs synchronisés (board 1272144935) :
+// Les 6 champs synchronisés (board 1272144935) :
 // - type_premier_menage      → colonne Premiers Ménages (status, `statut47`)
 // - type_premiere_maintenance → colonne Maintenance     (status, `color_mm3ftnef`)
 // - airbnb_mot_passe          → MDP Airbnb Propriétaire (text)
 // - booking_mot_passe         → MDP Booking Propriétaire (text)
+// - airbnb_email              → Identifiant Airbnb Propriétaire (text)
+// - booking_email             → Identifiant Booking Propriétaire (text)
+//
+// Les identifiants (emails de connexion) sont lus par les automatisations
+// Monday qui composent l'email de bienvenue au propriétaire : colonne vide =
+// email client incomplet. Ils suivent exactement le modèle des mots de
+// passe : colonne text, valeur de la base envoyée telle quelle, vide compris.
 //
 // PRINCIPES
 // 1. Une écriture Monday PAR CHAMP (`change_column_value`), jamais une mutation
@@ -34,7 +41,8 @@
 //    n'est plus celui envoyé par l'onglet, on n'écrit rien (ni Monday, ni
 //    snapshot). La RPC re-vérifie le numéro dans son WHERE pour la fenêtre
 //    entre la lecture et la fusion.
-// 5. Aucun mot de passe dans les logs ni dans les messages rendus au client.
+// 5. Aucun mot de passe ni identifiant (email propriétaire) dans les logs ni
+//    dans les messages rendus au client.
 
 // ============================================================
 // Configuration Monday
@@ -46,23 +54,35 @@ export const COLUMN_IDS = {
   statut: 'statut47',              // status — Premiers Ménages
   maintenance: 'color_mm3ftnef',   // status — Maintenance
   airbnbPassword: 'text_mm2q5tw8', // text — MDP Airbnb Propriétaire
-  bookingPassword: 'text_mm2qaz6a' // text — MDP Booking Propriétaire
+  bookingPassword: 'text_mm2qaz6a', // text — MDP Booking Propriétaire
+  airbnbLogin: 'text_mm2qs0eh',    // text — Identifiant Airbnb Propriétaire
+  bookingLogin: 'text_mm2qg8ar'    // text — Identifiant Booking Propriétaire
 } as const
 
-export type FieldKey = 'type_premier_menage' | 'type_premiere_maintenance' | 'airbnb_mot_passe' | 'booking_mot_passe'
+export type FieldKey =
+  | 'type_premier_menage'
+  | 'type_premiere_maintenance'
+  | 'airbnb_mot_passe'
+  | 'booking_mot_passe'
+  | 'airbnb_email'
+  | 'booking_email'
 
 export const FIELD_KEYS: readonly FieldKey[] = [
   'type_premier_menage',
   'type_premiere_maintenance',
   'airbnb_mot_passe',
-  'booking_mot_passe'
+  'booking_mot_passe',
+  'airbnb_email',
+  'booking_email'
 ] as const
 
 export const FIELD_COLUMN: Record<FieldKey, string> = {
   type_premier_menage: COLUMN_IDS.statut,
   type_premiere_maintenance: COLUMN_IDS.maintenance,
   airbnb_mot_passe: COLUMN_IDS.airbnbPassword,
-  booking_mot_passe: COLUMN_IDS.bookingPassword
+  booking_mot_passe: COLUMN_IDS.bookingPassword,
+  airbnb_email: COLUMN_IDS.airbnbLogin,
+  booking_email: COLUMN_IDS.bookingLogin
 }
 
 // Valeur Fiche Logement (TYPES_PASSAGE, src/lib/avisGrilleHelpers.js) →
@@ -97,13 +117,18 @@ export const MAINTENANCE_INDEX: Readonly<Record<string, number>> = {
 // ============================================================
 // Types — requête, résultats, dépendances
 // ============================================================
+// `undefined` = champ NON FOURNI par l'appelant (clé absente de la requête),
+// distinct de `null` = champ fourni et vide. Un champ non fourni n'est jamais
+// poussé : un onglet resté sur un front antérieur n'envoie que les 4 champs
+// historiques, et traiter les identifiants absents comme vides viderait les
+// colonnes Monday correspondantes.
 export type SyncFields = Record<FieldKey, string | null | undefined>
 
 export interface SyncRequest {
   ficheId: string
   numeroBien: number | string
   fields: SyncFields
-  // true = pousser les 4 champs quel que soit le snapshot (finalisation
+  // true = pousser tous les champs fournis quel que soit le snapshot (finalisation
   // initiale Brouillon → Complété). Sinon : diff contre le snapshot en base.
   pushAll?: boolean
   dryRun?: boolean
@@ -213,16 +238,20 @@ export function traduireValeur(field: FieldKey, valeur: string | null): unknown 
     }
     case 'airbnb_mot_passe':
     case 'booking_mot_passe':
+    case 'airbnb_email':
+    case 'booking_email':
       return valeur ?? ''
   }
 }
 
-// Quels champs pousser ? Tous si pushAll ou si la fiche n'a jamais été
-// synchronisée ; sinon ceux dont la valeur diffère du snapshot en base. Une
-// clé absente du snapshot compte comme « jamais poussée ».
+// Quels champs pousser ? Parmi les champs FOURNIS : tous si pushAll ou si la
+// fiche n'a jamais été synchronisée ; sinon ceux dont la valeur diffère du
+// snapshot en base. Une clé absente du snapshot compte comme « jamais
+// poussée » (cas de tous les snapshots antérieurs à l'ajout des identifiants).
 export function champsAPousser(fields: SyncFields, snapshot: Record<string, unknown> | null, pushAll: boolean): FieldKey[] {
-  if (pushAll || !snapshot || typeof snapshot !== 'object') return [...FIELD_KEYS]
-  return FIELD_KEYS.filter((k) => {
+  const fournis = FIELD_KEYS.filter((k) => fields[k] !== undefined)
+  if (pushAll || !snapshot || typeof snapshot !== 'object') return fournis
+  return fournis.filter((k) => {
     if (!Object.prototype.hasOwnProperty.call(snapshot, k)) return true
     return normaliser(fields[k]) !== normaliser(snapshot[k])
   })
@@ -273,7 +302,9 @@ export async function synchroniser(req: SyncRequest, deps: Deps): Promise<SyncRe
   const log = deps.log ?? (() => {})
   const warn = deps.warn ?? (() => {})
   const numeroBien = String(req.numeroBien ?? '').trim()
-  const secrets = [req.fields.airbnb_mot_passe, req.fields.booking_mot_passe]
+  // Valeurs à ne jamais laisser sortir : mots de passe ET identifiants (emails
+  // personnels des propriétaires).
+  const secrets = [req.fields.airbnb_mot_passe, req.fields.booking_mot_passe, req.fields.airbnb_email, req.fields.booking_email]
   const prefixe = `[monday-sync] fiche=${req.ficheId} numero_bien=${numeroBien}`
 
   // 1. Lecture de la fiche sous RLS : autorisation + garde de renumérotation
@@ -312,7 +343,7 @@ export async function synchroniser(req: SyncRequest, deps: Deps): Promise<SyncRe
   }
 
   // Dry-run : on s'arrête avant tout appel Monday et toute écriture en base.
-  // Les mots de passe ne sont ni journalisés ni rendus, seuls les champs.
+  // Ni mots de passe ni identifiants journalisés ou rendus, seuls les champs.
   if (req.dryRun) {
     log(`${prefixe} DRY-RUN écritures=${plan.ecritures.map((e) => `${e.field}→${e.columnId}`).join(',')} ignorés=${plan.ignores.map((r) => r.field).join(',') || '-'}`)
     for (const e of plan.ecritures) results.push({ field: e.field, status: 'ok', message: 'dry-run : non envoyé' })
