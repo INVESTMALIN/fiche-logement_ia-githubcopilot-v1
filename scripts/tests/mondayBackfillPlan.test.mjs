@@ -21,7 +21,8 @@ import {
   masquer,
   planifierRattrapage,
   resumer,
-  verifierAvantEcriture
+  verifierAvantEcriture,
+  verifierSource
 } from '../lib/mondayBackfillPlan.mjs'
 
 const COL = Object.fromEntries(CHAMPS.map((c) => [c.field, c.columnId]))
@@ -204,6 +205,19 @@ test('garde avant écriture : écrire seulement si la ligne porte encore le num�
   // Relecture vide / illisible → jamais ECRIRE
   assert.equal(verifierAvantEcriture(e, {}), 'NUMERO_CHANGE')
   assert.equal(verifierAvantEcriture(e, null), 'NUMERO_CHANGE')
+})
+
+test('garde source : fiche relue encore Complété, même numéro, valeur présente → la valeur RELUE est écrite', () => {
+  const e = { numeroBien: '1001', field: 'airbnb_mot_passe', valeur: MDP_A }
+  const relue = { statut: 'Complété', logement_numero_bien: '1001', airbnb_mot_passe: 'nouveau-mdp' }
+  assert.deepEqual(verifierSource(e, relue), { verdict: 'ECRIRE', valeur: 'nouveau-mdp' })
+  // Valeur effacée en base pendant l'exécution
+  assert.deepEqual(verifierSource(e, { ...relue, airbnb_mot_passe: '' }), { verdict: 'BASE_VIDEE' })
+  assert.deepEqual(verifierSource(e, { ...relue, airbnb_mot_passe: null }), { verdict: 'BASE_VIDEE' })
+  // Fiche repassée en brouillon, renumérotée, supprimée
+  assert.deepEqual(verifierSource(e, { ...relue, statut: 'Brouillon' }), { verdict: 'FICHE_CHANGEE' })
+  assert.deepEqual(verifierSource(e, { ...relue, logement_numero_bien: '1002' }), { verdict: 'FICHE_CHANGEE' })
+  assert.deepEqual(verifierSource(e, null), { verdict: 'FICHE_CHANGEE' })
 })
 
 test('estVide', () => {

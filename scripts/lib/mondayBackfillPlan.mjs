@@ -174,6 +174,22 @@ export function verifierAvantEcriture(ecriture, cellulesRelues) {
 }
 
 /**
+ * Garde sur la SOURCE, juste avant une écriture, sur la fiche relue en base à
+ * l'instant : elle doit être encore Complété, porter le même numéro de bien, et
+ * avoir encore une valeur pour ce champ. La valeur écrite est celle relue,
+ * jamais celle du scan initial (un mot de passe changé pendant l'exécution ne
+ * part pas périmé).
+ * @returns {{ verdict: 'ECRIRE', valeur: string } | { verdict: 'FICHE_CHANGEE' | 'BASE_VIDEE' }}
+ */
+export function verifierSource(ecriture, ficheRelue) {
+  if (!ficheRelue || ficheRelue.statut !== 'Complété') return { verdict: 'FICHE_CHANGEE' }
+  if (numero(ficheRelue.logement_numero_bien) !== numero(ecriture.numeroBien)) return { verdict: 'FICHE_CHANGEE' }
+  const valeur = ficheRelue[ecriture.field]
+  if (estVide(valeur)) return { verdict: 'BASE_VIDEE' }
+  return { verdict: 'ECRIRE', valeur: String(valeur) }
+}
+
+/**
  * Empreinte du plan : identifie EXACTEMENT l'ensemble des cellules à remplir
  * (fiche, item, colonne), sans aucune valeur. `--execute` exige l'empreinte du
  * dry-run relu : un plan recalculé qui vise d'autres cellules — même en nombre

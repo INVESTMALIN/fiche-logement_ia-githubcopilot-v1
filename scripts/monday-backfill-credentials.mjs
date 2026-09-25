@@ -26,8 +26,10 @@
 //   Si le plan recalculé au moment de l'exécution vise d'autres cellules — même
 //   en nombre égal — le script s'arrête sans rien écrire (Monday ou la base ont
 //   bougé entre-temps → refaire un dry-run et le relire).
-//   Juste avant CHAQUE écriture, la ligne Monday est relue (numéro de bien +
-//   cellule visée) : ligne renumérotée ou cellule remplie entre-temps → sautée.
+//   Juste avant CHAQUE écriture, la fiche est relue en base (toujours Complété,
+//   même numéro, valeur encore présente — c'est cette valeur relue qui est
+//   écrite), puis la ligne Monday (numéro de bien + cellule visée) : ligne
+//   renumérotée ou cellule remplie entre-temps → sautée.
 //   Monday n'a pas d'écriture conditionnelle : reste une fenêtre de quelques
 //   millisecondes entre cette relecture et la mutation, acceptée.
 //
@@ -55,7 +57,8 @@ import {
   masquer,
   planifierRattrapage,
   resumer,
-  verifierAvantEcriture
+  verifierAvantEcriture,
+  verifierSource
 } from './lib/mondayBackfillPlan.mjs'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -116,6 +119,15 @@ function chargerConfig() {
 // ============================================================
 // Supabase — lecture seule, service role
 // ============================================================
+// Relit UNE fiche à l'instant (statut, numéro, champ visé). null = disparue.
+async function relireFiche(config, ficheId, field) {
+  const url = `${config.supabaseUrl}/rest/v1/fiches?select=statut,logement_numero_bien,${field}&id=eq.${encodeURIComponent(ficheId)}`
+  const res = await fetch(url, { headers: { apikey: config.serviceRole, Authorization: `Bearer ${config.serviceRole}` } })
+  if (!res.ok) throw new Error(`Supabase HTTP ${res.status} : relecture de la fiche impossible`)
+  const lignes = await res.json()
+  return lignes[0] ?? null
+}
+
 async function lireFichesCompletees(config) {
   const colonnes = ['id', 'logement_numero_bien', ...CHAMPS.map((c) => c.field)].join(',')
   const fiches = []
@@ -296,12 +308,22 @@ async function main() {
       throw new Error(`Plan recalculé (empreinte ${empreinte}, ${resume.cellulesARemplir} cellule(s)) différent du plan relu (${args.plan}) : rien n'est écrit. Refaire un dry-run et le relire.`)
     }
     execution = { ecrites: 0, sauteesEntreTemps: 0, erreurs: 0, journal: [] }
-    // Une relecture Monday (numéro + cellule) juste avant CHAQUE écriture
+    // Juste avant CHAQUE écriture : relecture de la source (fiche en base) puis
+    // de la cible (ligne Monday : numéro + cellule)
     const toutesLesValeurs = plan.ecritures.map((e) => e.valeur)
     for (const e of plan.ecritures) {
       const entree = { ficheId: e.ficheId, numeroBien: e.numeroBien, itemId: e.itemId, columnId: e.columnId, label: e.label }
       const trace = `n°${e.numeroBien} item=${e.itemId} ${e.label}`
       try {
+        const source = verifierSource(e, await relireFiche(config, e.ficheId, e.field))
+        if (source.verdict !== 'ECRIRE') {
+          execution.sauteesEntreTemps++
+          const pourquoi = source.verdict === 'BASE_VIDEE' ? 'valeur effacée en base' : 'fiche plus Complété, renumérotée ou supprimée'
+          execution.journal.push({ ...entree, resultat: `SAUTÉE — ${pourquoi} depuis le plan` })
+          console.log(`[backfill] ${trace} → sautée (${pourquoi})`)
+          continue
+        }
+        toutesLesValeurs.push(source.valeur)
         const verdict = verifierAvantEcriture(e, await relireCellule(config, e.itemId, e.columnId))
         if (verdict === 'NUMERO_CHANGE') {
           execution.sauteesEntreTemps++
@@ -315,7 +337,8 @@ async function main() {
           console.log(`[backfill] ${trace} → sautée (remplie entre-temps)`)
           continue
         }
-        await ecrireCellule(config, e.itemId, e.columnId, e.valeur)
+        // Valeur RELUE, pas celle du scan initial
+        await ecrireCellule(config, e.itemId, e.columnId, source.valeur)
         execution.ecrites++
         execution.journal.push({ ...entree, resultat: 'ÉCRITE' })
         console.log(`[backfill] ${trace} → écrite`)
