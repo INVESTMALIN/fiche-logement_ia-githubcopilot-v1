@@ -113,6 +113,22 @@ const initialFormData = {
       code: ""                        // TEXT
     },
 
+    // Boîte à clés de SECOURS (cf. src/lib/clefsSecours.js)
+    secours: null,                    // BOOLEAN
+    secoursType: "",                  // TEXT — 'TTlock' | 'Masterlock'
+    secoursEmplacement: "",           // TEXT
+    secoursEmplacementPhoto: [],      // ARRAY
+    secoursEmplacementEmballage: "",  // TEXT
+    secoursEmplacementEmballagePhoto: [], // ARRAY
+    secoursTtlock: {
+      masterpinConciergerie: "",      // TEXT
+      codeProprietaire: "",           // TEXT
+      codeMenage: ""                  // TEXT
+    },
+    secoursMasterlock: {
+      code: ""                        // TEXT
+    },
+
     // Interphone
     interphone: null,                 // BOOLEAN
     interphoneDetails: "",            // TEXT
@@ -1846,7 +1862,7 @@ export function FormProvider({ children }) {
   // 🟦 Sync Monday — déclenché en best-effort après un save réussi.
   // Logique alignée avec le pattern du trigger SQL notify_fiche_alerts :
   //   - statut === 'Complété' ET (transition Brouillon→Complété OU au moins
-  //     un des 6 champs surveillés a changé vs monday_snapshot)
+  //     un des 7 champs surveillés a changé vs monday_snapshot)
   //   - Le diff qui fait foi est calculé PAR L'EDGE FUNCTION contre le snapshot
   //     en base ; le pré-diff ci-dessous évite seulement un appel inutile.
   //   - L'Edge Function écrit un champ à la fois et fusionne elle-même dans
@@ -2719,7 +2735,7 @@ export function FormProvider({ children }) {
       mondayContactsToast,
       clearMondayContactsToast,
 
-      // 🟦 Bilan de la sync Monday des 6 champs (consommé par MondaySyncToast,
+      // 🟦 Bilan de la sync Monday des 7 champs (consommé par MondaySyncToast,
       // monté dans FicheWizard). Shape : { type:'succes'|'partiel'|'echec',
       // titre, message, champsOk, champsEnEchec, cle, numeroBien, timestamp }, ou null.
       mondaySyncFeedback,

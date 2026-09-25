@@ -1,6 +1,6 @@
 // supabase/functions/monday-sync/index.ts
 //
-// Sync 6 champs Fiche Logement → Monday (board 1272144935), UN champ à la
+// Sync 7 champs Fiche Logement → Monday (board 1272144935), UN champ à la
 // fois. La logique (diff, traduction par index, isolation des champs, calcul
 // du snapshot) vit dans `sync.ts`, pur et testé ; ce fichier ne fait que le
 // câblage : HTTP, secrets, client Supabase authentifié, appels Monday.

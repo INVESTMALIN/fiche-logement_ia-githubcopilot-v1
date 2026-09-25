@@ -2,6 +2,7 @@
 import React from 'react'
 import { GRILLE_CRITERES, VUE_TYPES, computeGrilleStats, dangerLabelByKey } from '../lib/avisGrilleHelpers'
 import { getCountryLabel } from '../lib/countries'
+import { LIBELLES_SECOURS, masquerSecoursInactif } from '../lib/clefsSecours'
 
 // 🧹 Section Instructions Ménage — libellés métier.
 // Sans override, formatFieldName rendrait "Type Premier Menage",
@@ -408,6 +409,7 @@ const PDFTemplate = ({ formData }) => {
     }
 
     if (fieldTranslations[fieldName]) return fieldTranslations[fieldName]
+    if (LIBELLES_SECOURS[fieldName]) return LIBELLES_SECOURS[fieldName]
 
     return fieldName
       .replace(/([A-Z])/g, ' $1')
@@ -797,7 +799,9 @@ const PDFTemplate = ({ formData }) => {
       .join(', ')
 
     sectionsConfig.forEach(config => {
-      const sectionData = formData[config.key]
+      // Boîte à clés de secours : bloc retiré du rendu tant que la réponse n'est
+      // pas « oui » (photos conservées en base, cf. src/lib/clefsSecours.js)
+      const sectionData = masquerSecoursInactif(config.key, formData[config.key])
 
       if (!sectionData || typeof sectionData !== 'object') return
 

@@ -43,7 +43,11 @@ const FIELDS: SyncFields = {
   airbnb_mot_passe: MDP_AIRBNB,
   booking_mot_passe: MDP_BOOKING,
   airbnb_email: EMAIL_AIRBNB,
-  booking_email: EMAIL_BOOKING
+  booking_email: EMAIL_BOOKING,
+  // Non fourni : ces tests-là ne portent pas sur « BAC secours » (tests dédiés
+  // en fin de fichier). C'est aussi la requête d'un front antérieur au champ,
+  // qui ne doit jamais le pousser.
+  bac_secours: undefined
 }
 
 // Snapshot tel qu'il existe en base pour les fiches synchronisées avant
@@ -472,7 +476,8 @@ Deno.test('identifiants NON FOURNIS (onglet sur l\'ancien front) → jamais pous
     ...SNAPSHOT_HISTORIQUE,
     type_premier_menage: 'Classique',
     airbnb_email: undefined,
-    booking_email: undefined
+    booking_email: undefined,
+    bac_secours: undefined
   }
   assertEquals(champsAPousser(anciensChamps, null, false).length, 4)
   assertEquals(champsAPousser(anciensChamps, null, true).length, 4)
@@ -507,4 +512,81 @@ Deno.test('secrets : un email renvoyé par Monday dans son erreur n\'apparaît n
     assertFalse(ligne.includes(EMAIL_AIRBNB), `email Airbnb dans un log : ${ligne}`)
     assertFalse(ligne.includes(EMAIL_BOOKING), `email Booking dans un log : ${ligne}`)
   }
+})
+
+// ------------------------------------------------------------
+// BAC secours (type de la boîte à clés de secours, colonne status)
+// ------------------------------------------------------------
+const SNAPSHOT_A_JOUR_6 = { ...SNAPSHOT_HISTORIQUE, airbnb_email: EMAIL_AIRBNB, booking_email: EMAIL_BOOKING }
+
+Deno.test('BAC secours : traduction par index (0 TTlock, 1 Masterlock), vide → {}, inconnu → ignoré', () => {
+  assertEquals(traduireValeur('bac_secours', 'TTlock'), { index: 0 })
+  assertEquals(traduireValeur('bac_secours', 'Masterlock'), { index: 1 })
+  assertEquals(traduireValeur('bac_secours', null), {})
+  assertEquals(traduireValeur('bac_secours', ''), {})
+  // Igloohome et « Autre » sont exclus de la boîte de secours
+  assertEquals(traduireValeur('bac_secours', 'Igloohome'), undefined)
+})
+
+for (const [cas, valeur, attendu] of [
+  ['TTlock', 'TTlock', { index: 0 }],
+  ['Masterlock', 'Masterlock', { index: 1 }],
+  ['vide (non, ou question non répondue)', null, {}]
+] as const) {
+  Deno.test(`BAC secours ${cas} : seule la colonne color_mm7hfdn5 est écrite, puis snapshotée`, async () => {
+    const e = espion({ fiche: { numeroBien: '7755', snapshot: { ...SNAPSHOT_A_JOUR_6 } } })
+    const r = await synchroniser(requete({ fields: { ...FIELDS, bac_secours: valeur } }), e.deps) as SyncResponse
+    assert(r.success)
+    assertEquals(r.results.map((x) => x.field), ['bac_secours'])
+    assertEquals(e.ecritures, [{ itemId: '3097277938', columnId: COLUMN_IDS.bacSecours, valeur: attendu }])
+    assertEquals(e.fusions[0].patch, { bac_secours: valeur })
+  })
+}
+
+Deno.test('BAC secours : snapshot antérieur sans la clé → poussé une fois (vide vers colonne vide), puis plus rien', async () => {
+  const e = espion({ fiche: { numeroBien: '7755', snapshot: { ...SNAPSHOT_A_JOUR_6 } } })
+  const r = await synchroniser(requete({ fields: { ...FIELDS, bac_secours: null } }), e.deps) as SyncResponse
+  assert(r.success)
+  assertEquals(e.ecritures.map((x) => x.columnId), [COLUMN_IDS.bacSecours])
+  const e2 = espion({ fiche: { numeroBien: '7755', snapshot: { ...SNAPSHOT_A_JOUR_6, bac_secours: null } } })
+  const r2 = await synchroniser(requete({ fields: { ...FIELDS, bac_secours: null } }), e2.deps) as SyncResponse
+  assert(r2.success)
+  assertEquals(e2.ecritures.length, 0)
+})
+
+Deno.test('BAC secours refusé par Monday → les 6 autres champs passent, BAC secours hors snapshot', async () => {
+  const e = espion({ refuser: { [COLUMN_IDS.bacSecours]: 'ColumnValueException: label not found' } })
+  const r = await synchroniser(requete({ fields: { ...FIELDS, bac_secours: 'Masterlock' } }), e.deps) as SyncResponse
+  assertFalse(r.success)
+  assertEquals(statutDe(r, 'bac_secours').status, 'error')
+  assertEquals(statutDe(r, 'bac_secours').reason, 'MONDAY_REFUSE')
+  assertEquals(r.results.filter((x) => x.status === 'ok').length, 6)
+  assertFalse('bac_secours' in e.fusions[0].patch)
+  assertEquals(Object.keys(e.fusions[0].patch).length, 6)
+})
+
+Deno.test('et inversement : statut et mot de passe refusés → BAC secours passe et est snapshoté', async () => {
+  const e = espion({ refuser: { [COLUMN_IDS.statut]: 'refus statut', [COLUMN_IDS.airbnbPassword]: 'refus mdp' } })
+  const r = await synchroniser(requete({ fields: { ...FIELDS, bac_secours: 'TTlock' } }), e.deps) as SyncResponse
+  assertFalse(r.success)
+  assertEquals(statutDe(r, 'bac_secours').status, 'ok')
+  assertEquals(e.fusions[0].patch.bac_secours, 'TTlock')
+  assert(e.ecritures.some((x) => x.columnId === COLUMN_IDS.bacSecours && JSON.stringify(x.valeur) === '{"index":0}'))
+})
+
+Deno.test('BAC secours : valeur inconnue → skipped, jamais envoyée, les autres passent', async () => {
+  const e = espion({ fiche: { numeroBien: '7755', snapshot: { ...SNAPSHOT_A_JOUR_6 } } })
+  const r = await synchroniser(requete({ fields: { ...FIELDS, bac_secours: 'Igloohome' } }), e.deps) as SyncResponse
+  assertFalse(r.success)
+  assertEquals(statutDe(r, 'bac_secours').status, 'skipped')
+  assertEquals(statutDe(r, 'bac_secours').reason, 'VALEUR_NON_RECONNUE')
+  assertEquals(e.ecritures.length, 0)
+})
+
+Deno.test('BAC secours NON FOURNI (front antérieur) → jamais écrit, même en pushAll', async () => {
+  const e = espion({ fiche: { numeroBien: '7755', snapshot: null } })
+  const r = await synchroniser(requete({ pushAll: true }), e.deps) as SyncResponse
+  assert(r.success)
+  assertFalse(e.ecritures.some((x) => x.columnId === COLUMN_IDS.bacSecours))
+  assertFalse('bac_secours' in e.fusions[0].patch)
 })

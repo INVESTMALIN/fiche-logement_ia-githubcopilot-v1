@@ -176,9 +176,9 @@ test('réponse illisible : échec, jamais d\'exception', () => {
   }
 })
 
-test('les 6 champs ont un libellé lisible', () => {
+test('les 7 champs ont un libellé lisible', () => {
   assert.deepEqual(Object.keys(MONDAY_FIELD_LABELS).sort(), [
-    'airbnb_email', 'airbnb_mot_passe', 'booking_email', 'booking_mot_passe', 'type_premier_menage', 'type_premiere_maintenance'
+    'airbnb_email', 'airbnb_mot_passe', 'bac_secours', 'booking_email', 'booking_mot_passe', 'type_premier_menage', 'type_premiere_maintenance'
   ])
   assert.equal(MONDAY_FIELD_LABELS.airbnb_email, 'Identifiant Airbnb')
   assert.equal(MONDAY_FIELD_LABELS.booking_email, 'Identifiant Booking')
@@ -200,4 +200,19 @@ test('identifiants : nommés dans le bilan, valeur absente du message ET de la c
   const tout = JSON.stringify(f)
   assert.ok(!tout.includes(EMAIL_AIRBNB), `email Airbnb dans le bilan : ${tout}`)
   assert.ok(!tout.includes(EMAIL_BOOKING), `email Booking dans le bilan : ${tout}`)
+})
+
+test('BAC secours : nommé dans le bilan (succès et échec)', () => {
+  const ok = construireFeedbackMonday({ success: true, results: [{ field: 'bac_secours', status: 'ok' }] }, { ...VALEURS, bac_secours: 'TTlock' })
+  assert.equal(ok.type, 'succes')
+  assert.match(ok.message, /^BAC secours envoyé à Monday\.$/)
+  const ko = construireFeedbackMonday({
+    success: false,
+    results: [
+      { field: 'bac_secours', status: 'error', reason: 'MONDAY_REFUSE' },
+      { field: 'booking_mot_passe', status: 'ok' }
+    ]
+  }, VALEURS)
+  assert.equal(ko.type, 'partiel')
+  assert.match(ko.message, /Non synchronisé : BAC secours \(refusé par Monday\)/)
 })

@@ -1,8 +1,8 @@
-# 🟦 Intégration Monday — Sync automatique 6 champs
+# 🟦 Intégration Monday — Sync automatique 7 champs
 
 **Projet** : Fiche Logement
-**Feature** : Synchronisation automatique de 6 champs Fiche Logement → Monday board `1272144935` (Clients propriétaires > Clients)
-**Status** : ✅ En production depuis mai 2026 — robustesse par champ livrée le 2026-09-16 (écritures indépendantes, statuts par index, snapshot fusionné côté serveur, bilan à l'écran) — identifiants Airbnb / Booking ajoutés le 2026-09-25
+**Feature** : Synchronisation automatique de 7 champs Fiche Logement → Monday board `1272144935` (Clients propriétaires > Clients)
+**Status** : ✅ En production depuis mai 2026 — robustesse par champ livrée le 2026-09-16 (écritures indépendantes, statuts par index, snapshot fusionné côté serveur, bilan à l'écran) — identifiants Airbnb / Booking et « BAC secours » ajoutés le 2026-09-25
 **Dernière mise à jour** : 2026-09-25
 
 ---
@@ -10,13 +10,13 @@
 ## 🎯 Vue d'ensemble
 
 ### Objectif
-Remonter automatiquement vers Monday 6 champs remplis dans la Fiche Logement, à la finalisation initiale et à chaque modification post-finalisation. Premier usage d'**Edge Functions Supabase** dans le projet — pose les conventions pour les futures intégrations qui auraient besoin d'un secret côté serveur.
+Remonter automatiquement vers Monday 7 champs remplis dans la Fiche Logement, à la finalisation initiale et à chaque modification post-finalisation. Premier usage d'**Edge Functions Supabase** dans le projet — pose les conventions pour les futures intégrations qui auraient besoin d'un secret côté serveur.
 
 ### Pourquoi pas un appel direct depuis le front ?
 Le token Monday est admin-global → l'inliner dans le bundle Vite (préfixe `VITE_*`) l'exposerait à quiconque inspecte le JS de prod. C'est exactement le problème qu'on vient de corriger avec `VITE_LOOMKY_TOKEN` (commit `58fddff`). On passe donc par une Edge Function : token stocké comme **Edge Secret**, jamais visible côté client.
 
 ### Périmètre
-- **Dans le scope** : push 6 champs (statut Premiers Ménages + statut Maintenance + 2 identifiants + 2 mots de passe), trigger automatique au save, dirty-detection via snapshot.
+- **Dans le scope** : push 7 champs (statut Premiers Ménages + statut Maintenance + 2 identifiants + 2 mots de passe + type de la boîte à clés de secours), trigger automatique au save, dirty-detection via snapshot.
 - **Hors scope** : retry asynchrone, audit log.
 
 > **Note (2026-05-19)** : `type_premiere_maintenance` était initialement hors scope. Ajouté à la sync suite à la validation par Victoria de 3 labels métier dédiés (`Intervention propriétaire`, `Intervention artisan`, `Pas d'intervention`) — cf. `TYPES_MAINTENANCE` dans [src/lib/avisGrilleHelpers.js](../src/lib/avisGrilleHelpers.js).
@@ -33,10 +33,13 @@ Le token Monday est admin-global → l'inliner dans le bundle Vite (préfixe `VI
 | `booking_mot_passe` | MDP Booking Propriétaire | text | `text_mm2qaz6a` |
 | `airbnb_email` | Identifiant Airbnb Propriétaire | text | `text_mm2qs0eh` |
 | `booking_email` | Identifiant Booking Propriétaire | text | `text_mm2qg8ar` |
+| `clefs_secours` + `clefs_secours_type` → `bac_secours` | BAC secours | status | `color_mm7hfdn5` |
 
 > **Identifiants (2026-09-25)** : ces deux colonnes n'étaient écrites par aucune automatisation — elles étaient remplies à la main, une fois sur deux. Or les automatisations Monday qui composent l'email de bienvenue au propriétaire les **lisent** : colonne vide = email client incomplet. Elles suivent exactement le modèle des mots de passe (valeur de la base envoyée telle quelle, vide compris : la base fait foi). Les snapshots antérieurs n'ont pas ces deux clés → la prochaine sauvegarde de chaque fiche Complété les pousse : c'est voulu. Rattrapage de l'existant (cellules Monday vides uniquement) : script one-shot séparé.
 >
 > **Champ non fourni ≠ champ vide** : l'Edge Function ne pousse jamais un champ dont la clé est absente de la requête. Un onglet resté sur un front antérieur n'envoie que les 4 champs historiques ; traiter les identifiants absents comme vides viderait les colonnes Monday.
+
+> **BAC secours (2026-09-25)** : colonne status créée le 25/09, juste après « Boîte à clé ». Valeur dérivée côté front (`valeurMondayBacSecours`, `src/lib/clefsSecours.js`) : `TTlock` (index 0) ou `Masterlock` (index 1) si la fiche répond « oui » à la boîte à clés de secours, vide (`{}`) si elle répond « non ». **Question jamais répondue (toutes les fiches antérieures au champ) → clé `bac_secours` omise du snapshot envoyé, donc champ non fourni, jamais poussé** : l'équipe peut renseigner la colonne à la main pour ces biens sans qu'une sauvegarde l'efface. Index lus dans `settings_str` le 25/09 (`BAC_SECOURS_INDEX`). La colonne « Boîte à clé » de la boîte **principale** reste remplie **à la main** par les coordinateurs : aucun code n'y touche. Aucun rattrapage (champ nouveau).
 
 **Lookup** : par colonne `num_ro` (type `numbers`) du board `1272144935`, valeur source = `section_logement.numero_bien`. API utilisée : `items_page_by_column_values`.
 
