@@ -26,8 +26,10 @@
 //   Si le plan recalculé au moment de l'exécution vise d'autres cellules — même
 //   en nombre égal — le script s'arrête sans rien écrire (Monday ou la base ont
 //   bougé entre-temps → refaire un dry-run et le relire).
-//   Avant d'écrire, chaque item est relu : une cellule remplie entre le plan et
-//   l'écriture est sautée.
+//   Juste avant CHAQUE écriture, la ligne Monday est relue (numéro de bien +
+//   cellule visée) : ligne renumérotée ou cellule remplie entre-temps → sautée.
+//   Monday n'a pas d'écriture conditionnelle : reste une fenêtre de quelques
+//   millisecondes entre cette relecture et la mutation, acceptée.
 //
 // SECRETS
 //   `.env.monday-backfill` à la racine (ignoré par git via `.env.*`) :
@@ -45,14 +47,15 @@ import { homedir } from 'node:os'
 import {
   BOARD_ID,
   CHAMPS,
+  COLONNE_NUMERO,
   COLONNES_LUES,
   RAISONS,
   empreinteDuPlan,
-  estVide,
   indexerItems,
   masquer,
   planifierRattrapage,
-  resumer
+  resumer,
+  verifierAvantEcriture
 } from './lib/mondayBackfillPlan.mjs'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -187,9 +190,10 @@ async function lireTousLesItems(config) {
   return items
 }
 
-async function relireItem(config, itemId) {
+// Relit le numéro de bien ET la cellule visée, à l'instant.
+async function relireCellule(config, itemId, columnId) {
   const q = `query ($ids: [ID!], $cols: [String!]) { items(ids: $ids) { id column_values(ids: $cols) { id text } } }`
-  const data = await monday(config, q, { ids: [itemId], cols: CHAMPS.map((c) => c.columnId) })
+  const data = await monday(config, q, { ids: [itemId], cols: [COLONNE_NUMERO, columnId] })
   const item = data.items?.[0]
   if (!item) throw new Error(`item ${itemId} introuvable à la relecture`)
   const cellules = {}
@@ -292,46 +296,36 @@ async function main() {
       throw new Error(`Plan recalculé (empreinte ${empreinte}, ${resume.cellulesARemplir} cellule(s)) différent du plan relu (${args.plan}) : rien n'est écrit. Refaire un dry-run et le relire.`)
     }
     execution = { ecrites: 0, sauteesEntreTemps: 0, erreurs: 0, journal: [] }
-    // Regroupement par item : une relecture Monday par item, juste avant d'écrire
-    const parItem = new Map()
+    // Une relecture Monday (numéro + cellule) juste avant CHAQUE écriture
+    const toutesLesValeurs = plan.ecritures.map((e) => e.valeur)
     for (const e of plan.ecritures) {
-      if (!parItem.has(e.itemId)) parItem.set(e.itemId, [])
-      parItem.get(e.itemId).push(e)
-    }
-    for (const [itemId, ecritures] of parItem) {
-      const valeurs = ecritures.map((e) => e.valeur)
-      let cellules
+      const entree = { ficheId: e.ficheId, numeroBien: e.numeroBien, itemId: e.itemId, columnId: e.columnId, label: e.label }
+      const trace = `n°${e.numeroBien} item=${e.itemId} ${e.label}`
       try {
-        cellules = await relireItem(config, itemId)
-      } catch (err) {
-        for (const e of ecritures) {
-          execution.erreurs++
-          execution.journal.push({ ficheId: e.ficheId, numeroBien: e.numeroBien, itemId, columnId: e.columnId, label: e.label, resultat: `ERREUR relecture : ${masquer(err.message, valeurs)}` })
-        }
-        console.warn(`[backfill] item=${itemId} relecture impossible : ${masquer(err.message, valeurs)}`)
-        continue
-      }
-      for (const e of ecritures) {
-        const entree = { ficheId: e.ficheId, numeroBien: e.numeroBien, itemId, columnId: e.columnId, label: e.label }
-        if (!estVide(cellules[e.columnId])) {
+        const verdict = verifierAvantEcriture(e, await relireCellule(config, e.itemId, e.columnId))
+        if (verdict === 'NUMERO_CHANGE') {
           execution.sauteesEntreTemps++
-          execution.journal.push({ ...entree, resultat: 'SAUTÉE — remplie entre le plan et l\'écriture' })
-          console.log(`[backfill] n°${e.numeroBien} item=${itemId} ${e.label} → sautée (remplie entre-temps)`)
+          execution.journal.push({ ...entree, resultat: 'SAUTÉE — la ligne Monday ne porte plus ce numéro de bien' })
+          console.log(`[backfill] ${trace} → sautée (numéro de bien changé sur la ligne)`)
           continue
         }
-        try {
-          await ecrireCellule(config, itemId, e.columnId, e.valeur)
-          execution.ecrites++
-          execution.journal.push({ ...entree, resultat: 'ÉCRITE' })
-          console.log(`[backfill] n°${e.numeroBien} item=${itemId} ${e.label} → écrite`)
-        } catch (err) {
-          execution.erreurs++
-          const detail = masquer(err.message, valeurs)
-          execution.journal.push({ ...entree, resultat: `ERREUR : ${detail}` })
-          console.warn(`[backfill] n°${e.numeroBien} item=${itemId} ${e.label} → ERREUR : ${detail}`)
+        if (verdict === 'REMPLIE_ENTRE_TEMPS') {
+          execution.sauteesEntreTemps++
+          execution.journal.push({ ...entree, resultat: 'SAUTÉE — remplie entre le plan et l\'écriture' })
+          console.log(`[backfill] ${trace} → sautée (remplie entre-temps)`)
+          continue
         }
-        await pause(PAUSE_ENTRE_ECRITURES_MS)
+        await ecrireCellule(config, e.itemId, e.columnId, e.valeur)
+        execution.ecrites++
+        execution.journal.push({ ...entree, resultat: 'ÉCRITE' })
+        console.log(`[backfill] ${trace} → écrite`)
+      } catch (err) {
+        execution.erreurs++
+        const detail = masquer(err.message, toutesLesValeurs)
+        execution.journal.push({ ...entree, resultat: `ERREUR : ${detail}` })
+        console.warn(`[backfill] ${trace} → ERREUR : ${detail}`)
       }
+      await pause(PAUSE_ENTRE_ECRITURES_MS)
     }
     console.log(`[backfill] bilan : écrites=${execution.ecrites} sautées-entre-temps=${execution.sauteesEntreTemps} erreurs=${execution.erreurs}`)
   }

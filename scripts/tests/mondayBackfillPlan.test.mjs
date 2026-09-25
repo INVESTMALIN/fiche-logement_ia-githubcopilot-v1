@@ -20,7 +20,8 @@ import {
   indexerItems,
   masquer,
   planifierRattrapage,
-  resumer
+  resumer,
+  verifierAvantEcriture
 } from '../lib/mondayBackfillPlan.mjs'
 
 const COL = Object.fromEntries(CHAMPS.map((c) => [c.field, c.columnId]))
@@ -189,6 +190,20 @@ test('empreinte : même ensemble de cellules → même empreinte ; autres cellul
   const d = planifierRattrapage([ficheComplete('f1', '1001', { booking_mot_passe: 'autre' }), fiches[1]], indexerItems([item('i1', '1001', { airbnb_email: 'x' }), item('i2', '1002')]))
   assert.equal(empreinteDuPlan(d), empreinteDuPlan(a))
   assert.match(empreinteDuPlan(a), /^[0-9a-f]{16}$/)
+})
+
+test('garde avant écriture : écrire seulement si la ligne porte encore le numéro ET la cellule est encore vide', () => {
+  const e = { numeroBien: '1001', columnId: COL.airbnb_email }
+  assert.equal(verifierAvantEcriture(e, { num_ro: '1001', [COL.airbnb_email]: '' }), 'ECRIRE')
+  assert.equal(verifierAvantEcriture(e, { num_ro: ' 1001 ', [COL.airbnb_email]: null }), 'ECRIRE')
+  // Ligne renumérotée entre le plan et l'écriture : elle représente un autre bien
+  assert.equal(verifierAvantEcriture(e, { num_ro: '1002', [COL.airbnb_email]: '' }), 'NUMERO_CHANGE')
+  assert.equal(verifierAvantEcriture(e, { num_ro: '', [COL.airbnb_email]: '' }), 'NUMERO_CHANGE')
+  // Cellule remplie entre-temps : jamais d'écrasement
+  assert.equal(verifierAvantEcriture(e, { num_ro: '1001', [COL.airbnb_email]: 'quelqu-un@example.test' }), 'REMPLIE_ENTRE_TEMPS')
+  // Relecture vide / illisible → jamais ECRIRE
+  assert.equal(verifierAvantEcriture(e, {}), 'NUMERO_CHANGE')
+  assert.equal(verifierAvantEcriture(e, null), 'NUMERO_CHANGE')
 })
 
 test('estVide', () => {

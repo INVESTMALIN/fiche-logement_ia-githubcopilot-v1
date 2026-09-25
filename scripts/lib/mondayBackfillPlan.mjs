@@ -158,6 +158,22 @@ export function resumer(plan) {
 }
 
 /**
+ * Garde juste avant UNE écriture, sur la relecture Monday de l'item (numéro +
+ * cellule visée, relus à l'instant) :
+ *   - la ligne doit porter encore le numéro de bien planifié — sinon elle
+ *     représente désormais un autre bien et on y écrirait ses identifiants ;
+ *   - la cellule doit être encore vide — jamais d'écrasement.
+ * Monday n'offre pas d'écriture conditionnelle : il reste une fenêtre de
+ * quelques millisecondes entre cette relecture et la mutation, acceptée.
+ * @returns {'ECRIRE' | 'NUMERO_CHANGE' | 'REMPLIE_ENTRE_TEMPS'}
+ */
+export function verifierAvantEcriture(ecriture, cellulesRelues) {
+  if (numero(cellulesRelues?.[COLONNE_NUMERO]) !== numero(ecriture.numeroBien)) return 'NUMERO_CHANGE'
+  if (!estVide(cellulesRelues?.[ecriture.columnId])) return 'REMPLIE_ENTRE_TEMPS'
+  return 'ECRIRE'
+}
+
+/**
  * Empreinte du plan : identifie EXACTEMENT l'ensemble des cellules à remplir
  * (fiche, item, colonne), sans aucune valeur. `--execute` exige l'empreinte du
  * dry-run relu : un plan recalculé qui vise d'autres cellules — même en nombre
