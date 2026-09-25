@@ -19,12 +19,13 @@
 // USAGE
 //   node scripts/monday-backfill-credentials.mjs                    → DRY-RUN (défaut)
 //   node scripts/monday-backfill-credentials.mjs --numero 7755      → dry-run limité
-//   node scripts/monday-backfill-credentials.mjs --execute --attendu N [--numero …]
+//   node scripts/monday-backfill-credentials.mjs --execute --plan <empreinte> [--numero …]
 //
-//   --execute exige --attendu N : le nombre de cellules annoncé par le dry-run
-//   relu. Si le plan recalculé au moment de l'exécution diffère, le script
-//   s'arrête sans rien écrire (quelqu'un a modifié Monday ou la base entre-temps
-//   → refaire un dry-run).
+//   --execute exige --plan <empreinte> : l'empreinte affichée par le dry-run
+//   relu (hash de l'ensemble exact fiche|item|colonne à remplir, sans valeur).
+//   Si le plan recalculé au moment de l'exécution vise d'autres cellules — même
+//   en nombre égal — le script s'arrête sans rien écrire (Monday ou la base ont
+//   bougé entre-temps → refaire un dry-run et le relire).
 //   Avant d'écrire, chaque item est relu : une cellule remplie entre le plan et
 //   l'écriture est sautée.
 //
@@ -46,6 +47,7 @@ import {
   CHAMPS,
   COLONNES_LUES,
   RAISONS,
+  empreinteDuPlan,
   estVide,
   indexerItems,
   masquer,
@@ -62,18 +64,18 @@ const PAUSE_ENTRE_ECRITURES_MS = 250
 // Arguments
 // ============================================================
 function lireArguments(argv) {
-  const args = { execute: false, attendu: null, numeros: null }
+  const args = { execute: false, plan: null, numeros: null }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--execute') args.execute = true
-    else if (a === '--attendu') args.attendu = Number(argv[++i])
+    else if (a === '--plan') args.plan = String(argv[++i] ?? '').trim()
     else if (a === '--numero') {
       args.numeros = args.numeros || new Set()
       for (const n of String(argv[++i] ?? '').split(',')) if (n.trim()) args.numeros.add(n.trim())
     } else throw new Error(`Argument inconnu : ${a}`)
   }
-  if (args.execute && !Number.isInteger(args.attendu)) {
-    throw new Error('--execute exige --attendu N (nombre de cellules du dry-run relu).')
+  if (args.execute && !args.plan) {
+    throw new Error('--execute exige --plan <empreinte> (celle du dry-run relu).')
   }
   return args
 }
@@ -209,7 +211,7 @@ const pause = (ms) => new Promise((r) => setTimeout(r, ms))
 // ============================================================
 // Rapports — AUCUNE valeur
 // ============================================================
-function rapportMarkdown({ mode, horodatage, args, resume, plan, execution }) {
+function rapportMarkdown({ mode, horodatage, args, resume, empreinte, plan, execution }) {
   const l = []
   l.push(`# Rattrapage identifiants / MDP → Monday — ${mode === 'execute' ? 'EXÉCUTION' : 'DRY-RUN'}`)
   l.push('')
@@ -220,7 +222,7 @@ function rapportMarkdown({ mode, horodatage, args, resume, plan, execution }) {
   l.push('')
   l.push(`## Résumé`)
   l.push('')
-  l.push(`**${resume.cellulesARemplir} cellule(s) à remplir** sur **${resume.fichesTouchees} fiche(s)**.`)
+  l.push(`**${resume.cellulesARemplir} cellule(s) à remplir** sur **${resume.fichesTouchees} fiche(s)** — empreinte du plan : \`${empreinte}\``)
   l.push('')
   l.push('| Colonne | À remplir | Sautée : déjà remplie | Sautée : base vide |')
   l.push('|---|---:|---:|---:|')
@@ -281,12 +283,13 @@ async function main() {
 
   const plan = planifierRattrapage(fiches, indexerItems(items))
   const resume = resumer(plan)
-  console.log(`[backfill] plan : ${resume.cellulesARemplir} cellule(s) à remplir sur ${resume.fichesTouchees} fiche(s)`)
+  const empreinte = empreinteDuPlan(plan)
+  console.log(`[backfill] plan : ${resume.cellulesARemplir} cellule(s) à remplir sur ${resume.fichesTouchees} fiche(s) — empreinte ${empreinte}`)
 
   let execution = null
   if (args.execute) {
-    if (resume.cellulesARemplir !== args.attendu) {
-      throw new Error(`Plan recalculé = ${resume.cellulesARemplir} cellule(s), attendu = ${args.attendu} : rien n'est écrit. Refaire un dry-run et le relire.`)
+    if (empreinte !== args.plan) {
+      throw new Error(`Plan recalculé (empreinte ${empreinte}, ${resume.cellulesARemplir} cellule(s)) différent du plan relu (${args.plan}) : rien n'est écrit. Refaire un dry-run et le relire.`)
     }
     execution = { ecrites: 0, sauteesEntreTemps: 0, erreurs: 0, journal: [] }
     // Regroupement par item : une relecture Monday par item, juste avant d'écrire
@@ -335,8 +338,8 @@ async function main() {
 
   // Rapports : décisions et journal seulement, jamais `plan.ecritures` (valeurs)
   const base = join(sortie, `${horodatage}-${mode}`)
-  writeFileSync(`${base}.md`, rapportMarkdown({ mode, horodatage, args, resume, plan, execution }))
-  writeFileSync(`${base}.json`, JSON.stringify({ mode, horodatage, resume, fichesSautees: plan.fichesSautees, decisions: plan.decisions, execution }, null, 2))
+  writeFileSync(`${base}.md`, rapportMarkdown({ mode, horodatage, args, resume, empreinte, plan, execution }))
+  writeFileSync(`${base}.json`, JSON.stringify({ mode, horodatage, empreinte, resume, fichesSautees: plan.fichesSautees, decisions: plan.decisions, execution }, null, 2))
   console.log(`[backfill] rapport : ${base}.md`)
   if (execution && execution.erreurs > 0) process.exitCode = 2
 }

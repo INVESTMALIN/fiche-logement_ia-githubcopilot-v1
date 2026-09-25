@@ -2,7 +2,8 @@
 //
 // Cœur PUR du rattrapage one-shot des identifiants / mots de passe vers
 // Monday (script `scripts/monday-backfill-credentials.mjs`). Aucun accès
-// réseau, aucune variable d'environnement : testable tel quel
+// réseau, aucune variable d'environnement (seul import : le hash de
+// `node:crypto` pour l'empreinte du plan) : testable tel quel
 // (scripts/tests/mondayBackfillPlan.test.mjs).
 //
 // RÈGLE DE SÉCURITÉ — différente du sync au fil de l'eau :
@@ -15,6 +16,8 @@
 //   les décisions nomment la fiche, le numéro, l'item et la colonne, jamais
 //   l'email ni le mot de passe. Les valeurs ne vivent que dans `ecritures`,
 //   consommé par le script pour appeler Monday, jamais sérialisé.
+
+import { createHash } from 'node:crypto'
 
 // Mêmes colonnes que supabase/functions/monday-sync/sync.ts (COLUMN_IDS)
 export const BOARD_ID = '1272144935'
@@ -35,7 +38,8 @@ export const RAISONS = Object.freeze({
   BASE_VIDE: 'aucune valeur en base',
   ITEM_ABSENT: 'aucune ligne Monday pour ce numéro de bien',
   ITEM_AMBIGU: 'plusieurs lignes Monday pour ce numéro de bien (aucune écriture)',
-  NUMERO_VIDE: 'numéro de bien vide en base'
+  NUMERO_VIDE: 'numéro de bien vide en base',
+  FICHE_EN_DOUBLE: 'plusieurs fiches Complété pour ce numéro de bien (aucune écriture)'
 })
 
 export const estVide = (v) => v === undefined || v === null || String(v).trim() === ''
@@ -81,6 +85,15 @@ export function planifierRattrapage(fiches, itemsParNumero) {
 
   const triees = [...fiches].sort((a, b) => numero(a.logement_numero_bien).localeCompare(numero(b.logement_numero_bien), 'fr', { numeric: true }))
 
+  // Deux fiches pour un même numéro visent la même ligne Monday : impossible
+  // de savoir laquelle fait foi, et la seconde écraserait la première pendant
+  // l'exécution (la relecture est faite une fois par item). On saute les deux.
+  const fichesParNumero = new Map()
+  for (const f of triees) {
+    const n = numero(f.logement_numero_bien)
+    if (n) fichesParNumero.set(n, (fichesParNumero.get(n) || 0) + 1)
+  }
+
   for (const fiche of triees) {
     const ficheId = String(fiche.id)
     const numeroBien = numero(fiche.logement_numero_bien)
@@ -90,6 +103,10 @@ export function planifierRattrapage(fiches, itemsParNumero) {
 
     if (!numeroBien) {
       fichesSautees.push({ ficheId, numeroBien, raison: 'NUMERO_VIDE' })
+      continue
+    }
+    if (fichesParNumero.get(numeroBien) > 1) {
+      fichesSautees.push({ ficheId, numeroBien, raison: 'FICHE_EN_DOUBLE' })
       continue
     }
     const items = itemsParNumero.get(numeroBien) || []
@@ -141,13 +158,33 @@ export function resumer(plan) {
 }
 
 /**
+ * Empreinte du plan : identifie EXACTEMENT l'ensemble des cellules à remplir
+ * (fiche, item, colonne), sans aucune valeur. `--execute` exige l'empreinte du
+ * dry-run relu : un plan recalculé qui vise d'autres cellules — même en nombre
+ * égal — est refusé.
+ */
+export function empreinteDuPlan(plan) {
+  const cibles = plan.ecritures.map((e) => `${e.ficheId}|${e.itemId}|${e.columnId}`).sort().join('\n')
+  return createHash('sha256').update(cibles).digest('hex').slice(0, 16)
+}
+
+/**
  * Remplace toute occurrence des valeurs données par •••, puis tronque.
- * Monday peut renvoyer la valeur refusée dans son message d'erreur.
+ * Monday peut renvoyer la valeur refusée dans son message d'erreur, y compris
+ * sous forme échappée JSON (une ou deux fois : la valeur part en chaîne JSON,
+ * et `errors` est lui-même sérialisé) — une valeur contenant un guillemet, un
+ * antislash ou un retour à la ligne n'y apparaît pas telle quelle.
  */
 export function masquer(message, valeurs, max = 300) {
   let out = String(message ?? '')
+  const formes = new Set()
   for (const v of valeurs) {
-    if (typeof v === 'string' && v.length > 0) out = out.split(v).join('•••')
+    if (typeof v !== 'string' || v.length === 0) continue
+    const echappee = JSON.stringify(v).slice(1, -1)
+    formes.add(v).add(echappee).add(JSON.stringify(echappee).slice(1, -1))
   }
+  // Les formes les plus longues d'abord : une forme échappée contient souvent
+  // la forme brute en partie.
+  for (const f of [...formes].sort((a, b) => b.length - a.length)) out = out.split(f).join('•••')
   return out.length > max ? out.slice(0, max) + '…' : out
 }

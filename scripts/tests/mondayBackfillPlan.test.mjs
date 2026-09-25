@@ -4,15 +4,18 @@
 //   - une cellule Monday déjà remplie n'est JAMAIS planifiée (même si la base
 //     diffère) ;
 //   - une cellule vide n'est remplie que si la base a une valeur ;
-//   - numéro absent de Monday, numéro en double, numéro vide → fiche sautée,
-//     aucune écriture ;
-//   - le rapport (décisions, fiches sautées, résumé) ne contient aucune valeur.
+//   - numéro absent de Monday, numéro en double (côté Monday OU côté base),
+//     numéro vide → fiche sautée, aucune écriture ;
+//   - le rapport (décisions, fiches sautées, résumé) ne contient aucune valeur ;
+//   - masquage des valeurs y compris sous forme échappée JSON ;
+//   - empreinte du plan liée à l'ensemble exact des cellules, pas à leur nombre.
 // Exécution : npm test
 
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   CHAMPS,
+  empreinteDuPlan,
   estVide,
   indexerItems,
   masquer,
@@ -146,6 +149,46 @@ test('rapport sans aucune valeur : décisions, fiches sautées et résumé', () 
 test('masquer : toutes les occurrences remplacées, message tronqué', () => {
   assert.equal(masquer(`x ${MDP_A} y ${EMAIL_A} ${MDP_A}`, [MDP_A, EMAIL_A, '', null]), 'x ••• y ••• •••')
   assert.equal(masquer('a'.repeat(400), []).length, 301)
+})
+
+test('masquer : une valeur avec guillemet / antislash / retour ligne est masquée aussi sous forme échappée JSON (1 ou 2 fois)', () => {
+  const mdp = 'a"b\\c\nd'
+  // Monday reçoit la valeur en chaîne JSON, et le script sérialise `errors`
+  const uneFois = JSON.stringify({ message: `invalid value ${mdp}` })
+  const deuxFois = JSON.stringify([{ message: `invalid value ${JSON.stringify(mdp)}` }])
+  for (const message of [uneFois, deuxFois, `brut ${mdp}`]) {
+    const sortie = masquer(message, [mdp])
+    assert.ok(sortie.includes('•••'), sortie)
+    for (const forme of [mdp, JSON.stringify(mdp).slice(1, -1), JSON.stringify(JSON.stringify(mdp).slice(1, -1)).slice(1, -1)]) {
+      assert.ok(!sortie.includes(forme), `forme non masquée dans : ${sortie}`)
+    }
+  }
+})
+
+test('deux fiches Complété pour le même numéro → les deux sont sautées, aucune écriture', () => {
+  const fiches = [ficheComplete('f1', '1001'), ficheComplete('f2', ' 1001', { airbnb_email: 'autre@example.test' }), ficheComplete('f3', '1002')]
+  const plan = planifierRattrapage(fiches, indexerItems([item('i1', '1001'), item('i2', '1002')]))
+  assert.deepEqual(
+    plan.fichesSautees.map((f) => [f.ficheId, f.raison]).sort(),
+    [['f1', 'FICHE_EN_DOUBLE'], ['f2', 'FICHE_EN_DOUBLE']]
+  )
+  assert.ok(plan.ecritures.every((e) => e.itemId === 'i2'))
+  assert.equal(plan.ecritures.length, 4)
+})
+
+test('empreinte : même ensemble de cellules → même empreinte ; autres cellules en nombre égal → empreinte différente ; aucune valeur', () => {
+  const fiches = [ficheComplete('f1', '1001'), ficheComplete('f2', '1002')]
+  const a = planifierRattrapage(fiches, indexerItems([item('i1', '1001', { airbnb_email: 'x' }), item('i2', '1002')]))
+  const b = planifierRattrapage([...fiches].reverse(), indexerItems([item('i2', '1002'), item('i1', '1001', { airbnb_email: 'x' })]))
+  assert.equal(empreinteDuPlan(a), empreinteDuPlan(b))
+  // Même nombre de cellules (7), mais une autre cellule visée
+  const c = planifierRattrapage(fiches, indexerItems([item('i1', '1001', { booking_email: 'x' }), item('i2', '1002')]))
+  assert.equal(c.ecritures.length, a.ecritures.length)
+  assert.notEqual(empreinteDuPlan(c), empreinteDuPlan(a))
+  // Une valeur de base différente ne change pas la cible → même empreinte
+  const d = planifierRattrapage([ficheComplete('f1', '1001', { booking_mot_passe: 'autre' }), fiches[1]], indexerItems([item('i1', '1001', { airbnb_email: 'x' }), item('i2', '1002')]))
+  assert.equal(empreinteDuPlan(d), empreinteDuPlan(a))
+  assert.match(empreinteDuPlan(a), /^[0-9a-f]{16}$/)
 })
 
 test('estVide', () => {
