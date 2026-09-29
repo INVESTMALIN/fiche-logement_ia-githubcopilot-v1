@@ -6,6 +6,9 @@ import ProgressBar from '../components/ProgressBar'
 import Button from '../components/Button'
 import PhotoUpload from '../components/PhotoUpload'
 
+// Valeurs stockées telles quelles (colonnes chambres_chambre_N_type_vitrage)
+const TYPES_VITRAGE = ['Simple vitrage', 'Double vitrage']
+
 // ✅ COMPOSANT ACCORDEON SORTI EN DEHORS
 const AccordeonChambre = ({
   chambreKey,
@@ -165,6 +168,28 @@ const AccordeonChambre = ({
                 />
               </div>
             )}
+
+            {/* Type de vitrage (facultatif, aucune valeur par défaut) */}
+            <div className="mt-4">
+              <label className="block font-semibold mb-2">
+                Type de vitrage
+              </label>
+              <div className="flex flex-wrap gap-6">
+                {TYPES_VITRAGE.map((type) => (
+                  <label key={type} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name={`${chambreKey}_type_vitrage`}
+                      value={type}
+                      checked={chambreData.type_vitrage === type}
+                      onChange={() => handleInputChange(chambreKey, 'type_vitrage', type)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <span className="text-sm">{type}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* 5. Photos chambre */}

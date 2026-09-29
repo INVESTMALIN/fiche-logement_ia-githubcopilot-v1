@@ -35,7 +35,22 @@ const INSTRUCTIONS_MENAGE_FOURNISSEUR_LABELS = {
 // filtre explicite est la seule chose qui empêche le carnet d'adresses des concierges
 // de partir dans le document reçu par tous les prestataires de ménage.
 const MENAGE_EXCLUDED_FIELDS = {
-  section_instructions_menage: ['a_contacts_maintenance', 'contacts_maintenance']
+  section_instructions_menage: ['a_contacts_maintenance', 'contacts_maintenance'],
+  // Type de vitrage : info confort / chauffage pour l'équipe, pas pour le ménage
+  section_salon_sam: ['type_vitrage']
+}
+
+// Même règle, mais À L'INTÉRIEUR des objets imbriqués d'une section
+// (section_chambres.chambre_1 … chambre_6). `MENAGE_EXCLUDED_FIELDS` ne voit
+// que les clés de premier niveau, donc ne peut pas atteindre ces champs.
+const MENAGE_EXCLUDED_NESTED_FIELDS = {
+  section_chambres: ['type_vitrage']
+}
+
+const retirerSousChampsMenage = (sectionKey, fieldValue) => {
+  const exclus = MENAGE_EXCLUDED_NESTED_FIELDS[sectionKey]
+  if (!exclus || !fieldValue || typeof fieldValue !== 'object' || Array.isArray(fieldValue)) return fieldValue
+  return Object.fromEntries(Object.entries(fieldValue).filter(([key]) => !exclus.includes(key)))
 }
 
 // ⚙️ ÉQUIPEMENTS — LISTE BLANCHE STRICTE, par correspondance EXACTE.
@@ -809,7 +824,9 @@ const PDFMenageTemplate = ({ formData }) => {
       // Ne jamais réintroduire un filtre local à la boucle texte : il laisserait à
       // nouveau les médias passer sans contrôle.
       const visibleSectionData = Object.fromEntries(
-        Object.entries(sectionData).filter(([fieldKey]) => isFieldVisibleInMenage(config.key, fieldKey))
+        Object.entries(sectionData)
+          .filter(([fieldKey]) => isFieldVisibleInMenage(config.key, fieldKey))
+          .map(([fieldKey, fieldValue]) => [fieldKey, retirerSousChampsMenage(config.key, fieldValue)])
       )
 
       // Extraire les photos de cette section

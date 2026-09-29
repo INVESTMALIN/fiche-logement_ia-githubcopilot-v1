@@ -405,7 +405,9 @@ const PDFTemplate = ({ formData }) => {
       pmr_details: 'Détails accessibilité',
       animaux_commentaire: 'Commentaire',
       // Sans override, formatFieldName rendrait "Vue Types"
-      vue_types: 'Vue depuis le logement'
+      vue_types: 'Vue depuis le logement',
+      // Chambres (objet imbriqué chambre_N) et Salon : sinon "Type Vitrage"
+      type_vitrage: 'Type de vitrage'
     }
 
     if (fieldTranslations[fieldName]) return fieldTranslations[fieldName]
