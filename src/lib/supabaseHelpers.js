@@ -602,6 +602,7 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_1_equipements_coffre_fort: formData.section_chambres?.chambre_1?.equipements_coffre_fort ?? null,
     chambres_chambre_1_equipements_autre: formData.section_chambres?.chambre_1?.equipements_autre ?? null,
     chambres_chambre_1_equipements_autre_details: formData.section_chambres?.chambre_1?.equipements_autre_details || null,
+    chambres_chambre_1_type_vitrage: formData.section_chambres?.chambre_1?.type_vitrage || null,
     chambres_chambre_1_photos_chambre: formData.section_chambres?.chambre_1?.photos_chambre || [],
     chambres_chambre_1_elements_abimes: formData.section_chambres?.chambre_1?.elements_abimes ?? null,
     chambres_chambre_1_elements_abimes_photos: formData.section_chambres?.chambre_1?.elements_abimes_photos || [],
@@ -635,6 +636,7 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_2_equipements_coffre_fort: formData.section_chambres?.chambre_2?.equipements_coffre_fort ?? null,
     chambres_chambre_2_equipements_autre: formData.section_chambres?.chambre_2?.equipements_autre ?? null,
     chambres_chambre_2_equipements_autre_details: formData.section_chambres?.chambre_2?.equipements_autre_details || null,
+    chambres_chambre_2_type_vitrage: formData.section_chambres?.chambre_2?.type_vitrage || null,
     chambres_chambre_2_photos_chambre: formData.section_chambres?.chambre_2?.photos_chambre || [],
     chambres_chambre_2_elements_abimes: formData.section_chambres?.chambre_2?.elements_abimes ?? null,
     chambres_chambre_2_elements_abimes_photos: formData.section_chambres?.chambre_2?.elements_abimes_photos || [],
@@ -667,6 +669,7 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_3_equipements_coffre_fort: formData.section_chambres?.chambre_3?.equipements_coffre_fort ?? null,
     chambres_chambre_3_equipements_autre: formData.section_chambres?.chambre_3?.equipements_autre ?? null,
     chambres_chambre_3_equipements_autre_details: formData.section_chambres?.chambre_3?.equipements_autre_details || null,
+    chambres_chambre_3_type_vitrage: formData.section_chambres?.chambre_3?.type_vitrage || null,
     chambres_chambre_3_photos_chambre: formData.section_chambres?.chambre_3?.photos_chambre || [],
     chambres_chambre_3_elements_abimes: formData.section_chambres?.chambre_3?.elements_abimes ?? null,
     chambres_chambre_3_elements_abimes_photos: formData.section_chambres?.chambre_3?.elements_abimes_photos || [],
@@ -699,6 +702,7 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_4_equipements_coffre_fort: formData.section_chambres?.chambre_4?.equipements_coffre_fort ?? null,
     chambres_chambre_4_equipements_autre: formData.section_chambres?.chambre_4?.equipements_autre ?? null,
     chambres_chambre_4_equipements_autre_details: formData.section_chambres?.chambre_4?.equipements_autre_details || null,
+    chambres_chambre_4_type_vitrage: formData.section_chambres?.chambre_4?.type_vitrage || null,
     chambres_chambre_4_photos_chambre: formData.section_chambres?.chambre_4?.photos_chambre || [],
     chambres_chambre_4_elements_abimes: formData.section_chambres?.chambre_4?.elements_abimes ?? null,
     chambres_chambre_4_elements_abimes_photos: formData.section_chambres?.chambre_4?.elements_abimes_photos || [],
@@ -731,6 +735,7 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_5_equipements_coffre_fort: formData.section_chambres?.chambre_5?.equipements_coffre_fort ?? null,
     chambres_chambre_5_equipements_autre: formData.section_chambres?.chambre_5?.equipements_autre ?? null,
     chambres_chambre_5_equipements_autre_details: formData.section_chambres?.chambre_5?.equipements_autre_details || null,
+    chambres_chambre_5_type_vitrage: formData.section_chambres?.chambre_5?.type_vitrage || null,
     chambres_chambre_5_photos_chambre: formData.section_chambres?.chambre_5?.photos_chambre || [],
     chambres_chambre_5_elements_abimes: formData.section_chambres?.chambre_5?.elements_abimes ?? null,
     chambres_chambre_5_elements_abimes_photos: formData.section_chambres?.chambre_5?.elements_abimes_photos || [],
@@ -763,6 +768,7 @@ export const mapFormDataToSupabase = (formData) => {
     chambres_chambre_6_equipements_coffre_fort: formData.section_chambres?.chambre_6?.equipements_coffre_fort ?? null,
     chambres_chambre_6_equipements_autre: formData.section_chambres?.chambre_6?.equipements_autre ?? null,
     chambres_chambre_6_equipements_autre_details: formData.section_chambres?.chambre_6?.equipements_autre_details || null,
+    chambres_chambre_6_type_vitrage: formData.section_chambres?.chambre_6?.type_vitrage || null,
     chambres_chambre_6_photos_chambre: formData.section_chambres?.chambre_6?.photos_chambre || [],
     chambres_chambre_6_elements_abimes: formData.section_chambres?.chambre_6?.elements_abimes ?? null,
     chambres_chambre_6_elements_abimes_photos: formData.section_chambres?.chambre_6?.elements_abimes_photos || [],
@@ -1089,6 +1095,7 @@ export const mapFormDataToSupabase = (formData) => {
     salon_sam_equipements_stores_electriques: formData.section_salon_sam?.equipements_stores_electriques ?? null,
     salon_sam_equipements_autre: formData.section_salon_sam?.equipements_autre ?? null,
     salon_sam_equipements_autre_details: formData.section_salon_sam?.equipements_autre_details || null,
+    salon_sam_type_vitrage: formData.section_salon_sam?.type_vitrage || null,
 
     // Cheminée type (conditionnel)
     salon_sam_cheminee_type: formData.section_salon_sam?.cheminee_type || null,
@@ -1912,6 +1919,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_1_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_1_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_1_equipements_autre_details || "",
+        type_vitrage: supabaseData.chambres_chambre_1_type_vitrage || "",
         photos_chambre: supabaseData.chambres_chambre_1_photos_chambre || [],
         elements_abimes: supabaseData.chambres_chambre_1_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_1_elements_abimes_photos || []
@@ -1945,6 +1953,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_2_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_2_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_2_equipements_autre_details || "",
+        type_vitrage: supabaseData.chambres_chambre_2_type_vitrage || "",
         photos_chambre: supabaseData.chambres_chambre_2_photos_chambre || [],
         elements_abimes: supabaseData.chambres_chambre_2_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_2_elements_abimes_photos || []
@@ -1978,6 +1987,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_3_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_3_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_3_equipements_autre_details || "",
+        type_vitrage: supabaseData.chambres_chambre_3_type_vitrage || "",
         photos_chambre: supabaseData.chambres_chambre_3_photos_chambre || [],
         elements_abimes: supabaseData.chambres_chambre_3_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_3_elements_abimes_photos || []
@@ -2011,6 +2021,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_4_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_4_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_4_equipements_autre_details || "",
+        type_vitrage: supabaseData.chambres_chambre_4_type_vitrage || "",
         photos_chambre: supabaseData.chambres_chambre_4_photos_chambre || [],
         elements_abimes: supabaseData.chambres_chambre_4_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_4_elements_abimes_photos || []
@@ -2044,6 +2055,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_5_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_5_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_5_equipements_autre_details || "",
+        type_vitrage: supabaseData.chambres_chambre_5_type_vitrage || "",
         photos_chambre: supabaseData.chambres_chambre_5_photos_chambre || [],
         elements_abimes: supabaseData.chambres_chambre_5_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_5_elements_abimes_photos || []
@@ -2077,6 +2089,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
         equipements_coffre_fort: supabaseData.chambres_chambre_6_equipements_coffre_fort ?? null,
         equipements_autre: supabaseData.chambres_chambre_6_equipements_autre ?? null,
         equipements_autre_details: supabaseData.chambres_chambre_6_equipements_autre_details || "",
+        type_vitrage: supabaseData.chambres_chambre_6_type_vitrage || "",
         photos_chambre: supabaseData.chambres_chambre_6_photos_chambre || [],
         elements_abimes: supabaseData.chambres_chambre_6_elements_abimes ?? null,
         elements_abimes_photos: supabaseData.chambres_chambre_6_elements_abimes_photos || []
@@ -2413,6 +2426,7 @@ export const mapSupabaseToFormData = (supabaseData) => {
       equipements_stores_electriques: supabaseData.salon_sam_equipements_stores_electriques ?? null,
       equipements_autre: supabaseData.salon_sam_equipements_autre ?? null,
       equipements_autre_details: supabaseData.salon_sam_equipements_autre_details || "",
+      type_vitrage: supabaseData.salon_sam_type_vitrage || "",
 
       // Cheminée type (conditionnel)
       cheminee_type: supabaseData.salon_sam_cheminee_type || "",

@@ -656,6 +656,7 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
+      type_vitrage: "",                // Radio facultatif : Simple vitrage | Double vitrage
       photos_chambre: [],
       // 🆕 ÉLÉMENTS ABÎMÉS
       elements_abimes: null,            // Boolean: true/false/null
@@ -689,6 +690,7 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
+      type_vitrage: "",                // Radio facultatif : Simple vitrage | Double vitrage
       photos_chambre: [],
       // 🆕 ÉLÉMENTS ABÎMÉS
       elements_abimes: null,            // Boolean: true/false/null
@@ -722,6 +724,7 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
+      type_vitrage: "",                // Radio facultatif : Simple vitrage | Double vitrage
       photos_chambre: [],
       // 🆕 ÉLÉMENTS ABÎMÉS
       elements_abimes: null,            // Boolean: true/false/null
@@ -755,6 +758,7 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
+      type_vitrage: "",                // Radio facultatif : Simple vitrage | Double vitrage
       photos_chambre: [],
       // 🆕 ÉLÉMENTS ABÎMÉS
       elements_abimes: null,            // Boolean: true/false/null
@@ -788,6 +792,7 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
+      type_vitrage: "",                // Radio facultatif : Simple vitrage | Double vitrage
       photos_chambre: [],
       // 🆕 ÉLÉMENTS ABÎMÉS
       elements_abimes: null,            // Boolean: true/false/null
@@ -821,6 +826,7 @@ const initialFormData = {
       equipements_coffre_fort: null,
       equipements_autre: null,
       equipements_autre_details: "",
+      type_vitrage: "",                // Radio facultatif : Simple vitrage | Double vitrage
       photos_chambre: [],
       // 🆕 ÉLÉMENTS ABÎMÉS
       elements_abimes: null,            // Boolean: true/false/null
@@ -1178,6 +1184,7 @@ const initialFormData = {
     equipements_stores_electriques: null,
     equipements_autre: null,
     equipements_autre_details: "",
+    type_vitrage: "",                     // Radio facultatif : Simple vitrage | Double vitrage
 
     // Cheminée type (conditionnel si cheminee cochée)
     cheminee_type: "",                    // Radio
