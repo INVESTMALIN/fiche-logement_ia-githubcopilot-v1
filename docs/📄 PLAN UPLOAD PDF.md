@@ -307,7 +307,8 @@ const menageSectionsConfig = [
 - ✅ Liste rouge des consommables obligatoires
 - ✅ Filtrage équipements (poubelle, parking uniquement)
 - ✅ Vidéos rendues en liens cliquables (depuis août 2026, cf. ci-dessous)
-- 🔒 `MENAGE_EXCLUDED_FIELDS` : contacts de maintenance retirés de `section_instructions_menage`
+- 🔒 `MENAGE_EXCLUDED_FIELDS` : contacts de maintenance retirés de `section_instructions_menage`, type de vitrage retiré de `section_salon_sam`
+- 🔒 `MENAGE_EXCLUDED_NESTED_FIELDS` : même rôle, mais à l'intérieur des objets imbriqués (`section_chambres.chambre_N.type_vitrage`). `MENAGE_EXCLUDED_FIELDS` ne voit que les clés de premier niveau (`chambre_1`…) : un champ de chambre à masquer doit aller ici (septembre 2026)
 
 > ⚠️ `PDFMenageTemplate.jsx` est une **copie** de `PDFTemplate.jsx` avec une liste de
 > sections réduite : les deux fichiers évoluent séparément. Une correction de rendu
