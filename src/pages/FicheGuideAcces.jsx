@@ -9,6 +9,12 @@ import { Sparkles, Copy, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { generateGuideAccesPDF } from '../lib/generateAssistantPDF'
 import { supabase } from '../lib/supabaseClient'
 import { VIDEO_GUIDE_ACCES_CIBLE_OCTETS, AVERTISSEMENT_VIDEO_GUIDE, formaterMio } from '../lib/videoGuideAcces'
+import {
+  extraireGuide,
+  ReponseGuideAccesInexploitable,
+  MESSAGE_GUIDE_NON_GENERE,
+  MESSAGE_SUIVI_SANS_REPONSE
+} from '../lib/guideAccesReponse'
 
 // Helper pour préparer le contexte pour le webhook Guide d'accès
 const prepareGuideAccesContext = (formData) => {
@@ -184,16 +190,19 @@ export default function FicheGuideAcces() {
       const responseText = await guideResponse.text()
       console.log('🔍 Réponse brute du webhook:', responseText)
 
-      const guideData = JSON.parse(responseText)
-      // Si c'est un array, prendre le premier élément
-      const data = Array.isArray(guideData) ? guideData[0] : guideData
-      // Aller chercher dans data.data.output si ça existe
-      const guide = data.data?.output || data.output || data.response || 'Guide généré (format non reconnu)'
+      // Réponse vide, non JSON ou sans guide → ReponseGuideAccesInexploitable
+      const guide = extraireGuide(responseText, guideResponse.status)
 
       setMessages([{ role: 'assistant', content: guide }])
       console.log('✅ Guide généré avec succès')
 
     } catch (err) {
+      if (err instanceof ReponseGuideAccesInexploitable) {
+        console.error('❌ Réponse inexploitable de l\'assistant Guide d\'accès:', err.diagnostic)
+        setError(MESSAGE_GUIDE_NON_GENERE)
+        return
+      }
+
       console.error('❌ Erreur:', err)
 
       let errorMessage = 'Une erreur est survenue lors de la génération du guide.'
@@ -239,17 +248,17 @@ export default function FicheGuideAcces() {
       const responseText = await guideResponse.text()
       console.log('🔍 Réponse follow-up:', responseText)
 
-      if (!responseText || responseText.trim() === '') {
-        throw new Error('Le webhook n\'a renvoyé aucune donnée')
-      }
-
-      const guideData = JSON.parse(responseText)
-      const data = Array.isArray(guideData) ? guideData[0] : guideData
-      const guide = data.data?.output || data.output || data.response || 'Réponse non reconnue'
+      const guide = extraireGuide(responseText, guideResponse.status)
 
       setMessages(prev => [...prev, { role: 'assistant', content: guide }])
 
     } catch (err) {
+      if (err instanceof ReponseGuideAccesInexploitable) {
+        console.error('❌ Réponse inexploitable de l\'assistant Guide d\'accès (suivi):', err.diagnostic)
+        setError(MESSAGE_SUIVI_SANS_REPONSE)
+        return
+      }
+
       console.error('❌ Erreur envoi message:', err)
       setError('Impossible d\'envoyer le message. Réessayez.')
     } finally {
