@@ -100,6 +100,8 @@ export default function FicheGuideAcces() {
   const [copied, setCopied] = useState(false)
   const [validating, setValidating] = useState(false)
   const [validated, setValidated] = useState(false)
+  // L'erreur affichée vient d'un message de suivi qui n'a pas abouti : « Réessayer » le renvoie
+  const [relancerSuivi, setRelancerSuivi] = useState(false)
   const sessionIdRef = useRef(null)
   const messagesEndRef = useRef(null)
 
@@ -139,6 +141,7 @@ export default function FicheGuideAcces() {
 
     setLoading(true)
     setError(null)
+    setRelancerSuivi(false)
     try {
       // ÉTAPE 1 : Extraction audio via backend Railway
       console.log('🎵 Extraction audio en cours...')
@@ -229,6 +232,7 @@ export default function FicheGuideAcces() {
     setUserMessage('')
     setLoading(true)
     setError(null)
+    setRelancerSuivi(false)
 
     try {
       const guideResponse = await fetch('https://hub.cardin.cloud/webhook/5ebcffdd-fee8-4525-85f1-33f57ce4d28d/chat', {
@@ -253,6 +257,13 @@ export default function FicheGuideAcces() {
       setMessages(prev => [...prev, { role: 'assistant', content: guide }])
 
     } catch (err) {
+      // Le message n'a pas abouti : on retire sa bulle et on remet le texte
+      // dans le champ (sans écraser une nouvelle saisie), pour que « Réessayer »
+      // ou « Envoyer » le renvoie au lieu de forcer à le retaper.
+      setMessages(prev => prev.filter(m => m !== newUserMessage))
+      setUserMessage(prev => prev || newUserMessage.content)
+      setRelancerSuivi(true)
+
       if (err instanceof ReponseGuideAccesInexploitable) {
         console.error('❌ Réponse inexploitable de l\'assistant Guide d\'accès (suivi):', err.diagnostic)
         setError(MESSAGE_SUIVI_SANS_REPONSE)
@@ -275,6 +286,7 @@ export default function FicheGuideAcces() {
     }
 
     setValidating(true)
+    setRelancerSuivi(false)
 
     try {
       console.log('📄 Validation du guide...')
@@ -342,6 +354,7 @@ export default function FicheGuideAcces() {
         setTimeout(() => setCopied(false), 2000)
       })
       .catch(() => {
+        setRelancerSuivi(false)
         setError('Impossible de copier le texte.')
       })
   }
@@ -555,6 +568,9 @@ export default function FicheGuideAcces() {
                           setError(null)
                           if (messages.length === 0) {
                             handleGenererGuide()
+                          } else if (relancerSuivi && userMessage.trim()) {
+                            // Suivi en échec : le texte a été remis dans le champ
+                            handleSendMessage()
                           }
                         }}
                         className="mt-2 text-sm text-red-600 hover:text-red-700 font-medium underline"
