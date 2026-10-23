@@ -1,5 +1,8 @@
 -- 2026-10-23 — cleanup-storage : authentification par secret partagé (Vault)
 --
+-- À exécuter bloc par bloc, jamais le fichier entier : les étapes 2 et 3 se
+-- font hors SQL entre A et B.
+--
 -- Contexte : les anciennes clés API JWT (anon, service_role) ont été
 -- désactivées le 23/10/2026 après la fuite Railway du 21/10. Le cron
 -- cleanup-storage-daily appelait l'Edge Function avec l'ancienne clé anon
@@ -26,13 +29,15 @@
 -- de la fonction. Tant que les deux valeurs diffèrent, la fonction renvoie 401
 -- et ne touche à rien (échec fermé).
 
--- ─── Étape A : secret dans Vault (une seule fois) ───────────────────────────
--- 32 octets aléatoires → 64 caractères hexadécimaux. Ne renvoie que l'uuid.
+-- ─── Étape A : secret dans Vault (rejouable) ────────────────────────────────
+-- 32 octets aléatoires → 64 caractères hexadécimaux. Ne renvoie que l'uuid,
+-- ou aucune ligne si le secret existe déjà (il n'est alors pas remplacé).
 select vault.create_secret(
   encode(extensions.gen_random_bytes(32), 'hex'),
   'cleanup_storage_secret',
   'Secret partagé cron cleanup-storage-daily → Edge Function cleanup-storage (en-tête x-cleanup-secret)'
-);
+)
+where not exists (select 1 from vault.secrets where name = 'cleanup_storage_secret');
 
 -- Contrôle sans afficher la valeur :
 select name, length(decrypted_secret) as longueur, created_at
@@ -89,3 +94,22 @@ SELECT net.http_post(
 -- select id, status_code, timed_out, error_msg, content::jsonb->'dry_run' as dry_run,
 --        content::jsonb->'photos' as photos, content::jsonb->'pdfs' as pdfs
 -- from net._http_response where id = <id renvoyé>;
+-- Ne pas se fier à success: true ni à detected: 0 : vérifier aussi dans les
+-- logs de la fonction la présence de « 🔍 Photos error: null » et l'absence de
+-- « ❌ Erreur query PDFs » (une RPC en échec est seulement loguée).
+
+-- ─── Retour arrière ─────────────────────────────────────────────────────────
+-- En cas d'échec du cron (401, 500 ou timeout dans net._http_response), rien
+-- n'est supprimé. Mettre le job en pause :
+select cron.alter_job(
+  job_id := (select jobid from cron.job where jobname = 'cleanup-storage-daily'),
+  active := false
+);
+-- Corriger la cause : secret de la fonction différent de celui de Vault, ou
+-- fonction non déployée avec verify_jwt: false. Puis réactiver :
+select cron.alter_job(
+  job_id := (select jobid from cron.job where jobname = 'cleanup-storage-daily'),
+  active := true
+);
+-- L'ancienne commande n'est pas restaurable : la clé anon JWT qu'elle portait
+-- est désactivée depuis le 23/10/2026.
