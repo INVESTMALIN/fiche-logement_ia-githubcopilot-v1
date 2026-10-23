@@ -406,3 +406,11 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# cleanup-storage authentifie lui-même ses appels par un secret partagé dédié
+# (en-tête x-cleanup-secret comparé à CLEANUP_STORAGE_SECRET). La vérification
+# JWT de la passerelle est coupée pour cette seule fonction : depuis la
+# désactivation des anciennes clés JWT (23/10/2026), elle refuserait le cron.
+# Le deploy MCP / CLI doit reprendre ce réglage (verify_jwt: false).
+[functions.cleanup-storage]
+verify_jwt = false

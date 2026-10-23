@@ -403,59 +403,73 @@ $$;
 
 #### **2. Edge Function : `cleanup-storage`**
 
-Fonction déployée dans Supabase qui effectue le nettoyage automatique.
+Fonction qui effectue le nettoyage automatique. Code versionné dans `supabase/functions/cleanup-storage/` depuis le 23/10/2026 (avant : seule la version déployée existait, v12).
 
 **Paramètres de rétention :**
-- **Photos** (`fiche-photos`) : 90 jours
+- **Photos** (`fiche-photos`) : 75 jours
 - **PDFs** (`fiche-pdfs`) : 7 jours
+
+**Authentification (depuis le 23/10/2026) :**
+- Déployée avec **`verify_jwt = false`** (`[functions.cleanup-storage]` dans `supabase/config.toml`, à reprendre à chaque deploy MCP ou CLI). Depuis la désactivation des anciennes clés JWT, la passerelle refuserait tout appel du cron.
+- C'est la fonction qui authentifie : en-tête **`x-cleanup-secret`**, comparé en temps constant (SHA-256 puis XOR) au secret de la fonction **`CLEANUP_STORAGE_SECRET`** (`auth.ts`).
+- Sans en-tête ou mauvais secret → **401** ; secret de la fonction absent ou de moins de 32 caractères → **500**. Dans les deux cas, réponse avant tout accès au stockage.
+- La même valeur est rangée dans **Vault** sous le nom `cleanup_storage_secret` ; le cron la lit au moment de l'exécution. Rotation : `vault.update_secret` + nouvelle saisie du secret de la fonction (tant que les deux diffèrent, 401, rien n'est supprimé).
 
 **Fonctionnement :**
 1. Appelle `get_old_storage_objects()` via `.rpc()` pour récupérer les fichiers anciens
 2. Supprime les fichiers par batch de **1000 max** (limite Supabase) via `.remove()`
-3. Flag `DRY_RUN` en haut du fichier pour tester sans supprimer
+3. Renvoie un résumé JSON (`success`, `dry_run`, `cutoffs`, `photos`, `pdfs`, `total_size_gb`)
+
+**Mode simulation :**
+- Corps vide ou `{}` → **suppression réelle** (c'est ce qu'envoie le cron).
+- Corps `{"dry_run": true}` → détection et comptage uniquement, `deleted: 0`, `dry_run: true` dans le résumé.
+- Toute autre forme (JSON invalide, `"dry_run": "true"` en chaîne, clé inconnue comme `{"dryRun": true}`…) → **400**, jamais de repli silencieux sur une suppression réelle.
+- La constante `DRY_RUN` en haut du fichier reste un interrupteur global : à `true`, aucun appel ne supprime.
 
 ```typescript
 // supabase/functions/cleanup-storage/index.ts
-const DRY_RUN = false // Mettre à true pour tester
-
-const RETENTION_POLICIES = {
-  'fiche-photos': 90,  // 90 jours
-  'fiche-pdfs': 7      // 7 jours
-}
+const DRY_RUN = false // interrupteur global
+const dryRun = DRY_RUN || request.dryRun // request = corps {"dry_run": true}
 
 // Récupération via RPC (seul moyen d'accéder à storage.objects)
-const { data: oldFiles } = await supabase.rpc('get_old_storage_objects', {
-  p_bucket_id: bucketId,
-  p_cutoff: cutoffDate,
-  p_limit: 1000
+const { data: oldPhotos } = await supabase.rpc('get_old_storage_objects', {
+  p_bucket_id: 'fiche-photos',
+  p_cutoff: photoCutoff.toISOString(),
+  p_limit: BATCH_SIZE
 })
 
 // Suppression via API Storage (JAMAIS via SQL DELETE = fichiers orphelins)
-if (!DRY_RUN) {
-  await supabase.storage.from(bucketId).remove(filePaths)
+if (!dryRun && oldPhotos?.length) {
+  await supabase.storage.from('fiche-photos').remove(fileNames)
 }
 ```
 
 #### **3. Cron Job : `cleanup-storage-daily`**
 
-Planification automatique du nettoyage tous les soirs à 2h du matin.
+Tous les jours à 2h **UTC** (`0 2 * * *`). Aucune clé ni aucun secret en clair dans `cron.job` : l'en-tête est lu dans Vault à l'exécution. Script complet (Vault, cron, preuve en simulation) : `docs/migrations/2026-10-23_cleanup_storage_cron_vault.sql`.
 
 ```sql
--- Configuration dans Supabase Dashboard > Database > Cron Jobs
-SELECT cron.schedule(
-  'cleanup-storage-daily',
-  '0 2 * * *',  -- Tous les jours à 2h du matin
-  $$
-  SELECT net.http_post(
-    url := 'https://[PROJECT_REF].supabase.co/functions/v1/cleanup-storage',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer [ANON_KEY]'
+SELECT net.http_post(
+  url := 'https://qwjgkqxemnpvlhwxexht.supabase.co/functions/v1/cleanup-storage',
+  headers := jsonb_build_object(
+    'Content-Type', 'application/json',
+    'x-cleanup-secret', (
+      SELECT decrypted_secret FROM vault.decrypted_secrets
+      WHERE name = 'cleanup_storage_secret'
     )
-  );
-  $$
+  ),
+  body := '{}'::jsonb,
+  timeout_milliseconds := 60000
 );
 ```
+
+`timeout_milliseconds` : le défaut pg_net (5 s) est plus court qu'un passage réel (~9 s avec démarrage à froid) ; sans lui, `net._http_response` enregistre un timeout au lieu du résumé. `net._http_response` ne garde les réponses que **6 h** (`pg_net.ttl`) : le passage de 2h se contrôle avant 8h UTC, ensuite il ne reste que les logs de la fonction. `cron.job_run_details` « succeeded » prouve seulement que la requête a été mise en file, pas que la fonction a répondu 200.
+
+**Simulation à la main** : même appel avec `body := '{"dry_run": true}'::jsonb`, puis lire `net._http_response` avec l'id renvoyé.
+
+#### **4. `cleanup-storage-test`**
+
+Autre fonction déployée (v15, `verify_jwt = true`), non versionnée et non modifiée. Aucun cron, aucune fonction SQL ni aucun code du dépôt ne l'appelle (vérifié le 23/10/2026). Un appelant externe (Make, n8n) n'est pas vérifiable depuis le dépôt.
 
 ### **Règles Critiques**
 
@@ -501,7 +515,8 @@ annonce-pdfs   | 0.34
 graph TD
     A[Cron Job 2h du matin] -->|POST| B[Edge Function cleanup-storage]
     B -->|.rpc| C[get_old_storage_objects]
-    C -->|Retourne fichiers anciens| D{DRY_RUN?}
+    A -.->|sans x-cleanup-secret valide| X[401, rien n'est lu]
+    C -->|Retourne fichiers anciens| D{dry_run?}
     D -->|true| E[Log uniquement]
     D -->|false| F[.remove batch 1000]
     F --> G[Fichiers supprimés]
@@ -676,14 +691,16 @@ Le filtre `AND name NOT LIKE 'assets/%'` empêche sa suppression accidentelle.
 
 ### Paramètres clés
 ```typescript
-const DRY_RUN = false        // ⚠️ Mettre true pour tester sans supprimer
-const CUTOFF_DAYS_PHOTOS = 90  // 3 mois
+const DRY_RUN = false          // interrupteur global ; simulation ponctuelle : corps {"dry_run": true}
+const CUTOFF_DAYS_PHOTOS = 75  // ~2,5 mois (90 à l'origine)
 const CUTOFF_DAYS_PDFS = 7     // 1 semaine
 const BATCH_SIZE = 1000        // Limite max Supabase pour .remove()
 ```
 
+Authentification par secret partagé (`x-cleanup-secret` / `CLEANUP_STORAGE_SECRET`, `verify_jwt = false`) : voir la section « Edge Function : `cleanup-storage` » plus haut.
+
 ### Pourquoi ces cutoffs ?
-- **Photos 90 jours** : Les photos sont synchronisées sur Google Drive via Make.com dès la finalisation. 90 jours = marge confortable. Les coordinateurs ne modifient pas les photos après upload.
+- **Photos 75 jours** : Les photos sont synchronisées sur Google Drive via Make.com dès la finalisation. 75 jours = marge confortable. Les coordinateurs ne modifient pas les photos après upload.
 - **PDFs 7 jours** : Les PDFs sont régénérables à tout moment depuis l'app, et synchronisés immédiatement sur Drive + Monday.com.
 
 ### Règle CRITIQUE : suppression via API uniquement
@@ -710,12 +727,15 @@ La première approche récursive (parcours de l'arborescence de dossiers) causai
 -- Vérifier le statut du cron
 SELECT jobname, schedule, active FROM cron.job;
 
--- Le cron appelle l'Edge Function via HTTP POST
--- Schedule : 0 2 * * * (tous les soirs à 2h du matin)
+-- Le cron appelle l'Edge Function via HTTP POST, secret lu dans Vault
+-- Schedule : 0 2 * * * (tous les jours à 2h UTC)
+
+-- Dernières réponses de la fonction (conservées 6 h)
+SELECT id, status_code, timed_out, created, content::jsonb->'dry_run' AS dry_run
+FROM net._http_response ORDER BY id DESC LIMIT 5;
 ```
 
-> ⚠️ Impossible de modifier le cron via SQL standard (permission denied).
-> Utiliser l'interface Supabase → Database → Cron Jobs.
+Commande complète et procédure : `docs/migrations/2026-10-23_cleanup_storage_cron_vault.sql`. En tant que `postgres` (SQL editor ou MCP), `cron.alter_job` fonctionne.
 
 ---
 
@@ -752,13 +772,13 @@ GROUP BY bucket_id
 ORDER BY total_gb DESC;
 ```
 
-### Vérifier les fichiers > 90 jours restants
+### Vérifier les fichiers > 75 jours restants
 ```sql
 SELECT COUNT(*),
   (sum((metadata->>'size')::bigint) / 1024.0 / 1024.0 / 1024.0)::numeric(10,2) as total_gb
 FROM storage.objects
 WHERE bucket_id = 'fiche-photos'
-AND created_at < NOW() - INTERVAL '90 days';
+AND created_at < NOW() - INTERVAL '75 days';
 ```
 
 ---
@@ -777,7 +797,7 @@ AND created_at < NOW() - INTERVAL '90 days';
 
 ## 📁 Fallback UI - Photos archivées
 
-Les photos supprimées du storage (> 90 jours) génèrent des URLs cassées (404).
+Les photos supprimées du storage (> 75 jours) génèrent des URLs cassées (404).
 Un composant `PhotoWithFallback` dans `PhotoUpload.jsx` gère ça proprement :
 
 ```jsx

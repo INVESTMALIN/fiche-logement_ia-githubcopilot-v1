@@ -369,13 +369,11 @@ const generateAndUploadPDF = async () => {
 
 ### **Nettoyage Storage Automatique**
 
-```javascript
-// Fonction cleanup-storage (tous les 40 jours)
-const cleanupOldFiles = async () => {
-  // Supprime fichiers Supabase Storage > 40 jours
-  // Car fichiers migrés vers Google Drive via Make
-}
-```
+- **Edge Function `cleanup-storage`** (`supabase/functions/cleanup-storage/`), appelée chaque nuit à 2h UTC par le cron `cleanup-storage-daily` (pg_cron + pg_net).
+- Rétention : `fiche-photos` > **75 jours**, `fiche-pdfs` > **7 jours** (fichiers déjà migrés vers Google Drive via Make), par lots de 1 000 au plus.
+- **Authentification** : `verify_jwt = false` (`supabase/config.toml`) ; la fonction exige l'en-tête `x-cleanup-secret`, comparé en temps constant au secret `CLEANUP_STORAGE_SECRET`, sinon 401 avant tout accès au stockage. Le cron lit la même valeur dans Vault (`cleanup_storage_secret`) : aucune clé en clair dans `cron.job`. Mis en place le 23/10/2026 après la désactivation des anciennes clés JWT.
+- **Simulation** : corps `{"dry_run": true}` → détecte et compte sans supprimer. Sans ce flag, suppression réelle.
+- Détails, procédure et monitoring : `docs/📊 SUPABASE SPEC.md`, section « STORAGE CLEANUP AUTOMATIQUE ».
 
 ---
 
@@ -711,7 +709,7 @@ const AuthProvider = ({ children }) => {
 5. **Finalisation** : Statut → "Complété" déclenche webhook
 6. **Automatisation** : Make migre tout vers Google Drive
 7. **Monday.com** : Mise à jour projet avec URLs PDF
-8. **Nettoyage** : Cleanup Storage automatique (40 jours)
+8. **Nettoyage** : Cleanup Storage automatique chaque nuit (photos > 75 jours, PDF > 7 jours)
 
 ### **États des Fiches**
 
@@ -746,7 +744,7 @@ COMPRESSION_QUALITY=0.95
 - **2 PDF simultanés** avec pagination intelligente
 - **Webhook optimisé** 58 champs vs 750+ (95% de réduction)
 - **Compression images** automatique selon taille fichier
-- **Nettoyage Storage** automatique, tous les 40 jours
+- **Nettoyage Storage** automatique chaque nuit (photos > 75 jours, PDF > 7 jours)
 
 ---
 
