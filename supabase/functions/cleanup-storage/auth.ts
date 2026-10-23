@@ -55,11 +55,14 @@ export type DryRunResult =
   | { ok: true; dryRun: boolean }
   | { ok: false; error: string }
 
+const ALLOWED_BODY_KEYS = new Set(['dry_run'])
+
 // Lecture de la demande de simulation dans le corps de la requête.
 // Corps vide ou {} → suppression réelle (comportement historique du cron).
 // {"dry_run": true} → simulation. Toute autre forme est refusée plutôt que
-// d'être interprétée : un corps illisible ou un "dry_run": "true" (chaîne)
-// ne doit jamais retomber silencieusement sur une suppression réelle.
+// d'être interprétée : un corps illisible, un "dry_run": "true" (chaîne) ou
+// une clé inconnue ({"dryRun": true}, faute de frappe) ne doit jamais
+// retomber silencieusement sur une suppression réelle.
 export function parseDryRun(rawBody: string): DryRunResult {
   if (rawBody.trim() === '') return { ok: true, dryRun: false }
 
@@ -71,6 +74,11 @@ export function parseDryRun(rawBody: string): DryRunResult {
   }
   if (body === null || typeof body !== 'object' || Array.isArray(body)) {
     return { ok: false, error: 'Le corps doit être un objet JSON' }
+  }
+
+  const unknownKeys = Object.keys(body).filter((key) => !ALLOWED_BODY_KEYS.has(key))
+  if (unknownKeys.length > 0) {
+    return { ok: false, error: `Clé inconnue : ${unknownKeys.join(', ')} (seule dry_run est acceptée)` }
   }
 
   const value = (body as Record<string, unknown>).dry_run

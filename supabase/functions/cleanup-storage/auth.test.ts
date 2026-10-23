@@ -9,7 +9,7 @@
 //     porte la même valeur (on ne tourne jamais avec un secret devinable) ;
 //   - bon secret : accepté ;
 //   - dry_run : corps vide ou {} → suppression réelle (comportement du cron),
-//     {"dry_run": true} → simulation, toute forme ambiguë → refusée.
+//     {"dry_run": true} → simulation, toute forme ambiguë ou clé inconnue → refusée.
 
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { checkSecret, MIN_SECRET_LENGTH, parseDryRun, timingSafeEqualString } from './auth.ts'
@@ -62,7 +62,12 @@ Deno.test('dry_run booléen respecté', () => {
 })
 
 Deno.test('forme ambiguë → refusée, jamais une suppression réelle', () => {
-  for (const body of ['{"dry_run": "true"}', '{"dry_run": 1}', '{"dry_run": null}', 'dry_run=true', '{', '[]', 'true', 'null']) {
+  for (const body of [
+    '{"dry_run": "true"}', '{"dry_run": 1}', '{"dry_run": null}', 'dry_run=true', '{', '[]', 'true', 'null',
+    // clés inconnues (fautes de frappe) : jamais traitées comme {}
+    '{"dryRun": true}', '{"dry-run": true}', '{"DRY_RUN": true}', '{"simulate": true}',
+    '{"dry_run": true, "extra": 1}', '{"dry_run": false, "dryRun": true}',
+  ]) {
     assertEquals(parseDryRun(body).ok, false, body)
   }
 })

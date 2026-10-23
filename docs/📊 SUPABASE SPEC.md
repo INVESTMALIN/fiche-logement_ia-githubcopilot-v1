@@ -423,7 +423,7 @@ Fonction qui effectue le nettoyage automatique. Code versionné dans `supabase/f
 **Mode simulation :**
 - Corps vide ou `{}` → **suppression réelle** (c'est ce qu'envoie le cron).
 - Corps `{"dry_run": true}` → détection et comptage uniquement, `deleted: 0`, `dry_run: true` dans le résumé.
-- Toute autre forme (JSON invalide, `"dry_run": "true"` en chaîne…) → **400**, jamais de repli silencieux sur une suppression réelle.
+- Toute autre forme (JSON invalide, `"dry_run": "true"` en chaîne, clé inconnue comme `{"dryRun": true}`…) → **400**, jamais de repli silencieux sur une suppression réelle.
 - La constante `DRY_RUN` en haut du fichier reste un interrupteur global : à `true`, aucun appel ne supprime.
 
 ```typescript
