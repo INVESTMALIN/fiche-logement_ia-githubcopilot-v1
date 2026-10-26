@@ -69,7 +69,7 @@ const generateAndUploadPDF = async () => {
   
   // 3. Génération PDF Logement via Railway
   const railwayResponseLogement = await fetch(
-    'https://video-compressor-production.up.railway.app/generate-pdf',
+    `${VIDEO_COMPRESSOR_URL}/generate-pdf`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -331,7 +331,11 @@ const menageSectionsConfig = [
 
 ### **🚀 Service Railway (Node.js + Puppeteer)**
 
-**Endpoint** : `https://video-compressor-production.up.railway.app/generate-pdf`
+**Endpoint** : `${VIDEO_COMPRESSOR_URL}/generate-pdf`
+
+L'URL de base vient de `src/lib/videoCompressor.js` : variable Vite
+`VITE_VIDEO_COMPRESSOR_URL` (sans chemin), repli sur l'adresse Railway historique
+si elle est absente ou vide.
 
 #### **server.js** - API Express
 ```javascript

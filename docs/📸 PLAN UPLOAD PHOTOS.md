@@ -73,7 +73,7 @@ l'appel backend partagent le même seuil de 95 MB dans les deux sens, donc rien
 entre 0 et 95 MB n'est jamais compressé. Ne pas la ressusciter par erreur.
 
 **Backend Railway (> 95 MB)** :
-`https://video-compressor-production.up.railway.app/compress-video`,
+`${VIDEO_COMPRESSOR_URL}/compress-video` (base dans `src/lib/videoCompressor.js`),
 FFmpeg libx264, largeur bornée à 720 px, crf 32, preset medium, AAC 96 kbps,
 sortie `_compressed.mp4`. Aucune cible de taille : la qualité est fixe. En cas
 d'échec, l'URL originale est conservée.

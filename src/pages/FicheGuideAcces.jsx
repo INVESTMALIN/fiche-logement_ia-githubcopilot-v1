@@ -8,6 +8,7 @@ import PhotoUpload from '../components/PhotoUpload'
 import { Sparkles, Copy, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { generateGuideAccesPDF } from '../lib/generateAssistantPDF'
 import { supabase } from '../lib/supabaseClient'
+import { VIDEO_COMPRESSOR_URL } from '../lib/videoCompressor'
 import { VIDEO_GUIDE_ACCES_CIBLE_OCTETS, AVERTISSEMENT_VIDEO_GUIDE, formaterMio } from '../lib/videoGuideAcces'
 import {
   extraireGuide,
@@ -146,7 +147,7 @@ export default function FicheGuideAcces() {
       // ÉTAPE 1 : Extraction audio via backend Railway
       console.log('🎵 Extraction audio en cours...')
 
-      const extractResponse = await fetch('https://video-compressor-production.up.railway.app/extract-audio', {
+      const extractResponse = await fetch(`${VIDEO_COMPRESSOR_URL}/extract-audio`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoUrl })
