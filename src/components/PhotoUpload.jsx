@@ -4,6 +4,7 @@ import { useForm } from './FormContext'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import { normalizePhotoField } from '../lib/photoHelpers'
+import { VIDEO_COMPRESSOR_URL } from '../lib/videoCompressor'
 import {
   VIDEO_GUIDE_ACCES_DELAI_COMPRESSION_MS,
   VIDEO_GUIDE_ACCES_POLL_MS,
@@ -16,7 +17,7 @@ import {
 } from '../lib/videoGuideAcces'
 import imageCompression from 'browser-image-compression'
 
-const COMPRESS_VIDEO_URL = 'https://video-compressor-production.up.railway.app/compress-video'
+const COMPRESS_VIDEO_URL = `${VIDEO_COMPRESSOR_URL}/compress-video`
 // Mode cible : compression asynchrone (job + polling), voir videoGuideAcces.js
 const COMPRESS_VIDEO_JOBS_URL = `${COMPRESS_VIDEO_URL}/jobs`
 

@@ -1,6 +1,7 @@
 // src/components/PDFUpload.jsx - VERSION PUPPETEER RAILWAY
 import React, { useState } from 'react'
 import { useForm } from '../components/FormContext'
+import { VIDEO_COMPRESSOR_URL } from '../lib/videoCompressor'
 
 const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave }) => {
   const { triggerPdfWebhook } = useForm()
@@ -145,7 +146,7 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave }) => {
         console.log('❌ Logo ABSENT du HTML')
       }
 
-      const railwayResponseLogement = await fetch('https://video-compressor-production.up.railway.app/generate-pdf', {
+      const railwayResponseLogement = await fetch(`${VIDEO_COMPRESSOR_URL}/generate-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -167,7 +168,7 @@ const PDFUpload = ({ formData, onPDFGenerated, updateField, handleSave }) => {
       // ===============================
       console.log('📄 Génération PDF ménage via Railway...')
 
-      const railwayResponseMenage = await fetch('https://video-compressor-production.up.railway.app/generate-pdf', {
+      const railwayResponseMenage = await fetch(`${VIDEO_COMPRESSOR_URL}/generate-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
