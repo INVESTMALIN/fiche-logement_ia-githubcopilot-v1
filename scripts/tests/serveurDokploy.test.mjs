@@ -1,7 +1,7 @@
 // Tests du serveur Dokploy (serveur-dokploy.mjs) : santé, routes api, statique, repli SPA, sécurité des chemins.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readdirSync, chmodSync } from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -54,5 +54,22 @@ test('une route api qui lève au chargement répond 503 sans faire tomber le res
   await withServer({ distDir: dist(), load: () => { throw new Error('variable absente') } }, async (base) => {
     let r = await fetch(base + '/api/drive-poc', { method: 'POST', body: '{}' }); assert.equal(r.status, 503)
     r = await fetch(base + '/healthz'); assert.equal(r.status, 200)
+  })
+})
+
+test('adresse mal formée : 400, et le serveur reste vivant', async () => {
+  await withServer({ distDir: dist() }, async (base) => {
+    let r = await fetch(base + '/%E0%A4%A'); assert.equal(r.status, 400)
+    r = await fetch(base + '/healthz'); assert.equal(r.status, 200)
+  })
+})
+
+test('fichier illisible : erreur isolée, le serveur reste vivant', async (t) => {
+  if (process.getuid && process.getuid() === 0) return t.skip('root lit tout')
+  const d = dist(); writeFileSync(path.join(d, 'secret.txt'), 'x'); chmodSync(path.join(d, 'secret.txt'), 0o000)
+  await withServer({ distDir: d }, async (base) => {
+    const r = await fetch(base + '/secret.txt').catch(() => ({ status: 'coupé' }))
+    assert.notEqual(r.status, 200)
+    const h = await fetch(base + '/healthz'); assert.equal(h.status, 200)
   })
 })

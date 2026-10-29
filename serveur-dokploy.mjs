@@ -13,7 +13,8 @@
 import http from 'node:http'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { existsSync, statSync, createReadStream } from 'node:fs'
+import { statSync, createReadStream } from 'node:fs'
+import { pipeline } from 'node:stream'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url))
@@ -41,23 +42,46 @@ function loadHandler(name) {
   return handlers.get(name)
 }
 
-function sendFile(res, file, method) {
+// Taille d'un fichier ordinaire, ou null (absent, illisible, dossier) : jamais d'exception.
+function tailleFichier(file) {
+  try {
+    const st = statSync(file)
+    return st.isFile() ? st.size : null
+  } catch {
+    return null
+  }
+}
+
+function sendFile(res, file, method, taille) {
   const ext = path.extname(file).toLowerCase()
   res.setHeader('Content-Type', TYPES[ext] || 'application/octet-stream')
   // Fichiers de `dist/assets` : noms contenant une empreinte, immuables. Le reste (index.html,
   // images non empreintées) : revalidation à chaque visite, pour qu'un déploiement soit vu tout de suite.
   const immuable = file.includes(`${path.sep}assets${path.sep}`)
   res.setHeader('Cache-Control', immuable ? 'public, max-age=31536000, immutable' : 'no-cache')
-  res.setHeader('Content-Length', statSync(file).size)
+  res.setHeader('Content-Length', taille)
   if (method === 'HEAD') return res.end()
-  createReadStream(file).pipe(res)
+  // pipeline : une erreur de lecture (fichier devenu illisible) ou une coupure du client
+  // détruit les deux flux au lieu de faire tomber le processus ou de laisser un descripteur ouvert.
+  pipeline(createReadStream(file), res, (err) => {
+    if (!err) return
+    console.error('[statique]', err.code || err.message)
+    if (!res.headersSent) { res.writeHead(500); res.end() } else res.destroy()
+  })
 }
 
 export function createServer({ distDir = path.join(ROOT, 'dist'), load = loadHandler } = {}) {
   const index = path.join(distDir, 'index.html')
   return http.createServer(async (req, res) => {
-    const url = new URL(req.url, 'http://local')
-    const pathname = decodeURIComponent(url.pathname)
+    // Une adresse mal formée (ex. %E0%A4%A) ne doit faire échouer que cette requête.
+    let url, pathname
+    try {
+      url = new URL(req.url, 'http://local')
+      pathname = decodeURIComponent(url.pathname)
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' })
+      return res.end('Bad request')
+    }
 
     if (pathname === '/healthz') {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
@@ -90,7 +114,8 @@ export function createServer({ distDir = path.join(ROOT, 'dist'), load = loadHan
 
     // Statique, sans jamais sortir de `dist/` (chemins « .. » neutralisés par path.join + contrôle).
     const file = path.join(distDir, pathname)
-    if (file.startsWith(distDir + path.sep) && existsSync(file) && statSync(file).isFile()) return sendFile(res, file, req.method)
+    const taille = file.startsWith(distDir + path.sep) ? tailleFichier(file) : null
+    if (taille !== null) return sendFile(res, file, req.method, taille)
 
     // Repli SPA (vercel.json : toutes les routes vers /). Un fichier statique absent avec
     // une extension (ex. /assets/vieux.js) répond 404 au lieu de renvoyer du HTML.
@@ -98,11 +123,27 @@ export function createServer({ distDir = path.join(ROOT, 'dist'), load = loadHan
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' })
       return res.end('Not found')
     }
-    return sendFile(res, index, req.method)
+    const tailleIndex = tailleFichier(index)
+    if (tailleIndex === null) {
+      res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' })
+      return res.end('Application non construite')
+    }
+    return sendFile(res, index, req.method, tailleIndex)
   })
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 3000)
-  createServer().listen(port, '0.0.0.0', () => console.log(`Fiche Logement prête sur le port ${port}`))
+  const server = createServer().listen(port, '0.0.0.0', () => console.log(`Fiche Logement prête sur le port ${port}`))
+  // Arrêt propre au redéploiement (Node en PID 1 ignore SIGTERM sans gestionnaire).
+  for (const sig of ['SIGTERM', 'SIGINT']) {
+    process.on(sig, () => {
+      server.close(() => process.exit(0))
+      server.closeIdleConnections?.() // les connexions keep-alive inactives ne retiennent pas l'arrêt
+      setTimeout(() => process.exit(0), 5000).unref() // au pire 5 s, sous le délai de Docker
+    })
+  }
+  // Filet de sécurité : journaliser sans laisser une erreur imprévue tuer tout le site.
+  process.on('uncaughtException', (err) => console.error('[exception non rattrapée]', err?.stack || err))
+  process.on('unhandledRejection', (err) => console.error('[promesse rejetée non rattrapée]', err?.stack || err))
 }
