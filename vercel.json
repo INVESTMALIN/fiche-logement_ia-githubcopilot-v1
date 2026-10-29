@@ -1,5 +1,9 @@
 {
+  "buildCommand": "mkdir -p redirection-vide && echo redirection > redirection-vide/.keep",
+  "outputDirectory": "redirection-vide",
+  "installCommand": "echo pas-d-installation",
   "redirects": [
+    { "source": "/", "destination": "https://fiche-logement.conciergerie-letahost.com/", "permanent": false },
     { "source": "/:path*", "destination": "https://fiche-logement.conciergerie-letahost.com/:path*", "permanent": false }
   ]
 }
